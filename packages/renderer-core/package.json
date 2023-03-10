@@ -1,0 +1,25 @@
+{
+  "name": "rotext-renderer-core",
+  "version": "0.0.1",
+  "description": "",
+  "main": "./dist/lib.js",
+  "types": "./dist/lib.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Umaĵo",
+  "license": "MIT",
+  "type": "module",
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.0.1",
+    "@rollup/plugin-typescript": "^11.0.0",
+    "peggy": "^3.0.1",
+    "rollup": "^3.19.1",
+    "tslib": "^2.5.0",
+    "typescript": "^4.9.5"
+  },
+  "dependencies": {
+    "entities": "^4.4.0"
+  }
+}
