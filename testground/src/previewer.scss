@@ -46,6 +46,13 @@
     margin: 1em 0;
   }
 
+  blockquote {
+    border-left: 0.4em solid darkgreen;
+    padding: 0.5em 1em 0.5em;
+    background-color: rgba($color: #000000, $alpha: 0.25);
+
+  }
+
   ul,
   ol {
     padding-left: 2em;
@@ -54,7 +61,7 @@
 
   dl {
     padding: 0;
-    margin-top: 1em; // 手动添加
+    margin-top: 1em;
     margin-bottom: 1em;
   }
 
@@ -68,14 +75,12 @@
 
   table {
     border-collapse: collapse;
-    // width: 100%;
     margin-bottom: 1em;
   }
 
   th,
   td {
     border: 1px solid #444;
-    // padding: 0.5em;
     padding: 0.5em 1.5em;
   }
 
@@ -114,12 +119,10 @@
 
   /* Non-HTML inline-level elements */
   span.post-reference {
-    // color: #00FF00; /* Change color to green */
     color: green
   }
 
   span.emphasis-marks {
-    // AI 可能还不知道 text-emphasis，手动写了。
     // 点的大小并不理想，未来计划引入「赫蹏」解决
     text-emphasis: dot;
     text-emphasis-position: under;
