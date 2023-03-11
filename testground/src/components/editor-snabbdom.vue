@@ -13,7 +13,9 @@ import { NCard, NInput } from "naive-ui";
   <div style="height: 4vh"></div>
 
   <n-card class="container">
-    <div ref="outputEl"></div>
+    <div class="previewer">
+      <div ref="outputEl"></div>
+    </div>
   </n-card>
 </template>
 

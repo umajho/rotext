@@ -1,0 +1,141 @@
+/* 最初由 AI 生成 */
+
+.previewer {
+  /* Online forum dark theme */
+
+  /* Font family */
+  body {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  }
+
+  /* Background colors */
+  body {
+    background-color: #1f1f1f;
+    color: #d4d4d4;
+  }
+
+  /* Headings */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: #fff;
+  }
+
+  /* Block-level elements */
+  p,
+  blockquote,
+  ul,
+  ol,
+  dl,
+  table {
+    margin: 0;
+    padding: 0;
+  }
+
+  p,
+  blockquote {
+    margin-bottom: 1em;
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid #444;
+    margin: 1em 0;
+  }
+
+  ul,
+  ol {
+    padding-left: 2em;
+    margin-bottom: 1em;
+  }
+
+  dl {
+    padding: 0;
+    margin-top: 1em; // 手动添加
+    margin-bottom: 1em;
+  }
+
+  dt {
+    font-weight: bold;
+  }
+
+  dd {
+    margin-left: 1em;
+  }
+
+  table {
+    border-collapse: collapse;
+    // width: 100%;
+    margin-bottom: 1em;
+  }
+
+  th,
+  td {
+    border: 1px solid #444;
+    // padding: 0.5em;
+    padding: 0.5em 1.5em;
+  }
+
+  // 去掉了 caption 的 styles
+
+  /* Inline-level elements */
+  code {
+    font-family: monospace;
+    background-color: #2d2d2d;
+    padding: 0.1em 0.3em;
+    border-radius: 3px;
+    color: #f0c674;
+  }
+
+  strong,
+  b {
+    font-weight: bold;
+  }
+
+  em,
+  i {
+    font-style: italic;
+  }
+
+  u {
+    text-decoration: underline;
+  }
+
+  del,
+  s,
+  strike {
+    text-decoration: line-through;
+  }
+
+  // 去掉了 ruby 相关的 styles
+
+  /* Non-HTML inline-level elements */
+  span.post-reference {
+    // color: #00FF00; /* Change color to green */
+    color: green
+  }
+
+  span.emphasis-marks {
+    // AI 可能还不知道 text-emphasis，手动写了。
+    // 点的大小并不理想，未来计划引入「赫蹏」解决
+    text-emphasis: dot;
+    text-emphasis-position: under;
+  }
+
+  span.command {
+    font-family: monospace;
+    background-color: #2d2d2d;
+    padding: 0.1em 0.3em;
+    border-radius: 3px;
+    color: #f0c674;
+  }
+
+  span.internal-link {
+    color: #61afef;
+    text-decoration: none;
+    border-bottom: 1px dashed #61afef;
+  }
+}
