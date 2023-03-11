@@ -7,7 +7,6 @@ importers:
 
   packages/renderer-core:
     specifiers:
-      '@rollup/plugin-node-resolve': ^15.0.1
       '@rollup/plugin-typescript': ^11.0.0
       entities: ^4.4.0
       peggy: ^3.0.1
@@ -17,7 +16,6 @@ importers:
     dependencies:
       entities: 4.4.0
     devDependencies:
-      '@rollup/plugin-node-resolve': 15.0.1_rollup@3.19.1
       '@rollup/plugin-typescript': 11.0.0_6xpx4ownnv75244cfyuvoru6ci
       peggy: 3.0.1
       rollup: 3.19.1
@@ -26,7 +24,6 @@ importers:
 
   packages/renderer-snabbdom:
     specifiers:
-      '@rollup/plugin-node-resolve': ^15.0.1
       '@rollup/plugin-typescript': ^11.0.0
       rollup: ^3.19.1
       rotext-renderer-core: workspace:^0.0.1
