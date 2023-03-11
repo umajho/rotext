@@ -1,8 +1,23 @@
 <script lang="ts">
-import { NAlert, NCard, NInput, NTag } from "naive-ui";
+import { NAlert, NRadio, NSpace, NTag } from "naive-ui";
+import EditorSnabbdom from "./editor-snabbdom.vue";
+import EditorVue from "./editor-vue.vue";
 </script>
 
 <template>
+  <n-space style="background-color: white">
+    <n-radio :checked="renderer === 'vue'" value="vue" @change="changeRenderer"
+      >Vue</n-radio
+    >
+    <n-radio
+      :checked="renderer === 'snabbdom'"
+      value="snabbdom"
+      @change="changeRenderer"
+      >Snabbdom</n-radio
+    >
+  </n-space>
+  <div style="height: 2vh"></div>
+
   <n-tag :bordered="false" type="info"> 字数：{{ characterCount }} </n-tag>
   <span style="display: inline-block; width: 4vw"></span>
   <n-tag :bordered="false" type="info"> 解析时间：{{ parsingTimeMs }}ms </n-tag>
@@ -11,15 +26,6 @@ import { NAlert, NCard, NInput, NTag } from "naive-ui";
 
   <div style="height: 2vh"></div>
 
-  <n-input
-    id="input"
-    v-model:value="markup"
-    type="textarea"
-    @input="renderMarkup()"
-  ></n-input>
-
-  <div style="height: 4vh"></div>
-
   <template v-if="error">
     <n-alert type="error" :title="error.message">
       {{ error.stack }}
@@ -27,11 +33,20 @@ import { NAlert, NCard, NInput, NTag } from "naive-ui";
     <div style="height: 4vh"></div>
   </template>
 
-  <main>
-    <n-card id="container">
-      <div ref="outputEl"></div>
-    </n-card>
-  </main>
+  <editor-vue
+    v-if="renderer === 'vue'"
+    @error="(e) => (error = e)"
+    @update-character-count="(c) => (characterCount = c)"
+    @update-parsing-time="(tMs) => (parsingTimeMs = tMs)"
+  >
+  </editor-vue>
+  <editor-snabbdom
+    v-else-if="renderer === 'snabbdom'"
+    @error="(e) => (error = e)"
+    @update-character-count="(c) => (characterCount = c)"
+    @update-parsing-time="(tMs) => (parsingTimeMs = tMs)"
+  >
+  </editor-snabbdom>
 </template>
 
 <style>
@@ -52,69 +67,17 @@ import { NAlert, NCard, NInput, NTag } from "naive-ui";
 </style>
 
 <script setup lang="ts">
-import { onMounted, type Ref, ref } from "vue";
+import { type Ref, ref } from "vue";
 
-import {
-  classModule,
-  // eventListenersModule,
-  init,
-  // datasetModule,
-  // propsModule,
-  styleModule,
-  type VNode,
-} from "snabbdom";
-
-import { parse } from "rotext-renderer-snabbdom";
-
-let markup = ref(localStorage.getItem("markup") ?? "");
-const outputEl: Ref<HTMLElement | null> = ref(null);
-
-let lastNode: VNode | HTMLElement;
-let patch: ReturnType<typeof init> | null = null;
+let renderer: Ref<"vue" | "snabbdom"> = ref("vue");
 
 let error: Ref<Error | null> = ref(null);
 
 let characterCount = ref(0);
 let parsingTimeMs = ref(0);
-let renderingTimeMs = ref(0);
+// let renderingTimeMs = ref(0);
 
-onMounted(() => {
-  patch = init(
-    [
-      classModule,
-      // propsModule,
-      // datasetModule,
-      styleModule,
-      // eventListenersModule,
-    ],
-    undefined,
-    { experimental: { fragments: true } }
-  );
-  lastNode = outputEl.value!;
-
-  renderMarkup();
-});
-
-function renderMarkup() {
-  error.value = null;
-  localStorage.setItem("markup", markup.value);
-  characterCount.value = [...new Intl.Segmenter().segment(markup.value)].length;
-  try {
-    const parsingStart = performance.now();
-    const currentNode = parse(markup.value, { breaks: true });
-    parsingTimeMs.value = performance.now() - parsingStart;
-
-    if (!lastNode) {
-      patch!(outputEl.value!, currentNode);
-    } else {
-      patch!(lastNode, currentNode);
-    }
-    lastNode = currentNode;
-  } catch (e) {
-    if (!(e instanceof Error)) {
-      e = new Error(`${e}`);
-    }
-    error.value = e as Error;
-  }
+function changeRenderer(e: Event) {
+  renderer.value = (e.target as HTMLInputElement).value as unknown as any;
 }
 </script>
