@@ -1,6 +1,6 @@
 import { decodeHTMLStrict } from "entities";
 
-import { intersperse } from "./utils";
+import { intersperseWithFactory } from "./utils";
 
 type VChildren<VNode> = (string | VNode)[];
 
@@ -45,6 +45,6 @@ export function joinLines<VNode extends string>(
   h: (_1, _2?, _3?) => VNode | string,
 ) {
   // TODO: 也许可以基于前后相连的字符种类决定是使用空格还是空字符串拼接两行
-  lines = intersperse(lines, breaks ? [h("br")] : [" "]);
+  lines = intersperseWithFactory(lines, () => breaks ? [h("br")] : [" "]);
   return joinInlines(lines.flat(), false);
 }
