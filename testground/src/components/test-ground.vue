@@ -7,9 +7,7 @@ import { NAlert, NCard, NInput, NTag } from "naive-ui";
   <span style="display: inline-block; width: 4vw"></span>
   <n-tag :bordered="false" type="info"> 解析时间：{{ parsingTimeMs }}ms </n-tag>
   <span style="display: inline-block; width: 4vw"></span>
-  <n-tag :bordered="false" type="info">
-    渲染时间：{{ renderingTimeMs }}ms
-  </n-tag>
+  <n-tag :bordered="false" type="info"> 渲染时间：？ </n-tag>
 
   <div style="height: 2vh"></div>
 
@@ -112,11 +110,6 @@ function renderMarkup() {
       patch!(lastNode, currentNode);
     }
     lastNode = currentNode;
-
-    const renderingStart = performance.now();
-    requestAnimationFrame(() => {
-      renderingTimeMs.value = performance.now() - renderingStart;
-    });
   } catch (e) {
     if (!(e instanceof Error)) {
       e = new Error(`${e}`);
