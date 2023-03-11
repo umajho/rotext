@@ -147,7 +147,7 @@ Inline
 
 Reference
   = ">>" id:$ReferenceID
-    { return h("span", { style: { color: "green" } }, ">>" + id); }
+    { return h("span", { class: { "post-reference": true } }, ">>" + id); }
 ReferenceID
   = [a-z]i+ "." (([a-z]i+ ("/" [a-z]i+)?) ([0-9]+)? / [0-9]+)
   / [0-9]+
@@ -184,7 +184,7 @@ Strikethrough
 
 Emphasis
   = "[." inlines:(!".]" @Inline)* ".]"
-    { return h("span.emphasis-marks", { }, joinInlines(inlines)); }
+    { return h("span", { class: { "emphasis-marks": true } }, joinInlines(inlines)); }
 
 Ruby
   = "[" base:(!"(" @Inline)* lp:[(（] rt:(!([)）] "]") @Inline)* rp:[)）] "]"

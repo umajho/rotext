@@ -9,12 +9,14 @@ import RendererVue from "./renderer-vue.vue";
   <div style="height: 4vh"></div>
 
   <n-card class="container">
-    <renderer-vue
-      :markup="markup"
-      @error="(e) => emit('error', e as Error)"
-      @update-character-count="(c) => emit('updateCharacterCount', c)"
-      @update-parsing-time="(tMs) => emit('updateParsingTime', tMs)"
-    ></renderer-vue>
+    <div class="previewer">
+      <renderer-vue
+        :markup="markup"
+        @error="(e) => emit('error', e as Error)"
+        @update-character-count="(c) => emit('updateCharacterCount', c)"
+        @update-parsing-time="(tMs) => emit('updateParsingTime', tMs)"
+      ></renderer-vue>
+    </div>
   </n-card>
 </template>
 

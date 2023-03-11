@@ -5,7 +5,7 @@ import EditorVue from "./editor-vue.vue";
 </script>
 
 <template>
-  <n-space style="background-color: white">
+  <n-space>
     <n-radio :checked="renderer === 'vue'" value="vue" @change="changeRenderer"
       >Vue</n-radio
     >
