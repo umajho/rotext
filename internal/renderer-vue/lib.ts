@@ -1,5 +1,5 @@
 import { Fragment, h, type VNode } from "vue";
-import * as core from "rotext-renderer-core";
+import * as core from "@rotext-lite/renderer-core";
 
 export function parse(markup: string, opts?: core.ParseOptions): VNode {
   const v = { h, fragment: (nodes: VNode[]) => h(Fragment, {}, nodes) };

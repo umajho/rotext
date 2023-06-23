@@ -1,9 +1,8 @@
 {
-  "name": "rotext-renderer-core",
+  "name": "@rotext-lite/renderer-snabbdom",
   "version": "0.0.1",
   "description": "",
-  "main": "./dist/lib.js",
-  "types": "./dist/lib.d.ts",
+  "main": "lib.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -11,14 +10,14 @@
   "author": "Umaĵo",
   "license": "MIT",
   "type": "module",
+  "dependencies": {
+    "@rotext-lite/renderer-core": "workspace:^0.0.1",
+    "snabbdom": "^3.5.1"
+  },
   "devDependencies": {
     "@rollup/plugin-typescript": "^11.0.0",
-    "peggy": "^3.0.1",
     "rollup": "^3.19.1",
     "tslib": "^2.5.0",
     "typescript": "^4.9.5"
-  },
-  "dependencies": {
-    "entities": "^4.4.0"
   }
 }

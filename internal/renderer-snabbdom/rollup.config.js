@@ -7,5 +7,5 @@ export default {
     format: "esm",
   },
   plugins: [typescript()],
-  external: ["snabbdom", "rotext-renderer-core"],
+  external: ["snabbdom", "@rotext-lite/renderer-core"],
 };

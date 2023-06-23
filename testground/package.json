@@ -1,5 +1,5 @@
 {
-  "name": "rotext-testground",
+  "name": "@rotext-lite/testground",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,8 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "rotext-renderer-snabbdom": "workspace:^0.0.1",
-    "rotext-renderer-vue": "workspace:^0.0.1",
+    "@rotext-lite/renderer-snabbdom": "workspace:^0.0.1",
+    "@rotext-lite/renderer-vue": "workspace:^0.0.1",
     "snabbdom": "^3.5.1",
     "vue": "^3.2.45"
   },
