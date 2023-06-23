@@ -1,3 +1,5 @@
+set fallback
+
 pre-build:
   just -f ../../justfile core build
 
