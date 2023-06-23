@@ -1,5 +1,5 @@
 <script lang="ts">
-import { parse } from "rotext-renderer-vue";
+import { parse } from "@rotext-lite/renderer-vue";
 
 export default {
   props: ["markup"],

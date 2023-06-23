@@ -3,12 +3,7 @@ import { NCard, NInput } from "naive-ui";
 </script>
 
 <template>
-  <n-input
-    class="input"
-    v-model:value="markup"
-    type="textarea"
-    @input="renderMarkup()"
-  ></n-input>
+  <n-input class="input" v-model:value="markup" type="textarea" @input="renderMarkup()"></n-input>
 
   <div style="height: 4vh"></div>
 
@@ -26,6 +21,7 @@ import { NCard, NInput } from "naive-ui";
   overflow: scroll;
   text-align: left;
 }
+
 .container {
   width: 75vw;
   height: calc(40vh);
@@ -49,7 +45,7 @@ import {
   type VNode,
 } from "snabbdom";
 
-import { parse } from "rotext-renderer-snabbdom";
+import { parse } from "@rotext-lite/renderer-snabbdom";
 
 const emit = defineEmits<{
   (event: "updateCharacterCount", count: number): void;
