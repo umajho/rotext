@@ -1,3 +1,5 @@
+set fallback
+
 compile-peg:
   pnpm exec peggy --format=es internal/rotext.pegjs
 
