@@ -125,7 +125,7 @@
   span.emphasis-marks {
     // 点的大小并不理想，未来计划引入「赫蹏」解决
     text-emphasis: dot;
-    text-emphasis-position: under;
+    text-emphasis-position: under left;
   }
 
   span.command {
