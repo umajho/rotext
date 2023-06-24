@@ -1,7 +1,0 @@
-set fallback
-
-pre-build:
-  just -f ../../justfile core build
-
-build: pre-build
-  pnpm exec rollup -c
