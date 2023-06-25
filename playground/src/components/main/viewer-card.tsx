@@ -6,66 +6,15 @@ import {
   createMemo,
   createSignal,
   onMount,
-  Setter,
   Show,
   untrack,
 } from "solid-js";
 
-import { Alert, Badge, BadgeBar, Card, Tab, Tabs } from "./ui";
-import { CodeMirrorEditor } from "./code-mirror-editor";
-
-import { EditorView } from "codemirror";
+import { Alert, Badge, BadgeBar, Card, Tab, Tabs } from "../ui";
 
 import { classModule, init, styleModule, type VNode } from "snabbdom";
 
 import { parse } from "@rotext-lite/renderer-snabbdom";
-
-import rotextExample from "../example.rotext?raw";
-
-export const Main: Component = () => {
-  const [text, setText] = createSignal(rotextExample);
-
-  return (
-    <main>
-      <div
-        class={`
-        flex justify-center flex-col lg:flex-row
-        items-center lg:items-stretch gap-8
-      `}
-      >
-        <EditorCard text={text()} setText={setText} />
-        <ViewerCard code={text()} />
-      </div>
-    </main>
-  );
-};
-
-const segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
-const textEncoder = new TextEncoder();
-
-export const EditorCard: Component<
-  { text: string; setText: Setter<string> }
-> = (props) => {
-  const charCount = () => [...segmenter.segment(props.text)].length;
-  const byteCount = () => textEncoder.encode(props.text).length;
-  const lineCount = () => props.text.split("\n").length;
-
-  return (
-    <Card class="w-full max-w-[48rem] lg:w-[36rem] lg:max-h-[80vh]">
-      <BadgeBar class="pb-2">
-        <Badge>字数：{charCount()}</Badge>
-        <Badge>字节数：{byteCount()}</Badge>
-        <Badge>行数：{lineCount()}</Badge>
-      </BadgeBar>
-      <CodeMirrorEditor
-        doc={props.text}
-        setDoc={props.setText}
-        class="max-h-[25vh] lg:max-h-none lg:h-full lg:min-h-[20rem] resize-none overflow-y-scroll"
-        extensions={[EditorView.lineWrapping]}
-      />
-    </Card>
-  );
-};
 
 export const ViewerCard: Component<{ code: string }> = (props) => {
   let outputEl: HTMLDivElement;
