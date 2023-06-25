@@ -45,12 +45,14 @@ export const EditorCard: Component<
 > = (props) => {
   const charCount = () => [...segmenter.segment(props.text)].length;
   const byteCount = () => textEncoder.encode(props.text).length;
+  const lineCount = () => props.text.split("\n").length;
 
   return (
     <Card class="w-full max-w-[48rem] lg:w-[36rem] lg:max-h-[80vh]">
       <BadgeBar class="pb-2">
         <Badge>字数：{charCount()}</Badge>
         <Badge>字节数：{byteCount()}</Badge>
+        <Badge>行数：{lineCount()}</Badge>
       </BadgeBar>
       <textarea
         class=" h-full min-h-[25vh] lg:min-h-[20rem] resize-none"
