@@ -67,7 +67,7 @@ export const ViewerCard: Component<{ code: string }> = (props) => {
   let patch: ReturnType<typeof init>;
   let lastNode: HTMLElement | VNode;
 
-  const [parsingTime, setParsingTime] = createSignal<number>(null);
+  const [parsingTimeText, setParsingTimeText] = createSignal<string>(null);
   const [errParse, setErrParse] = createSignal<unknown>(null);
   const errParseInfo = createMemo(() => {
     const errParseValue = errParse();
@@ -92,7 +92,9 @@ export const ViewerCard: Component<{ code: string }> = (props) => {
 
       const parsingStart = performance.now();
       const vNode = parse(props.code, { breaks: true });
-      setParsingTime(performance.now() - parsingStart);
+      setParsingTimeText(
+        `${+(performance.now() - parsingStart).toFixed(3)}ms`,
+      );
 
       patch(lastNode, vNode);
       lastNode = vNode;
@@ -116,7 +118,9 @@ export const ViewerCard: Component<{ code: string }> = (props) => {
           <Tab isActive={true}>预览</Tab>
         </Tabs>
         <BadgeBar>
-          <Badge>解析时间：{parsingTime()}ms</Badge>
+          <Show when={parsingTimeText()}>
+            <Badge>解析时间：{parsingTimeText()}</Badge>
+          </Show>
         </BadgeBar>
       </div>
       <div class="h-full max-h-[25vh] lg:max-h-none break-all prose previewer overflow-y-auto">
