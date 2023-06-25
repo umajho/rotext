@@ -12,6 +12,9 @@ import {
 } from "solid-js";
 
 import { Alert, Badge, BadgeBar, Card, Tab, Tabs } from "./ui";
+import { CodeMirrorEditor } from "./code-mirror-editor";
+
+import { EditorView } from "codemirror";
 
 import { classModule, init, styleModule, type VNode } from "snabbdom";
 
@@ -54,11 +57,11 @@ export const EditorCard: Component<
         <Badge>字节数：{byteCount()}</Badge>
         <Badge>行数：{lineCount()}</Badge>
       </BadgeBar>
-      <textarea
-        class=" h-full min-h-[25vh] lg:min-h-[20rem] resize-none"
-        placeholder="于此处输入…"
-        value={props.text}
-        onInput={(ev) => props.setText(ev.target.value)}
+      <CodeMirrorEditor
+        doc={props.text}
+        setDoc={props.setText}
+        class="max-h-[25vh] lg:max-h-none lg:h-full lg:min-h-[20rem] resize-none overflow-y-scroll"
+        extensions={[EditorView.lineWrapping]}
       />
     </Card>
   );

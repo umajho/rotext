@@ -22,7 +22,10 @@
     "vite-plugin-solid": "^2.7.0"
   },
   "dependencies": {
+    "@codemirror/state": "^6.2.1",
+    "@codemirror/theme-one-dark": "^6.1.2",
     "@rotext-lite/renderer-snabbdom": "workspace:^0.0.1",
+    "codemirror": "^6.0.1",
     "snabbdom": "^3.5.1",
     "solid-icons": "^1.0.8",
     "solid-js": "^1.7.6"
