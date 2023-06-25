@@ -152,9 +152,42 @@ Escape
 Reference
   = ">>" id:$ReferenceID
     { return h("span", { class: { "post-reference": true } }, ">>" + id); }
+/**
+  引用 ID 的组成：
+  - 「全局前缀」：
+    表示这个 ID 在站内任何地方都会指向相同的内容。
+    数字帖号必须带有此前缀（以防止与楼层号混淆），其他全局 ID 可选，非全局 ID 不可使用。
+  - 数字帖号之外的情况下，全局前缀之后的内容由三部分组成：
+    - 串号：
+      不可以省略，但可以简写为 “~”。必定构成全局 ID。
+    - 楼层号：
+      可以省略，不能与子级串部分同时出现。
+      不省略时，若含串号，构成全局 ID；否则构成局部 ID（只在同一个串内指向相同内容）。
+    - 子级串部分：
+      可以省略，由两部分组成：
+      - 子级串的串号：不可以省略。
+      - 子串的楼层号：可以省略。
+*/
 ReferenceID
-  = [a-z]i+ "." (([a-z]i+ ("/" [a-z]i+)?) ([0-9]+)? / [0-9]+)
-  / [0-9]+
+  = ReferenceIDGlobalPrefix (
+    [0-9]+ // 数字帖号，用于全局引用串或帖子
+    / ReferenceIDOfGlobal
+  )
+  / ReferenceIDForFloor // 用于同串内引用帖子
+  / ReferenceIDForSub // 用于同主串内引用子串或子串中的帖子
+  / ReferenceIDOfGlobal
+ReferenceIDGlobalPrefix = [A-Z]+ "."
+ReferenceIDOfGlobal
+  = ReferenceIDForThreadFloor // 用于全局引用帖子
+  / ReferenceIDForThread ReferenceIDForSub? // 用于全局引用串，或子串，或子串中的帖子
+// 串号
+ReferenceIDForThread = [a-z]+ / "~"
+// 不含串号的楼层号
+ReferenceIDForFloor = "#" [0-9]+
+// 含串号的楼层号（楼层帖号）
+ReferenceIDForThreadFloor = ReferenceIDForThread ReferenceIDForFloor
+// 子串的含串号的楼层号（楼层帖号），或者子串的串号
+ReferenceIDForSub = "/" (ReferenceIDForThreadFloor / ReferenceIDForThread)
 
 Code
   = "``" inlines:(!"``" @[^\r\n])* "``"
