@@ -6,7 +6,7 @@ export const NavBar: Component = () => {
       <div class="flex-1">
         <a class="btn btn-ghost normal-case text-xl">
           <span>
-            Rotext<sup>lite</sup> Testground
+            Rotext<sup>lite</sup> Playground
           </span>
         </a>
       </div>

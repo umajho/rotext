@@ -52,7 +52,7 @@ importers:
         specifier: ^4.9.5
         version: 4.9.5
 
-  testground-solid:
+  playground:
     dependencies:
       '@rotext-lite/renderer-snabbdom':
         specifier: workspace:^0.0.1
