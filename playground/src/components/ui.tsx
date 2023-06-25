@@ -80,3 +80,7 @@ export const Alert: Component<
     </div>
   );
 };
+
+export const Loading: Component = () => {
+  return <span class="loading loading-spinner loading-lg"></span>;
+};

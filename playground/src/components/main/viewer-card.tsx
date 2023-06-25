@@ -1,61 +1,18 @@
-import "./previewer.scss";
+import { Component, createSignal, lazy, Show, Suspense } from "solid-js";
 
-import {
-  Component,
-  createEffect,
-  createMemo,
-  createSignal,
-  onMount,
-  Show,
-  untrack,
-} from "solid-js";
+import { Alert, Badge, BadgeBar, Card, Loading, Tab, Tabs } from "../ui";
 
-import { Alert, Badge, BadgeBar, Card, Tab, Tabs } from "../ui";
-
-import { classModule, init, styleModule, type VNode } from "snabbdom";
-
-import { parse } from "@rotext-lite/renderer-snabbdom";
+const Preview = lazy(() => import("./preview"));
 
 export const ViewerCard: Component<{ code: string }> = (props) => {
-  let outputEl: HTMLDivElement;
-  let patch: ReturnType<typeof init>;
-  let lastNode: HTMLElement | VNode;
+  const previewSizeClass = "h-full max-h-[25vh] lg:max-h-none";
 
   const [parsingTimeText, setParsingTimeText] = createSignal<string>(null);
-  const [errParse, setErrParse] = createSignal<unknown>(null);
-  const errParseInfo = createMemo(() => {
-    const errParseValue = errParse();
-    if (errParseValue === null) return null;
-    return extractInfoFromThrown(errParseValue, "解析期间");
-  });
+  const [errParseInfo, setErrParseInfo] = createSignal<ErrorInfo>(null);
 
-  onMount(() => {
-    patch = init(
-      [classModule, styleModule],
-      undefined,
-      { experimental: { fragments: true } },
-    );
-    lastNode = outputEl;
-  });
-
-  createEffect(() => {
-    try {
-      if (untrack(() => errParse()) !== null) {
-        setErrParse(null);
-      }
-
-      const parsingStart = performance.now();
-      const vNode = parse(props.code, { breaks: true });
-      setParsingTimeText(
-        `${+(performance.now() - parsingStart).toFixed(3)}ms`,
-      );
-
-      patch(lastNode, vNode);
-      lastNode = vNode;
-    } catch (e) {
-      setErrParse(e);
-    }
-  });
+  const handleThrowInParsing = (thrown: unknown) => {
+    setErrParseInfo(extractInfoFromThrown(thrown, "解析期间"));
+  };
 
   return (
     <Card class="w-full max-w-[48rem] lg:w-[36rem] lg:max-h-[80vh]">
@@ -77,18 +34,31 @@ export const ViewerCard: Component<{ code: string }> = (props) => {
           </Show>
         </BadgeBar>
       </div>
-      <div class="h-full max-h-[25vh] lg:max-h-none break-all prose previewer overflow-y-auto">
-        <div ref={outputEl} />
-      </div>
+      <Suspense
+        fallback={
+          <div class={`flex justify-center items-center ${previewSizeClass}`}>
+            <Loading />
+          </div>
+        }
+      >
+        <Preview
+          code={props.code}
+          class={previewSizeClass}
+          setParsingTimeText={setParsingTimeText}
+          onThrowInParsing={handleThrowInParsing}
+        />
+      </Suspense>
     </Card>
   );
 };
 
-function extractInfoFromThrown(thrown: unknown, when: string): {
+interface ErrorInfo {
   title: string;
   message: string;
   details?: string;
-} {
+}
+
+function extractInfoFromThrown(thrown: unknown, when: string): ErrorInfo {
   if (thrown instanceof Error) {
     return {
       title: when + "发生了错误",
