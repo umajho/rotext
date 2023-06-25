@@ -135,7 +135,8 @@ Line
     { return joinInlines(inlines); }
 
 Inline
-  = Reference
+  = Escape
+  / Reference
   / Code
   / Bold
   / Italic
@@ -144,6 +145,9 @@ Inline
   / Emphasis
   / Ruby
   / [^\r\n]
+
+Escape
+  = "\\" @.
 
 Reference
   = ">>" id:$ReferenceID
