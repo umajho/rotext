@@ -1,2 +1,2 @@
 core *args:
-  just -f packages/renderer-core/justfile {{args}}
+  just -f internal/renderer-core/justfile {{args}}
