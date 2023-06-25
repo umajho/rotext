@@ -1,9 +1,8 @@
-import { Component, Setter } from "solid-js";
+import { Component, lazy, Setter, Suspense } from "solid-js";
 
-import { Badge, BadgeBar, Card } from "../ui";
-import { CodeMirrorEditor } from "../code-mirror-editor";
+import { Badge, BadgeBar, Card, Loading } from "../ui";
 
-import { EditorView } from "codemirror";
+const Editor = lazy(() => import("./editor"));
 
 const segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
 const textEncoder = new TextEncoder();
@@ -11,6 +10,9 @@ const textEncoder = new TextEncoder();
 export const EditorCard: Component<
   { text: string; setText: Setter<string> }
 > = (props) => {
+  const editorSizeClass =
+    "max-h-[25vh] lg:max-h-none lg:h-full lg:min-h-[20rem]";
+
   const charCount = () => [...segmenter.segment(props.text)].length;
   const byteCount = () => textEncoder.encode(props.text).length;
   const lineCount = () => props.text.split("\n").length;
@@ -22,12 +24,19 @@ export const EditorCard: Component<
         <Badge>字节数：{byteCount()}</Badge>
         <Badge>行数：{lineCount()}</Badge>
       </BadgeBar>
-      <CodeMirrorEditor
-        doc={props.text}
-        setDoc={props.setText}
-        class="max-h-[25vh] lg:max-h-none lg:h-full lg:min-h-[20rem] resize-none overflow-y-scroll"
-        extensions={[EditorView.lineWrapping]}
-      />
+      <Suspense
+        fallback={
+          <div class={`flex justify-center items-center ${editorSizeClass}`}>
+            <Loading />
+          </div>
+        }
+      >
+        <Editor
+          text={props.text}
+          setText={props.setText}
+          class={`${editorSizeClass} overflow-y-scroll`}
+        />
+      </Suspense>
     </Card>
   );
 };
