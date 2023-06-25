@@ -157,9 +157,9 @@ ReferenceID
   / [0-9]+
 
 Code
-  = "``" inlines:(!"``" @Inline)* "``"
+  = "``" inlines:(!"``" @[^\r\n])* "``"
     { return h("code", {}, joinInlines(inlines)); }
-  / "[`" inlines:(!"`]" @Inline)* "`]"
+  / "[`" inlines:(!"`]" @[^\r\n])* "`]"
     { return h("code", {}, joinInlines(inlines)); }
 
 Bold
