@@ -1,0 +1,7 @@
+set fallback
+
+prepare:
+	just core build
+
+build: prepare
+	pnpm run build
