@@ -17,7 +17,7 @@ Document
 
 Block
   = ThematicBreak
-  // / Heading
+  / Heading
   // / Blockquote
   // / List
   // / Table
@@ -34,20 +34,43 @@ ThematicBreak
   = "-"|3..| _
     { return create.THEMATIC_BREAK(); }
 
-// Heading
-//   = level:$"="|1..6|
-//   	line:Line
-//     &{
-//       const last = line[line.length - 1];
-//       if (typeof last !== "string") return false;
-//       return last.trimEnd().endsWith("=".repeat(level.length));
-//     }
-//     {
-//       const last = line[line.length - 1].trimEnd();
-//       line = [...line];
-//       line[line.length - 1] = last.slice(0, last.length - level.length);
-//       return h(`h${level.length}`, {}, line);
-//     }
+Heading
+  = level:$"="|1..6| spaces:$_
+    line:Line
+    &{ // 末尾至少需要有一个对应的标记符号
+      let last = line[line.length - 1];
+      if (typeof last !== "string") return false;
+      last = last.trimEnd();
+      return last[last.length-1] === "=";
+    }
+    {
+      let last = line[line.length - 1].trimEnd();
+
+      // 根据右侧对应标记符号的数量确定真实的级别
+      let realLevels = 1;
+      for (let i = last.length - 1 - 1; i >= 0 && realLevels < level.length; i--) {
+        if (last[i] === "=") {
+          realLevels++;
+        } else {
+          break;
+        }
+      }
+
+      line = [...line];
+
+      if (realLevels < level.length) { // 返还左侧多余的标记符号
+        const surplus = level.slice(realLevels) + spaces;
+        if (typeof line[0] === "string") {
+          line[0] = surplus + line[0];
+        } else {
+          line.splice(0, 0, surplus);
+        }
+      }
+
+      last = line[line.length - 1];
+      line[line.length - 1] = last.slice(0, last.length - realLevels).trimEnd();
+      return create.H(realLevels, line);
+    }
 
 // Blockquote
 //   = first:BlockquoteLine rest:(br @BlockquoteLine)*
