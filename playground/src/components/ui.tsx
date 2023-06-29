@@ -1,4 +1,4 @@
-import { children, Component, JSX, Show } from "solid-js";
+import { Component, JSX, Show } from "solid-js";
 import { HiOutlineXCircle } from "solid-icons/hi";
 
 export const Card: Component<{ children: JSX.Element; class?: string }> = (
