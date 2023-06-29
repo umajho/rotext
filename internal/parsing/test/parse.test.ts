@@ -34,8 +34,7 @@ function assertOk(
 function theseCasesAreOk(cases: Case[], opts?: ParseOptions) {
   for (const [i, theCase] of cases.entries()) {
     it(`case ${i + 1}: \`${theCase.input}\` ok`, () => {
-      expect(parse(theCase.input, opts))
-        .toStrictEqual(create.ROOT(theCase.expected));
+      assertOk(theCase.input, theCase.expected, opts);
     });
   }
 }
@@ -103,6 +102,46 @@ describe("解析", () => {
       describe("能正确解析", () => {
         theseCasesAreOk([
           { input: "---", expected: [create.THEMATIC_BREAK()] },
+        ]);
+      });
+    });
+    describe("标题（Heading）", () => {
+      describe("能正确解析", () => {
+        const boringCases: Case[] = [];
+        for (let n = 1; n <= 6; n++) {
+          const signs = "=".repeat(n);
+          boringCases.push({
+            input: `${signs} foo ${signs}`,
+            expected: [create.H(n as any, [create.text("foo")])],
+          });
+        }
+
+        theseCasesAreOk([
+          ...boringCases,
+          {
+            input: "foo\n= bar =\nbaz",
+            expected: [
+              create.P([create.text("foo")]),
+              create.H(1, [create.text("bar")]),
+              create.P([create.text("baz")]),
+            ],
+          },
+        ]);
+      });
+      describe("多余的标记符号会留下来", () => {
+        theseCasesAreOk([
+          {
+            input: "== foo =",
+            expected: [create.H(1, [create.text("= foo")])],
+          },
+          {
+            input: "= foo ==",
+            expected: [create.H(1, [create.text("foo =")])],
+          },
+          {
+            input: "======= foo =======",
+            expected: [create.H(6, [create.text("= foo =")])],
+          },
         ]);
       });
     });
