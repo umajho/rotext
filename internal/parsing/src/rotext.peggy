@@ -1,5 +1,5 @@
 {{
-  import * as nodes from "@rotext/nodes";
+  import { create } from "@rotext/nodes";
   import { joinInlines, joinLines } from "./line.ts"
   // import { buildList } from "./list.ts";
 }}
@@ -11,9 +11,9 @@
 
 Document
   = __ blocks:(@Block (br __ / !.))+
-    { return nodes.root(blocks); }
+    { return create.ROOT(blocks); }
   / __
-    { return nodes.root([]); }
+    { return create.ROOT([]); }
 
 Block
   = ThematicBreak
@@ -28,11 +28,11 @@ BlockLineBegin
 
 Paragraph
   = first:Line rest:(br !BlockLineBegin @Line)*
-    { return nodes.blockParagraph(joinLines([first, ...rest], breaks)) }
+    { return create.P(joinLines([first, ...rest], breaks)) }
 
 ThematicBreak
   = "-"|3..| _
-    { return nodes.blockThematicBreak(); }
+    { return create.THEMATIC_BREAK(); }
 
 // Heading
 //   = level:$"="|1..6|
