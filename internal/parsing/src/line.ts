@@ -1,7 +1,6 @@
 import { decodeHTMLStrict } from "entities";
 
-import * as nodes from "@rotext/nodes";
-import type { InlineSlot } from "@rotext/nodes";
+import { create, type InlineSlot } from "@rotext/nodes";
 
 import { intersperseWithFactory } from "./utils";
 
@@ -47,7 +46,7 @@ export function joinLines(
   // TODO: 也许可以基于前后相连的字符种类决定是使用空格还是空字符串拼接两行
   lines = intersperseWithFactory(
     lines,
-    () => breaks ? [nodes.inlineBreak()] : [nodes.text(" ")],
+    () => breaks ? [create.br()] : [create.text(" ")],
   );
   return joinInlines(lines.flat(), false);
 }
