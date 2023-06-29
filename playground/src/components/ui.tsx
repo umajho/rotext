@@ -1,4 +1,4 @@
-import { Component, JSX, Show } from "solid-js";
+import { Component, JSX, onMount, Show } from "solid-js";
 import { HiOutlineXCircle } from "solid-icons/hi";
 
 export const Card: Component<{ children: JSX.Element; class?: string }> = (
@@ -83,4 +83,62 @@ export const Alert: Component<
 
 export const Loading: Component = () => {
   return <span class="loading loading-spinner loading-lg"></span>;
+};
+
+export const Dropdown: Component<
+  {
+    summary: JSX.Element;
+    children: JSX.Element;
+    buttonClass?: string;
+    contentClass?: string;
+  }
+> = (props) => {
+  let labelEl: HTMLLabelElement;
+  let ulEl: HTMLUListElement;
+
+  onMount(() => {
+    let isOpen = false;
+    window.addEventListener("click", (ev) => {
+      if (!isOpen) {
+        if (ev.target === labelEl) {
+          isOpen = true;
+        }
+        return;
+      }
+      labelEl.blur();
+      ulEl.blur();
+      isOpen = false;
+    }, { capture: true });
+  });
+
+  return (
+    <div class="dropdown">
+      <label
+        ref={labelEl}
+        tabindex="0"
+        class={`btn ${props.buttonClass ?? ""}`}
+      >
+        {props.summary}
+      </label>
+      <ul
+        ref={ulEl}
+        tabindex="0"
+        class={`dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box ${
+          props.contentClass ?? ""
+        }`}
+      >
+        {props.children}
+      </ul>
+    </div>
+  );
+};
+
+export const DropdownItem: Component<{ children: JSX.Element }> = (props) => {
+  return <li>{props.children}</li>;
+};
+
+export const Radio: Component<{ checked?: boolean }> = (props) => {
+  return (
+    <input type="radio" name="radio-1" class="radio" checked={props.checked} />
+  );
 };
