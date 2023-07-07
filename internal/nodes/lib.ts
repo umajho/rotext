@@ -13,7 +13,7 @@ export type RootElement = { type: "root"; slot: BlockSlot };
 
 export type InlineElement =
   | { type: "br" }
-  | { type: "em" | "em.strong" | "em.mark" | "u" | "s"; slot: InlineSlot }
+  | { type: "em" | "em.strong" | "em.dotted" | "u" | "s"; slot: InlineSlot }
   | { type: "ruby"; slots: { base: InlineSlot; text: InlineSlot } }
   | { type: "code"; slot: RawTextSlot }
   | { type: "ref-link"; slot: RawTextSlot }
@@ -57,8 +57,10 @@ export const create = {
     return { type: "br" };
   },
 
-  /** 使行内元素表达强调。`strong` 代表加粗，`mark` 代表着重号 */
-  em(subType: null | "strong" | "mark", slot: InlineSlot): InlineElement {
+  /**
+   * 使行内元素表达强调。
+   * `strong` 代表加粗；`mark` 代表着重号；默认是正常的 `em`，一般体现为斜体 */
+  em(subType: null | "strong" | "dotted", slot: InlineSlot): InlineElement {
     if (subType) {
       return { type: `em.${subType}`, slot };
     }

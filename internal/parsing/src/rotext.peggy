@@ -68,7 +68,13 @@ Heading
       }
 
       last = line[line.length - 1];
-      line[line.length - 1] = last.slice(0, last.length - realLevels).trimEnd();
+      last = last.slice(0, last.length - realLevels).trimEnd()
+      if (last === "") {
+        line.pop()
+      } else {
+        line[line.length - 1] = last;
+      }
+
       return create.H(realLevels, line);
     }
 
@@ -148,12 +154,12 @@ Line
 Inline
   = Escape
 //   / Reference
-//   / Code
-//   / Bold
-//   / Italic
-//   / Underline
-//   / Strikethrough
-//   / Emphasis
+  / Code
+  / Bold
+  / Italic
+  / Underline
+  / Strikethrough
+  / Emphasis
 //   / Ruby
   / [^\r\n]
 
@@ -200,39 +206,39 @@ Escape
 // // 子串的含串号的楼层号（楼层帖号），或者子串的串号
 // ReferenceIDForSub = "/" (ReferenceIDForThreadFloor / ReferenceIDForThread)
 
-// Code
-//   = "``" inlines:(!"``" @[^\r\n])* "``"
-//     { return h("code", {}, joinInlines(inlines)); }
-//   / "[`" inlines:(!"`]" @[^\r\n])* "`]"
-//     { return h("code", {}, joinInlines(inlines)); }
+Code
+  = "``" text:$(!"``" @[^\r\n])* "``"
+    { return create.code(text); }
+  / "[`" text:$(!"`]" @[^\r\n])* "`]"
+    { return create.code(text); }
 
-// Bold
-//   = "''" inlines:(!"''" @Inline)* "''"
-//     { return h("b", {}, joinInlines(inlines)); }
-//   / "['" inlines:(!"']" @Inline)* "']"
-//     { return h("b", {}, joinInlines(inlines)); }
+Bold
+  = "''" inlines:(!"''" @Inline)* "''"
+    { return create.em("strong", joinInlines(inlines)); }
+  / "['" inlines:(!"']" @Inline)* "']"
+    { return create.em("strong", joinInlines(inlines)); }
 
-// Italic
-//   = "//" inlines:(!"//" @Inline)* "//"
-//     { return h("i", {}, joinInlines(inlines)); }
-//   / "[/" inlines:(!"/]" @Inline)* "/]"
-//     { return h("i", {}, joinInlines(inlines)); }
+Italic
+  = "//" inlines:(!"//" @Inline)* "//"
+    { return create.em(null, joinInlines(inlines)); }
+  / "[/" inlines:(!"/]" @Inline)* "/]"
+    { return create.em(null, joinInlines(inlines)); }
 
-// Underline
-//   = "__" inlines:(!"__" @Inline)* "__"
-//     { return h("u", {}, joinInlines(inlines)); }
-//   / "[_" inlines:(!"_]" @Inline)* "_]"
-//     { return h("u", {}, joinInlines(inlines)); }
+Underline
+  = "__" inlines:(!"__" @Inline)* "__"
+    { return create.u(joinInlines(inlines)); }
+  / "[_" inlines:(!"_]" @Inline)* "_]"
+    { return create.u(joinInlines(inlines)); }
 
-// Strikethrough
-//   = "~~" inlines:(!"~~" @Inline)* "~~"
-//     { return h("s", {}, joinInlines(inlines)); }
-//   / "[~" inlines:(!"~]" @Inline)* "~]"
-//     { return h("s", {}, joinInlines(inlines)); }
+Strikethrough
+  = "~~" inlines:(!"~~" @Inline)* "~~"
+    { return create.s(joinInlines(inlines)); }
+  / "[~" inlines:(!"~]" @Inline)* "~]"
+    { return create.s(joinInlines(inlines)); }
 
-// Emphasis
-//   = "[." inlines:(!".]" @Inline)* ".]"
-//     { return h("span", { class: { "emphasis-marks": true } }, joinInlines(inlines)); }
+Emphasis
+  = "[." inlines:(!".]" @Inline)* ".]"
+    { return create.em("dotted", joinInlines(inlines)); }
 
 // Ruby
 //   = "[" base:(!"(" @Inline)* lp:[(（] rt:(!([)）] "]") @Inline)* rp:[)）] "]"
