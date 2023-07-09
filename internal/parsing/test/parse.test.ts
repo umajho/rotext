@@ -358,11 +358,26 @@ describe("解析", () => {
   });
   describe("块级元素", () => {
     describe("段落", () => {
-      it("两次换行开启新的段落", () => {
-        assertOk("foo\n\nbar", [
-          create.P([create.text("foo")]),
-          create.P([create.text("bar")]),
+      describe("两次换行开启新的段落", () => {
+        theseCasesAreOk([
+          {
+            input: "foo\n\nbar",
+            expected: [
+              create.P([create.text("foo")]),
+              create.P([create.text("bar")]),
+            ],
+          },
         ]);
+      });
+      describe("非段落间的空行不会产生空段落", () => {
+        theseCasesAreOk(["\n", "\n\n", "\n\n\n", "\n\n\n\n"].flatMap((brs) => [
+          { input: `${brs}---`, expected: [create.THEMATIC_BREAK()] },
+          { input: `---${brs}`, expected: [create.THEMATIC_BREAK()] },
+          {
+            input: `---${brs}---`,
+            expected: [create.THEMATIC_BREAK(), create.THEMATIC_BREAK()],
+          },
+        ]));
       });
     });
     describe("Thematic Break", () => {
