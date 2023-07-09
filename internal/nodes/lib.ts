@@ -55,10 +55,13 @@ export const create = {
     return { type: "root", slot };
   },
 
-  /** 纯粹的文本（节点） */
-  text(text: string): TextNode {
-    return text;
-  },
+  /**
+   * ~~纯粹的文本（节点）。~~
+   * 直接使用 string。
+   */
+  // text(text: string): TextNode {
+  //   return text;
+  // },
 
   /** 行内元素间的换行 */
   br(): InlineElement {

@@ -46,7 +46,7 @@ export function joinLines(
   // TODO: 也许可以基于前后相连的字符种类决定是使用空格还是空字符串拼接两行
   lines = intersperseWithFactory(
     lines,
-    () => breaks ? [create.br()] : [create.text(" ")],
+    () => breaks ? [create.br()] : [" "],
   );
   return joinInlines(lines.flat(), false);
 }
