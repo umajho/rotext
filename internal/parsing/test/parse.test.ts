@@ -44,7 +44,7 @@ describe("解析", () => {
     describe("文本", () => {
       describe("一般内容", () => {
         theseCasesAreOk([
-          { input: "foo", expected: [create.P([create.text("foo")])] },
+          { input: "foo", expected: [create.P(["foo"])] },
         ]);
       });
       describe("转义（基础）", () => {
@@ -52,30 +52,15 @@ describe("解析", () => {
 
         describe("于原先的单行块元素开头", () => {
           theseCasesAreOk([
-            {
-              input: String.raw`\---`,
-              expected: [create.P([create.text("---")])],
-            },
+            { input: String.raw`\---`, expected: [create.P(["---"])] },
           ]);
         });
         describe("于行内（基础：对自身的转义及对无特殊意义字符的转义）", () => {
           theseCasesAreOk([
-            {
-              input: String.raw`\\`,
-              expected: [create.P([create.text("\\")])],
-            },
-            {
-              input: String.raw`\a`,
-              expected: [create.P([create.text("a")])],
-            },
-            {
-              input: "\\",
-              expected: [create.P([create.text("\\")])],
-            },
-            {
-              input: "a\\",
-              expected: [create.P([create.text("a\\")])],
-            },
+            { input: String.raw`\\`, expected: [create.P(["\\"])] },
+            { input: String.raw`\a`, expected: [create.P(["a"])] },
+            { input: "\\", expected: [create.P(["\\"])] },
+            { input: "a\\", expected: [create.P(["a\\"])] },
           ]);
         });
       });
@@ -83,14 +68,14 @@ describe("解析", () => {
         it("`breaks` 选项为假时，输入文本中的单次换行只视为空格", () => {
           assertOk(
             "foo\nbar",
-            [create.P([create.text("foo bar")])],
+            [create.P(["foo bar"])],
             { breaks: false },
           );
         });
         it("`breaks` 选项为真时，输入文本中的单次换行视为换行", () => {
           assertOk(
             "foo\nbar",
-            [create.P([create.text("foo"), create.br(), create.text("bar")])],
+            [create.P(["foo", create.br(), "bar"])],
             { breaks: true },
           );
         });
@@ -121,7 +106,7 @@ describe("解析", () => {
               ...["/def", "TP.~/def"],
             ].map((input) => ({
               input: `>>${input}`,
-              expected: [create.P([create.text(`>>${input}`)])],
+              expected: [create.P([`>>${input}`])],
             })),
 
             ...[
@@ -130,7 +115,7 @@ describe("解析", () => {
             ].map(({ parsed, remain }) => ({
               input: `>>${parsed}${remain}`,
               expected: [
-                create.P([create.ref_link(parsed), create.text(`${remain}`)]),
+                create.P([create.ref_link(parsed), remain]),
               ],
             })),
           ],
@@ -162,7 +147,7 @@ describe("解析", () => {
         theseCasesAreOk([
           {
             input: "[`[`foo`]`]",
-            expected: [create.P([create.code("[`foo"), create.text("`]")])],
+            expected: [create.P([create.code("[`foo"), "`]"])],
           },
         ]);
       });
@@ -183,23 +168,23 @@ describe("解析", () => {
         theseCasesAreOk([
           ...["['foo']", "''foo''"].map((input) => ({
             input,
-            expected: [create.P([create.em("strong", [create.text("foo")])])],
+            expected: [create.P([create.em("strong", ["foo"])])],
           })),
           ...["[/foo/]", "//foo//"].map((input) => ({
             input,
-            expected: [create.P([create.em(null, [create.text("foo")])])],
+            expected: [create.P([create.em(null, ["foo"])])],
           })),
           ...["[_foo_]", "__foo__"].map((input) => ({
             input,
-            expected: [create.P([create.u([create.text("foo")])])],
+            expected: [create.P([create.u(["foo"])])],
           })),
           ...["[~foo~]", "~~foo~~"].map((input) => ({
             input,
-            expected: [create.P([create.s([create.text("foo")])])],
+            expected: [create.P([create.s(["foo"])])],
           })),
           ...["[.foo.]"].map((input) => ({
             input,
-            expected: [create.P([create.em("dotted", [create.text("foo")])])],
+            expected: [create.P([create.em("dotted", ["foo"])])],
           })),
         ]);
       });
@@ -222,36 +207,27 @@ describe("解析", () => {
       });
       describe("只含部分标记时视为一般文本", () => {
         theseCasesAreOk([
-          { input: "[]", expected: [create.P([create.text("[]")])] },
-          { input: "[foo]", expected: [create.P([create.text("[foo]")])] },
-          { input: "['foo", expected: [create.P([create.text("['foo")])] },
+          { input: "[]", expected: [create.P(["[]"])] },
+          { input: "[foo]", expected: [create.P(["[foo]"])] },
+          { input: "['foo", expected: [create.P(["['foo"])] },
         ]);
       });
       describe("转义", () => {
         theseCasesAreOk([
           ...["\\['foo']", "[\\'foo']", "['foo\\']", "['foo'\\]"].map(
-            (input) => ({
-              input,
-              expected: [create.P([create.text("['foo']")])],
-            }),
+            (input) => ({ input, expected: [create.P(["['foo']"])] }),
           ),
           {
             input: String.raw`['\foo']`,
-            expected: [
-              create.P([create.em("strong", [create.text("foo")])]),
-            ],
+            expected: [create.P([create.em("strong", ["foo"])])],
           },
           {
             input: String.raw`['\['foo']`,
-            expected: [
-              create.P([create.em("strong", [create.text("['foo")])]),
-            ],
+            expected: [create.P([create.em("strong", ["['foo"])])],
           },
           {
             input: String.raw`['foo\']']`,
-            expected: [
-              create.P([create.em("strong", [create.text("foo']")])]),
-            ],
+            expected: [create.P([create.em("strong", ["foo']"])])],
           },
         ]);
       });
@@ -262,29 +238,15 @@ describe("解析", () => {
           {
             input: "[foo(bar)]",
             expected: [
-              create.P([
-                create.ruby(
-                  [create.text("foo")],
-                  ["(", ")"],
-                  [create.text("bar")],
-                ),
-              ]),
+              create.P([create.ruby(["foo"], ["(", ")"], ["bar"])]),
             ],
           },
           {
             input: "[测(•)][试(•)]",
             expected: [
               create.P([
-                create.ruby(
-                  [create.text("测")],
-                  ["(", ")"],
-                  [create.text("•")],
-                ),
-                create.ruby(
-                  [create.text("试")],
-                  ["(", ")"],
-                  [create.text("•")],
-                ),
+                create.ruby(["测"], ["(", ")"], ["•"]),
+                create.ruby(["试"], ["(", ")"], ["•"]),
               ]),
             ],
           },
@@ -296,11 +258,7 @@ describe("解析", () => {
             input: "[测试（test）]",
             expected: [
               create.P([
-                create.ruby(
-                  [create.text("测试")],
-                  ["（", "）"],
-                  [create.text("test")],
-                ),
+                create.ruby(["测试"], ["（", "）"], ["test"]),
               ]),
             ],
           },
@@ -309,26 +267,18 @@ describe("解析", () => {
       describe("base 和 text 部分都支持行内元素", () => {
         theseCasesAreOk([
           {
-            input: "[['foo'](bar)]",
+            input: "[[`foo`](bar)]",
             expected: [
               create.P([
-                create.ruby(
-                  [create.em("strong", ["foo"])],
-                  ["(", ")"],
-                  [create.text("bar")],
-                ),
+                create.ruby([create.code("foo")], ["(", ")"], ["bar"]),
               ]),
             ],
           },
           {
-            input: "[foo(['bar'])]",
+            input: "[foo([`bar`])]",
             expected: [
               create.P([
-                create.ruby(
-                  [create.text("foo")],
-                  ["(", ")"],
-                  [create.em("strong", ["bar"])],
-                ),
+                create.ruby(["foo"], ["(", ")"], [create.code("bar")]),
               ]),
             ],
           },
@@ -337,17 +287,9 @@ describe("解析", () => {
             expected: [
               create.P([
                 create.ruby(
-                  [create.text("1 "), create.code("2"), create.text(" 3")],
+                  ["1 ", create.code("2"), " 3"],
                   ["(", ")"],
-                  [
-                    create.text("4 "),
-                    create.ruby(
-                      [create.text("5")],
-                      ["(", ")"],
-                      [create.text("6")],
-                    ),
-                    create.text(" 7"),
-                  ],
+                  ["4 ", create.ruby(["5"], ["(", ")"], ["6"]), " 7"],
                 ),
               ]),
             ],
@@ -362,10 +304,7 @@ describe("解析", () => {
         theseCasesAreOk([
           {
             input: "foo\n\nbar",
-            expected: [
-              create.P([create.text("foo")]),
-              create.P([create.text("bar")]),
-            ],
+            expected: [create.P(["foo"]), create.P(["bar"])],
           },
         ]);
       });
@@ -394,7 +333,7 @@ describe("解析", () => {
           const signs = "=".repeat(n);
           boringCases.push({
             input: `${signs} foo ${signs}`,
-            expected: [create.H(n as any, [create.text("foo")])],
+            expected: [create.H(n as any, ["foo"])],
           });
         }
 
@@ -403,26 +342,20 @@ describe("解析", () => {
           {
             input: "foo\n= bar =\nbaz",
             expected: [
-              create.P([create.text("foo")]),
-              create.H(1, [create.text("bar")]),
-              create.P([create.text("baz")]),
+              create.P(["foo"]),
+              create.H(1, ["bar"]),
+              create.P(["baz"]),
             ],
           },
         ]);
       });
       describe("多余的标记符号会留下来", () => {
         theseCasesAreOk([
-          {
-            input: "== foo =",
-            expected: [create.H(1, [create.text("= foo")])],
-          },
-          {
-            input: "= foo ==",
-            expected: [create.H(1, [create.text("foo =")])],
-          },
+          { input: "== foo =", expected: [create.H(1, ["= foo"])] },
+          { input: "= foo ==", expected: [create.H(1, ["foo ="])] },
           {
             input: "======= foo =======",
-            expected: [create.H(6, [create.text("= foo =")])],
+            expected: [create.H(6, ["= foo ="])],
           },
         ]);
       });
@@ -430,9 +363,7 @@ describe("解析", () => {
         theseCasesAreOk([
           {
             input: "== ['foo'] ==",
-            expected: [
-              create.H(2, [create.em("strong", [create.text("foo")])]),
-            ],
+            expected: [create.H(2, [create.em("strong", ["foo"])])],
           },
         ]);
       });
