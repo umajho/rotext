@@ -27,7 +27,7 @@ function assertOk(
 ) {
   const output = parse(input, opts);
   if (expected) {
-    expect(output).toStrictEqual(create.ROOT(expected));
+    expect(create.ROOT(expected)).toStrictEqual(output);
   }
 }
 
