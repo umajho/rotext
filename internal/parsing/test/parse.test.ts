@@ -96,6 +96,55 @@ describe("解析", () => {
         });
       });
     });
+    describe("引用链接", () => {
+      describe("能正确解析格式正确的", () => {
+        theseCasesAreOk(
+          [
+            "TP.42",
+            ...["TP.abc", "abc", "~"],
+            ...["TP.abc#123", "abc#123", "#123"],
+            ...["TP.abc/def", "abc/def", "~/def"],
+            ...["TP.abc/def#456", "abc/def#456", "~/def#456"],
+          ]
+            .map((input) => ({
+              input: `>>${input}`,
+              expected: [create.P([create.ref_link(input)])],
+            })),
+        );
+      });
+      describe("忽略格式不正确的", () => {
+        theseCasesAreOk(
+          [
+            ...[
+              ...["", "42"],
+              ...["TP.~", "TP.#123"],
+              ...["/def", "TP.~/def"],
+            ].map((input) => ({
+              input: `>>${input}`,
+              expected: [create.P([create.text(`>>${input}`)])],
+            })),
+
+            ...[
+              { parsed: "#123", remain: "/def" }, // `>>#123/456`
+              { parsed: "TP.abc#123", remain: "/def" }, // `>>TP.abc#123/def`
+            ].map(({ parsed, remain }) => ({
+              input: `>>${parsed}${remain}`,
+              expected: [
+                create.P([create.ref_link(parsed), create.text(`${remain}`)]),
+              ],
+            })),
+          ],
+        );
+      });
+      describe("可以位于行首", () => {
+        theseCasesAreOk([
+          {
+            input: ">>TP.42",
+            expected: [create.P([create.ref_link("TP.42")])],
+          },
+        ]);
+      });
+    });
     describe("行内代码文本", () => {
       describe("能正确解析", () => {
         theseCasesAreOk([
@@ -202,6 +251,105 @@ describe("解析", () => {
             input: String.raw`['foo\']']`,
             expected: [
               create.P([create.em("strong", [create.text("foo']")])]),
+            ],
+          },
+        ]);
+      });
+    });
+    describe("旁注", () => {
+      describe("能正确解析", () => {
+        theseCasesAreOk([
+          {
+            input: "[foo(bar)]",
+            expected: [
+              create.P([
+                create.ruby(
+                  [create.text("foo")],
+                  ["(", ")"],
+                  [create.text("bar")],
+                ),
+              ]),
+            ],
+          },
+          {
+            input: "[测(•)][试(•)]",
+            expected: [
+              create.P([
+                create.ruby(
+                  [create.text("测")],
+                  ["(", ")"],
+                  [create.text("•")],
+                ),
+                create.ruby(
+                  [create.text("试")],
+                  ["(", ")"],
+                  [create.text("•")],
+                ),
+              ]),
+            ],
+          },
+        ]);
+      });
+      describe("支持全角 fallback 括号", () => {
+        theseCasesAreOk([
+          {
+            input: "[测试（test）]",
+            expected: [
+              create.P([
+                create.ruby(
+                  [create.text("测试")],
+                  ["（", "）"],
+                  [create.text("test")],
+                ),
+              ]),
+            ],
+          },
+        ]);
+      });
+      describe("base 和 text 部分都支持行内元素", () => {
+        theseCasesAreOk([
+          {
+            input: "[['foo'](bar)]",
+            expected: [
+              create.P([
+                create.ruby(
+                  [create.em("strong", ["foo"])],
+                  ["(", ")"],
+                  [create.text("bar")],
+                ),
+              ]),
+            ],
+          },
+          {
+            input: "[foo(['bar'])]",
+            expected: [
+              create.P([
+                create.ruby(
+                  [create.text("foo")],
+                  ["(", ")"],
+                  [create.em("strong", ["bar"])],
+                ),
+              ]),
+            ],
+          },
+          {
+            input: "[1 [`2`] 3(4 [5(6)] 7)]",
+            expected: [
+              create.P([
+                create.ruby(
+                  [create.text("1 "), create.code("2"), create.text(" 3")],
+                  ["(", ")"],
+                  [
+                    create.text("4 "),
+                    create.ruby(
+                      [create.text("5")],
+                      ["(", ")"],
+                      [create.text("6")],
+                    ),
+                    create.text(" 7"),
+                  ],
+                ),
+              ]),
             ],
           },
         ]);
