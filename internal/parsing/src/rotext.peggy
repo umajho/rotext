@@ -20,7 +20,7 @@ Block
   / Heading
   // / Blockquote
   // / List
-  // / Table
+  / Table
   / Paragraph
 
 BlockLineBegin
@@ -94,56 +94,60 @@ Heading
 //   = level:$[#*;:]|1..| line:Line
 //     { return [level, line]; }
 
-// Table
-//   = TableBegin /*无视首行后边的内容*/ rows:TableRows __ TableEnd
-//     { return h("table", {}, rows); }
-// TableBegin = "{|" (!("|}") [^\r\n])*
-// TableEnd = "|}" _ &(br / !.) // NOTE: 为了实现简单，表格后不能有其他内容
+Table
+  = TableBegin /*无视首行后边的内容*/ @TableRows __ TableEnd
+TableBegin = "{|" (!("|}") [^\r\n])*
+TableEnd = "|}" _ &(br / !.) // NOTE: 为了实现简单，表格后不能有其他内容
 
-// TableRelatedLineBeginNoCells = "|" [}+-]
-// TableCellLineBegin = [!|]
-// TableRelatedLineBegin = (TableRelatedLineBeginNoCells / TableCellLineBegin)
+TableRelatedLineBeginNoCells = "|" [}+-]
+TableCellLineBegin = [!|]
+TableRelatedLineBegin = (TableRelatedLineBeginNoCells / TableCellLineBegin)
 
-// TableRows
-//     = caption:(br __ @TableCaption)? first:TableRow? rest:(br __ TableRowBegin @TableRow)*
-//       { return [...(caption ? [caption] : []), ...(first ? [first] : []), ...(rest ?? [])]; }
-// TableRowBegin = !"|}" "|" "-"+ _
+TableRows
+    = caption:(br __ @TableCaption)? first:TableRow? rest:(br __ TableRowBegin @TableRow)*
+      { 
+        return create.TABLE(
+          caption ? caption : null,
+          [...(first?.length ? [first] : []), ...(rest ?? [])],
+        );
+      }
+TableRowBegin = !"|}" "|" "-"+ _
 
-// // NODE: Mediawiki 的 caption 可以在行中，可以是块上下文。
-// //       这里为了实现简单就只允许在第二行，且只允许行内元素了。
-// TableCaption
-//   = TableCaptionBegin inlines:Inline*
-//     { return h("caption", {}, inlines); }
-// TableCaptionBegin = !"|}" "|+" _
+// NODE: Mediawiki 的 caption 可以在行中，可以是块上下文。
+//       这里为了实现简单就只允许在第二行，且只允许行内元素了。
+TableCaption
+  = TableCaptionBegin inlines:Inline*
+    { return joinInlines(inlines); }
+TableCaptionBegin = !"|}" "|+" _
 
-// TableRow
-//   = cells:TableRowFragment*
-//     { return h("tr", {}, cells.flat()); }
-// TableRowFragment
-//   = br __ !TableRelatedLineBeginNoCells
-//     initCells:(@TableInlineCell ("!" &"!" / "|" & "|"))*
-//     lastCell:TableLastCell
-//     _
-//     { return [...initCells, ...(lastCell ? [lastCell] : [])] }
+TableRow
+  = cells:TableRowFragment*
+    { return cells.flat(); }
+TableRowFragment
+  = br __ !TableRelatedLineBeginNoCells
+    initCells:(@TableInlineCell ("!" &"!" / "|" & "|"))*
+    lastCell:TableLastCell
+    _
+    { return [...initCells, ...(lastCell ? [lastCell] : [])] }
 
-// TableInlineCell
-//   = symbol:TableCellBegin
-//     inlines:(!TableCellBegin @Inline)*
-//   { return h(symbol == "!" ? "th" : "td", {}, joinInlines(inlines)); }
-// TableLastCell
-//   = symbol:TableCellBegin
-//     inlines:(!TableCellBegin @Inline)* __
-//     !TableRelatedLineBegin first:Block?
-//     rest:(br !TableRelatedLineBegin @Block)*
-//     {
-//       inlines = joinInlines(inlines)
-//       first = first ? [...inlines, first] : inlines;
-//       return h(symbol == "!" ? "th" : "td", {}, [...first, ...rest]);
-//     }
-//   / symbol:TableCellBegin
-//     inlines:(!TableCellBegin @Inline)* _
-//     { return h(symbol == "!" ? "th" : "td", {}, joinInlines(inlines)); }
-// TableCellBegin = !TableRelatedLineBeginNoCells @TableCellLineBegin
+TableInlineCell
+  = symbol:TableCellBegin
+    inlines:(!TableCellBegin @Inline)*
+  { return create.TABLE$cell(symbol == "!" ? "H" : "D", joinInlines(inlines)); }
+TableLastCell
+  = symbol:TableCellBegin
+    inlines:(!TableCellBegin @Inline)* __
+    !TableRelatedLineBegin first:Block?
+    rest:(br !TableRelatedLineBegin @Block)*
+    {
+      inlines = joinInlines(inlines)
+      first = first ? [...inlines, first] : inlines;
+      return create.TABLE$cell(symbol == "!" ? "H" : "D", [...first, ...rest]);
+    }
+  / symbol:TableCellBegin
+    inlines:(!TableCellBegin @Inline)* _
+    { return create.TABLE$cell(symbol == "!" ? "H" : "D", joinInlines(inlines)); }
+TableCellBegin = !TableRelatedLineBeginNoCells @TableCellLineBegin
 
 //==== INLINE LEVEL ====//
 

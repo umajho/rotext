@@ -7,6 +7,7 @@ export type Properties = Record<string, unknown>;
 export type RawTextSlot = string;
 export type InlineSlot = InlineNode[];
 export type BlockSlot = BlockNode[];
+export type MixedSlot = (InlineNode | BlockNode)[];
 export type BlockOrInlineSlot = BlockSlot | InlineSlot;
 
 export type RootElement = { type: "root"; slot: BlockSlot };
@@ -33,15 +34,15 @@ export type BlockElement =
   | { type: "QUOTE"; slot: BlockOrInlineSlot }
   | { type: "OL" | "UL"; items: BlockOrInlineSlot[] }
   | { type: "DL"; items: DescriptionListItem[] }
-  | { type: "TABLE"; cells: TableCell[][] };
+  | { type: "TABLE"; slots?: { caption?: InlineSlot }; cells: TableCell[][] };
 
 export interface DescriptionListItem {
-  type: "DL:T" | "DL:D";
+  type: "DL:T" | "DL:D"; // `<dt/>` | `<dd/>`
   slot: BlockOrInlineSlot;
 }
 export interface TableCell {
-  type: "TABLE:H" | "TABLE:D";
-  slot: BlockOrInlineSlot;
+  type: "TABLE:H" | "TABLE:D"; // `<th/>` | `<td/>`
+  slot: MixedSlot;
 }
 
 /**
@@ -144,7 +145,15 @@ export const create = {
   },
 
   /** 表格 */
-  TABLE(cells: TableCell[][]): BlockElement {
-    return { type: "TABLE", cells };
+  TABLE(caption: InlineSlot | null, cells: TableCell[][]): BlockElement {
+    return {
+      type: "TABLE",
+      ...(caption ? { slots: { caption } } : {}),
+      cells,
+    };
+  },
+
+  TABLE$cell(type: "H" | "D", slot: MixedSlot): TableCell {
+    return { type: `TABLE:${type}`, slot };
   },
 };

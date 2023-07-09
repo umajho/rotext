@@ -437,5 +437,124 @@ describe("解析", () => {
         ]);
       });
     });
+    describe("表格", () => {
+      describe("能正确解析 “预期产物是单行” 的、“源代码使用 ‘单行格式’” 的表格", () => {
+        theseCasesAreOk([
+          {
+            input: "{|\n|a\n|}",
+            expected: [create.TABLE(null, [[create.TABLE$cell("D", ["a"])]])],
+          },
+          {
+            input: "{|\n|a||b\n|}",
+            expected: [create.TABLE(null, [
+              [create.TABLE$cell("D", ["a"]), create.TABLE$cell("D", ["b"])],
+            ])],
+          },
+          {
+            input: "{|\n!a!!b\n|}",
+            expected: [create.TABLE(null, [
+              [create.TABLE$cell("H", ["a"]), create.TABLE$cell("H", ["b"])],
+            ])],
+          },
+          {
+            input: "{|\n!a||b\n|}",
+            expected: [create.TABLE(null, [
+              [create.TABLE$cell("H", ["a"]), create.TABLE$cell("D", ["b"])],
+            ])],
+          },
+          // { // FIXME?: 空白被保留了下来，要保留吗？
+          //   input: "{|\n| a || b \n|}",
+          //   expected: [create.TABLE(null, [
+          //     [create.TABLE$cell("D", ["a"]), create.TABLE$cell("D", ["b"])],
+          //   ])],
+          // },
+          {
+            input: "{|\n|[`foo`]||['bar']\n|}",
+            expected: [create.TABLE(null, [
+              [
+                create.TABLE$cell("D", [create.code("foo")]),
+                create.TABLE$cell("D", [create.em("strong", ["bar"])]),
+              ],
+            ])],
+          },
+        ]);
+      });
+      describe("能正确解析 “预期产物是单行” 的、“源代码使用 ‘多行格式’” 的表格", () => {
+        theseCasesAreOk([
+          {
+            input: "{|\n|a\n|b\n|}",
+            expected: [create.TABLE(null, [
+              [create.TABLE$cell("D", ["a"]), create.TABLE$cell("D", ["b"])],
+            ])],
+          },
+        ]);
+      });
+      describe("能正确解析 “预期产物是单行” 的、“源代码使用 ‘两种格式混合’” 的表格", () => {
+        theseCasesAreOk([
+          {
+            input: "{|\n|a||b\n|c||d\n|e\n|}",
+            expected: [create.TABLE(null, [
+              [
+                create.TABLE$cell("D", ["a"]),
+                create.TABLE$cell("D", ["b"]),
+                create.TABLE$cell("D", ["c"]),
+                create.TABLE$cell("D", ["d"]),
+                create.TABLE$cell("D", ["e"]),
+              ],
+            ])],
+          },
+        ]);
+      });
+      describe("能正确解析 “预期产物是多行” 的表格", () => {
+        theseCasesAreOk([
+          {
+            input: "{|\n!a!!b\n|-\n|c||d\n|-\n|e||f\n|}",
+            expected: [create.TABLE(null, [
+              [create.TABLE$cell("H", ["a"]), create.TABLE$cell("H", ["b"])],
+              [create.TABLE$cell("D", ["c"]), create.TABLE$cell("D", ["d"])],
+              [create.TABLE$cell("D", ["e"]), create.TABLE$cell("D", ["f"])],
+            ])],
+          },
+        ]);
+      });
+      describe("能正确解析源代码中 “单个单元格有多行” 的表格", () => {
+        theseCasesAreOk([
+          { // NOTE: MediaWiki 也是如此处理的
+            input: "{|\n|foo\nbar\n|}",
+            expected: [
+              create.TABLE(null, [[
+                create.TABLE$cell("D", ["foo", create.P(["bar"])]),
+              ]]),
+            ],
+          },
+          { // 同上
+            input: "{|\n|\nfoo\n|}",
+            expected: [
+              create.TABLE(null, [[
+                create.TABLE$cell("D", [create.P(["foo"])]),
+              ]]),
+            ],
+          },
+          { // 同上
+            input: "{|\n|foo\n\n=bar=\n|}",
+            expected: [
+              create.TABLE(null, [[
+                create.TABLE$cell("D", ["foo", create.H(1, ["bar"])]),
+              ]]),
+            ],
+          },
+        ]);
+      });
+      describe("能正确解析标题（caption）", () => {
+        theseCasesAreOk([
+          {
+            input: "{|\n|+foo\n|-\n|bar\n|}",
+            expected: [
+              create.TABLE(["foo"], [[create.TABLE$cell("D", ["bar"])]]),
+            ],
+          },
+        ]);
+      });
+    });
   });
 });
