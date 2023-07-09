@@ -14,7 +14,14 @@ export type RootElement = { type: "root"; slot: BlockSlot };
 export type InlineElement =
   | { type: "br" }
   | { type: "em" | "em.strong" | "em.dotted" | "u" | "s"; slot: InlineSlot }
-  | { type: "ruby"; slots: { base: InlineSlot; text: InlineSlot } }
+  | {
+    type: "ruby";
+    props: {
+      // fallback parenthesis
+      p: [left: string, right: string];
+    };
+    slots: { base: InlineSlot; text: InlineSlot };
+  }
   | { type: "code"; slot: RawTextSlot }
   | { type: "ref-link"; slot: RawTextSlot }
   | { type: "dicexp"; slots: { code: RawTextSlot; assignTo?: RawTextSlot } };
@@ -78,8 +85,12 @@ export const create = {
   },
 
   /** 为行内元素添加 ruby 文字，即旁注 */
-  ruby(base: InlineSlot, text: InlineSlot): InlineElement {
-    return { type: "ruby", slots: { base, text } };
+  ruby(
+    base: InlineSlot,
+    p: [left: string, right: string],
+    text: InlineSlot,
+  ): InlineElement {
+    return { type: "ruby", props: { p }, slots: { base, text } };
   },
 
   /** 行内显示代码片段 */

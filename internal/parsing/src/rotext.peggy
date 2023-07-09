@@ -145,7 +145,7 @@ Heading
 //     { return h(symbol == "!" ? "th" : "td", {}, joinInlines(inlines)); }
 // TableCellBegin = !TableRelatedLineBeginNoCells @TableCellLineBegin
 
-// //==== INLINE LEVEL ====//
+//==== INLINE LEVEL ====//
 
 Line
   = _ inlines:Inline+
@@ -153,58 +153,66 @@ Line
 
 Inline
   = Escape
-//   / Reference
+  / Reference
   / Code
   / Bold
   / Italic
   / Underline
   / Strikethrough
   / Emphasis
-//   / Ruby
+  / Ruby
   / [^\r\n]
 
 Escape
   = "\\" @.
 
-// Reference
-//   = ">>" id:$ReferenceID
-//     { return h("span", { class: { "post-reference": true } }, ">>" + id); }
-// /**
-//   引用 ID 的组成：
-//   - 「全局前缀」：
-//     表示这个 ID 在站内任何地方都会指向相同的内容。
-//     数字帖号必须带有此前缀（以防止与楼层号混淆），其他全局 ID 可选，非全局 ID 不可使用。
-//   - 数字帖号之外的情况下，全局前缀之后的内容由三部分组成：
-//     - 串号：
-//       不可以省略，但可以简写为 “~”。必定构成全局 ID。
-//     - 楼层号：
-//       可以省略，不能与子级串部分同时出现。
-//       不省略时，若含串号，构成全局 ID；否则构成局部 ID（只在同一个串内指向相同内容）。
-//     - 子级串部分：
-//       可以省略，由两部分组成：
-//       - 子级串的串号：不可以省略。
-//       - 子串的楼层号：可以省略。
-// */
-// ReferenceID
-//   = ReferenceIDGlobalPrefix (
-//     [0-9]+ // 数字帖号，用于全局引用串或帖子
-//     / ReferenceIDOfGlobal
-//   )
-//   / ReferenceIDForFloor // 用于同串内引用帖子
-//   / ReferenceIDForSub // 用于同主串内引用子串或子串中的帖子
-//   / ReferenceIDOfGlobal
-// ReferenceIDGlobalPrefix = [A-Z]+ "."
-// ReferenceIDOfGlobal
-//   = ReferenceIDForThreadFloor // 用于全局引用帖子
-//   / ReferenceIDForThread ReferenceIDForSub? // 用于全局引用串，或子串，或子串中的帖子
-// // 串号
-// ReferenceIDForThread = [a-z]+ / "~"
-// // 不含串号的楼层号
-// ReferenceIDForFloor = "#" [0-9]+
-// // 含串号的楼层号（楼层帖号）
-// ReferenceIDForThreadFloor = ReferenceIDForThread ReferenceIDForFloor
-// // 子串的含串号的楼层号（楼层帖号），或者子串的串号
-// ReferenceIDForSub = "/" (ReferenceIDForThreadFloor / ReferenceIDForThread)
+Reference
+  = ">>" id:$RID
+    { return create.ref_link(id); }
+
+/**
+  引用 ID 分为两类，一类是纯数字，另一类是由多级逐一限定范围而成。
+  注：为方便阅读，示例中会添加 `>>` 组成完整的引用。示例中小括号代表可选。
+
+  纯数字的 ID 被称为「数字帖号」，只能用于引用帖子（而非串），必须带有「全局前缀」。
+  例：`>>TP.1234`
+
+  多级的 ID 由「前缀」「串号」「楼层号」「子级串部分」这些部分组成：
+  - 前缀：
+    如果其余部分都是绝对形式（即整体指向唯一的事物），则可以拥有「全局前缀」（也可以省略）；
+    否则，前缀必须为空（不带前缀）。
+    由任意多的大写字母，以及位于最后的 “.” 组成。例：“TP.”。
+  - 串号：
+    代表串的 ID。单独存在时，用于指代串本身。
+    - 绝对形式：由任意多的小写字母组成。比如：`>>(TP.)abc`。
+    - 相对形式：
+      - 在空缺时（比如只有楼层号时），代表当前串。比如：`>>#42`。
+      - 在为 `~` 时，代表主串（相对于子串或主串本身而言）。比如：`>>~#42`。
+  - 楼层号：
+    代表帖在串中所处的楼层。与「子级串部分」互斥。只存在绝对形式。
+    以 “#” 开头，其后由正整数组成。比如：`>>#42`、`>>(TP.)abc#42`。
+  - 子级串部分：
+    代表子级串或子级串中的帖子。与「楼层号」互斥。只存在绝对形式。
+    以 `/` 开头，其后由「子级串的串号」和可选的「子级串的楼层号」组成。
+    比如：`>>~/abc#123`、`>>(TP.)abc/abc`。
+*/
+RID
+  = RID_GlobalPrefix ( RID_PostNumber / RID_Global )
+  / RID_Relative
+  / RID_Global
+
+RID_PostNumber = [0-9]+
+RID_GlobalPrefix = [A-Z]+ "."
+RID_Global
+  = RID_ThreadID ( RID_FloorNumber / RID_SubPart )?
+RID_Relative
+  = RID_FloorNumber
+  / RID_ThreadRelative ( RID_FloorNumber / RID_SubPart )?
+
+RID_ThreadID = [a-z]+
+RID_ThreadRelative = "~"
+RID_FloorNumber = "#" [0-9]+
+RID_SubPart = "/" RID_ThreadID RID_FloorNumber?
 
 Code
   = "``" text:$(!"``" @[^\r\n])* "``"
@@ -240,14 +248,15 @@ Emphasis
   = "[." inlines:(!".]" @Inline)* ".]"
     { return create.em("dotted", joinInlines(inlines)); }
 
-// Ruby
-//   = "[" base:(!"(" @Inline)* lp:[(（] rt:(!([)）] "]") @Inline)* rp:[)）] "]"
-//     {
-//       base = joinInlines(base);
-//       const rtEl = h("rt", {}, joinInlines(rt));
-//       const [rpLeft, rpRight] = [h("rp", {}, lp), h("rp", {}, rp)];
-//       return h("ruby", {}, [...base, rpLeft, rtEl, rpRight]);
-//     }
+Ruby
+  = "[" base:(![(（] @Inline)* pLeft:[(（] text:(!([)）] "]") @Inline)* pRight:[)）] "]"
+    {
+      return create.ruby(
+        joinInlines(base),
+        [pLeft, pRight],
+        joinInlines(text),
+      );
+    }
 
 _ = [ \t]*
 __ = [ \t\r\n]*
