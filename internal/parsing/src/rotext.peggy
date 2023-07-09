@@ -189,8 +189,9 @@ Reference
       - 在空缺时（比如只有楼层号时），代表当前串。比如：`>>#42`。
       - 在为 `~` 时，代表主串（相对于子串或主串本身而言）。比如：`>>~#42`。
   - 楼层号：
-    代表帖在串中所处的楼层。与「子级串部分」互斥。只存在绝对形式。
-    以 “#” 开头，其后由正整数组成。比如：`>>#42`、`>>(TP.)abc#42`。
+    代表帖在串中所处的楼层。与「子级串部分」互斥。
+    绝对形式：以 “#” 开头，其后由正整数组成。比如：`>>#42`、`>>(TP.)abc#42`。
+    相对形式：不含任何其他部分的 `>>#`，代表当前楼层。
   - 子级串部分：
     代表子级串或子级串中的帖子。与「楼层号」互斥。只存在绝对形式。
     以 `/` 开头，其后由「子级串的串号」和可选的「子级串的楼层号」组成。
@@ -206,12 +207,13 @@ RID_GlobalPrefix = [A-Z]+ "."
 RID_Global
   = RID_ThreadID ( RID_FloorNumber / RID_SubPart )?
 RID_Relative
-  = RID_FloorNumber
+  = RID_FloorNumberMaybeRelative
   / RID_ThreadRelative ( RID_FloorNumber / RID_SubPart )?
 
 RID_ThreadID = [a-z]+
 RID_ThreadRelative = "~"
 RID_FloorNumber = "#" [0-9]+
+RID_FloorNumberMaybeRelative = "#" [0-9]*
 RID_SubPart = "/" RID_ThreadID RID_FloorNumber?
 
 Code
