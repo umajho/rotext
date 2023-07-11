@@ -171,35 +171,36 @@ Escape
   = "\\" @.
 
 Reference
-  = ">>" id:$RID
+  = "[>>" id:$RID "]"
     { return create.ref_link(id); }
 
 /**
   引用 ID 分为两类，一类是纯数字，另一类是由多级逐一限定范围而成。
-  注：为方便阅读，示例中会添加 `>>` 组成完整的引用。示例中小括号代表可选。
+  注·1：为方便阅读，示例中会包上 `[>>…]` 组成完整的引用。示例中小括号代表可选。
+  注·2：小括号（`(…)`）代表内容可选。
 
   纯数字的 ID 被称为「数字帖号」，只能用于引用帖子（而非串），必须带有「全局前缀」。
-  例：`>>TP.1234`
+  例：`[>>TP.1234]`
 
-  多级的 ID 由「前缀」「串号」「楼层号」「子级串部分」这些部分组成：
-  - 前缀：
+  多级的 ID 由「全局前缀」「串号」「楼层号」「子级串部分」这些部分组成：
+  - 全局前缀：
     如果其余部分都是绝对形式（即整体指向唯一的事物），则可以拥有「全局前缀」（也可以省略）；
     否则，前缀必须为空（不带前缀）。
     由任意多的大写字母，以及位于最后的 “.” 组成。例：“TP.”。
   - 串号：
     代表串的 ID。单独存在时，用于指代串本身。
-    - 绝对形式：由任意多的小写字母组成。比如：`>>(TP.)abc`。
+    - 绝对形式：由任意多的小写字母组成。比如：`[>>(TP.)abc]`。
     - 相对形式：
-      - 在空缺时（比如只有楼层号时），代表当前串。比如：`>>#42`。
-      - 在为 `~` 时，代表主串（相对于子串或主串本身而言）。比如：`>>~#42`。
+      - 在空缺时（比如只有楼层号时），代表当前串。比如：`[>>#42]`。
+      - 在为 `~` 时，代表主串（相对于子串或主串本身而言）。比如：`[>>~#42]`。
   - 楼层号：
     代表帖在串中所处的楼层。与「子级串部分」互斥。
-    绝对形式：以 “#” 开头，其后由正整数组成。比如：`>>#42`、`>>(TP.)abc#42`。
-    相对形式：不含任何其他部分的 `>>#`，代表当前楼层。
+    绝对形式：以 “#” 开头，其后由正整数组成。比如：`[>>#42]`、`[>>(TP.)abc#42]`。
+    相对形式：`[>>#]`，代表当前楼层。
   - 子级串部分：
     代表子级串或子级串中的帖子。与「楼层号」互斥。只存在绝对形式。
     以 `/` 开头，其后由「子级串的串号」和可选的「子级串的楼层号」组成。
-    比如：`>>~/abc#123`、`>>(TP.)abc/abc`。
+    比如：`[>>~/abc#123]`、`[>>(TP.)abc/def]`。
 */
 RID
   = RID_GlobalPrefix ( RID_PostNumber / RID_Global )
@@ -227,27 +228,19 @@ Code
     { return create.code(text); }
 
 Bold
-  = "''" inlines:(!"''" @Inline)* "''"
-    { return create.em("strong", joinInlines(inlines)); }
-  / "['" inlines:(!"']" @Inline)* "']"
+  = "['" inlines:(!"']" @Inline)* "']"
     { return create.em("strong", joinInlines(inlines)); }
 
 Italic
-  = "//" inlines:(!"//" @Inline)* "//"
-    { return create.em(null, joinInlines(inlines)); }
-  / "[/" inlines:(!"/]" @Inline)* "/]"
+  = "[/" inlines:(!"/]" @Inline)* "/]"
     { return create.em(null, joinInlines(inlines)); }
 
 Underline
-  = "__" inlines:(!"__" @Inline)* "__"
-    { return create.u(joinInlines(inlines)); }
-  / "[_" inlines:(!"_]" @Inline)* "_]"
+  = "[_" inlines:(!"_]" @Inline)* "_]"
     { return create.u(joinInlines(inlines)); }
 
 Strikethrough
-  = "~~" inlines:(!"~~" @Inline)* "~~"
-    { return create.s(joinInlines(inlines)); }
-  / "[~" inlines:(!"~]" @Inline)* "~]"
+  = "[~" inlines:(!"~]" @Inline)* "~]"
     { return create.s(joinInlines(inlines)); }
 
 Emphasis
