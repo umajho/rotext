@@ -92,7 +92,7 @@ describe("解析", () => {
             ...["TP.abc/def#456", "abc/def#456", "~/def#456"],
           ]
             .map((input) => ({
-              input: `>>${input}`,
+              input: `[>>${input}]`,
               expected: [create.P([create.ref_link(input)])],
             })),
         );
@@ -104,30 +104,13 @@ describe("解析", () => {
               ...["", "42"],
               ...["TP.~", "TP.#123", "TP.#"],
               ...["/def", "TP.~/def"],
+              ...["#123/456", "TP.abc#123/def"],
             ].map((input) => ({
-              input: `>>${input}`,
-              expected: [create.P([`>>${input}`])],
-            })),
-
-            ...[
-              { parsed: "#123", remain: "/def" }, // `>>#123/456`
-              { parsed: "TP.abc#123", remain: "/def" }, // `>>TP.abc#123/def`
-            ].map(({ parsed, remain }) => ({
-              input: `>>${parsed}${remain}`,
-              expected: [
-                create.P([create.ref_link(parsed), remain]),
-              ],
+              input: `[>>${input}]`,
+              expected: [create.P([`[>>${input}]`])],
             })),
           ],
         );
-      });
-      describe("可以位于行首", () => {
-        theseCasesAreOk([
-          {
-            input: ">>TP.42",
-            expected: [create.P([create.ref_link("TP.42")])],
-          },
-        ]);
       });
     });
     describe("行内代码文本", () => {
@@ -166,19 +149,19 @@ describe("解析", () => {
     describe("文本相关样式", () => {
       describe("能正确解析", () => {
         theseCasesAreOk([
-          ...["['foo']", "''foo''"].map((input) => ({
+          ...["['foo']"].map((input) => ({
             input,
             expected: [create.P([create.em("strong", ["foo"])])],
           })),
-          ...["[/foo/]", "//foo//"].map((input) => ({
+          ...["[/foo/]"].map((input) => ({
             input,
             expected: [create.P([create.em(null, ["foo"])])],
           })),
-          ...["[_foo_]", "__foo__"].map((input) => ({
+          ...["[_foo_]"].map((input) => ({
             input,
             expected: [create.P([create.u(["foo"])])],
           })),
-          ...["[~foo~]", "~~foo~~"].map((input) => ({
+          ...["[~foo~]"].map((input) => ({
             input,
             expected: [create.P([create.s(["foo"])])],
           })),
@@ -196,7 +179,7 @@ describe("解析", () => {
       describe("内部可以嵌套行内元素", () => {
         theseCasesAreOk([
           {
-            input: "['~~foo~~']",
+            input: "['[~foo~]']",
             expected: [create.P([create.em("strong", [create.s(["foo"])])])],
           },
           {
