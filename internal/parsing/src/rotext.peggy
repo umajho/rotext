@@ -1,7 +1,7 @@
 {{
   import { create } from "@rotext/nodes";
   import { joinInlines, joinLines } from "./line.ts"
-  // import { buildList } from "./list.ts";
+  import { buildContainers } from "./container.ts";
 }}
 
 {
@@ -11,15 +11,14 @@
 
 Document
   = __ blocks:(@Block (br __ / !.))+
-    { return create.ROOT(blocks); }
+    { return create.ROOT(blocks.flat()); } // `flat` 用于展平 `Containers`
   / __
     { return create.ROOT([]); }
 
 Block
   = ThematicBreak
   / Heading
-  // / Blockquote
-  // / List
+  / Containers
   / Table
   / Paragraph
 
@@ -78,21 +77,22 @@ Heading
       return create.H(realLevels, line);
     }
 
-// Blockquote
-//   = first:BlockquoteLine rest:(br @BlockquoteLine)*
-//     { return h("blockquote", {}, joinLines([first, ...rest], breaks, h)) }
-// BlockquoteLine
-//   = ">" !">" @Line
-//   / ">" !">" _
-//     { return [""] }
-
-// List // TODO `; foo : bar`
-//   = first:ListItem rest:(br @ListItem)*
-//     { return buildList([first, ...rest], v); }
-
-// ListItem
-//   = level:$[#*;:]|1..| line:Line
-//     { return [level, line]; }
+// NOTE: 之所以是复数，是因为可能会有得到复数个容器的情况
+/**
+  按照前缀可以将容器分为以下几组：
+  - `>`：引言；
+  - `#`：有序列表；
+  - `*`：无序列表；
+  - `;` 和 `:`：描述列表。
+  同组的行上下挨在一起时，形成一个整体，而其中的每一行成为一项。
+  此外，可以在已有的容器项之下用 `>` 来延长那个容器项，以实现一个容器项占据多行。
+*/
+Containers // TODO: `; foo : bar`
+  = first:ContainersLine rest:(br @ContainersLine)*
+    { return buildContainers([first, ...rest], breaks); }
+ContainersLine
+  = prefix:$[>#*;:]|1..| ([ \t]+ / &br) line:Line?
+    { return { prefix, line }; }
 
 Table
   = TableBegin /*无视首行后边的内容*/ @TableRows __ TableEnd

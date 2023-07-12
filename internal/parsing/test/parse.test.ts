@@ -351,6 +351,322 @@ describe("解析", () => {
         ]);
       });
     });
+    describe("容器", () => {
+      describe("单项", () => {
+        theseCasesAreOk([
+          { input: "> foo", expected: [create.QUOTE([create.P(["foo"])])] },
+          {
+            input: "# foo",
+            expected: [create.LIST("O", [create.LIST$item(["foo"])])],
+          },
+          {
+            input: "* foo",
+            expected: [create.LIST("U", [create.LIST$item(["foo"])])],
+          },
+          {
+            input: "; foo",
+            expected: [create.DL([create.DL$item("T", ["foo"])])],
+          },
+          {
+            input: ": foo",
+            expected: [create.DL([create.DL$item("D", ["foo"])])],
+          },
+        ]);
+      });
+      describe("多行的块引用", () => {
+        theseCasesAreOk([
+          {
+            input: "> foo\n> bar",
+            expected: [create.QUOTE([create.P(["foo", create.br(), "bar"])])],
+          },
+          {
+            input: "> foo\n> bar\n> \n> baz",
+            expected: [
+              create.QUOTE([
+                create.P(["foo", create.br(), "bar"]),
+                create.P(["baz"]),
+              ]),
+            ],
+          },
+        ]);
+      });
+      describe("多项", () => {
+        theseCasesAreOk([
+          {
+            input: "# foo\n# bar",
+            expected: [
+              create.LIST("O", [
+                create.LIST$item(["foo"]),
+                create.LIST$item(["bar"]),
+              ]),
+            ],
+          },
+          {
+            input: "* foo\n* bar",
+            expected: [
+              create.LIST("U", [
+                create.LIST$item(["foo"]),
+                create.LIST$item(["bar"]),
+              ]),
+            ],
+          },
+          {
+            input: "; foo\n: bar\n: baz",
+            expected: [create.DL([
+              create.DL$item("T", ["foo"]),
+              create.DL$item("D", ["bar"]),
+              create.DL$item("D", ["baz"]),
+            ])],
+          },
+        ]);
+      });
+      describe("延长的项", () => {
+        describe("单项", () => {
+          theseCasesAreOk([
+            {
+              input: "* foo\n> bar",
+              expected: [create.LIST("U", [
+                create.LIST$item(["foo", create.P(["bar"])]),
+              ])],
+            },
+            {
+              input: "* foo\n> bar\n> baz",
+              expected: [create.LIST("U", [create.LIST$item([
+                "foo",
+                create.P(["bar", create.br(), "baz"]),
+              ])])],
+            },
+            {
+              input: "* foo\n> bar\n>\n> baz",
+              expected: [create.LIST("U", [create.LIST$item([
+                "foo",
+                create.P(["bar"]),
+                create.P(["baz"]),
+              ])])],
+            },
+            {
+              input: "*\n> bar",
+              expected: [create.LIST("U", [create.LIST$item([
+                create.P(["bar"]),
+              ])])],
+            },
+          ]);
+        });
+        describe("多项", () => {
+          theseCasesAreOk([
+            {
+              input: "# foo\n> bar\n# baz",
+              expected: [create.LIST("O", [
+                create.LIST$item(["foo", create.P(["bar"])]),
+                create.LIST$item(["baz"]),
+              ])],
+            },
+            {
+              input: "# foo\n>\n# baz",
+              expected: [create.LIST("O", [
+                create.LIST$item(["foo"]),
+                create.LIST$item(["baz"]),
+              ])],
+            },
+            {
+              input: ";\n> foo\n> bar\n:\n> baz\n: qux",
+              expected: [create.DL([
+                create.DL$item("T", [create.P(["foo", create.br(), "bar"])]),
+                create.DL$item("D", [create.P(["baz"])]),
+                create.DL$item("D", ["qux"]),
+              ])],
+            },
+          ]);
+        });
+      });
+      describe("上下相邻的组的切割", () => {
+        theseCasesAreOk([
+          {
+            input: "* foo\n# bar",
+            expected: [
+              create.LIST("U", [create.LIST$item(["foo"])]),
+              create.LIST("O", [create.LIST$item(["bar"])]),
+            ],
+          },
+          {
+            input: "* foo\n> bar\n# baz",
+            expected: [
+              create.LIST("U", [create.LIST$item(["foo", create.P(["bar"])])]),
+              create.LIST("O", [create.LIST$item(["baz"])]),
+            ],
+          },
+          ...["> foo\n# bar", "> foo\n>\n# bar"].map((input) => ({
+            input,
+            expected: [
+              create.QUOTE([create.P(["foo"])]),
+              create.LIST("O", [create.LIST$item(["bar"])]),
+            ],
+          })),
+        ]);
+      });
+      describe("多层深的单项", () => {
+        theseCasesAreOk([
+          {
+            input: "** foo",
+            expected: [
+              create.LIST("U", [create.LIST$item([
+                create.LIST("U", [create.LIST$item(["foo"])]),
+              ])]),
+            ],
+          },
+          {
+            input: "*** foo",
+            expected: [
+              create.LIST("U", [create.LIST$item([
+                create.LIST("U", [create.LIST$item([
+                  create.LIST("U", [create.LIST$item(["foo"])]),
+                ])]),
+              ])]),
+            ],
+          },
+          {
+            input: ">* foo",
+            expected: [
+              create.QUOTE([
+                create.LIST("U", [create.LIST$item(["foo"])]),
+              ]),
+            ],
+          },
+        ]);
+      });
+      describe("块引用内", () => {
+        theseCasesAreOk([
+          { // 块引用套块引用
+            input: ">> foo\n>> bar",
+            expected: [
+              create.QUOTE([
+                create.QUOTE([create.P(["foo", create.br(), "bar"])]),
+              ]),
+            ],
+          },
+          { // 块引用套其他多项
+            input: ">* foo\n>* bar",
+            expected: [
+              create.QUOTE([create.LIST("U", [
+                create.LIST$item(["foo"]),
+                create.LIST$item(["bar"]),
+              ])]),
+            ],
+          },
+          { // 块引用套有延长的单项·1
+            input: ">* foo\n>> bar",
+            expected: [
+              create.QUOTE([create.LIST("U", [
+                create.LIST$item(["foo", create.P(["bar"])]),
+              ])]),
+            ],
+          },
+          { // 块引用套有延长的单项·2
+            input: ">* \n>> foo\n>> bar\n>>\n>> baz",
+            expected: [
+              create.QUOTE([create.LIST("U", [
+                create.LIST$item([
+                  create.P(["foo", create.br(), "bar"]),
+                  create.P(["baz"]),
+                ]),
+              ])]),
+            ],
+          },
+        ]);
+      });
+      describe("延长的项内", () => {
+        theseCasesAreOk([
+          ...["#* foo\n>* bar", "#\n>* foo\n>* bar"].map((input) => ({
+            input, // 延长项套多项
+            expected: [create.LIST("O", [create.LIST$item([
+              create.LIST("U", [
+                create.LIST$item(["foo"]),
+                create.LIST$item(["bar"]),
+              ]),
+            ])])],
+          })),
+          ...["#* foo\n>\n>* bar", "#\n>* foo\n>\n>* bar"].map((input) => ({
+            input, // 延长项套两组由空行隔开的单项
+            expected: [create.LIST("O", [create.LIST$item([
+              create.LIST("U", [create.LIST$item(["foo"])]),
+              create.LIST("U", [create.LIST$item(["bar"])]),
+            ])])],
+          })),
+          { // 延长项套延长项·1
+            input: "## foo\n>> bar",
+            expected: [create.LIST("O", [create.LIST$item([
+              create.LIST("O", [create.LIST$item(["foo", create.P(["bar"])])]),
+            ])])],
+          },
+          { // 延长项套延长项·2
+            input: "#\n>#\n>> foo\n>>\n>> bar",
+            expected: [create.LIST("O", [create.LIST$item([
+              create.LIST("O", [create.LIST$item(
+                [create.P(["foo"]), create.P(["bar"])],
+              )]),
+            ])])],
+          },
+        ]);
+      });
+      describe("组的切割导致的内层的切割", () => {
+        theseCasesAreOk([
+          { // 内层看似同组
+            input: "#* foo\n** bar",
+            expected: [
+              create.LIST("O", [create.LIST$item(
+                [create.LIST("U", [create.LIST$item(["foo"])])],
+              )]),
+              create.LIST("U", [create.LIST$item(
+                [create.LIST("U", [create.LIST$item(["bar"])])],
+              )]),
+            ],
+          },
+          { // 内层看似延长
+            input: "#* foo\n*> bar",
+            expected: [
+              create.LIST("O", [create.LIST$item(
+                [create.LIST("U", [create.LIST$item(["foo"])])],
+              )]),
+              create.LIST("U", [create.LIST$item(
+                [create.QUOTE([create.P(["bar"])])],
+              )]),
+            ],
+          },
+        ]);
+      });
+      describe("多层参差不齐", () => {
+        theseCasesAreOk([
+          {
+            input: "# foo\n># bar",
+            expected: [create.LIST("O", [create.LIST$item([
+              "foo",
+              create.LIST("O", [create.LIST$item(["bar"])]),
+            ])])],
+          },
+          {
+            input: "#\n> foo\n># bar",
+            expected: [create.LIST("O", [create.LIST$item([
+              create.P(["foo"]),
+              create.LIST("O", [create.LIST$item(["bar"])]),
+            ])])],
+          },
+          ...["## foo\n> bar", "#\n># foo\n> bar"].map((input) => ({
+            input,
+            expected: [create.LIST("O", [create.LIST$item([
+              create.LIST("O", [create.LIST$item(["foo"])]),
+              create.P(["bar"]),
+            ])])],
+          })),
+          {
+            input: "##\n>> foo\n> bar",
+            expected: [create.LIST("O", [create.LIST$item([
+              create.LIST("O", [create.LIST$item([create.P(["foo"])])]),
+              create.P(["bar"]),
+            ])])],
+          },
+        ]);
+      });
+    });
     describe("表格", () => {
       describe("能正确解析 “预期产物是单行” 的、“源代码使用 ‘单行格式’” 的表格", () => {
         theseCasesAreOk([
