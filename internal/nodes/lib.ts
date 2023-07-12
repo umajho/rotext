@@ -10,7 +10,7 @@ export type BlockSlot = BlockNode[];
 export type MixedSlot = (InlineNode | BlockNode)[];
 export type BlockOrInlineSlot = BlockSlot | InlineSlot;
 
-export type RootElement = { type: "root"; slot: BlockSlot };
+export type RootElement = { slot: BlockSlot };
 
 export type InlineElement =
   | { type: "br" }
@@ -31,14 +31,17 @@ export type BlockElement =
   | { type: "P"; slot: InlineSlot }
   | { type: "THEMATIC-BREAK" }
   | { type: "H"; props: { level: 1 | 2 | 3 | 4 | 5 | 6 }; slot: InlineSlot }
-  | { type: "QUOTE"; slot: BlockOrInlineSlot }
-  | { type: "OL" | "UL"; items: BlockOrInlineSlot[] }
+  | { type: "QUOTE"; slot: MixedSlot }
+  | { type: "OL" | "UL"; items: ListItem[] }
   | { type: "DL"; items: DescriptionListItem[] }
   | { type: "TABLE"; slots?: { caption?: InlineSlot }; cells: TableCell[][] };
 
+export interface ListItem {
+  slot: MixedSlot;
+}
 export interface DescriptionListItem {
   type: "DL:T" | "DL:D"; // `<dt/>` | `<dd/>`
-  slot: BlockOrInlineSlot;
+  slot: MixedSlot;
 }
 export interface TableCell {
   type: "TABLE:H" | "TABLE:D"; // `<th/>` | `<td/>`
@@ -52,7 +55,7 @@ export interface TableCell {
 export const create = {
   /** 最外部的元素 */
   ROOT(slot: BlockSlot): RootElement {
-    return { type: "root", slot };
+    return { slot };
   },
 
   /**
@@ -141,19 +144,25 @@ export const create = {
     return { type: "QUOTE", slot };
   },
 
-  /** 有序列表 */
-  OL(items: BlockOrInlineSlot[]): BlockElement & { type: "OL" } {
-    return { type: "OL", items };
+  /** 有序列表及无序列表 */
+  LIST(
+    type: "O" | "U",
+    items: ListItem[],
+  ): BlockElement & { type: "OL" | "UL" } {
+    return { type: `${type}L`, items };
   },
 
-  /** 无序列表 */
-  UL(items: BlockOrInlineSlot[]): BlockElement & { type: "UL" } {
-    return { type: "UL", items };
+  LIST$item(slot: MixedSlot): ListItem {
+    return { slot };
   },
 
   /** 描述列表 */
   DL(items: DescriptionListItem[]): BlockElement & { type: "DL" } {
     return { type: "DL", items };
+  },
+
+  DL$item(type: "T" | "D", slot: MixedSlot): DescriptionListItem {
+    return { type: `DL:${type}`, slot };
   },
 
   /** 表格 */
@@ -171,7 +180,7 @@ export const create = {
   TABLE$cell(
     type: "H" | "D",
     slot: MixedSlot,
-  ): TableCell & { type: "TABLE:H" | "TABLE:D" } {
+  ): TableCell {
     return { type: `TABLE:${type}`, slot };
   },
 };

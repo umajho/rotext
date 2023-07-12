@@ -1,6 +1,6 @@
 import { decodeHTMLStrict } from "entities";
 
-import { create, type InlineSlot } from "@rotext/nodes";
+import { create, type InlineSlot, MixedSlot } from "@rotext/nodes";
 
 import { intersperseWithFactory } from "./utils";
 
@@ -57,20 +57,54 @@ export function joinLines(
   const result: InlineSlot = lines[0];
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i];
-    if (
-      typeof result[result.length - 1] === "string" &&
-      typeof line[0] === "string"
-    ) {
-      if (breaks) {
-        result.push(create.br(), ...line);
-      } else {
-        result[result.length - 1] = result[result.length - 1] + " " + line[0];
-        result.push(...line.slice(1));
-      }
-    } else {
-      result.push(...line);
-    }
+    appendLine(result, line, breaks);
   }
 
   return result;
+}
+
+function appendLine(
+  target: InlineSlot,
+  line: InlineSlot,
+  breaks: boolean,
+) {
+  if (
+    typeof target[target.length - 1] === "string" &&
+    typeof line[0] === "string"
+  ) {
+    if (breaks) {
+      target.push(create.br(), ...line);
+    } else {
+      target[target.length - 1] = target[target.length - 1] + " " + line[0];
+      target.push(...line.slice(1));
+    }
+  } else {
+    target.push(...line);
+  }
+}
+
+/**
+ * `opts`:
+ * - `paragraph`:
+ *   - `"default"`: 如果先前有段落，将 line 追加入段落，否则创建新的段落放入 line。
+ *   - `"new"`: 无论如何都创建新的段落放入 line。
+ *   - `"no"`: line 与段落平级铺在外侧。
+ */
+export function appendLineToMixedSlot(
+  slot: MixedSlot,
+  line: InlineSlot,
+  opts: { paragraph: "default" | "new" | "no"; breaks: boolean },
+) {
+  if (opts.paragraph === "no") {
+    slot.push(...line);
+  } else if (opts.paragraph === "new") {
+    slot.push(create.P(line));
+  } else {
+    const last = slot[slot.length - 1];
+    if (last && typeof last !== "string" && last.type === "P") {
+      appendLine(last.slot, line, opts.breaks);
+    } else {
+      slot.push(create.P(line));
+    }
+  }
 }
