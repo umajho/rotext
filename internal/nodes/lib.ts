@@ -64,14 +64,17 @@ export const create = {
   // },
 
   /** 行内元素间的换行 */
-  br(): InlineElement {
+  br(): InlineElement & { type: "br" } {
     return { type: "br" };
   },
 
   /**
    * 使行内元素表达强调。
-   * `strong` 代表加粗；`mark` 代表着重号；默认是正常的 `em`，一般体现为斜体 */
-  em(subType: null | "strong" | "dotted", slot: InlineSlot): InlineElement {
+   * `strong` 代表加粗；`dotted` 代表着重号；默认是正常的 `em`，一般体现为斜体 */
+  em(
+    subType: null | "strong" | "dotted",
+    slot: InlineSlot,
+  ): InlineElement & { type: "em" | "em.strong" | "em.dotted" } {
     if (subType) {
       return { type: `em.${subType}`, slot };
     }
@@ -79,12 +82,12 @@ export const create = {
   },
 
   /** 下划线 */
-  u(slot: InlineSlot): InlineElement {
+  u(slot: InlineSlot): InlineElement & { type: "u" } {
     return { type: "u", slot };
   },
 
   /** 删除线 */
-  s(slot: InlineSlot): InlineElement {
+  s(slot: InlineSlot): InlineElement & { type: "s" } {
     return { type: "s", slot };
   },
 
@@ -93,62 +96,71 @@ export const create = {
     base: InlineSlot,
     p: [left: string, right: string],
     text: InlineSlot,
-  ): InlineElement {
+  ): InlineElement & { type: "ruby" } {
     return { type: "ruby", props: { p }, slots: { base, text } };
   },
 
   /** 行内显示代码片段 */
-  code(slot: RawTextSlot): InlineElement {
+  code(slot: RawTextSlot): InlineElement & { type: "code" } {
     return { type: "code", slot };
   },
 
   /** 引用链接 */
-  ref_link(slot: RawTextSlot): InlineElement {
+  ref_link(slot: RawTextSlot): InlineElement & { type: "ref-link" } {
     return { type: "ref-link", slot };
   },
 
   /** 除了记录 dicexp 之外，还记录可能的赋值对象的信息 */
-  dicexp(code: RawTextSlot, assignTo?: RawTextSlot): InlineElement {
+  dicexp(
+    code: RawTextSlot,
+    assignTo?: RawTextSlot,
+  ): InlineElement & { type: "dicexp" } {
     return { type: "dicexp", slots: { code, assignTo } };
   },
 
   /** 段落 */
-  P(slot: InlineSlot): BlockElement {
+  P(slot: InlineSlot): BlockElement & { type: "P" } {
     return { type: "P", slot };
   },
 
   /** 用于切断前后文主题，一般体现为分隔符 */
-  THEMATIC_BREAK(): BlockElement {
+  THEMATIC_BREAK(): BlockElement & { type: "THEMATIC-BREAK" } {
     return { type: "THEMATIC-BREAK" };
   },
 
   /** 标题（Heading） */
-  H(level: 1 | 2 | 3 | 4 | 5 | 6, slot: InlineSlot): BlockElement {
+  H(
+    level: 1 | 2 | 3 | 4 | 5 | 6,
+    slot: InlineSlot,
+  ): BlockElement & { type: "H" } {
     return { type: "H", props: { level }, slot };
   },
 
   /** 块引用，由于 “块级” 已经体现在大写上，去掉一般名字中的 “blcok” */
-  QUOTE(slot: BlockOrInlineSlot): BlockElement {
+  QUOTE(slot: BlockOrInlineSlot): BlockElement & { type: "QUOTE" } {
     return { type: "QUOTE", slot };
   },
 
   /** 有序列表 */
-  OL(items: BlockOrInlineSlot[]): BlockElement {
+  OL(items: BlockOrInlineSlot[]): BlockElement & { type: "OL" } {
     return { type: "OL", items };
   },
 
   /** 无序列表 */
-  UL(items: BlockOrInlineSlot[]): BlockElement {
+  UL(items: BlockOrInlineSlot[]): BlockElement & { type: "UL" } {
     return { type: "UL", items };
   },
 
   /** 描述列表 */
-  DL(items: DescriptionListItem[]): BlockElement {
+  DL(items: DescriptionListItem[]): BlockElement & { type: "DL" } {
     return { type: "DL", items };
   },
 
   /** 表格 */
-  TABLE(caption: InlineSlot | null, cells: TableCell[][]): BlockElement {
+  TABLE(
+    caption: InlineSlot | null,
+    cells: TableCell[][],
+  ): BlockElement & { type: "TABLE" } {
     return {
       type: "TABLE",
       ...(caption ? { slots: { caption } } : {}),
@@ -156,7 +168,10 @@ export const create = {
     };
   },
 
-  TABLE$cell(type: "H" | "D", slot: MixedSlot): TableCell {
+  TABLE$cell(
+    type: "H" | "D",
+    slot: MixedSlot,
+  ): TableCell & { type: "TABLE:H" | "TABLE:D" } {
     return { type: `TABLE:${type}`, slot };
   },
 };
