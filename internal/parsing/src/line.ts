@@ -39,14 +39,38 @@ export function joinInlines(
   return result;
 }
 
+/**
+ * 将多行合并为一行。
+ *
+ * @param lines 要合并的各行，在传入前应已经使用 `joinInlines` 整理好。传入后不能再使用
+ * @param breaks 是否视「软换行」为换行
+ * @returns 合并后的一行
+ *
+ * TODO: 也许可以基于前后相连的字符种类决定是使用空格还是空字符串拼接两行
+ */
 export function joinLines(
   lines: InlineSlot[],
   breaks: boolean,
 ): InlineSlot {
-  // TODO: 也许可以基于前后相连的字符种类决定是使用空格还是空字符串拼接两行
-  lines = intersperseWithFactory(
-    lines,
-    () => breaks ? [create.br()] : [" "],
-  );
-  return joinInlines(lines.flat(), false);
+  if (!lines.length) return [];
+
+  const result: InlineSlot = lines[0];
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (
+      typeof result[result.length - 1] === "string" &&
+      typeof line[0] === "string"
+    ) {
+      if (breaks) {
+        result.push(create.br(), ...line);
+      } else {
+        result[result.length - 1] = result[result.length - 1] + " " + line[0];
+        result.push(...line.slice(1));
+      }
+    } else {
+      result.push(...line);
+    }
+  }
+
+  return result;
 }
