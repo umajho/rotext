@@ -1,7 +1,10 @@
 set fallback
 
-dev:
+prepare:
+	just parsing build
+
+dev: prepare
 	pnpm run dev
 
-build:
+build: prepare
 	pnpm run build
