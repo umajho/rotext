@@ -1,7 +1,7 @@
 set fallback
 
-prepare:
-	just core build
+dev:
+	pnpm run dev
 
-build: prepare
+build:
 	pnpm run build

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { create, type RootElement } from "@rotext/nodes";
+import { create, type Root } from "@rotext/nodes";
 
 import * as parser from "../src/rotext";
 
@@ -11,20 +11,20 @@ interface ParseOptions {
 function parse(
   input: string,
   opts: ParseOptions = {},
-): RootElement {
+): Root {
   opts.breaks ??= true;
 
-  return parser.parse(input, opts) as RootElement;
+  return parser.parse(input, opts) as Root;
 }
 
 interface Case {
   input: string;
-  expected: RootElement["slot"];
+  expected: Root["slot"];
 }
 
 function assertOk(
   input: string,
-  expected: RootElement["slot"] | null,
+  expected: Root["slot"] | null,
   opts?: ParseOptions,
 ) {
   const output = parse(input, opts);
@@ -223,15 +223,15 @@ describe("解析", () => {
           {
             input: "[foo(bar)]",
             expected: [
-              create.P([create.ruby(["foo"], ["(", ")"], ["bar"])]),
+              create.P([create.ruby(["foo"], ["bar"], ["(", ")"])]),
             ],
           },
           {
             input: "[测(•)][试(•)]",
             expected: [
               create.P([
-                create.ruby(["测"], ["(", ")"], ["•"]),
-                create.ruby(["试"], ["(", ")"], ["•"]),
+                create.ruby(["测"], ["•"], ["(", ")"]),
+                create.ruby(["试"], ["•"], ["(", ")"]),
               ]),
             ],
           },
@@ -243,7 +243,7 @@ describe("解析", () => {
             input: "[测试（test）]",
             expected: [
               create.P([
-                create.ruby(["测试"], ["（", "）"], ["test"]),
+                create.ruby(["测试"], ["test"], ["（", "）"]),
               ]),
             ],
           },
@@ -255,7 +255,7 @@ describe("解析", () => {
             input: "[[`foo`](bar)]",
             expected: [
               create.P([
-                create.ruby([create.code("foo")], ["(", ")"], ["bar"]),
+                create.ruby([create.code("foo")], ["bar"], ["(", ")"]),
               ]),
             ],
           },
@@ -263,7 +263,7 @@ describe("解析", () => {
             input: "[foo([`bar`])]",
             expected: [
               create.P([
-                create.ruby(["foo"], ["(", ")"], [create.code("bar")]),
+                create.ruby(["foo"], [create.code("bar")], ["(", ")"]),
               ]),
             ],
           },
@@ -273,8 +273,8 @@ describe("解析", () => {
               create.P([
                 create.ruby(
                   ["1 ", create.code("2"), " 3"],
+                  ["4 ", create.ruby(["5"], ["6"], ["(", ")"]), " 7"],
                   ["(", ")"],
-                  ["4 ", create.ruby(["5"], ["(", ")"], ["6"]), " 7"],
                 ),
               ]),
             ],

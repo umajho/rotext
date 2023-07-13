@@ -9,9 +9,10 @@ import {
   untrack,
 } from "solid-js";
 
-import { classModule, init, styleModule, type VNode } from "snabbdom";
+import { classModule, h, init, styleModule, type VNode } from "snabbdom";
 
-import { parse } from "@rotext-lite/renderer-snabbdom";
+import { parse } from "@rotext/parsing";
+import { rootToSnabbdomChildren } from "@rotext/to-html";
 
 const Preview: Component<
   {
@@ -43,11 +44,13 @@ const Preview: Component<
       }
 
       const parsingStart = performance.now();
-      const vNode = parse(props.code, { breaks: true });
+      const doc = parse(props.code, { softBreakAs: "br" });
+      const vChildren = rootToSnabbdomChildren(doc);
       props.setParsingTimeText(
         `${+(performance.now() - parsingStart).toFixed(3)}ms`,
       );
 
+      const vNode = h("article", vChildren);
       patch(lastNode, vNode);
       lastNode = vNode;
     } catch (e) {
