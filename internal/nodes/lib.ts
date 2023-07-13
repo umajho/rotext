@@ -15,6 +15,9 @@ export type Root = {
   slot: BlockSlot;
 };
 
+/**
+ * 所有字母必须小写，并且需以小写字母打头。
+ */
 export type InlineElement =
   | { type: "br" }
   | { type: "em" | "em.strong" | "em.dotted" | "u" | "s"; slot: InlineSlot }
@@ -30,6 +33,9 @@ export type InlineElement =
   | { type: "ref-link"; slot: RawTextSlot }
   | { type: "dicexp"; slots: { code: RawTextSlot; assignTo?: RawTextSlot } };
 
+/**
+ * 所有字母必须大写，并且需以大写字母打头。
+ */
 export type BlockElement =
   | { type: "P"; slot: InlineSlot }
   | { type: "THEMATIC-BREAK" }

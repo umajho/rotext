@@ -67,19 +67,33 @@ describe("解析", () => {
         });
       });
       describe("多行", () => {
-        it("`breaks` 选项为假时，输入文本中的单次换行只视为空格", () => {
-          assertOk(
-            "foo\nbar",
-            [create.P(["foo bar"])],
-            { breaks: false },
-          );
+        describe("`breaks` 选项为假时，输入文本中的单次换行只视为空格", () => {
+          theseCasesAreOk([
+            {
+              input: "foo\nbar",
+              expected: [create.P(["foo bar"])],
+            },
+          ], { breaks: false });
         });
-        it("`breaks` 选项为真时，输入文本中的单次换行视为换行", () => {
-          assertOk(
-            "foo\nbar",
-            [create.P(["foo", create.br(), "bar"])],
-            { breaks: true },
-          );
+        describe("`breaks` 选项为真时，输入文本中的单次换行视为换行", () => {
+          theseCasesAreOk([
+            {
+              input: "foo\nbar",
+              expected: [create.P(["foo", create.br(), "bar"])],
+            },
+            {
+              input: "foo\n['bar']\nbaz",
+              expected: [
+                create.P([
+                  "foo",
+                  create.br(),
+                  create.em("strong", ["bar"]),
+                  create.br(),
+                  "baz",
+                ]),
+              ],
+            },
+          ], { breaks: true });
         });
       });
     });

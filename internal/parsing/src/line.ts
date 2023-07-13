@@ -68,19 +68,27 @@ function appendLine(
   line: InlineSlot,
   breaks: boolean,
 ) {
+  const topEnd = target[target.length - 1];
+  const bottomStart = line[0];
+
   if (
-    typeof target[target.length - 1] === "string" &&
-    typeof line[0] === "string"
+    // NOTE: 规定行内元素必定小写字母打头，以此来判断
+    (typeof topEnd === "string" || startsWithLowerCase(topEnd.type)) &&
+    (typeof bottomStart === "string" || startsWithLowerCase(bottomStart.type))
   ) {
     if (breaks) {
       target.push(create.br(), ...line);
     } else {
-      target[target.length - 1] = target[target.length - 1] + " " + line[0];
+      target[target.length - 1] = topEnd + " " + bottomStart;
       target.push(...line.slice(1));
     }
   } else {
     target.push(...line);
   }
+}
+
+function startsWithLowerCase(x: string) {
+  return x[0].toLowerCase() === x[0];
 }
 
 /**
