@@ -10,8 +10,10 @@ interface ParseOptions {
 
 function parse(
   input: string,
-  opts: ParseOptions = { breaks: true },
+  opts: ParseOptions = {},
 ): RootElement {
+  opts.breaks ??= true;
+
   return parser.parse(input, opts) as RootElement;
 }
 
