@@ -9,8 +9,9 @@ export function rootToSnabbdomChildren(root: Root): VNodeChildren {
  * XXX: 小心 XSS，建议用 sanitizer 过滤结果，特别是传入的元素由用户生成时
  */
 export function elementToSnabbdom(el: Element): VNode {
+  let children: VNodeChildren | undefined;
+
   if ("slot" in el) {
-    const children = slotToChildren(el.slot);
     let sel: string;
     let classes: Record<string, boolean> | undefined;
     switch (el.type) {
@@ -32,6 +33,7 @@ export function elementToSnabbdom(el: Element): VNode {
       case "ref-link":
         sel = "span";
         classes = { "ref-link": true };
+        children = `[>>${el.slot}]`;
         break;
       case "P":
       case "QUOTE":
@@ -41,6 +43,9 @@ export function elementToSnabbdom(el: Element): VNode {
         sel = `h${el.props.level}`;
         break;
     }
+
+    children ??= slotToChildren(el.slot);
+
     return classes ? h(sel, { class: classes }, children) : h(sel, children);
   }
 
