@@ -1,8 +1,8 @@
-import { Element, MixedSlot, RawTextSlot, Root } from "@rotext/nodes";
+import { Document, Element, MixedSlot, RawTextSlot } from "@rotext/nodes";
 import { h, VNode, VNodeChildren } from "snabbdom";
 
-export function rootToSnabbdomChildren(root: Root): VNodeChildren {
-  return slotToChildren(root.slot);
+export function toSnabbdomChildren(doc: Document): VNodeChildren {
+  return slotToChildren(doc.slot);
 }
 /**
  * XXX: 应由调用者保障传入的元素符合规范（定义的类型）

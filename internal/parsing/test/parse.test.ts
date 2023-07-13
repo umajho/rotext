@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { create, type Root } from "@rotext/nodes";
+import { create, createDocument, type Document } from "@rotext/nodes";
 
 import * as parser from "../src/rotext";
 
@@ -11,25 +11,25 @@ interface ParseOptions {
 function parse(
   input: string,
   opts: ParseOptions = {},
-): Root {
+): Document {
   opts.breaks ??= true;
 
-  return parser.parse(input, opts) as Root;
+  return parser.parse(input, opts) as Document;
 }
 
 interface Case {
   input: string;
-  expected: Root["slot"];
+  expected: Document["slot"];
 }
 
 function assertOk(
   input: string,
-  expected: Root["slot"] | null,
+  expected: Document["slot"] | null,
   opts?: ParseOptions,
 ) {
   const output = parse(input, opts);
   if (expected) {
-    expect(create.ROOT(expected)).toStrictEqual(output);
+    expect(createDocument(expected)).toStrictEqual(output);
   }
 }
 

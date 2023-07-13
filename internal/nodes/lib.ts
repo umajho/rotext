@@ -11,7 +11,7 @@ export type BlockSlot = BlockNode[];
 export type MixedSlot = (InlineNode | BlockNode)[];
 export type BlockOrInlineSlot = BlockSlot | InlineSlot;
 
-export type Root = {
+export type Document = {
   slot: BlockSlot;
 };
 
@@ -57,16 +57,18 @@ export interface TableCell {
   slot: MixedSlot;
 }
 
+/** 创建文档 */
+export function createDocument(slot: BlockSlot) {
+  return { slot };
+}
+
 /**
  * 提供用于创建节点的函数。
  * 其中小写者为行内元素，大写者为块级元素。
+ *
+ * NOTE: 文档不属于节点，因此使用单独的 `createDocument` 函数来创建。
  */
 export const create = {
-  /** 最外部的元素 */
-  ROOT(slot: BlockSlot): Root {
-    return { slot };
-  },
-
   /**
    * ~~纯粹的文本（节点）。~~
    * 直接使用 string。
