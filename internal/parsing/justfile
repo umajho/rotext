@@ -1,0 +1,7 @@
+set fallback
+
+build:
+  pnpm exec peggy --format=es src/rotext.peggy
+
+test: build
+  pnpm exec vitest --dir=test --run

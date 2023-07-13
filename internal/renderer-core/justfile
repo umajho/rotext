@@ -1,9 +1,0 @@
-set fallback
-
-compile-peg:
-  pnpm exec peggy --format=es internal/rotext.pegjs
-
-pre-build: compile-peg
-
-build: pre-build
-  pnpm exec rollup -c

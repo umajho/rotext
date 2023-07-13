@@ -25,19 +25,3 @@ export function intersperseWithFactory<T>(arr: T[], sepFactory: () => T): T[] {
   }
   return result;
 }
-
-/**
- * 返回两个字符串的公共前缀。
- */
-export function getCommonPrefix(a: string, b: string): string {
-  let result = "";
-  const minLen = Math.min(a.length, b.length);
-  for (let i = 0; i < minLen; i++) {
-    if (a[i] === b[i]) {
-      result += a[i];
-    } else {
-      break;
-    }
-  }
-  return result;
-}
