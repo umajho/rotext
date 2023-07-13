@@ -1,0 +1,17 @@
+{
+  "name": "@rotext/parsing",
+  "version": "0.0.1",
+  "keywords": [],
+  "author": "Umaĵo",
+  "license": "MIT",
+  "type": "module",
+  "main": "lib.ts",
+  "dependencies": {
+    "@rotext/nodes": "workspace:*",
+    "entities": "^4.5.0"
+  },
+  "devDependencies": {
+    "peggy": "^3.0.2",
+    "vitest": "^0.32.2"
+  }
+}

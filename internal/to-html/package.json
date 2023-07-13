@@ -1,0 +1,13 @@
+{
+  "name": "@rotext/to-html",
+  "version": "0.0.1",
+  "keywords": [],
+  "author": "Umaĵo",
+  "license": "MIT",
+  "type": "module",
+  "main": "lib.ts",
+  "dependencies": {
+    "@rotext/nodes": "workspace:*",
+    "snabbdom": "^3.5.1"
+  }
+}
