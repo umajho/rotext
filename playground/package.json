@@ -1,6 +1,6 @@
 {
   "packageManager": "pnpm@8.6.1",
-  "name": "vite-template-solid",
+  "name": "@rotext/playground",
   "version": "0.0.0",
   "description": "",
   "scripts": {
