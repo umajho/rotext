@@ -12,7 +12,7 @@ import {
 import { classModule, h, init, styleModule, type VNode } from "snabbdom";
 
 import { parse } from "@rotext/parsing";
-import { rootToSnabbdomChildren } from "@rotext/to-html";
+import { toSnabbdomChildren } from "@rotext/to-html";
 
 const Preview: Component<
   {
@@ -45,7 +45,7 @@ const Preview: Component<
 
       const parsingStart = performance.now();
       const doc = parse(props.code, { softBreakAs: "br" });
-      const vChildren = rootToSnabbdomChildren(doc);
+      const vChildren = toSnabbdomChildren(doc);
       props.setParsingTimeText(
         `${+(performance.now() - parsingStart).toFixed(3)}ms`,
       );

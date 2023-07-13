@@ -1,5 +1,5 @@
 {{
-  import { create } from "@rotext/nodes";
+  import { create, createDocument } from "@rotext/nodes";
   import { joinInlines, joinLines } from "./line.ts"
   import { buildContainers } from "./container.ts";
 }}
@@ -11,9 +11,9 @@
 
 Document
   = __ blocks:(@Block (br __ / !.))+
-    { return create.ROOT(blocks.flat()); } // `flat` 用于展平 `Containers`
+    { return createDocument(blocks.flat()); } // `flat` 用于展平 `Containers`
   / __
-    { return create.ROOT([]); }
+    { return createDocument([]); }
 
 Block
   = ThematicBreak
