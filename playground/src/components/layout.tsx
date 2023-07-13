@@ -27,7 +27,7 @@ export const NavBar: Component = () => {
         </Dropdown>
         <a class="btn btn-ghost normal-case text-xl">
           <span>
-            Rotext<sup>lite</sup> Playground
+            Rotext
           </span>
         </a>
       </div>
@@ -38,7 +38,7 @@ export const NavBar: Component = () => {
               class="inline-flex items-center"
               href="https://github.com/umajho/rotext"
             >
-              代码仓库
+              代码
               <HiSolidArrowTopRightOnSquare size={16} />
             </a>
           </li>
