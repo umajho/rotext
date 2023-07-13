@@ -252,8 +252,8 @@ Ruby
     {
       return create.ruby(
         joinInlines(base),
-        [pLeft, pRight],
         joinInlines(text),
+        [pLeft, pRight],
       );
     }
 

@@ -1,3 +1,5 @@
+import { Root } from "@rotext/nodes";
+
 import * as parser from "./src/rotext";
 
 export interface ParseOptions {
@@ -7,7 +9,7 @@ export interface ParseOptions {
   softBreakAs?: "br" | "space";
 }
 
-export function parse(input: string, opts: ParseOptions = {}) {
+export function parse(input: string, opts: ParseOptions = {}): Root {
   opts.softBreakAs ??= "br";
 
   return parser.parse(input, { breaks: opts.softBreakAs === "br" });

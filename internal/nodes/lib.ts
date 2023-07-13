@@ -1,4 +1,5 @@
 export type TextNode = string;
+export type Element = BlockElement | InlineElement;
 export type InlineNode = InlineElement | TextNode;
 export type BlockNode = BlockElement;
 
@@ -10,7 +11,9 @@ export type BlockSlot = BlockNode[];
 export type MixedSlot = (InlineNode | BlockNode)[];
 export type BlockOrInlineSlot = BlockSlot | InlineSlot;
 
-export type RootElement = { slot: BlockSlot };
+export type Root = {
+  slot: BlockSlot;
+};
 
 export type InlineElement =
   | { type: "br" }
@@ -54,7 +57,7 @@ export interface TableCell {
  */
 export const create = {
   /** 最外部的元素 */
-  ROOT(slot: BlockSlot): RootElement {
+  ROOT(slot: BlockSlot): Root {
     return { slot };
   },
 
@@ -97,8 +100,8 @@ export const create = {
   /** 为行内元素添加 ruby 文字，即旁注 */
   ruby(
     base: InlineSlot,
-    p: [left: string, right: string],
     text: InlineSlot,
+    p: [left: string, right: string],
   ): InlineElement & { type: "ruby" } {
     return { type: "ruby", props: { p }, slots: { base, text } };
   },

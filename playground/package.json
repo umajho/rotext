@@ -24,7 +24,8 @@
   "dependencies": {
     "@codemirror/state": "^6.2.1",
     "@codemirror/theme-one-dark": "^6.1.2",
-    "@rotext-lite/renderer-snabbdom": "workspace:^0.0.1",
+    "@rotext/parsing": "workspace:*",
+    "@rotext/to-html": "workspace:*",
     "codemirror": "^6.0.1",
     "snabbdom": "^3.5.1",
     "solid-icons": "^1.0.8",
