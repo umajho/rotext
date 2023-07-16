@@ -36,8 +36,10 @@ export function elementToSnabbdom(el: Element): VNode {
         children = `[>>${el.slot}]`;
         break;
       case "P":
-      case "QUOTE":
         sel = el.type;
+        break;
+      case "QUOTE":
+        sel = "blockquote";
         break;
       case "H":
         sel = `h${el.props.level}`;
