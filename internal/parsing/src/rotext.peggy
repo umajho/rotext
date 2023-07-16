@@ -5,13 +5,22 @@
 }}
 
 {
-  options = options ?? {};
-  const breaks = options.breaks ?? false;
+  const breaks = options.breaks;
+  const locMap = options.recordsLocation ? new WeakMap() : null;
+
+  function recording(el) {
+    locMap?.set(el, location());
+    return el;
+  }
 }
 
 Document
-  = __ blocks:(@Block (br __ / !.))+
-    { return createDocument(blocks.flat()); } // `flat` 用于展平 `Containers`
+  = __ unflattenBlocks:(@Block (br __ / !.))+
+    { 
+      const blocks = unflattenBlocks.flat(); // 用于展平 `Containers`
+      const metadata = locMap ? { locMap } : undefined;
+      return createDocument(blocks, metadata);
+    } 
   / __
     { return createDocument([]); }
 
@@ -27,11 +36,11 @@ BlockLineBegin
 
 Paragraph
   = first:Line rest:(br !BlockLineBegin @Line)*
-    { return create.P(joinLines([first, ...rest], breaks)) }
+    { return recording(create.P(joinLines([first, ...rest], breaks))); }
 
 ThematicBreak
   = "-"|3..| _
-    { return create.THEMATIC_BREAK(); }
+    { return recording(create.THEMATIC_BREAK()); }
 
 Heading
   = level:$"="|1..6| spaces:$_
@@ -74,7 +83,7 @@ Heading
         line[line.length - 1] = last;
       }
 
-      return create.H(realLevels, line);
+      return recording(create.H(realLevels, line));
     }
 
 // NOTE: 之所以是复数，是因为可能会有得到复数个容器的情况
@@ -89,10 +98,14 @@ Heading
 */
 Containers // TODO: `; foo : bar`
   = first:ContainersLine rest:(br @ContainersLine)*
-    { return buildContainers([first, ...rest], breaks); }
+    { return buildContainers([first, ...rest], breaks, locMap); }
 ContainersLine
   = prefix:$[>#*;:]|1..| ([ \t]+ / &br) line:Line?
-    { return { prefix, line }; }
+    { 
+      return locMap
+        ? { prefix, line, location: location() }
+        : { prefix, line };
+    }
 
 Table
   = TableBegin /*无视首行后边的内容*/ @TableRows __ TableEnd
@@ -106,10 +119,11 @@ TableRelatedLineBegin = (TableRelatedLineBeginNoCells / TableCellLineBegin)
 TableRows
     = caption:(br __ @TableCaption)? first:TableRow? rest:(br __ TableRowBegin @TableRow)*
       { 
-        return create.TABLE(
+        const table = create.TABLE(
           caption ? caption : null,
           [...(first?.length ? [first] : []), ...(rest ?? [])],
         );
+        return recording(table);
       }
 TableRowBegin = !"|}" "|" "-"+ _
 
@@ -122,7 +136,7 @@ TableCaptionBegin = !"|}" "|+" _
 
 TableRow
   = cells:TableRowFragment*
-    { return cells.flat(); }
+    { return recording(cells.flat()); }
 TableRowFragment
   = br __ !TableRelatedLineBeginNoCells
     initCells:(@TableInlineCell ("!" &"!" / "|" & "|"))*

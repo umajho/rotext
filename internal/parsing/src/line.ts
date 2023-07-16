@@ -101,18 +101,24 @@ function startsWithLowerCase(x: string) {
 export function appendLineToMixedSlot(
   slot: MixedSlot,
   line: InlineSlot,
-  opts: { paragraph: "default" | "new" | "no"; breaks: boolean },
+  opts: {
+    paragraph: "default" | "new" | "no";
+    breaks: boolean;
+    recording?: <T>(el: T) => T;
+  },
 ) {
   if (opts.paragraph === "no") {
     slot.push(...line);
   } else if (opts.paragraph === "new") {
-    slot.push(create.P(line));
+    const p = create.P(line);
+    slot.push(opts.recording ? opts.recording(p) : p);
   } else {
     const last = slot[slot.length - 1];
     if (last && typeof last !== "string" && last.type === "P") {
       appendLine(last.slot, line, opts.breaks);
     } else {
-      slot.push(create.P(line));
+      const p = create.P(line);
+      slot.push(opts.recording ? opts.recording(p) : p);
     }
   }
 }
