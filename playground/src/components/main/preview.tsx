@@ -3,8 +3,10 @@ import "./preview.scss";
 import {
   Component,
   createEffect,
+  createMemo,
   createSignal,
   JSX,
+  on,
   onMount,
   Setter,
   Show,
@@ -27,8 +29,8 @@ const Preview: Component<
   }
 > = (props) => {
   const [err, setErr] = createSignal<Error>(null);
-  const [baselineY, setBaselineY] = createSignal(0);
-  const [baselineHint, setBaselineHint] = createSignal(null);
+
+  const [lookupList, setLookupList] = createSignal<LookupList>();
 
   //==== 文档渲染 ====
 
@@ -38,8 +40,7 @@ const Preview: Component<
 
   const {
     module: locationModule,
-    view: locationView,
-  } = createLocationModule(ROOT_CLASS);
+  } = createLocationModule(ROOT_CLASS, setLookupList);
 
   onMount(() => {
     patch = init(
@@ -82,34 +83,53 @@ const Preview: Component<
 
   //==== 滚动同步 ====
 
-  function handleScroll(cEl: HTMLElement) { // “cEl” means “container Element”
-    if (!locationView.getLookupList().length) return;
-    const docEl = (lastNode as VNode).elm as HTMLElement;
+  const [scrollLocal, setScrollLocal] = createSignal<ScrollLocal>();
+  const scrollLocalItem = () => {
+    const _lookupList = lookupList();
+    const _scrollLocal = scrollLocal();
+    if (!_lookupList?.length || !_scrollLocal) return null;
+    return _lookupList[_scrollLocal.indexInLookupList];
+  };
+  const baselineY = createMemo(() => {
+    const item = scrollLocalItem();
+    if (!item) return 0;
+    const _local = scrollLocal()!;
 
-    const progress = cEl.scrollTop / (cEl.scrollHeight - cEl.offsetHeight);
-    setBaselineY(cEl.scrollHeight * progress);
-    if (baselineY() > docEl.offsetHeight) {
-      setBaselineY(docEl.offsetHeight);
-    } else if (baselineY() < 0) {
-      setBaselineY(baselineY);
+    const nextItem = lookupList()![_local.indexInLookupList + 1];
+    if (nextItem) {
+      return item.offsetTop +
+        (nextItem.offsetTop - item.offsetTop) * _local.progress;
     }
-
-    const scrollLocal = ScrollSyncUtils.getScrollLocal(
-      locationView,
-      baselineY(),
-    );
-
+    return item.offsetTop + item.element.offsetHeight * _local.progress;
+  });
+  const baselineHint = () => {
+    const _item = scrollLocalItem();
+    if (!_item) return null;
     const scrollLocalPreview = (() => {
-      const content = scrollLocal.element.textContent;
+      const content = _item.element.textContent;
       if (content.length <= 10) return content;
       return content.slice(0, 10) + "…";
     })();
     const hint = {
-      tag: scrollLocal.element.tagName,
-      progress: (scrollLocal.progress * 100).toFixed(2) + "%",
+      tag: _item.element.tagName,
+      progress: (scrollLocal().progress * 100).toFixed(2) + "%",
       preview: scrollLocalPreview,
     };
-    setBaselineHint(`${hint.tag} ${hint.progress} ${hint.preview}`);
+    return `${hint.tag} ${hint.progress} ${hint.preview}`;
+  };
+
+  function handleScroll(cEl: HTMLElement) { // “cEl” means “container Element”
+    const _lookupList = lookupList();
+    if (!_lookupList?.length) return;
+    const docEl = (lastNode as VNode).elm as HTMLElement;
+
+    const progress = cEl.scrollTop / (cEl.scrollHeight - cEl.offsetHeight);
+    const _baselineY = Math.min(
+      Math.max(cEl.scrollHeight * progress, 0),
+      docEl.offsetHeight,
+    );
+
+    setScrollLocal(ScrollSyncUtils.getScrollLocal(_lookupList, _baselineY));
   }
 
   let lastScrollEvent: UIEvent | null = null;
@@ -188,13 +208,12 @@ interface ElementLocationPair {
   location: LocationData;
   offsetTop: number;
 }
+type LookupList = ElementLocationPair[];
 
-interface LocationView {
-  getLookupList(): ElementLocationPair[];
-}
 function createLocationModule(
   rootClass: string,
-): { module: Module; view: LocationView } {
+  setLookupList: (view: LookupList) => void,
+): { module: Module } {
   type LookupListRaw = Omit<ElementLocationPair, "offsetTop">[];
   function roastLookupList(raw: LookupListRaw) {
     // 按理来讲应该已经是按起始行数排序的了，不过以免万一就再排序一次。
@@ -259,26 +278,26 @@ function createLocationModule(
         acc.push(cur);
         return acc;
       }, null as ElementLocationPair[] | null) ?? [];
+
+      setLookupList(lookupList);
     },
   };
-  return { module, view: { getLookupList: () => lookupList } };
+
+  return { module };
 }
 
 /**
  * baseline 所穿过的元素、到达下一个这样的元素的进度，以及这个元素对应于原始输入的行数。
  */
 interface ScrollLocal {
-  element: HTMLElement;
+  indexInLookupList: number;
   progress: number;
-  lines: { start: number; end: number };
 }
 const ScrollSyncUtils = {
   getScrollLocal(
-    locationView: LocationView,
+    lookupList: LookupList,
     baselineY: number,
   ): ScrollLocal {
-    const lookupList = locationView.getLookupList();
-
     const localIndex = ScrollSyncUtils.binarySearch(lookupList, (item, i) => {
       if (item.offsetTop > baselineY) return "less";
 
@@ -297,14 +316,9 @@ const ScrollSyncUtils = {
 
     const progress = (baselineY - offsetTop) / (nextOffsetTop - offsetTop);
 
-    const endLine = nextItem
-      ? nextItem.location.start.line - 1
-      : localItem.location.end.line;
-
     return {
-      element: localItem.element,
+      indexInLookupList: localIndex,
       progress,
-      lines: { start: localItem.location.start.line, end: endLine },
     };
   },
 
