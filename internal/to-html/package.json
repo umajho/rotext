@@ -10,5 +10,8 @@
   "dependencies": {
     "@rotext/nodes": "workspace:*",
     "snabbdom": "^3.5.1"
+  },
+  "devDependencies": {
+    "peggy": "^3.0.2"
   }
 }

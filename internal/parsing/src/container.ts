@@ -1,3 +1,5 @@
+import { LocationRange } from "peggy";
+
 import {
   BlockElement,
   create,
@@ -22,6 +24,7 @@ interface RootElement {
 interface Item {
   prefix: string;
   line: InlineSlot | undefined;
+  location?: LocationRange;
 }
 
 interface ItemEx extends Item {
@@ -31,9 +34,21 @@ interface ItemEx extends Item {
 type Markup = ">" | "#" | "*" | ";" | ":";
 type Group = ">" | "#" | "*" | ";:";
 
+type LocMap = WeakMap<any, LocationRange>;
+
+function recording<T>(
+  el: T,
+  locMap: LocMap | null,
+  location: LocationRange | undefined,
+): T {
+  locMap?.set(el, location!); // 有 locMap 必定有 location
+  return el;
+}
+
 export function buildContainers(
   items: Item[],
   breaks: boolean,
+  locMap: LocMap | null,
 ): ContainerElement[] {
   const root: ContainerElement[] = [];
   const rootElement: RootElement = { type: "ROOT", slot: root };
@@ -99,7 +114,13 @@ export function buildContainers(
           appendLineToItem(
             parentEl,
             item.line,
-            { paragraph: paragraphOpt, breaks },
+            {
+              paragraph: paragraphOpt,
+              breaks,
+              recording: locMap
+                ? <T>(el: T) => recording(el, locMap, item.location!)
+                : undefined,
+            },
           );
         }
 
@@ -124,10 +145,15 @@ export function buildContainers(
           ) {
             el = last.el;
           } else {
-            el = createContainer(group);
+            el = createContainer(group, locMap, item.location);
             appendContainerToItem(item.parentElement, el);
           }
-          const itemEl = createAndAppendItemToContainer(el, markup);
+          const itemEl = createAndAppendItemToContainer(
+            el,
+            markup,
+            locMap,
+            item.location,
+          );
           deeperItems.push({ ...item, parentElement: itemEl });
           last = {
             type: "container",
@@ -146,17 +172,26 @@ export function buildContainers(
   return root;
 }
 
-function createContainer(group: Group): ContainerElement {
-  switch (group) {
-    case ">":
-      return create.QUOTE([]);
-    case "#":
-      return create.LIST("O", []);
-    case "*":
-      return create.LIST("U", []);
-    case ";:":
-      return create.DL([]);
+function createContainer(
+  group: Group,
+  locMap: LocMap | null,
+  location: LocationRange | undefined,
+): ContainerElement {
+  function _createContainer(group: Group): ContainerElement {
+    switch (group) {
+      case ">":
+        return create.QUOTE([]);
+      case "#":
+        return create.LIST("O", []);
+      case "*":
+        return create.LIST("U", []);
+      case ";:":
+        return create.DL([]);
+    }
   }
+
+  const container = _createContainer(group);
+  return recording(container, locMap, location);
 }
 
 /**
@@ -175,6 +210,7 @@ function appendLineToItem(
   opts: {
     paragraph: "default" | "new" | "no";
     breaks: boolean;
+    recording?: <T>(el: T) => T;
   },
 ) {
   appendLineToMixedSlot(target.slot, line, opts);
@@ -190,31 +226,41 @@ function appendContainerToItem(
 function createAndAppendItemToContainer(
   target: ContainerElement,
   markup: Markup,
+  locMap: LocMap | null,
+  location: LocationRange | undefined,
 ): ContainerItemElement {
-  switch (markup) {
-    case "#":
-    case "*": {
-      if (target.type !== (markup === "#" ? "OL" : "UL")) {
-        throw new Error("unreachable");
+  function _createAndAppendItemToContainer(
+    target: ContainerElement,
+    markup: Markup,
+  ): ContainerItemElement {
+    switch (markup) {
+      case "#":
+      case "*": {
+        if (target.type !== (markup === "#" ? "OL" : "UL")) {
+          throw new Error("unreachable");
+        }
+        const itemEl = create.LIST$item([]);
+        target.items.push(itemEl);
+        return itemEl;
       }
-      const itemEl = create.LIST$item([]);
-      target.items.push(itemEl);
-      return itemEl;
+      case ";":
+      case ":": {
+        if (target.type !== "DL") throw new Error("unreachable");
+        const itemEl = create.DL$item(markup === ";" ? "T" : "D", []);
+        target.items.push(itemEl);
+        return itemEl;
+      }
+      case ">": {
+        if (target.type !== "QUOTE") throw new Error("unreachable");
+        return target;
+      }
+      default:
+        throw new Error("unreachable");
     }
-    case ";":
-    case ":": {
-      if (target.type !== "DL") throw new Error("unreachable");
-      const itemEl = create.DL$item(markup === ";" ? "T" : "D", []);
-      target.items.push(itemEl);
-      return itemEl;
-    }
-    case ">": {
-      if (target.type !== "QUOTE") throw new Error("unreachable");
-      return target;
-    }
-    default:
-      throw new Error("unreachable");
   }
+
+  const item = _createAndAppendItemToContainer(target, markup);
+  return recording(item, locMap, location);
 }
 
 function getMarkup(prefix: string, depth: number): Markup {

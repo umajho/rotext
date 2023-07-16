@@ -13,6 +13,7 @@ export type BlockOrInlineSlot = BlockSlot | InlineSlot;
 
 export type Document = {
   slot: BlockSlot;
+  metadata?: Record<string, any>;
 };
 
 /**
@@ -58,8 +59,11 @@ export interface TableCell {
 }
 
 /** 创建文档 */
-export function createDocument(slot: BlockSlot) {
-  return { slot };
+export function createDocument(
+  slot: BlockSlot,
+  metadata?: Record<string, any>,
+) {
+  return { slot, metadata };
 }
 
 /**

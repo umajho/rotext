@@ -2,20 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { create, createDocument, type Document } from "@rotext/nodes";
 
-import * as parser from "../src/rotext";
-
-interface ParseOptions {
-  breaks?: boolean;
-}
-
-function parse(
-  input: string,
-  opts: ParseOptions = {},
-): Document {
-  opts.breaks ??= true;
-
-  return parser.parse(input, opts) as Document;
-}
+import { parse, ParseOptions } from "../lib";
 
 interface Case {
   input: string;
@@ -73,7 +60,7 @@ describe("解析", () => {
               input: "foo\nbar",
               expected: [create.P(["foo bar"])],
             },
-          ], { breaks: false });
+          ], { softBreakAs: "space" });
         });
         describe("`breaks` 选项为真时，输入文本中的单次换行视为换行", () => {
           theseCasesAreOk([
@@ -93,7 +80,7 @@ describe("解析", () => {
                 ]),
               ],
             },
-          ], { breaks: true });
+          ], { softBreakAs: "br" });
         });
       });
     });
