@@ -1,4 +1,4 @@
-import { Component, createEffect, lazy, on, Setter } from "solid-js";
+import { Component, createEffect, on, Setter } from "solid-js";
 import { EditorView } from "codemirror";
 
 import { createCodeMirrorEditor } from "../code-mirror-editor";
