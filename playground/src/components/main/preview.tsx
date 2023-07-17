@@ -17,6 +17,8 @@ import { classModule, h, init, Module, styleModule, VNode } from "snabbdom";
 import { parse } from "@rotext/parsing";
 import { toSnabbdomChildren } from "@rotext/to-html";
 
+import * as storeEditorView from "../../stores/editor-view";
+
 const ROOT_CLASS = "rotext-preview-root";
 
 const Preview: Component<
@@ -117,6 +119,29 @@ const Preview: Component<
     return `${hint.tag} ${hint.progress} ${hint.preview}`;
   };
 
+  let settingTopLine = false;
+  createEffect(on([scrollLocal], () => {
+    const _local = scrollLocal();
+    if (!_local) return;
+    const _item = scrollLocalItem();
+    const _lookupList = lookupList();
+    const nextItem = _lookupList[_local.indexInLookupList + 1];
+
+    const startLine = _item.location.start.line;
+    const endLine = nextItem
+      ? nextItem.location.start.line - 1
+      : _item.location.end.line;
+
+    settingTopLine = true;
+    storeEditorView.setTopline(
+      Math.max(startLine + (endLine - startLine + 1) * _local.progress, 1),
+    );
+  }));
+
+  createEffect(on([storeEditorView.topLine], () => {
+    settingTopLine = false;
+  }));
+
   /**
    * @param scrollContainerEl 滚动内容的容器元素。
    *  除了预览内容之外，还包含可能存在的错误展示等内容。
@@ -125,14 +150,16 @@ const Preview: Component<
     const _lookupList = lookupList();
     if (!_lookupList?.length) return;
 
-    const progress =
-      (scrollContainerEl.scrollTop - outputContainerEl.offsetTop) /
-      (scrollContainerEl.scrollHeight - scrollContainerEl.offsetHeight -
-        outputContainerEl.offsetTop);
-    const _baselineY = Math.min(
-      Math.max(outputContainerEl.offsetHeight * progress, 0),
-      outputContainerEl.offsetHeight,
-    );
+    // const progress =
+    //   (scrollContainerEl.scrollTop - outputContainerEl.offsetTop) /
+    //   (scrollContainerEl.scrollHeight - scrollContainerEl.offsetHeight -
+    //     outputContainerEl.offsetTop);
+    // const _baselineY = Math.min(
+    //   Math.max(outputContainerEl.offsetHeight * progress, 0),
+    //   outputContainerEl.offsetHeight,
+    // );
+    const _baselineY = scrollContainerEl.scrollTop -
+      outputContainerEl.offsetTop;
 
     setScrollLocal(
       ScrollSyncUtils.getScrollLocal(
