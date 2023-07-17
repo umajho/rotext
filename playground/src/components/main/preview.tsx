@@ -10,7 +10,6 @@ import {
   onMount,
   Setter,
   Show,
-  untrack,
 } from "solid-js";
 
 import { classModule, h, init, Module, styleModule, VNode } from "snabbdom";
@@ -34,7 +33,7 @@ const Preview: Component<
 
   //==== 文档渲染 ====
 
-  let outputEl: HTMLDivElement;
+  let outputContainerEl: HTMLDivElement;
   let patch: ReturnType<typeof init>;
   let lastNode: HTMLElement | VNode;
 
@@ -43,6 +42,9 @@ const Preview: Component<
   } = createLocationModule(ROOT_CLASS, setLookupList);
 
   onMount(() => {
+    const outputEl = document.createElement("div");
+    outputContainerEl.appendChild(outputEl);
+
     patch = init(
       [classModule, styleModule, locationModule],
       undefined,
@@ -51,12 +53,9 @@ const Preview: Component<
     lastNode = outputEl;
   });
 
-  createEffect(() => {
+  createEffect(on([() => props.code], () => {
+    setErr(null);
     try {
-      if (untrack(() => err()) !== null) {
-        setErr(null);
-      }
-
       const parsingStart = performance.now();
       const doc = parse(props.code, {
         softBreakAs: "br",
@@ -79,7 +78,7 @@ const Preview: Component<
       }
       setErr(e);
     }
-  });
+  }));
 
   //==== 滚动同步 ====
 
@@ -118,18 +117,30 @@ const Preview: Component<
     return `${hint.tag} ${hint.progress} ${hint.preview}`;
   };
 
-  function handleScroll(cEl: HTMLElement) { // “cEl” means “container Element”
+  /**
+   * @param scrollContainerEl 滚动内容的容器元素。
+   *  除了预览内容之外，还包含可能存在的错误展示等内容。
+   */
+  function handleScroll(scrollContainerEl: HTMLElement) {
     const _lookupList = lookupList();
     if (!_lookupList?.length) return;
-    const docEl = (lastNode as VNode).elm as HTMLElement;
 
-    const progress = cEl.scrollTop / (cEl.scrollHeight - cEl.offsetHeight);
+    const progress =
+      (scrollContainerEl.scrollTop - outputContainerEl.offsetTop) /
+      (scrollContainerEl.scrollHeight - scrollContainerEl.offsetHeight -
+        outputContainerEl.offsetTop);
     const _baselineY = Math.min(
-      Math.max(cEl.scrollHeight * progress, 0),
-      docEl.offsetHeight,
+      Math.max(outputContainerEl.offsetHeight * progress, 0),
+      outputContainerEl.offsetHeight,
     );
 
-    setScrollLocal(ScrollSyncUtils.getScrollLocal(_lookupList, _baselineY));
+    setScrollLocal(
+      ScrollSyncUtils.getScrollLocal(
+        _lookupList,
+        _baselineY,
+        outputContainerEl.offsetHeight,
+      ),
+    );
   }
 
   let lastScrollEvent: UIEvent | null = null;
@@ -156,9 +167,14 @@ const Preview: Component<
   //==== 组件 ====
   return (
     <div
-      class={`${props.class ?? ""} break-all prose previewer overflow-y-auto`}
+      class={`${
+        props.class ?? ""
+      } relative break-all prose previewer overflow-y-auto`}
       onScroll={handleScrollDebounced}
     >
+      <Show when={err()}>
+        <ErrorAlert error={err()} showsStack={true} />
+      </Show>
       <div class="relative h-0 z-50">
         <div class="absolute w-full" style={{ top: `${baselineY()}px` }}>
           <div
@@ -171,10 +187,7 @@ const Preview: Component<
           </div>
         </div>
       </div>
-      <Show when={err()}>
-        <ErrorAlert error={err()} showsStack={true} />
-      </Show>
-      <div ref={outputEl} />
+      <div ref={outputContainerEl} />
     </div>
   );
 };
@@ -297,6 +310,7 @@ const ScrollSyncUtils = {
   getScrollLocal(
     lookupList: LookupList,
     baselineY: number,
+    maxOffsetTop: number,
   ): ScrollLocal {
     const localIndex = ScrollSyncUtils.binarySearch(lookupList, (item, i) => {
       if (item.offsetTop > baselineY) return "less";
@@ -310,9 +324,7 @@ const ScrollSyncUtils = {
       lookupList[localIndex + 1];
 
     const offsetTop = localItem.offsetTop;
-    const nextOffsetTop = nextItem
-      ? nextItem.offsetTop
-      : localItem.offsetTop + localItem.element.offsetHeight;
+    const nextOffsetTop = nextItem ? nextItem.offsetTop : maxOffsetTop;
 
     const progress = (baselineY - offsetTop) / (nextOffsetTop - offsetTop);
 
