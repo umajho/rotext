@@ -29,6 +29,8 @@ const Preview: Component<
     onThrowInParsing: (thrown: unknown) => void;
   }
 > = (props) => {
+  let scrollContainerEl: HTMLDivElement;
+
   const [err, setErr] = createSignal<Error>(null);
 
   const [lookupList, setLookupList] = createSignal<LookupList>();
@@ -123,18 +125,11 @@ const Preview: Component<
   createEffect(on([scrollLocal], () => {
     const _local = scrollLocal();
     if (!_local) return;
-    const _item = scrollLocalItem();
     const _lookupList = lookupList();
-    const nextItem = _lookupList[_local.indexInLookupList + 1];
-
-    const startLine = _item.location.start.line;
-    const endLine = nextItem
-      ? nextItem.location.start.line - 1
-      : _item.location.end.line;
 
     settingTopLine = true;
     storeEditorView.setTopline(
-      Math.max(startLine + (endLine - startLine + 1) * _local.progress, 1),
+      ScrollSyncUtils.scrollLocalToLine(_local, _lookupList),
     );
   }));
 
@@ -142,22 +137,30 @@ const Preview: Component<
     settingTopLine = false;
   }));
 
+  createEffect(on([lookupList], () => {
+    const _lookupList = lookupList();
+    if (!_lookupList.length) return 1;
+
+    const maxTopLineY = outputContainerEl.offsetHeight -
+      scrollContainerEl.offsetHeight;
+    const maxScrollLocal = ScrollSyncUtils.getScrollLocal(
+      _lookupList,
+      maxTopLineY,
+      outputContainerEl.offsetHeight,
+    );
+    storeEditorView.setMaxTopLineFromPreview(
+      ScrollSyncUtils.scrollLocalToLine(maxScrollLocal, _lookupList),
+    );
+  }));
+
   /**
    * @param scrollContainerEl 滚动内容的容器元素。
    *  除了预览内容之外，还包含可能存在的错误展示等内容。
    */
-  function handleScroll(scrollContainerEl: HTMLElement) {
+  function handleScroll() {
     const _lookupList = lookupList();
     if (!_lookupList?.length) return;
 
-    // const progress =
-    //   (scrollContainerEl.scrollTop - outputContainerEl.offsetTop) /
-    //   (scrollContainerEl.scrollHeight - scrollContainerEl.offsetHeight -
-    //     outputContainerEl.offsetTop);
-    // const _baselineY = Math.min(
-    //   Math.max(outputContainerEl.offsetHeight * progress, 0),
-    //   outputContainerEl.offsetHeight,
-    // );
     const _baselineY = scrollContainerEl.scrollTop -
       outputContainerEl.offsetTop;
 
@@ -175,18 +178,17 @@ const Preview: Component<
   const handleScrollDebounced: JSX.EventHandlerUnion<HTMLDivElement, UIEvent> =
     (ev) => {
       lastScrollEvent = ev;
-      const currentTarget = ev.currentTarget;
       if (handlingScroll) {
         requestAnimationFrame(() => {
           if (lastScrollEvent === ev) {
-            handleScroll(currentTarget);
+            handleScroll();
           }
         });
         return;
       }
       handlingScroll = true;
       requestAnimationFrame(() => {
-        handleScroll(currentTarget);
+        handleScroll();
         handlingScroll = false;
       });
     };
@@ -197,6 +199,7 @@ const Preview: Component<
       class={`${
         props.class ?? ""
       } relative break-all prose previewer overflow-y-auto`}
+      ref={scrollContainerEl}
       onScroll={handleScrollDebounced}
     >
       <Show when={err()}>
@@ -337,7 +340,7 @@ const ScrollSyncUtils = {
   getScrollLocal(
     lookupList: LookupList,
     baselineY: number,
-    maxOffsetTop: number,
+    offsetBottom: number,
   ): ScrollLocal {
     const localIndex = ScrollSyncUtils.binarySearch(lookupList, (item, i) => {
       if (item.offsetTop > baselineY) return "less";
@@ -351,7 +354,7 @@ const ScrollSyncUtils = {
       lookupList[localIndex + 1];
 
     const offsetTop = localItem.offsetTop;
-    const nextOffsetTop = nextItem ? nextItem.offsetTop : maxOffsetTop;
+    const nextOffsetTop = nextItem ? nextItem.offsetTop : offsetBottom;
 
     const progress = (baselineY - offsetTop) / (nextOffsetTop - offsetTop);
 
@@ -359,6 +362,18 @@ const ScrollSyncUtils = {
       indexInLookupList: localIndex,
       progress,
     };
+  },
+
+  scrollLocalToLine(local: ScrollLocal, list: LookupList) {
+    const item = list[local.indexInLookupList];
+    const nextItem = list[local.indexInLookupList + 1];
+
+    const startLine = item.location.start.line;
+    const endLine = nextItem
+      ? nextItem.location.start.line - 1
+      : item.location.end.line;
+
+    return Math.max(startLine + (endLine - startLine + 1) * local.progress, 1);
   },
 
   binarySearch<T>(
