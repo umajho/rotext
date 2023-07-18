@@ -218,7 +218,7 @@ describe("解析", () => {
         ]);
       });
     });
-    describe("旁注", () => {
+    describe("注音", () => {
       describe("能正确解析", () => {
         theseCasesAreOk([
           {
