@@ -162,16 +162,23 @@ const Preview: Component<
   //==== 组件 ====
   return (
     <div
-      class={`${
-        props.class ?? ""
-      } relative break-all prose previewer overflow-y-auto`}
+      class="previewer-background overflow-y-auto"
       ref={scrollContainerEl}
       onScroll={debounceEventHandler(handleScroll)}
     >
-      <Show when={err()}>
-        <ErrorAlert error={err()} showsStack={true} />
-      </Show>
-      <div ref={outputContainerEl} />
+      <div
+        class={"" +
+          `${props.class ?? ""} ` +
+          "relative " + // 作为计算元素高度位移的锚点
+          "self-center mx-auto " + // 保持居中，以及撑起父元素
+          "break-all prose previewer " + // 内容的外观样式
+          ""}
+      >
+        <Show when={err()}>
+          <ErrorAlert error={err()} showsStack={true} />
+        </Show>
+        <div ref={outputContainerEl} />
+      </div>
     </div>
   );
 };
