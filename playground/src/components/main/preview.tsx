@@ -34,7 +34,17 @@ const Preview: Component<
 
   const [err, setErr] = createSignal<Error>(null);
 
+  const [lookupListRaw, setLookupListRaw] = createSignal<LookupList>();
   const [lookupList, setLookupList] = createSignal<LookupList>();
+  function roastLookupList() {
+    const _raw = lookupListRaw();
+    if (!_raw) return;
+    setLookupList(ScrollSyncUtils.roastLookupList(_raw, ROOT_CLASS));
+  }
+  createEffect(on([lookupListRaw], roastLookupList));
+  onMount(() => {
+    new ResizeObserver(roastLookupList).observe(scrollContainerEl);
+  });
 
   //==== 文档渲染 ====
 
@@ -44,7 +54,7 @@ const Preview: Component<
 
   const {
     module: locationModule,
-  } = createLocationModule(ROOT_CLASS, setLookupList);
+  } = createLocationModule(setLookupListRaw);
 
   onMount(() => {
     const outputEl = document.createElement("div");
@@ -118,7 +128,7 @@ const Preview: Component<
 
   createEffect(on([lookupList], () => {
     const _lookupList = lookupList();
-    if (!_lookupList.length) return 1;
+    if (!_lookupList?.length) return 1;
 
     const maxTopLineY = outputContainerEl.offsetHeight -
       scrollContainerEl.offsetHeight;
@@ -213,44 +223,16 @@ interface ElementLocationPair {
   offsetTop: number;
 }
 type LookupList = ElementLocationPair[];
+type LookupListRaw = Omit<ElementLocationPair, "offsetTop">[];
 
 function createLocationModule(
-  rootClass: string,
-  setLookupList: (view: LookupList) => void,
+  setLookupListRaw: (view: LookupListRaw) => void,
 ): { module: Module } {
-  type LookupListRaw = Omit<ElementLocationPair, "offsetTop">[];
-  function roastLookupList(raw: LookupListRaw) {
-    // 按理来讲应该已经是按起始行数排序的了，不过以免万一就再排序一次。
-    // 其实原本还会保证越深的元素排在越后面，不过后面的操作不用考虑这件事。
-    raw.sort((a, b) => a.location.start.line - b.location.start.line);
-
-    const [rootElement, rootElementViewportOffsetTop] = (() => {
-      if (!raw.length) return [null, null];
-      let el = raw[0].element;
-      while (!el.classList.contains(rootClass)) {
-        el = el.parentElement;
-      }
-      return [el, el.getBoundingClientRect().top];
-    })();
-
-    const roasted = raw as ElementLocationPair[];
-    for (const item of roasted) {
-      const itemElementViewportOffsetTop =
-        item.element.getBoundingClientRect().top;
-      item.offsetTop = itemElementViewportOffsetTop -
-        rootElementViewportOffsetTop;
-    }
-
-    return roasted;
-  }
-
   let loookupListRaw!: LookupListRaw;
-  let lookupList!: ElementLocationPair[];
 
   const module = {
     pre: () => {
       loookupListRaw = [];
-      lookupList = [];
     },
     create: (_oldVNode: VNode, vnode: VNode) => {
       if (vnode.data.location) {
@@ -265,25 +247,7 @@ function createLocationModule(
       module.create(oldVNode, vnode);
     },
     post: () => {
-      lookupList = roastLookupList(loookupListRaw);
-
-      lookupList = lookupList.reduce((acc, cur) => {
-        if (!acc) return [cur];
-        const last = acc[acc.length - 1];
-
-        // NOTE: 有可能两个元素的起始行数、高度都一样，
-        //       这时用哪个都一样，因为用不到更细的信息。
-        if (last.location.start.line === cur.location.start.line) {
-          if (last.offsetTop < cur.offsetTop) return acc;
-          if (last.element.offsetHeight <= cur.element.offsetHeight) return acc;
-          acc[acc.length - 1] = cur;
-          return acc;
-        }
-        acc.push(cur);
-        return acc;
-      }, null as ElementLocationPair[] | null) ?? [];
-
-      setLookupList(lookupList);
+      setLookupListRaw(loookupListRaw);
     },
   };
 
@@ -381,6 +345,49 @@ const ScrollSyncUtils = {
     );
 
     return offsetTop + (offsetBottom - offsetTop) * local.progress;
+  },
+
+  roastLookupList(raw: LookupListRaw, rootClass: string) {
+    // 按理来讲应该已经是按起始行数排序的了，不过以免万一就再排序一次。
+    // 其实原本还会保证越深的元素排在越后面，不过后面的操作不用考虑这件事。
+    raw.sort((a, b) => a.location.start.line - b.location.start.line);
+
+    const [rootElementViewportOffsetTop] = (() => {
+      if (!raw.length) return [null, null];
+      let el = raw[0].element;
+      while (!el.classList.contains(rootClass)) {
+        el = el.parentElement;
+      }
+      return [el.getBoundingClientRect().top];
+    })();
+
+    // 为每一项就地设置位移高度
+    const roasted = raw as ElementLocationPair[];
+    for (const item of roasted) {
+      const itemElementViewportOffsetTop =
+        item.element.getBoundingClientRect().top;
+      item.offsetTop = itemElementViewportOffsetTop -
+        rootElementViewportOffsetTop;
+    }
+
+    // 根据规则，在起始行数相同的项有多项时只保留一项
+    const reduced = roasted.reduce((acc, cur) => {
+      if (!acc) return [cur];
+      const last = acc[acc.length - 1];
+
+      // NOTE: 有可能两个元素的起始行数、高度都一样，
+      //       这时用哪个都一样，因为用不到更细的信息。
+      if (last.location.start.line === cur.location.start.line) {
+        if (last.offsetTop < cur.offsetTop) return acc;
+        if (last.element.offsetHeight <= cur.element.offsetHeight) return acc;
+        acc[acc.length - 1] = cur;
+        return acc;
+      }
+      acc.push(cur);
+      return acc;
+    }, null as ElementLocationPair[] | null) ?? [];
+
+    return reduced;
   },
 
   binarySearch<T>(
