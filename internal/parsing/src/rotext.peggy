@@ -174,10 +174,7 @@ Inline
   / Reference
   / Code
   / Bold
-  / Italic
-  / Underline
   / Strikethrough
-  / Emphasis
   / Ruby
   / [^\r\n]
 
@@ -245,21 +242,9 @@ Bold
   = "['" inlines:(!"']" @Inline)* "']"
     { return create.em("strong", joinInlines(inlines)); }
 
-Italic
-  = "[/" inlines:(!"/]" @Inline)* "/]"
-    { return create.em(null, joinInlines(inlines)); }
-
-Underline
-  = "[_" inlines:(!"_]" @Inline)* "_]"
-    { return create.u(joinInlines(inlines)); }
-
 Strikethrough
   = "[~" inlines:(!"~]" @Inline)* "~]"
     { return create.s(joinInlines(inlines)); }
-
-Emphasis
-  = "[." inlines:(!".]" @Inline)* ".]"
-    { return create.em("dotted", joinInlines(inlines)); }
 
 Ruby
   = "[" base:(![(（] @Inline)* pLeft:[(（] text:(!([)）] "]") @Inline)* pRight:[)）] "]"

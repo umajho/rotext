@@ -156,22 +156,22 @@ describe("解析", () => {
             input,
             expected: [create.P([create.em("strong", ["foo"])])],
           })),
-          ...["[/foo/]"].map((input) => ({
-            input,
-            expected: [create.P([create.em(null, ["foo"])])],
-          })),
-          ...["[_foo_]"].map((input) => ({
-            input,
-            expected: [create.P([create.u(["foo"])])],
-          })),
+          // ...["[/foo/]"].map((input) => ({
+          //   input,
+          //   expected: [create.P([create.em(null, ["foo"])])],
+          // })),
+          // ...["[_foo_]"].map((input) => ({
+          //   input,
+          //   expected: [create.P([create.u(["foo"])])],
+          // })),
           ...["[~foo~]"].map((input) => ({
             input,
             expected: [create.P([create.s(["foo"])])],
           })),
-          ...["[.foo.]"].map((input) => ({
-            input,
-            expected: [create.P([create.em("dotted", ["foo"])])],
-          })),
+          // ...["[.foo.]"].map((input) => ({
+          //   input,
+          //   expected: [create.P([create.em("dotted", ["foo"])])],
+          // })),
         ]);
       });
       describe("目前即使内容为空也会创建", () => {

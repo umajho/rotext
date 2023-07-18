@@ -21,7 +21,7 @@ export type Document = {
  */
 export type InlineElement =
   | { type: "br" }
-  | { type: "em" | "em.strong" | "em.dotted" | "u" | "s"; slot: InlineSlot }
+  | { type: "em.strong" | "s"; slot: InlineSlot }
   | {
     type: "ruby";
     props: {
@@ -90,18 +90,10 @@ export const create = {
    * 使行内元素表达强调。
    * `strong` 代表加粗；`dotted` 代表着重号；默认是正常的 `em`，一般体现为斜体 */
   em(
-    subType: null | "strong" | "dotted",
+    subType: "strong",
     slot: InlineSlot,
-  ): InlineElement & { type: "em" | "em.strong" | "em.dotted" } {
-    if (subType) {
-      return { type: `em.${subType}`, slot };
-    }
-    return { type: "em", slot };
-  },
-
-  /** 下划线 */
-  u(slot: InlineSlot): InlineElement & { type: "u" } {
-    return { type: "u", slot };
+  ): InlineElement & { type: "em.strong" } {
+    return { type: `em.${subType}`, slot };
   },
 
   /** 删除线 */
