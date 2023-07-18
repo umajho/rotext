@@ -1,20 +1,20 @@
 export function debounceEventHandler<Ev extends Event, T>(
-  handler: (ev: Ev, data: T) => void,
+  handler: (ev: Ev) => void,
 ) {
   let lastEv: Ev | null = null;
   let handling = false;
-  return (ev: Ev, data: T) => {
+  return (ev: Ev) => {
     lastEv = ev;
     if (handling) {
       requestAnimationFrame(() => {
         if (lastEv === ev) {
-          handler(ev, data);
+          handler(ev);
         }
       });
     } else {
       handling = true;
       requestAnimationFrame(() => {
-        handler(ev, data);
+        handler(ev);
         handling = false;
       });
     }

@@ -14,7 +14,7 @@ export function createCodeMirrorEditor(
 ): {
   element: JSX.Element;
   view: Accessor<EditorView>;
-  scrollContainerDOM: () => HTMLDivElement;
+  scrollContainerDOM: HTMLDivElement;
 } {
   let parentEl: HTMLDivElement;
   const [view, setView] = createSignal<EditorView>();
@@ -36,6 +36,6 @@ export function createCodeMirrorEditor(
   return {
     element: <div ref={parentEl} class={`cm-parent ${props.class ?? ""}`} />,
     view,
-    scrollContainerDOM: () => parentEl,
+    scrollContainerDOM: parentEl,
   };
 }
