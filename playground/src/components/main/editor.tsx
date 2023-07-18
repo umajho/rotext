@@ -66,8 +66,7 @@ const Editor: Component<
       }
       setPendingAutoScrolls.reset();
 
-      const scrollTop = ev.target.scrollTop - contentPadding()!.top;
-      if (scrollTop < 0) return;
+      let scrollTop = Math.max(ev.target.scrollTop - contentPadding()!.top, 0);
 
       const topLineBlock = view.lineBlockAtHeight(scrollTop);
       const topLineInfo = view.state.doc.lineAt(topLineBlock.from);
