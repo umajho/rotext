@@ -87,49 +87,7 @@ const Preview: Component<
 
   //==== 滚动同步 ====
 
-  const [scrollLocal, setScrollLocal] = createSignal<ScrollLocal>();
-  const scrollLocalItem = () => {
-    const _lookupList = lookupList();
-    const _scrollLocal = scrollLocal();
-    if (!_lookupList?.length || !_scrollLocal) return null;
-    return _lookupList[_scrollLocal.indexInLookupList];
-  };
-  const baselineY = createMemo(() => {
-    const item = scrollLocalItem();
-    if (!item) return 0;
-    const _local = scrollLocal()!;
-
-    const nextItem = lookupList()![_local.indexInLookupList + 1];
-    if (nextItem) {
-      return item.offsetTop +
-        (nextItem.offsetTop - item.offsetTop) * _local.progress;
-    }
-    return item.offsetTop + item.element.offsetHeight * _local.progress;
-  });
-  const baselineHint = () => {
-    const _item = scrollLocalItem();
-    if (!_item) return null;
-    const scrollLocalPreview = (() => {
-      const content = _item.element.textContent;
-      if (content.length <= 10) return content;
-      return content.slice(0, 10) + "…";
-    })();
-    const hint = {
-      tag: _item.element.tagName,
-      progress: (scrollLocal().progress * 100).toFixed(2) + "%",
-      preview: scrollLocalPreview,
-    };
-    return `${hint.tag} ${hint.progress} ${hint.preview}`;
-  };
-
-  createEffect(on([scrollLocal], () => {
-    const _local = scrollLocal();
-    if (!_local) return;
-    const _lookupList = lookupList();
-
-    const topLine = ScrollSyncUtils.scrollLocalToLine(_local, _lookupList);
-    storeEditorView.setTopline({ number: topLine, setFrom: "preview" });
-  }));
+  // const [scrollLocal, setScrollLocal] = createSignal<ScrollLocal>();
 
   let pendingAutoScrolls = 0;
 
@@ -190,13 +148,15 @@ const Preview: Component<
     const _baselineY = scrollContainerEl.scrollTop -
       outputContainerEl.offsetTop;
 
-    setScrollLocal(
-      ScrollSyncUtils.getScrollLocalByY(
-        _lookupList,
-        _baselineY,
-        outputContainerEl.offsetHeight,
-      ),
+    const scrollLocal = ScrollSyncUtils.getScrollLocalByY(
+      _lookupList,
+      _baselineY,
+      outputContainerEl.offsetHeight,
     );
+    storeEditorView.setTopline({
+      number: ScrollSyncUtils.scrollLocalToLine(scrollLocal, _lookupList),
+      setFrom: "preview",
+    });
   }
 
   const handleScrollDebounced = debounceEventHandler(
@@ -215,18 +175,6 @@ const Preview: Component<
       <Show when={err()}>
         <ErrorAlert error={err()} showsStack={true} />
       </Show>
-      <div class="relative h-0 z-50">
-        <div class="absolute w-full" style={{ top: `${baselineY()}px` }}>
-          <div
-            class="flex flex-row gap-2 items-center"
-            style="transform: translate(0, -50%)"
-          >
-            <div class="flex-1 border-red-500 w-full h-0 border-[0.1px]" />
-            <div class="text-red-500">{baselineHint()}</div>
-            <div class="flex-1 border-red-500 w-full h-0 border-[0.1px]" />
-          </div>
-        </div>
-      </div>
       <div ref={outputContainerEl} />
     </div>
   );
