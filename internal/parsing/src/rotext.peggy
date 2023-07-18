@@ -233,10 +233,12 @@ RID_FloorNumberMaybeRelative = "#" [0-9]*
 RID_SubPart = "/" RID_ThreadID RID_FloorNumber?
 
 Code
-  = "``" text:$(!"``" @[^\r\n])* "``"
-    { return create.code(text); }
-  / "[`" text:$(!"`]" @[^\r\n])* "`]"
-    { return create.code(text); }
+  = "[`" text:(!"`]" @CodeText)* "`]"
+    { return create.code(text.join("")); }
+
+CodeText
+  = @"`" "`"
+  / $[^`]+
 
 Bold
   = "['" inlines:(!"']" @Inline)* "']"
