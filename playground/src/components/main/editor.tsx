@@ -34,7 +34,7 @@ const Editor: Component<
   //      这里用计时器检查这种情况，在超过时限时手动将其归零。
   const [pendingAutoScrolls, setPendingAutoScrolls] = createAutoResetCounter();
 
-  const debouncedScrollHandler = EditorView.domEventHandlers({
+  const scrollHandlerExtension = EditorView.domEventHandlers({
     scroll(event, view) {
       scrollHandler?.()(event, view);
     },
@@ -44,7 +44,7 @@ const Editor: Component<
     initialDoc: props.text,
     setDoc: props.setText,
     class: `${props.class} editor-${editorID}`,
-    extensions: [EditorView.lineWrapping, debouncedScrollHandler],
+    extensions: [EditorView.lineWrapping, scrollHandlerExtension],
   });
 
   const contentPadding = createMemo(() => {
