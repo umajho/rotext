@@ -95,17 +95,21 @@ Heading
   - `;` 和 `:`：描述列表。
   同组的行上下挨在一起时，形成一个整体，而其中的每一行成为一项。
   此外，可以在已有的容器项之下用 `>` 来延长那个容器项，以实现一个容器项占据多行。
+
+  除空行外，容器的前缀与内容之间需要有空白。嵌套时，内、外层容器的前缀之间也需要有空白。
 */
 Containers // TODO: `; foo : bar`
   = first:ContainersLine rest:(br @ContainersLine)*
     { return buildContainers([first, ...rest], breaks, locMap); }
 ContainersLine
-  = prefix:$[>#*;:]|1..| ([ \t]+ / &br) line:Line?
+  = prefix:ContainerPrefix+ line:Line?
     { 
+      console.log()
       return locMap
-        ? { prefix, line, location: location() }
-        : { prefix, line };
+        ? { prefix: prefix.join(""), line, location: location() }
+        : { prefix: prefix.join(""), line };
     }
+ContainerPrefix = @[>#*;:] ([ \t]+ / &br)
 
 Table
   = TableBegin /*无视首行后边的内容*/ @TableRows __ TableEnd
