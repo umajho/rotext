@@ -136,7 +136,7 @@ const Preview: Component<
    * @param scrollContainerEl 滚动内容的容器元素。
    *  除了预览内容之外，还包含可能存在的错误展示等内容。
    */
-  function handleScroll() {
+  function handleScroll(_ev: Event) {
     if (pendingAutoScrolls > 0) {
       pendingAutoScrolls = Math.max(pendingAutoScrolls - 1, 0);
       return;
@@ -159,10 +159,6 @@ const Preview: Component<
     });
   }
 
-  const handleScrollDebounced = debounceEventHandler(
-    (ev: UIEvent, _?: never) => handleScroll(),
-  ) as JSX.EventHandlerUnion<HTMLDivElement, UIEvent>;
-
   //==== 组件 ====
   return (
     <div
@@ -170,7 +166,7 @@ const Preview: Component<
         props.class ?? ""
       } relative break-all prose previewer overflow-y-auto`}
       ref={scrollContainerEl}
-      onScroll={handleScrollDebounced}
+      onScroll={debounceEventHandler(handleScroll)}
     >
       <Show when={err()}>
         <ErrorAlert error={err()} showsStack={true} />

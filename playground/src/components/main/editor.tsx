@@ -16,14 +16,10 @@ import { debounceEventHandler } from "../../utils/mod";
 
 let nextEditorID = 1;
 
-type ScrollHandler = (ev: Event, view: EditorView) => void;
-
 const Editor: Component<
   { text: string; setText: Setter<string>; class?: string }
 > = (props) => {
   const editorID = nextEditorID++;
-
-  const [scrollHandler, setScrollHandler] = createSignal<ScrollHandler>();
 
   const [blankHeightAtEnd, setBlankHeightAtEnd] = createSignal(0);
 
@@ -34,17 +30,11 @@ const Editor: Component<
   //      这里用计时器检查这种情况，在超过时限时手动将其归零。
   const [pendingAutoScrolls, setPendingAutoScrolls] = createAutoResetCounter();
 
-  const scrollHandlerExtension = EditorView.domEventHandlers({
-    scroll(event, view) {
-      scrollHandler?.()(event, view);
-    },
-  });
-
   const { element, view, scrollContainerDOM } = createCodeMirrorEditor({
     initialDoc: props.text,
     setDoc: props.setText,
     class: `${props.class} editor-${editorID}`,
-    extensions: [EditorView.lineWrapping, scrollHandlerExtension],
+    extensions: [EditorView.lineWrapping],
   });
 
   const contentPadding = createMemo(() => {
@@ -56,9 +46,9 @@ const Editor: Component<
   onMount(() => {
     function handleScroll(
       ev: Event & { target: HTMLElement },
-      view: EditorView,
     ) {
-      if (ev.target !== scrollContainerDOM()) return;
+      const _view = view();
+      if (!_view || ev.target !== scrollContainerDOM) return;
 
       if (pendingAutoScrolls() > 0) {
         setPendingAutoScrolls.decrease();
@@ -68,14 +58,15 @@ const Editor: Component<
 
       let scrollTop = Math.max(ev.target.scrollTop - contentPadding()!.top, 0);
 
-      const topLineBlock = view.lineBlockAtHeight(scrollTop);
-      const topLineInfo = view.state.doc.lineAt(topLineBlock.from);
+      const topLineBlock = _view.lineBlockAtHeight(scrollTop);
+      const topLineInfo = _view.state.doc.lineAt(topLineBlock.from);
       const offsetTop = topLineBlock.top;
 
-      const nextLineInfo = topLineInfo.number + 1 <= view.state.doc.lines
-        ? view.state.doc.line(topLineInfo.number + 1)
+      const nextLineInfo = topLineInfo.number + 1 <= _view.state.doc.lines
+        ? _view.state.doc.line(topLineInfo.number + 1)
         : null;
-      const nextLineBlock = nextLineInfo && view.lineBlockAt(nextLineInfo.from);
+      const nextLineBlock = nextLineInfo &&
+        _view.lineBlockAt(nextLineInfo.from);
       const nextOffsetTop = nextLineBlock
         ? nextLineBlock.top
         : topLineBlock.bottom;
@@ -87,7 +78,10 @@ const Editor: Component<
       storeEditorView.setTopline({ number: line, setFrom: "editor" });
     }
 
-    setScrollHandler(() => debounceEventHandler(handleScroll));
+    scrollContainerDOM.addEventListener(
+      "scroll",
+      debounceEventHandler(handleScroll),
+    );
   });
 
   let lastTopLineFromPreview: number | null = null;
@@ -124,7 +118,7 @@ const Editor: Component<
     const _view = view();
     const _maxTopLine = clampLine(_view, _maxTopLineFromPreview);
 
-    const scrollEl = scrollContainerDOM();
+    const scrollEl = scrollContainerDOM;
     if (!scrollEl) return;
 
     const lineBlock = getLineBlock(_view, _maxTopLine);
