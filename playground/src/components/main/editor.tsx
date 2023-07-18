@@ -90,11 +90,18 @@ const Editor: Component<
     setScrollHandler(() => debounceEventHandler(handleScroll));
   });
 
+  let lastTopLineFromPreview: number | null = null;
   createEffect(on([storeEditorView.topLine], () => {
     const topLineData = storeEditorView.topLine();
     if (!topLineData.setFrom || topLineData.setFrom === "editor") {
+      lastTopLineFromPreview = null;
       return;
     }
+
+    if (lastTopLineFromPreview === topLineData.number) {
+      return;
+    }
+    lastTopLineFromPreview = topLineData.number;
 
     const _view = view();
     const _topLine = clampLine(_view, topLineData.number);
