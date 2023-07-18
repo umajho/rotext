@@ -111,28 +111,37 @@ const Editor: Component<
     _view.dispatch({ effects: [scrollEffect] });
   }));
 
-  createEffect(on([storeEditorView.maxTopLineFromPreview], () => {
-    const _maxTopLineFromPreview = storeEditorView.maxTopLineFromPreview();
-    if (!_maxTopLineFromPreview) return;
+  {
+    function calculateBlankHeightAtEnd() {
+      const _maxTopLineFromPreview = storeEditorView.maxTopLineFromPreview();
+      if (!_maxTopLineFromPreview) return;
 
-    const _view = view();
-    const _maxTopLine = clampLine(_view, _maxTopLineFromPreview);
+      const _view = view();
+      const _maxTopLine = clampLine(_view, _maxTopLineFromPreview);
 
-    const scrollEl = scrollContainerDOM;
-    if (!scrollEl) return;
+      const scrollEl = scrollContainerDOM;
+      if (!scrollEl) return;
 
-    const lineBlock = getLineBlock(_view, _maxTopLine);
-    const yMargin = lineBlock.height * (_maxTopLine - (_maxTopLine | 0));
-    const maxOffsetTop = lineBlock.top + yMargin;
+      const lineBlock = getLineBlock(_view, _maxTopLine);
+      const yMargin = lineBlock.height * (_maxTopLine - (_maxTopLine | 0));
+      const maxOffsetTop = lineBlock.top + yMargin;
 
-    const lastLineBlock = getLineBlock(_view, _view.state.doc.lines);
+      const lastLineBlock = getLineBlock(_view, _view.state.doc.lines);
 
-    const heightUnscrollableFromPreview = Math.max(
-      maxOffsetTop + scrollEl.offsetHeight - lastLineBlock.bottom,
-      0,
-    );
-    setBlankHeightAtEnd(heightUnscrollableFromPreview);
-  }));
+      const heightUnscrollableFromPreview = Math.max(
+        maxOffsetTop + scrollEl.offsetHeight - lastLineBlock.bottom,
+        0,
+      );
+      setBlankHeightAtEnd(heightUnscrollableFromPreview);
+    }
+
+    createEffect(on(
+      [storeEditorView.maxTopLineFromPreview],
+      calculateBlankHeightAtEnd,
+    ));
+
+    new ResizeObserver(calculateBlankHeightAtEnd).observe(scrollContainerDOM);
+  }
 
   return (
     <>
