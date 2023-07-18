@@ -101,7 +101,7 @@ export const create = {
     return { type: "s", slot };
   },
 
-  /** 为行内元素添加 ruby 文字，即旁注 */
+  /** 为行内元素添加 ruby 文字，即注音 */
   ruby(
     base: InlineSlot,
     text: InlineSlot,
