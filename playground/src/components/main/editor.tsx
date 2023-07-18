@@ -49,7 +49,7 @@ const Editor: Component<
   const contentPadding = () => {
     const _view = view();
     if (!_view) return { top: 0, bottom: 0 };
-    return getPaddingPixels(view().contentDOM);
+    return getPaddingPixels(_view.contentDOM);
   };
 
   onMount(() => {
