@@ -1,4 +1,4 @@
-import { JSX, onMount, Setter } from "solid-js";
+import { Accessor, createSignal, JSX, onMount, Setter } from "solid-js";
 
 import { basicSetup, EditorView } from "codemirror";
 import { Extension } from "@codemirror/state";
@@ -13,27 +13,29 @@ export function createCodeMirrorEditor(
   },
 ): {
   element: JSX.Element;
-  view: () => EditorView;
-  scrollContainerDOM: () => HTMLElement;
+  view: Accessor<EditorView>;
+  scrollContainerDOM: () => HTMLDivElement;
 } {
   let parentEl: HTMLDivElement;
-  let view: EditorView;
+  const [view, setView] = createSignal<EditorView>();
 
   onMount(() => {
     const extSync = EditorView.updateListener.of((update) => {
       props.setDoc(update.state.doc.toString());
     });
 
-    view = new EditorView({
-      doc: props.initialDoc,
-      extensions: [basicSetup, oneDark, extSync, ...(props.extensions ?? [])],
-      parent: parentEl,
-    });
+    setView(
+      new EditorView({
+        doc: props.initialDoc,
+        extensions: [basicSetup, oneDark, extSync, ...(props.extensions ?? [])],
+        parent: parentEl,
+      }),
+    );
   });
 
   return {
     element: <div ref={parentEl} class={`cm-parent ${props.class ?? ""}`} />,
-    view: () => view,
+    view,
     scrollContainerDOM: () => parentEl,
   };
 }

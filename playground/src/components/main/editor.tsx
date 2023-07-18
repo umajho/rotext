@@ -1,6 +1,7 @@
 import {
   Component,
   createEffect,
+  createMemo,
   createSignal,
   on,
   onMount,
@@ -46,11 +47,11 @@ const Editor: Component<
     extensions: [EditorView.lineWrapping, debouncedScrollHandler],
   });
 
-  const contentPadding = () => {
+  const contentPadding = createMemo(() => {
     const _view = view();
     if (!_view) return { top: 0, bottom: 0 };
     return getPaddingPixels(_view.contentDOM);
-  };
+  });
 
   onMount(() => {
     function handleScroll(
@@ -122,16 +123,13 @@ const Editor: Component<
     if (!_maxTopLineFromPreview) return;
 
     const _view = view();
-    const _maxTopLine = clampLine(
-      _view,
-      storeEditorView.maxTopLineFromPreview(),
-    );
+    const _maxTopLine = clampLine(_view, _maxTopLineFromPreview);
 
     const scrollEl = scrollContainerDOM();
     if (!scrollEl) return;
 
     const lineBlock = getLineBlock(_view, _maxTopLine);
-    const yMargin = -lineBlock.height * (_maxTopLine - (_maxTopLine | 0));
+    const yMargin = lineBlock.height * (_maxTopLine - (_maxTopLine | 0));
     const maxOffsetTop = lineBlock.top + yMargin;
 
     const lastLineBlock = getLineBlock(_view, _view.state.doc.lines);
