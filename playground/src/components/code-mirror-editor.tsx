@@ -34,7 +34,12 @@ export function createCodeMirrorEditor(
   });
 
   return {
-    element: <div ref={parentEl} class={`cm-parent ${props.class ?? ""}`} />,
+    element: (
+      <div
+        ref={parentEl}
+        class={`cm-parent overscroll-none ${props.class ?? ""}`}
+      />
+    ),
     view,
     scrollContainerDOM: parentEl,
   };
