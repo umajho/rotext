@@ -1,29 +1,104 @@
-import { Component, createEffect, createSignal, on, Setter } from "solid-js";
+import {
+  Component,
+  createEffect,
+  createMemo,
+  createSignal,
+  on,
+  onMount,
+  Setter,
+} from "solid-js";
 import { Portal } from "solid-js/web";
 import { EditorView } from "codemirror";
 
 import { createCodeMirrorEditor } from "../code-mirror-editor";
 import * as storeEditorView from "../../stores/editor-view";
+import { debounceEventHandler } from "../../utils/mod";
 
 let nextEditorID = 1;
+
+type ScrollHandler = (ev: Event, view: EditorView) => void;
 
 const Editor: Component<
   { text: string; setText: Setter<string>; class?: string }
 > = (props) => {
   const editorID = nextEditorID++;
 
+  const [scrollHandler, setScrollHandler] = createSignal<ScrollHandler>();
+
   const [blankHeightAtEnd, setBlankHeightAtEnd] = createSignal(0);
 
-  const { element, view } = createCodeMirrorEditor({
+  // XXX: 由于无法根据滚动事件得知滚动来自用户输入还是由程序控制，
+  //      这里创建一个计数器用于记录程序发起的滚动的次数，以此粗略判断事件是否触发自用户输入：
+  //      用户滚动时，事件会爆发性地增多，即使处于自动滚动，计数（乐观地）能在短时间内降到 0。
+  // XXX: 由于计数器有时不会归零（大概是因为滚动到同一处不会触发事件的缘故），
+  //      这里用计时器检查这种情况，在超过时限时手动将其归零。
+  const [pendingAutoScrolls, setPendingAutoScrolls] = createAutoResetCounter();
+
+  const debouncedScrollHandler = EditorView.domEventHandlers({
+    scroll(event, view) {
+      scrollHandler?.()(event, view);
+    },
+  });
+
+  const { element, view, scrollContainerDOM } = createCodeMirrorEditor({
     initialDoc: props.text,
     setDoc: props.setText,
     class: `${props.class} editor-${editorID}`,
-    extensions: [EditorView.lineWrapping],
+    extensions: [EditorView.lineWrapping, debouncedScrollHandler],
+  });
+
+  const contentPadding = () => {
+    const _view = view();
+    if (!_view) return { top: 0, bottom: 0 };
+    return getPaddingPixels(view().contentDOM);
+  };
+
+  onMount(() => {
+    function handleScroll(
+      ev: Event & { target: HTMLElement },
+      view: EditorView,
+    ) {
+      if (ev.target !== scrollContainerDOM()) return;
+
+      if (pendingAutoScrolls() > 0) {
+        setPendingAutoScrolls.decrease();
+        return;
+      }
+      setPendingAutoScrolls.reset();
+
+      const scrollTop = ev.target.scrollTop - contentPadding()!.top;
+      if (scrollTop < 0) return;
+
+      const topLineBlock = view.lineBlockAtHeight(scrollTop);
+      const topLineInfo = view.state.doc.lineAt(topLineBlock.from);
+      const offsetTop = topLineBlock.top;
+
+      const nextLineInfo = topLineInfo.number + 1 <= view.state.doc.lines
+        ? view.state.doc.line(topLineInfo.number + 1)
+        : null;
+      const nextLineBlock = nextLineInfo && view.lineBlockAt(nextLineInfo.from);
+      const nextOffsetTop = nextLineBlock
+        ? nextLineBlock.top
+        : topLineBlock.bottom;
+
+      const progress = (scrollTop - offsetTop) /
+        (nextOffsetTop - offsetTop);
+      const line = Math.max(topLineInfo.number + progress, 1);
+
+      storeEditorView.setTopline({ number: line, setFrom: "editor" });
+    }
+
+    setScrollHandler(() => debounceEventHandler(handleScroll));
   });
 
   createEffect(on([storeEditorView.topLine], () => {
+    const topLineData = storeEditorView.topLine();
+    if (!topLineData.setFrom || topLineData.setFrom === "editor") {
+      return;
+    }
+
     const _view = view();
-    const _topLine = clampLine(_view, storeEditorView.topLine());
+    const _topLine = clampLine(_view, topLineData.number);
 
     const lineBlock = getLineBlock(_view, _topLine);
     const yMargin = -lineBlock.height * (_topLine - (_topLine | 0));
@@ -32,6 +107,7 @@ const Editor: Component<
       { y: "start", yMargin },
     );
 
+    setPendingAutoScrolls.increase();
     _view.dispatch({ effects: [scrollEffect] });
   }));
 
@@ -45,7 +121,7 @@ const Editor: Component<
       storeEditorView.maxTopLineFromPreview(),
     );
 
-    const scrollEl = findScrollElement(_view.dom);
+    const scrollEl = scrollContainerDOM();
     if (!scrollEl) return;
 
     const lineBlock = getLineBlock(_view, _maxTopLine);
@@ -89,11 +165,56 @@ function getLineBlock(view: EditorView, line: number) {
   return view.lineBlockAt(linePos);
 }
 
-function findScrollElement(el: HTMLElement) {
-  el = el.parentElement;
-  while (el) {
-    if (el.scrollHeight > el.clientHeight) return el;
-    el = el.parentElement;
+function getPaddingPixels(el: HTMLElement) {
+  const top = getComputedStyle(el, null).paddingTop;
+  const bottom = getComputedStyle(el, null).paddingBottom;
+
+  return { // NOTE: 单位是 px，解析时可以直接忽略
+    top: parseFloat(top),
+    bottom: parseFloat(bottom),
+  };
+}
+
+function createAutoResetCounter() {
+  const THRESHOLD_MS = 50;
+
+  const [value, _setValue] = createSignal(0);
+  let lastChangeTime = 0;
+  let checking = false;
+
+  function setValue(v: number) {
+    v = Math.max(v, 0);
+    _setValue(v);
+    lastChangeTime = performance.now();
+
+    if (checking || !v) return;
+    checking = true;
+
+    function check() {
+      if (value() <= 0) {
+        checking = false;
+        return;
+      }
+
+      if (performance.now() - lastChangeTime >= THRESHOLD_MS) {
+        _setValue(0);
+        checking = false;
+        return;
+      }
+      setTimeout(check, THRESHOLD_MS);
+    }
+    setTimeout(check, THRESHOLD_MS);
   }
-  return null;
+
+  function increase() {
+    setValue(value() + 1);
+  }
+  function decrease() {
+    setValue(value() - 1);
+  }
+  function reset() {
+    setValue(0);
+  }
+
+  return [value, { increase, decrease, reset }] as const;
 }

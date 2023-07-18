@@ -11,7 +11,11 @@ export function createCodeMirrorEditor(
     initialDoc: string;
     setDoc: Setter<string>;
   },
-): { element: JSX.Element; view: () => EditorView } {
+): {
+  element: JSX.Element;
+  view: () => EditorView;
+  scrollContainerDOM: () => HTMLElement;
+} {
   let parentEl: HTMLDivElement;
   let view: EditorView;
 
@@ -30,5 +34,6 @@ export function createCodeMirrorEditor(
   return {
     element: <div ref={parentEl} class={`cm-parent ${props.class ?? ""}`} />,
     view: () => view,
+    scrollContainerDOM: () => parentEl,
   };
 }

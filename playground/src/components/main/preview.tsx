@@ -18,6 +18,7 @@ import { parse } from "@rotext/parsing";
 import { toSnabbdomChildren } from "@rotext/to-html";
 
 import * as storeEditorView from "../../stores/editor-view";
+import { debounceEventHandler } from "../../utils/mod";
 
 const ROOT_CLASS = "rotext-preview-root";
 
@@ -121,20 +122,40 @@ const Preview: Component<
     return `${hint.tag} ${hint.progress} ${hint.preview}`;
   };
 
-  let settingTopLine = false;
   createEffect(on([scrollLocal], () => {
     const _local = scrollLocal();
     if (!_local) return;
     const _lookupList = lookupList();
 
-    settingTopLine = true;
-    storeEditorView.setTopline(
-      ScrollSyncUtils.scrollLocalToLine(_local, _lookupList),
-    );
+    const topLine = ScrollSyncUtils.scrollLocalToLine(_local, _lookupList);
+    storeEditorView.setTopline({ number: topLine, setFrom: "preview" });
   }));
 
+  let pendingAutoScrolls = 0;
+
   createEffect(on([storeEditorView.topLine], () => {
-    settingTopLine = false;
+    const topLineData = storeEditorView.topLine();
+    if (!topLineData.setFrom || topLineData.setFrom === "preview") {
+      return;
+    }
+
+    const _lookupList = lookupList();
+    if (!_lookupList.length) return;
+
+    const scrollLocal = ScrollSyncUtils.getScrollLocalByLine(
+      _lookupList,
+      topLineData.number,
+    );
+
+    const scrollTop = ScrollSyncUtils.scrollLocalToScrollTop(
+      scrollLocal,
+      _lookupList,
+      outputContainerEl.offsetHeight,
+    );
+    if (scrollTop !== scrollContainerEl.scrollTop) {
+      pendingAutoScrolls++;
+      scrollContainerEl.scrollTo({ top: scrollTop, behavior: "instant" });
+    }
   }));
 
   createEffect(on([lookupList], () => {
@@ -143,7 +164,7 @@ const Preview: Component<
 
     const maxTopLineY = outputContainerEl.offsetHeight -
       scrollContainerEl.offsetHeight;
-    const maxScrollLocal = ScrollSyncUtils.getScrollLocal(
+    const maxScrollLocal = ScrollSyncUtils.getScrollLocalByY(
       _lookupList,
       maxTopLineY,
       outputContainerEl.offsetHeight,
@@ -158,6 +179,11 @@ const Preview: Component<
    *  除了预览内容之外，还包含可能存在的错误展示等内容。
    */
   function handleScroll() {
+    if (pendingAutoScrolls > 0) {
+      pendingAutoScrolls = Math.max(pendingAutoScrolls - 1, 0);
+      return;
+    }
+
     const _lookupList = lookupList();
     if (!_lookupList?.length) return;
 
@@ -165,7 +191,7 @@ const Preview: Component<
       outputContainerEl.offsetTop;
 
     setScrollLocal(
-      ScrollSyncUtils.getScrollLocal(
+      ScrollSyncUtils.getScrollLocalByY(
         _lookupList,
         _baselineY,
         outputContainerEl.offsetHeight,
@@ -173,25 +199,9 @@ const Preview: Component<
     );
   }
 
-  let lastScrollEvent: UIEvent | null = null;
-  let handlingScroll = false;
-  const handleScrollDebounced: JSX.EventHandlerUnion<HTMLDivElement, UIEvent> =
-    (ev) => {
-      lastScrollEvent = ev;
-      if (handlingScroll) {
-        requestAnimationFrame(() => {
-          if (lastScrollEvent === ev) {
-            handleScroll();
-          }
-        });
-        return;
-      }
-      handlingScroll = true;
-      requestAnimationFrame(() => {
-        handleScroll();
-        handlingScroll = false;
-      });
-    };
+  const handleScrollDebounced = debounceEventHandler(
+    (ev: UIEvent, _?: never) => handleScroll(),
+  ) as JSX.EventHandlerUnion<HTMLDivElement, UIEvent>;
 
   //==== 组件 ====
   return (
@@ -337,26 +347,53 @@ interface ScrollLocal {
   progress: number;
 }
 const ScrollSyncUtils = {
-  getScrollLocal(
+  getScrollLocalByY(
     lookupList: LookupList,
-    baselineY: number,
-    offsetBottom: number,
+    y: number,
+    globalOffsetBottom: number,
   ): ScrollLocal {
     const localIndex = ScrollSyncUtils.binarySearch(lookupList, (item, i) => {
-      if (item.offsetTop > baselineY) return "less";
+      if (item.offsetTop > y) return "less";
 
       const nextItem = lookupList[i + 1];
-      if (!nextItem || baselineY < nextItem.offsetTop) return true;
+      if (!nextItem || y < nextItem.offsetTop) return true;
       return "greater";
     }) ?? 0;
     const localItem = lookupList[localIndex];
-    const nextItem: ElementLocationPair | undefined =
-      lookupList[localIndex + 1];
 
     const offsetTop = localItem.offsetTop;
-    const nextOffsetTop = nextItem ? nextItem.offsetTop : offsetBottom;
+    const offsetBottom = ScrollSyncUtils.getOffsetBottom(
+      lookupList,
+      localIndex,
+      globalOffsetBottom,
+    );
 
-    const progress = (baselineY - offsetTop) / (nextOffsetTop - offsetTop);
+    const progress = (y - offsetTop) / (offsetBottom - offsetTop);
+
+    return {
+      indexInLookupList: localIndex,
+      progress,
+    };
+  },
+
+  getScrollLocalByLine(lookupList: LookupList, line: number): ScrollLocal {
+    const localIndex = ScrollSyncUtils.binarySearch(lookupList, (item, i) => {
+      if (item.location.start.line > line) return "less";
+
+      const nextItem = lookupList[i + 1];
+      if (!nextItem || line < nextItem.location.start.line) return true;
+      return "greater";
+    }) ?? 0;
+    const localItem = lookupList[localIndex];
+
+    const startLine = localItem.location.start.line;
+    const endLine = ScrollSyncUtils.getEndLine(
+      lookupList,
+      localIndex,
+      localItem.location.end.line,
+    );
+
+    const progress = (line - startLine) / (endLine - startLine + 1);
 
     return {
       indexInLookupList: localIndex,
@@ -366,14 +403,33 @@ const ScrollSyncUtils = {
 
   scrollLocalToLine(local: ScrollLocal, list: LookupList) {
     const item = list[local.indexInLookupList];
-    const nextItem = list[local.indexInLookupList + 1];
 
     const startLine = item.location.start.line;
-    const endLine = nextItem
-      ? nextItem.location.start.line - 1
-      : item.location.end.line;
+    const endLine = ScrollSyncUtils.getEndLine(
+      list,
+      local.indexInLookupList,
+      item.location.end.line,
+    );
 
     return Math.max(startLine + (endLine - startLine + 1) * local.progress, 1);
+  },
+
+  scrollLocalToScrollTop(
+    local: ScrollLocal,
+    list: LookupList,
+    globalOffsetBottom: number,
+  ) {
+    const item = list[local.indexInLookupList];
+    if (!item) return;
+
+    const offsetTop = item.offsetTop;
+    const offsetBottom = ScrollSyncUtils.getOffsetBottom(
+      list,
+      local.indexInLookupList,
+      globalOffsetBottom,
+    );
+
+    return offsetTop + (offsetBottom - offsetTop) * local.progress;
   },
 
   binarySearch<T>(
@@ -394,5 +450,24 @@ const ScrollSyncUtils = {
         h = i - 1;
       }
     }
+  },
+
+  getOffsetBottom(
+    lookupList: LookupList,
+    localIndex: number,
+    globalOffsetBottom: number,
+  ): number {
+    const nextItem: ElementLocationPair | undefined =
+      lookupList[localIndex + 1];
+    return nextItem ? nextItem.offsetTop : globalOffsetBottom;
+  },
+
+  getEndLine(
+    lookupList: LookupList,
+    localIndex: number,
+    localEndLine: number,
+  ): number {
+    const nextItem = lookupList[localIndex + 1];
+    return nextItem ? nextItem.location.start.line - 1 : localEndLine;
   },
 };
