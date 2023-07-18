@@ -101,46 +101,30 @@ const Preview: Component<
 
   let pendingAutoScrolls = 0;
 
-  createEffect(on([storeEditorView.topLine], () => {
-    const topLineData = storeEditorView.topLine();
-    if (!topLineData.setFrom || topLineData.setFrom === "preview") {
-      return;
+  {
+    function scrollToTopLine() {
+      const topLineData = storeEditorView.topLine();
+      if (!topLineData.setFrom || topLineData.setFrom === "preview") {
+        return;
+      }
+
+      const _lookupList = lookupList();
+      if (!_lookupList.length) return;
+
+      const scrolled = ScrollSyncUtils.scrollToLine(
+        topLineData.number,
+        _lookupList,
+        scrollContainerEl,
+      );
+      if (scrolled) {
+        pendingAutoScrolls++;
+      }
     }
 
-    const _lookupList = lookupList();
-    if (!_lookupList.length) return;
-
-    const scrollLocal = ScrollSyncUtils.getScrollLocalByLine(
-      _lookupList,
-      topLineData.number,
+    createEffect(
+      on([storeEditorView.topLine, () => props.code], scrollToTopLine),
     );
-
-    const scrollTop = ScrollSyncUtils.scrollLocalToScrollTop(
-      scrollLocal,
-      _lookupList,
-      outputContainerEl.offsetHeight,
-    );
-    if (scrollTop !== scrollContainerEl.scrollTop) {
-      pendingAutoScrolls++;
-      scrollContainerEl.scrollTo({ top: scrollTop, behavior: "instant" });
-    }
-  }));
-
-  createEffect(on([lookupList], () => {
-    const _lookupList = lookupList();
-    if (!_lookupList?.length) return 1;
-
-    const maxTopLineY = outputContainerEl.offsetHeight -
-      scrollContainerEl.offsetHeight;
-    const maxScrollLocal = ScrollSyncUtils.getScrollLocalByY(
-      _lookupList,
-      maxTopLineY,
-      outputContainerEl.offsetHeight,
-    );
-    storeEditorView.setMaxTopLineFromPreview(
-      ScrollSyncUtils.scrollLocalToLine(maxScrollLocal, _lookupList),
-    );
-  }));
+  }
 
   /**
    * @param scrollContainerEl 滚动内容的容器元素。
@@ -149,6 +133,15 @@ const Preview: Component<
   function handleScroll(_ev: Event) {
     if (pendingAutoScrolls > 0) {
       pendingAutoScrolls = Math.max(pendingAutoScrolls - 1, 0);
+      return;
+    }
+
+    if (
+      scrollContainerEl.scrollTop + scrollContainerEl.offsetHeight ===
+        scrollContainerEl.scrollHeight
+    ) {
+      // 配合编辑器的 “滚动过最后一行” 功能。
+      // 否则在当编辑文本，导致预览的高度改变时，编辑器的滚动位置也会复位。
       return;
     }
 
@@ -345,6 +338,31 @@ const ScrollSyncUtils = {
     );
 
     return offsetTop + (offsetBottom - offsetTop) * local.progress;
+  },
+
+  scrollToLine(
+    line: number,
+    lookupList: LookupList,
+    scrollContainerEl: HTMLElement,
+  ): boolean {
+    const scrollLocal = ScrollSyncUtils.getScrollLocalByLine(
+      lookupList,
+      line,
+    );
+
+    const scrollTop = Math.min(
+      ScrollSyncUtils.scrollLocalToScrollTop(
+        scrollLocal,
+        lookupList,
+        scrollContainerEl.scrollHeight,
+      ),
+      scrollContainerEl.scrollHeight - scrollContainerEl.offsetHeight,
+    );
+    if (scrollTop !== scrollContainerEl.scrollTop) {
+      scrollContainerEl.scrollTo({ top: scrollTop, behavior: "instant" });
+      return true;
+    }
+    return false;
   },
 
   roastLookupList(raw: LookupListRaw, rootClass: string) {

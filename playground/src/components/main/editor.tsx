@@ -113,11 +113,8 @@ const Editor: Component<
 
   {
     function calculateBlankHeightAtEnd() {
-      const _maxTopLineFromPreview = storeEditorView.maxTopLineFromPreview();
-      if (!_maxTopLineFromPreview) return;
-
       const _view = view();
-      const _maxTopLine = clampLine(_view, _maxTopLineFromPreview);
+      const _maxTopLine = _view.state.doc.lines;
 
       const scrollEl = scrollContainerDOM;
       if (!scrollEl) return;
@@ -129,16 +126,12 @@ const Editor: Component<
       const lastLineBlock = getLineBlock(_view, _view.state.doc.lines);
 
       const heightUnscrollableFromPreview = Math.max(
-        maxOffsetTop + scrollEl.offsetHeight - lastLineBlock.bottom,
+        maxOffsetTop + scrollEl.offsetHeight - lastLineBlock.bottom -
+          contentPadding().bottom,
         0,
       );
       setBlankHeightAtEnd(heightUnscrollableFromPreview);
     }
-
-    createEffect(on(
-      [storeEditorView.maxTopLineFromPreview],
-      calculateBlankHeightAtEnd,
-    ));
 
     new ResizeObserver(calculateBlankHeightAtEnd).observe(scrollContainerDOM);
   }
