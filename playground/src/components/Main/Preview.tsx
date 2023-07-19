@@ -168,13 +168,12 @@ const Preview: Component<
   //==== 组件 ====
   return (
     <div
-      class="previewer-background overflow-y-auto"
+      class={`previewer-background overflow-y-auto ${props.class ?? ""}`}
       ref={scrollContainerEl}
       onScroll={debounceEventHandler(handleScroll)}
     >
       <div
         class={"" +
-          `${props.class ?? ""} ` +
           "relative " + // 作为计算元素高度位移的锚点
           "self-center mx-auto " + // 保持居中，以及撑起父元素
           "break-all prose previewer " + // 内容的外观样式
