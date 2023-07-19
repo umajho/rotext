@@ -1,11 +1,11 @@
 import { Component, createSignal } from "solid-js";
 
-import { EditorCard } from "./editor-card";
-import { ViewerCard } from "./viewer-card";
+import EditorCard from "./EditorCard";
+import ViewerCard from "./ViewerCard";
 
 import rotextExample from "./example.rotext?raw";
 
-export const Main: Component = () => {
+const Main: Component = () => {
   const [text, setText] = createSignal(rotextExample);
 
   return (
@@ -22,3 +22,4 @@ export const Main: Component = () => {
     </main>
   );
 };
+export default Main;

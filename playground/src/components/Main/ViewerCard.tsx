@@ -2,9 +2,9 @@ import { Component, createSignal, lazy, Show, Suspense } from "solid-js";
 
 import { Alert, Badge, BadgeBar, Card, Loading, Tab, Tabs } from "../ui";
 
-const Preview = lazy(() => import("./preview"));
+const Preview = lazy(() => import("./Preview"));
 
-export const ViewerCard: Component<{ code: string }> = (props) => {
+const ViewerCard: Component<{ code: string }> = (props) => {
   const previewSizeClass = "h-full max-h-[25vh] lg:max-h-none";
 
   const [parsingTimeText, setParsingTimeText] = createSignal<string>(null);
@@ -51,6 +51,7 @@ export const ViewerCard: Component<{ code: string }> = (props) => {
     </Card>
   );
 };
+export default ViewerCard;
 
 interface ErrorInfo {
   title: string;
