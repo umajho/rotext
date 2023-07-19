@@ -3,10 +3,10 @@ import { Component, createSignal } from "solid-js";
 import EditorCard from "./EditorCard";
 import ViewerCard from "./ViewerCard";
 
-import rotextExample from "./example.rotext?raw";
+import * as examples from "@rotext/example-documentations";
 
 const Main: Component = () => {
-  const [text, setText] = createSignal(rotextExample);
+  const [text, setText] = createSignal(examples.introduction);
 
   return (
     <main>

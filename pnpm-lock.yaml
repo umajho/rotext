@@ -8,6 +8,8 @@ importers:
 
   .: {}
 
+  internal/example-documentations: {}
+
   internal/nodes: {}
 
   internal/parsing:
@@ -47,6 +49,9 @@ importers:
       '@codemirror/theme-one-dark':
         specifier: ^6.1.2
         version: 6.1.2
+      '@rotext/example-documentations':
+        specifier: workspace:*
+        version: link:../internal/example-documentations
       '@rotext/parsing':
         specifier: workspace:*
         version: link:../internal/parsing
