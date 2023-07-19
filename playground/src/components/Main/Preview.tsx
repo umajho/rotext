@@ -111,12 +111,12 @@ const Preview: Component<
       const _lookupList = lookupList();
       if (!_lookupList.length) return;
 
-      const scrolled = ScrollSyncUtils.scrollToLine(
+      const scrollResult = ScrollSyncUtils.scrollToLine(
         topLineData.number,
         _lookupList,
         scrollContainerEl,
       );
-      if (scrolled) {
+      if (scrollResult === "scrolled") {
         pendingAutoScrolls++;
       }
     }
@@ -137,11 +137,13 @@ const Preview: Component<
     }
 
     if (
-      scrollContainerEl.scrollTop + scrollContainerEl.offsetHeight ===
+      scrollContainerEl.scrollTop + scrollContainerEl.offsetHeight + 0.5 >=
         scrollContainerEl.scrollHeight
     ) {
       // 配合编辑器的 “滚动过最后一行” 功能。
       // 否则在当编辑文本，导致预览的高度改变时，编辑器的滚动位置也会复位。
+      // FIXME: 由于未知原因，Chrome 上 scrollTop+offsetHeight 与 scrollHeight
+      //        差了整整 0.5（而 Safari 没有这个问题），这里暂时直接这么补上。
       return;
     }
 
@@ -344,7 +346,7 @@ const ScrollSyncUtils = {
     line: number,
     lookupList: LookupList,
     scrollContainerEl: HTMLElement,
-  ): boolean {
+  ): "scrolled" | "untouched" | "adjusted" {
     const scrollLocal = ScrollSyncUtils.getScrollLocalByLine(
       lookupList,
       line,
@@ -362,11 +364,11 @@ const ScrollSyncUtils = {
       maxScrollTop,
     );
 
-    if (scrollTop < maxScrollTop) {
+    if (scrollTop < maxScrollTop || scrollTop > scrollContainerEl.scrollTop) {
       scrollContainerEl.scrollTo({ top: scrollTop, behavior: "instant" });
-      return true;
+      return scrollTop < maxScrollTop ? "scrolled" : "adjusted";
     }
-    return false;
+    return "untouched";
   },
 
   roastLookupList(raw: LookupListRaw, rootClass: string) {
