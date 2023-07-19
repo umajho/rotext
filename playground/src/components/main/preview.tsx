@@ -350,15 +350,19 @@ const ScrollSyncUtils = {
       line,
     );
 
+    const maxScrollTop = scrollContainerEl.scrollHeight -
+      scrollContainerEl.offsetHeight;
+
     const scrollTop = Math.min(
       ScrollSyncUtils.scrollLocalToScrollTop(
         scrollLocal,
         lookupList,
         scrollContainerEl.scrollHeight,
       ),
-      scrollContainerEl.scrollHeight - scrollContainerEl.offsetHeight,
+      maxScrollTop,
     );
-    if (scrollTop !== scrollContainerEl.scrollTop) {
+
+    if (scrollTop < maxScrollTop) {
       scrollContainerEl.scrollTo({ top: scrollTop, behavior: "instant" });
       return true;
     }
