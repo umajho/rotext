@@ -17,14 +17,15 @@ import { classModule, h, init, Module, styleModule, VNode } from "snabbdom";
 import { parse } from "@rotext/parsing";
 import { toSnabbdomChildren } from "@rotext/to-html";
 
-import * as storeEditorView from "../../stores/editor-view";
 import { debounceEventHandler } from "../../utils/mod";
+
+import { EditorStore } from "../../hooks/editor-store";
 
 const ROOT_CLASS = "rotext-preview-root";
 
 const Preview: Component<
   {
-    code: string;
+    store: EditorStore;
     class?: string;
     setParsingTimeText: Setter<string>;
     onThrowInParsing: (thrown: unknown) => void;
@@ -68,11 +69,11 @@ const Preview: Component<
     lastNode = outputEl;
   });
 
-  createEffect(on([() => props.code], () => {
+  createEffect(on([() => props.store.text], () => {
     setErr(null);
     try {
       const parsingStart = performance.now();
-      const doc = parse(props.code, {
+      const doc = parse(props.store.text, {
         softBreakAs: "br",
         recordsLocation: true,
       });
@@ -103,7 +104,7 @@ const Preview: Component<
 
   {
     function scrollToTopLine() {
-      const topLineData = storeEditorView.topLine();
+      const topLineData = props.store.topLine;
       if (!topLineData.setFrom || topLineData.setFrom === "preview") {
         return;
       }
@@ -122,7 +123,7 @@ const Preview: Component<
     }
 
     createEffect(
-      on([storeEditorView.topLine, () => props.code], scrollToTopLine),
+      on([() => props.store.topLine, () => props.store.text], scrollToTopLine),
     );
   }
 
@@ -158,10 +159,10 @@ const Preview: Component<
       _baselineY,
       outputContainerEl.offsetHeight,
     );
-    storeEditorView.setTopline({
+    props.store.topLine = {
       number: ScrollSyncUtils.scrollLocalToLine(scrollLocal, _lookupList),
       setFrom: "preview",
-    });
+    };
   }
 
   //==== 组件 ====
