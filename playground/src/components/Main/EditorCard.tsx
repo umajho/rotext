@@ -2,12 +2,12 @@ import { Component, lazy, Setter, Suspense } from "solid-js";
 
 import { Badge, BadgeBar, Card, Loading } from "../ui";
 
-const Editor = lazy(() => import("./editor"));
+const Editor = lazy(() => import("./Editor"));
 
 const segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
 const textEncoder = new TextEncoder();
 
-export const EditorCard: Component<
+const EditorCard: Component<
   { text: string; setText: Setter<string> }
 > = (props) => {
   const editorSizeClass =
@@ -40,3 +40,4 @@ export const EditorCard: Component<
     </Card>
   );
 };
+export default EditorCard;
