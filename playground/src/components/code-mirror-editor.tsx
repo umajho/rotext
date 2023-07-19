@@ -1,4 +1,4 @@
-import { Accessor, createSignal, JSX, onMount, Setter } from "solid-js";
+import { Accessor, createSignal, JSX, onMount } from "solid-js";
 
 import { basicSetup, EditorView } from "codemirror";
 import { Extension } from "@codemirror/state";
@@ -9,7 +9,7 @@ export function createCodeMirrorEditor(
     class?: string;
     extensions?: Extension[];
     initialDoc: string;
-    setDoc: Setter<string>;
+    setDoc: (doc: string) => void;
   },
 ): {
   element: JSX.Element;

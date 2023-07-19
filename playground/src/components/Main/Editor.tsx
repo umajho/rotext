@@ -5,19 +5,18 @@ import {
   createSignal,
   on,
   onMount,
-  Setter,
 } from "solid-js";
 import { Portal } from "solid-js/web";
 import { EditorView } from "codemirror";
 
 import { createCodeMirrorEditor } from "../code-mirror-editor";
-import * as storeEditorView from "../../stores/editor-view";
 import { debounceEventHandler } from "../../utils/mod";
+import { EditorStore } from "../../hooks/editor-store";
 
 let nextEditorID = 1;
 
 const Editor: Component<
-  { text: string; setText: Setter<string>; class?: string }
+  { store: EditorStore; class?: string }
 > = (props) => {
   const editorID = nextEditorID++;
 
@@ -31,8 +30,8 @@ const Editor: Component<
   const [pendingAutoScrolls, setPendingAutoScrolls] = createAutoResetCounter();
 
   const { element, view, scrollContainerDOM } = createCodeMirrorEditor({
-    initialDoc: props.text,
-    setDoc: props.setText,
+    initialDoc: props.store.text,
+    setDoc: (doc: string) => props.store.text = doc,
     class: `${props.class} editor-${editorID}`,
     extensions: [EditorView.lineWrapping],
   });
@@ -75,7 +74,7 @@ const Editor: Component<
         (nextOffsetTop - offsetTop);
       const line = Math.max(topLineInfo.number + progress, 1);
 
-      storeEditorView.setTopline({ number: line, setFrom: "editor" });
+      props.store.topLine = { number: line, setFrom: "editor" };
     }
 
     scrollContainerDOM.addEventListener(
@@ -85,8 +84,8 @@ const Editor: Component<
   });
 
   let lastTopLineFromPreview: number | null = null;
-  createEffect(on([storeEditorView.topLine], () => {
-    const topLineData = storeEditorView.topLine();
+  createEffect(on([() => props.store.topLine], () => {
+    const topLineData = props.store.topLine;
     if (!topLineData.setFrom || topLineData.setFrom === "editor") {
       lastTopLineFromPreview = null;
       return;

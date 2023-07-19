@@ -1,6 +1,7 @@
-import { Component, createMemo, lazy, Setter, Show, Suspense } from "solid-js";
+import { Component, createMemo, lazy, Show, Suspense } from "solid-js";
 
 import { Card, Loading } from "../ui";
+import { EditorStore } from "../../hooks/editor-store";
 
 const Editor = lazy(() => import("./Editor"));
 
@@ -13,16 +14,18 @@ const segmenter: Intl.Segmenter | null = (() => {
 const textEncoder = new TextEncoder();
 
 const EditorCard: Component<
-  { text: string; setText: Setter<string> }
+  { store: EditorStore }
 > = (props) => {
   const editorSizeClass =
     "max-h-[25vh] lg:max-h-none lg:h-full lg:min-h-[20rem]";
 
   const charCount = createMemo(() =>
-    segmenter ? [...segmenter.segment(props.text)].length : null
+    segmenter ? [...segmenter.segment(props.store.text)].length : null
   );
-  const byteCount = createMemo(() => textEncoder.encode(props.text).length);
-  const lineCount = createMemo(() => props.text.split("\n").length);
+  const byteCount = createMemo(() =>
+    textEncoder.encode(props.store.text).length
+  );
+  const lineCount = createMemo(() => props.store.text.split("\n").length);
   const infoText = () =>
     [
       ...(charCount() !== null ? [`${charCount()}字`] : []),
@@ -43,8 +46,7 @@ const EditorCard: Component<
         }
       >
         <Editor
-          text={props.text}
-          setText={props.setText}
+          store={props.store}
           class={`${editorSizeClass} overflow-y-scroll`}
         />
       </Suspense>
