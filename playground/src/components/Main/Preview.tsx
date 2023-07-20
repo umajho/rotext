@@ -168,10 +168,15 @@ const Preview: Component<
   //==== 组件 ====
   return (
     <div
-      class={`previewer-background overflow-y-auto ${props.class ?? ""}`}
+      class={`relative previewer-background overflow-y-auto ${
+        props.class ?? ""
+      }`}
       ref={scrollContainerEl}
       onScroll={debounceEventHandler(handleScroll)}
     >
+      <Show when={err()}>
+        <ErrorAlert error={err()} showsStack={true} />
+      </Show>
       <div
         class={"" +
           "relative " + // 作为计算元素高度位移的锚点
@@ -179,9 +184,6 @@ const Preview: Component<
           "break-all prose previewer " + // 内容的外观样式
           ""}
       >
-        <Show when={err()}>
-          <ErrorAlert error={err()} showsStack={true} />
-        </Show>
         <div ref={outputContainerEl} />
       </div>
     </div>
@@ -194,7 +196,7 @@ const ErrorAlert: Component<{
   showsStack: boolean;
 }> = (props) => {
   return (
-    <div class="alert alert-error shadow-lg overflow-scroll">
+    <div class="sticky top-0 z-10 max-h-32 alert alert-error shadow-lg overflow-scroll">
       <div class="text-xs">
         <code class="whitespace-pre">
           {props.error.message}
