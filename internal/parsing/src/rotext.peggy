@@ -24,15 +24,22 @@ Document
   / __
     { return createDocument([]); }
 
-Block
+Block = BlockWithoutParagraph / Paragraph
+
+BlockInTable = BlockWithoutParagraph / ParagraphInTable
+
+BlockWithoutParagraph
   = ThematicBreak
   / Heading
   / Containers
   / Table
-  / Paragraph
 
 Paragraph
-  = first:Line rest:(br !TableEnd @Line)*
+  = first:Line rest:(br @Line)*
+    { return recording(create.P(joinLines([first, ...rest], breaks))); }
+
+ParagraphInTable
+  = first:Line rest:(br !(TableEnd/TableRowBegin/TableCellLineBegin) @Line)*
     { return recording(create.P(joinLines([first, ...rest], breaks))); }
 
 ThematicBreak
@@ -143,10 +150,10 @@ TableInlineCell
 TableLastCell
   = symbol:TableCellBegin ([ \t]+ / &br)
     line:(!TableCellBegin @Line)? __
-    !TableRelatedLineBegin first:Block?
-    rest:(br !TableRelatedLineBegin @Block)*
+    !TableRelatedLineBegin first:BlockInTable?
+    rest:(br !TableRelatedLineBegin @BlockInTable)*
     {
-      const inlines = joinInlines(line)
+      const inlines = line ? joinInlines(line) : []
       first = first ? [...inlines, first] : inlines;
       return create.TABLE$cell(symbol == "!" ? "H" : "D", [...first, ...rest]);
     }
