@@ -43,47 +43,26 @@ ThematicBreak
     { return recording(create.THEMATIC_BREAK()); }
 
 Heading
-  = level:$"="|1..6| spaces:$_
+  = level:$"="|1..6| spaces:$[ \t]+
     line:Line
     &{ // 末尾至少需要有一个对应的标记符号
       let last = line[line.length - 1];
       if (typeof last !== "string") return false;
-      last = last.trimEnd();
-      return last[last.length-1] === "=";
+      return last.trimEnd().endsWith(" " + level);
     }
     {
-      let last = line[line.length - 1].trimEnd();
+      const last = line[line.length - 1]
+        .trimEnd()
+        .slice(0, line[line.length - 1].length - level.length)
+        .trimEnd();
 
-      // 根据右侧对应标记符号的数量确定真实的级别
-      let realLevels = 1;
-      for (let i = last.length - 1 - 1; i >= 0 && realLevels < level.length; i--) {
-        if (last[i] === "=") {
-          realLevels++;
-        } else {
-          break;
-        }
-      }
-
-      line = [...line];
-
-      if (realLevels < level.length) { // 返还左侧多余的标记符号
-        const surplus = level.slice(realLevels) + spaces;
-        if (typeof line[0] === "string") {
-          line[0] = surplus + line[0];
-        } else {
-          line.splice(0, 0, surplus);
-        }
-      }
-
-      last = line[line.length - 1];
-      last = last.slice(0, last.length - realLevels).trimEnd()
       if (last === "") {
         line.pop()
       } else {
         line[line.length - 1] = last;
       }
 
-      return recording(create.H(realLevels, line));
+      return recording(create.H(level.length, line));
     }
 
 // NOTE: 之所以是复数，是因为可能会有得到复数个容器的情况

@@ -336,13 +336,19 @@ describe("解析", () => {
           },
         ]);
       });
-      describe("多余的标记符号会留下来", () => {
+      describe("内容与前后之间必须有空白", () => {
+        theseCasesAreOk([{
+          input: "==foo==",
+          expected: [create.P(["==foo=="])],
+        }]);
+      });
+      describe("前后的标记必须配对", () => {
         theseCasesAreOk([
-          { input: "== foo =", expected: [create.H(1, ["= foo"])] },
-          { input: "= foo ==", expected: [create.H(1, ["foo ="])] },
+          { input: "== foo =", expected: [create.P(["== foo ="])] },
+          { input: "= foo ==", expected: [create.P(["= foo =="])] },
           {
             input: "======= foo =======",
-            expected: [create.H(6, ["= foo ="])],
+            expected: [create.P(["======= foo ======="])],
           },
         ]);
       });
@@ -770,7 +776,7 @@ describe("解析", () => {
             ],
           },
           { // 同上
-            input: "{|\n|foo\n\n=bar=\n|}",
+            input: "{|\n|foo\n\n= bar =\n|}",
             expected: [
               create.TABLE(null, [[
                 create.TABLE$cell("D", ["foo", create.H(1, ["bar"])]),
