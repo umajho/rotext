@@ -39,7 +39,7 @@ Paragraph
     { return recording(create.P(joinLines([first, ...rest], breaks))); }
 
 ParagraphInTable
-  = first:Line rest:(br !(TableEnd/TableRowBegin/TableCellLineBegin) @Line)*
+  = first:Line rest:(br !TableRelatedLineBegin @Line)*
     { return recording(create.P(joinLines([first, ...rest], breaks))); }
 
 ThematicBreak
@@ -150,7 +150,7 @@ TableInlineCell
 TableLastCell
   = symbol:TableCellBegin ([ \t]+ / &br)
     inlines:Inline* _
-    blocks:(__ @BlocksInTableCell)?
+    blocks:BlocksInTableCell?
     {
       let slot = inlines ? joinInlines(inlines) : [];
       if (blocks?.length) {
@@ -162,8 +162,8 @@ TableCellBegin = !TableRelatedLineBeginNoCells @TableCellLineBegin
 
 BlocksInTableCell
   = !TableRelatedLineBegin first:BlockInTable?
-    rest:(br !TableRelatedLineBegin @BlockInTable)*
-    { return first ? [first, ...rest] : rest; }
+    rest:(br __ !TableRelatedLineBegin @BlockInTable)*
+    { return first ? [first, ...rest.flat()] : rest.flat(); }
 
 //==== INLINE LEVEL ====//
 
