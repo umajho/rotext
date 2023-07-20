@@ -510,7 +510,7 @@ describe("解析", () => {
       describe("多层深的单项", () => {
         theseCasesAreOk([
           {
-            input: "** foo",
+            input: "* * foo",
             expected: [
               create.LIST("U", [create.LIST$item([
                 create.LIST("U", [create.LIST$item(["foo"])]),
@@ -518,7 +518,7 @@ describe("解析", () => {
             ],
           },
           {
-            input: "*** foo",
+            input: "* * * foo",
             expected: [
               create.LIST("U", [create.LIST$item([
                 create.LIST("U", [create.LIST$item([
@@ -528,7 +528,7 @@ describe("解析", () => {
             ],
           },
           {
-            input: ">* foo",
+            input: "> * foo",
             expected: [
               create.QUOTE([
                 create.LIST("U", [create.LIST$item(["foo"])]),
@@ -540,7 +540,7 @@ describe("解析", () => {
       describe("块引用内", () => {
         theseCasesAreOk([
           { // 块引用套块引用
-            input: ">> foo\n>> bar",
+            input: "> > foo\n> > bar",
             expected: [
               create.QUOTE([
                 create.QUOTE([create.P(["foo", create.br(), "bar"])]),
@@ -548,7 +548,7 @@ describe("解析", () => {
             ],
           },
           { // 块引用套其他多项
-            input: ">* foo\n>* bar",
+            input: "> * foo\n> * bar",
             expected: [
               create.QUOTE([create.LIST("U", [
                 create.LIST$item(["foo"]),
@@ -557,7 +557,7 @@ describe("解析", () => {
             ],
           },
           { // 块引用套有延长的单项·1
-            input: ">* foo\n>> bar",
+            input: "> * foo\n> > bar",
             expected: [
               create.QUOTE([create.LIST("U", [
                 create.LIST$item(["foo", create.P(["bar"])]),
@@ -565,7 +565,7 @@ describe("解析", () => {
             ],
           },
           { // 块引用套有延长的单项·2
-            input: ">* \n>> foo\n>> bar\n>>\n>> baz",
+            input: "> *\n> > foo\n> > bar\n> >\n> > baz",
             expected: [
               create.QUOTE([create.LIST("U", [
                 create.LIST$item([
@@ -579,7 +579,7 @@ describe("解析", () => {
       });
       describe("延长的项内", () => {
         theseCasesAreOk([
-          ...["#* foo\n>* bar", "#\n>* foo\n>* bar"].map((input) => ({
+          ...["# * foo\n> * bar", "#\n> * foo\n> * bar"].map((input) => ({
             input, // 延长项套多项
             expected: [create.LIST("O", [create.LIST$item([
               create.LIST("U", [
@@ -588,7 +588,7 @@ describe("解析", () => {
               ]),
             ])])],
           })),
-          ...["#* foo\n>\n>* bar", "#\n>* foo\n>\n>* bar"].map((input) => ({
+          ...["# * foo\n>\n> * bar", "#\n> * foo\n>\n> * bar"].map((input) => ({
             input, // 延长项套两组由空行隔开的单项
             expected: [create.LIST("O", [create.LIST$item([
               create.LIST("U", [create.LIST$item(["foo"])]),
@@ -596,13 +596,13 @@ describe("解析", () => {
             ])])],
           })),
           { // 延长项套延长项·1
-            input: "## foo\n>> bar",
+            input: "# # foo\n> > bar",
             expected: [create.LIST("O", [create.LIST$item([
               create.LIST("O", [create.LIST$item(["foo", create.P(["bar"])])]),
             ])])],
           },
           { // 延长项套延长项·2
-            input: "#\n>#\n>> foo\n>>\n>> bar",
+            input: "#\n> #\n> > foo\n> >\n> > bar",
             expected: [create.LIST("O", [create.LIST$item([
               create.LIST("O", [create.LIST$item(
                 [create.P(["foo"]), create.P(["bar"])],
@@ -614,7 +614,7 @@ describe("解析", () => {
       describe("组的切割导致的内层的切割", () => {
         theseCasesAreOk([
           { // 内层看似同组
-            input: "#* foo\n** bar",
+            input: "# * foo\n* * bar",
             expected: [
               create.LIST("O", [create.LIST$item(
                 [create.LIST("U", [create.LIST$item(["foo"])])],
@@ -625,7 +625,7 @@ describe("解析", () => {
             ],
           },
           { // 内层看似延长
-            input: "#* foo\n*> bar",
+            input: "# * foo\n* > bar",
             expected: [
               create.LIST("O", [create.LIST$item(
                 [create.LIST("U", [create.LIST$item(["foo"])])],
@@ -640,20 +640,20 @@ describe("解析", () => {
       describe("多层参差不齐", () => {
         theseCasesAreOk([
           {
-            input: "# foo\n># bar",
+            input: "# foo\n> # bar",
             expected: [create.LIST("O", [create.LIST$item([
               "foo",
               create.LIST("O", [create.LIST$item(["bar"])]),
             ])])],
           },
           {
-            input: "#\n> foo\n># bar",
+            input: "#\n> foo\n> # bar",
             expected: [create.LIST("O", [create.LIST$item([
               create.P(["foo"]),
               create.LIST("O", [create.LIST$item(["bar"])]),
             ])])],
           },
-          ...["## foo\n> bar", "#\n># foo\n> bar"].map((input) => ({
+          ...["# # foo\n> bar", "#\n> # foo\n> bar"].map((input) => ({
             input,
             expected: [create.LIST("O", [create.LIST$item([
               create.LIST("O", [create.LIST$item(["foo"])]),
@@ -661,7 +661,7 @@ describe("解析", () => {
             ])])],
           })),
           {
-            input: "##\n>> foo\n> bar",
+            input: "# #\n> > foo\n> bar",
             expected: [create.LIST("O", [create.LIST$item([
               create.LIST("O", [create.LIST$item([create.P(["foo"])])]),
               create.P(["bar"]),
