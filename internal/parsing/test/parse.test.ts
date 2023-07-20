@@ -22,7 +22,7 @@ function assertOk(
 
 function theseCasesAreOk(cases: Case[], opts?: ParseOptions) {
   for (const [i, theCase] of cases.entries()) {
-    it(`case ${i + 1}: \`${theCase.input}\` ok`, () => {
+    it(`case ${i + 1}: ${JSON.stringify(theCase.input)} ok`, () => {
       assertOk(theCase.input, theCase.expected, opts);
     });
   }
