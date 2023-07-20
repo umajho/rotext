@@ -32,7 +32,7 @@ Block
   / Paragraph
 
 Paragraph
-  = first:Line rest:(br @Line)*
+  = first:Line rest:(br !TableEnd @Line)*
     { return recording(create.P(joinLines([first, ...rest], breaks))); }
 
 ThematicBreak
@@ -110,9 +110,9 @@ TableRowBegin = !"|}" "|" "-"+ _
 // NODE: Mediawiki 的 caption 可以在行中，可以是块上下文。
 //       这里为了实现简单就只允许在第二行，且只允许行内元素了。
 TableCaption
-  = TableCaptionBegin inlines:Inline*
+  = TableCaptionBegin [ \t]+ inlines:Inline*
     { return joinInlines(inlines); }
-TableCaptionBegin = !"|}" "|+" _
+TableCaptionBegin = !"|}" "|+"
 
 TableRow
   = cells:TableRowFragment*
@@ -120,25 +120,37 @@ TableRow
 TableRowFragment
   = br __ !TableRelatedLineBeginNoCells
     initCells:(@TableInlineCell ("!" &"!" / "|" & "|"))*
+    &{
+      for (let i = 0; i < (initCells?.length ?? 0) - 1; i++) {
+        const inlines = initCells[i].slot;
+        const lastInline = inlines[inlines.length-1];
+        if (!lastInline) continue;
+        const lastItem = lastInline[lastInline.length-1];
+        if (typeof lastItem !== "string") return false;
+        const lastChar = lastItem[lastItem.length-1];
+        if (lastChar !== "\t" && lastChar !== " ") return false;
+      }
+      return true;
+    }
     lastCell:TableLastCell
     _
     { return [...initCells, ...(lastCell ? [lastCell] : [])] }
 
 TableInlineCell
-  = symbol:TableCellBegin
+  = symbol:TableCellBegin ([ \t]+ / &br)
     inlines:(!TableCellBegin @Inline)*
   { return create.TABLE$cell(symbol == "!" ? "H" : "D", joinInlines(inlines)); }
 TableLastCell
-  = symbol:TableCellBegin
-    inlines:(!TableCellBegin @Inline)* __
+  = symbol:TableCellBegin ([ \t]+ / &br)
+    line:(!TableCellBegin @Line)? __
     !TableRelatedLineBegin first:Block?
     rest:(br !TableRelatedLineBegin @Block)*
     {
-      inlines = joinInlines(inlines)
+      const inlines = joinInlines(line)
       first = first ? [...inlines, first] : inlines;
       return create.TABLE$cell(symbol == "!" ? "H" : "D", [...first, ...rest]);
     }
-  / symbol:TableCellBegin
+  / symbol:TableCellBegin ([ \t]+ / &br)
     inlines:(!TableCellBegin @Inline)* _
     { return create.TABLE$cell(symbol == "!" ? "H" : "D", joinInlines(inlines)); }
 TableCellBegin = !TableRelatedLineBeginNoCells @TableCellLineBegin
