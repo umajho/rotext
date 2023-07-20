@@ -5,3 +5,6 @@ build:
 
 test: build
   pnpm exec vitest --dir=test --run
+
+bench: build
+  pnpm exec vitest bench --dir=test --run
