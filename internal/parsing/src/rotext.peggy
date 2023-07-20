@@ -149,18 +149,21 @@ TableInlineCell
   { return create.TABLE$cell(symbol == "!" ? "H" : "D", joinInlines(inlines)); }
 TableLastCell
   = symbol:TableCellBegin ([ \t]+ / &br)
-    line:(!TableCellBegin @Line)? __
-    !TableRelatedLineBegin first:BlockInTable?
-    rest:(br !TableRelatedLineBegin @BlockInTable)*
+    inlines:Inline* _
+    blocks:(__ @BlocksInTableCell)?
     {
-      const inlines = line ? joinInlines(line) : []
-      first = first ? [...inlines, first] : inlines;
-      return create.TABLE$cell(symbol == "!" ? "H" : "D", [...first, ...rest]);
+      let slot = inlines ? joinInlines(inlines) : [];
+      if (blocks?.length) {
+        slot = slot.length ? [...slot, ...blocks] : blocks
+      }
+      return create.TABLE$cell(symbol == "!" ? "H" : "D", slot);
     }
-  / symbol:TableCellBegin ([ \t]+ / &br)
-    inlines:(!TableCellBegin @Inline)* _
-    { return create.TABLE$cell(symbol == "!" ? "H" : "D", joinInlines(inlines)); }
 TableCellBegin = !TableRelatedLineBeginNoCells @TableCellLineBegin
+
+BlocksInTableCell
+  = !TableRelatedLineBegin first:BlockInTable?
+    rest:(br !TableRelatedLineBegin @BlockInTable)*
+    { return first ? [first, ...rest] : rest; }
 
 //==== INLINE LEVEL ====//
 
