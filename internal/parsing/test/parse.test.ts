@@ -119,7 +119,7 @@ describe("解析", () => {
     describe("行内代码文本", () => {
       describe("能正确解析", () => {
         theseCasesAreOk([
-          ...["[`foo`]", "``foo``"].map((input) => ({
+          ...["[`foo`]"].map((input) => ({
             input,
             expected: [create.P([create.code("foo")])],
           })),
@@ -129,11 +129,11 @@ describe("解析", () => {
           },
         ]);
       });
-      describe("贪婪", () => {
+      describe("贪婪（？）", () => {
         theseCasesAreOk([
           {
             input: "[`[`foo`]`]",
-            expected: [create.P([create.code("[`foo"), "`]"])],
+            expected: [create.P(["[`", create.code("foo"), "`]"])],
           },
         ]);
       });
@@ -142,8 +142,9 @@ describe("解析", () => {
           { input: "[``]", expected: [create.P([create.code("")])] },
         ]);
       });
-      describe("不存在转义", () => {
+      describe("只存在 “``” 转义", () => {
         theseCasesAreOk([
+          { input: "[````]", expected: [create.P([create.code("`")])] },
           { input: "[`\\a`]", expected: [create.P([create.code("\\a")])] },
           { input: "[`\\`]", expected: [create.P([create.code("\\")])] },
         ]);
