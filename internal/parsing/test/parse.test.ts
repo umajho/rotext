@@ -16,7 +16,7 @@ function assertOk(
 ) {
   const output = parse(input, opts);
   if (expected) {
-    expect(createDocument(expected)).toStrictEqual(output);
+    expect(output).toStrictEqual(createDocument(expected));
   }
 }
 
