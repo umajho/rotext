@@ -31,11 +31,8 @@ Block
   / Table
   / Paragraph
 
-BlockLineBegin
-  = [-=>#*;:] / "{|" / "|" [}+-]?
-
 Paragraph
-  = first:Line rest:(br !BlockLineBegin @Line)*
+  = first:Line rest:(br @Line)*
     { return recording(create.P(joinLines([first, ...rest], breaks))); }
 
 ThematicBreak
