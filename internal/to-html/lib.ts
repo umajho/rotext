@@ -41,7 +41,7 @@ export function elementToSnabbdom(
       case "ref-link":
         sel = "span";
         classes = { "ref-link": true };
-        children = `[>>${el.slot}]`;
+        children = `>>${el.slot}`;
         break;
       case "P":
         sel = el.type;

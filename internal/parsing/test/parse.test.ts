@@ -95,7 +95,7 @@ describe("解析", () => {
             ...["TP.abc.def#456" /*, "abc.def#456", "~.def#456" */],
           ]
             .map((input) => ({
-              input: `[>>${input}]`,
+              input: `>>${input}`,
               expected: [create.P([create.ref_link(input)])],
             })),
         );
@@ -109,8 +109,8 @@ describe("解析", () => {
               ...["abc.def", "~.def"],
               ...["abc.def#456", "~.def#456"],
             ].map((input) => ({
-              input: `[>>${input}]`,
-              expected: [create.P([`[>>${input}]`])],
+              input: `>>${input}`,
+              expected: [create.P([`>>${input}`])],
             })),
           ],
         );
@@ -122,11 +122,15 @@ describe("解析", () => {
               ...["", "42"],
               ...["TP.~", "TP.#123", "TP.#"],
               ...[".def", "TP.~.def"],
-              ...["#123.456", "TP.abc#123.def"],
+              ...["#123.456"],
             ].map((input) => ({
-              input: `[>>${input}]`,
-              expected: [create.P([`[>>${input}]`])],
+              input: `>>${input}`,
+              expected: [create.P([`>>${input}`])],
             })),
+            {
+              input: ">>TP.abc#123.def",
+              expected: [create.P([create.ref_link("TP.abc#123"), ".def"])],
+            },
           ],
         );
       });
