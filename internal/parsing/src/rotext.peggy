@@ -231,8 +231,8 @@ Reference
     相对形式：`[>>#]`，代表当前楼层。
   - 子级串部分：
     代表子级串或子级串中的帖子。与「楼层号」互斥。只存在绝对形式。
-    以 `/` 开头，其后由「子级串的串号」和可选的「子级串的楼层号」组成。
-    比如：`[>>~/abc#123]`、`[>>(TP.)abc/def]`。
+    以 `.` 开头，其后由「子级串的串号」和可选的「子级串的楼层号」组成。
+    比如：`[>>~.abc#123]`、`[>>(TP.)abc.def]`。
 */
 RID
   = RID_GlobalPrefix ( RID_PostNumber / RID_Global )
@@ -251,7 +251,7 @@ RID_ThreadID = [a-z]+
 RID_ThreadRelative = "~"
 RID_FloorNumber = "#" [0-9]+
 RID_FloorNumberMaybeRelative = "#" [0-9]*
-RID_SubPart = "/" RID_ThreadID RID_FloorNumber?
+RID_SubPart = "." RID_ThreadID RID_FloorNumber?
 
 Code
   = "[`" text:(!"`]" @CodeText)* "`]"
