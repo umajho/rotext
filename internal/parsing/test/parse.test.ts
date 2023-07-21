@@ -91,8 +91,8 @@ describe("解析", () => {
             "TP.42",
             ...["TP.abc", "abc", "~"],
             ...["TP.abc#123", "abc#123", "#123", "#"],
-            ...["TP.abc/def", "abc/def", "~/def"],
-            ...["TP.abc/def#456", "abc/def#456", "~/def#456"],
+            ...["TP.abc.def", "abc.def", "~.def"],
+            ...["TP.abc.def#456", "abc.def#456", "~.def#456"],
           ]
             .map((input) => ({
               input: `[>>${input}]`,
@@ -106,8 +106,8 @@ describe("解析", () => {
             ...[
               ...["", "42"],
               ...["TP.~", "TP.#123", "TP.#"],
-              ...["/def", "TP.~/def"],
-              ...["#123/456", "TP.abc#123/def"],
+              ...[".def", "TP.~.def"],
+              ...["#123.456", "TP.abc#123.def"],
             ].map((input) => ({
               input: `[>>${input}]`,
               expected: [create.P([`[>>${input}]`])],
