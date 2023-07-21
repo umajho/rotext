@@ -23,18 +23,18 @@ export function elementToSnabbdom(
     let sel: string;
     let classes: Record<string, boolean> | undefined;
     switch (el.type) {
-      case "em":
-      case "u":
+      // case "em":
+      // case "u":
       case "s":
         sel = el.type;
         break;
       case "em.strong":
         sel = "strong";
         break;
-      case "em.dotted":
-        sel = "em";
-        classes = { "em-dotted": true };
-        break;
+      // case "em.dotted":
+      //   sel = "em";
+      //   classes = { "em-dotted": true };
+      //   break;
       case "code":
         sel = "code";
         break;
