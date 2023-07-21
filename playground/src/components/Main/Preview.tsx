@@ -371,7 +371,10 @@ const ScrollSyncUtils = {
 
     if (scrollTop < maxScrollTop || scrollTop > scrollContainerEl.scrollTop) {
       scrollContainerEl.scrollTo({ top: scrollTop, behavior: "instant" });
-      return scrollTop < maxScrollTop ? "scrolled" : "adjusted";
+      return (scrollTop < maxScrollTop &&
+          scrollTop != scrollContainerEl.scrollTop)
+        ? "scrolled"
+        : "adjusted";
     }
     return "untouched";
   },
