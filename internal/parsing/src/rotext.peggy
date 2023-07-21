@@ -1,6 +1,6 @@
 {{
   import { create, createDocument } from "@rotext/nodes";
-  import { joinInlines, joinLines } from "./line.ts"
+  import { joinInlines, joinLines, trimInlinesShallowInPlace } from "./line.ts";
   import { buildContainers } from "./container.ts";
 }}
 
@@ -146,13 +146,16 @@ TableRowFragment
 TableInlineCell
   = symbol:TableCellBegin ([ \t]+ / &br)
     inlines:(!TableCellBegin @Inline)*
-  { return create.TABLE$cell(symbol == "!" ? "H" : "D", joinInlines(inlines)); }
+  {
+    inlines = trimInlinesShallowInPlace(joinInlines(inlines));
+    return create.TABLE$cell(symbol == "!" ? "H" : "D", inlines)
+  }
 TableLastCell
   = symbol:TableCellBegin ([ \t]+ / &br)
     inlines:Inline* _
     blocks:BlocksInTableCell?
     {
-      let slot = inlines ? joinInlines(inlines) : [];
+      let slot = inlines ? trimInlinesShallowInPlace(joinInlines(inlines)) : [];
       if (blocks?.length) {
         slot = slot.length ? [...slot, ...blocks] : blocks
       }

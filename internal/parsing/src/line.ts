@@ -122,3 +122,26 @@ export function appendLineToMixedSlot(
     }
   }
 }
+
+/**
+ * 就地去掉一串行内元素开头与结尾的空白。不深入。
+ */
+export function trimInlinesShallowInPlace(inlines: InlineSlot): InlineSlot {
+  if (typeof inlines[0] === "string") {
+    inlines[0] = inlines[0].trimStart();
+    if (!inlines[0].length) {
+      inlines = inlines.slice(1);
+    }
+  }
+
+  let last = inlines[inlines.length - 1];
+  if (typeof last === "string") {
+    last = last.trimEnd();
+    if (last.length) {
+      inlines[inlines.length - 1] = last;
+    } else {
+      inlines = inlines.slice(0, inlines.length - 1);
+    }
+  }
+  return inlines;
+}
