@@ -757,9 +757,9 @@ describe("解析", () => {
           },
         ]);
       });
-      describe("能正确解析源代码中 “单个单元格有多行” 的表格", () => {
+      describe("能正确解析源代码中表格的 “行内最后的单元的延续”", () => {
         theseCasesAreOk([
-          { // NOTE: MediaWiki 也是如此处理的
+          { // NOTE: MediaWiki 也是如此：将首行与其余行的内容分开为行内元素与块元素
             input: "{|\n| foo\nbar\n|}",
             expected: [
               create.TABLE(null, [[
@@ -767,7 +767,7 @@ describe("解析", () => {
               ]]),
             ],
           },
-          { // 同上
+          {
             input: "{|\n|\nfoo\n|}",
             expected: [
               create.TABLE(null, [[
@@ -775,11 +775,64 @@ describe("解析", () => {
               ]]),
             ],
           },
-          { // 同上
+          {
+            input: "{|\n| foo ||\nbar\n|}",
+            expected: [
+              create.TABLE(null, [[
+                create.TABLE$cell("D", ["foo"]),
+                create.TABLE$cell("D", [create.P(["bar"])]),
+              ]]),
+            ],
+          },
+          {
             input: "{|\n| foo\n\n= bar =\n|}",
             expected: [
               create.TABLE(null, [[
                 create.TABLE$cell("D", ["foo", create.H(1, ["bar"])]),
+              ]]),
+            ],
+          },
+          {
+            input: "{|\n|\n== foo ==\n|}",
+            expected: [
+              create.TABLE(null, [[
+                create.TABLE$cell("D", [create.H(2, ["foo"])]),
+              ]]),
+            ],
+          },
+          ...[
+            "{|\n|\n== foo ==\n== bar ==\n|}",
+            "{|\n|\n== foo ==\n\n== bar ==\n|}",
+          ].map((input) => ({
+            input,
+            expected: [
+              create.TABLE(null, [[
+                create.TABLE$cell("D", [
+                  create.H(2, ["foo"]),
+                  create.H(2, ["bar"]),
+                ]),
+              ]]),
+            ],
+          })),
+          {
+            input: "{|\n|\n* foo\n\n|}",
+            expected: [
+              create.TABLE(null, [[
+                create.TABLE$cell("D", [
+                  create.LIST("U", [create.LIST$item(["foo"])]),
+                ]),
+              ]]),
+            ],
+          },
+          {
+            input: "{|\n|\n* foo\n> bar\n|}",
+            expected: [
+              create.TABLE(null, [[
+                create.TABLE$cell("D", [
+                  create.LIST("U", [
+                    create.LIST$item(["foo", create.P(["bar"])]),
+                  ]),
+                ]),
               ]]),
             ],
           },
