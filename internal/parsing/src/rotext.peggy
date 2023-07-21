@@ -92,7 +92,7 @@ ContainersLine
         ? { prefix: prefix.join(""), line, location: location() }
         : { prefix: prefix.join(""), line };
     }
-ContainerPrefix = @[>#*;:] ([ \t]+ / &br)
+ContainerPrefix = @[>#*;:] spacesOrNewLine
 
 Table
   = TableBegin /*无视首行后边的内容*/ @TableRows __ TableEnd
@@ -145,7 +145,7 @@ TableRowFragment
     { return [...initCells, ...(lastCell ? [lastCell] : [])] }
 
 TableInlineCell
-  = symbol:TableCellBegin ([ \t]+ / &br)
+  = symbol:TableCellBegin spacesOrNewLine
     inlines:(!TableCellBegin @Inline)*
   {
     let hasSpacesAtEnd;
@@ -160,7 +160,7 @@ TableInlineCell
     return cell;
   }
 TableLastCell
-  = symbol:TableCellBegin ([ \t]+ / &br)
+  = symbol:TableCellBegin spacesOrNewLine
     inlines:Inline* _
     blocks:BlocksInTableCell?
     {
@@ -282,3 +282,4 @@ Ruby
 _ = [ \t]*
 __ = [ \t\r\n]*
 br = "\r\n" / "\r" / "\n"
+spacesOrNewLine = [ \t]+ / &br
