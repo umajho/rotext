@@ -327,7 +327,7 @@ describe("解析", () => {
         theseCasesAreOk([
           ...boringCases,
           {
-            input: "foo\n= bar =\nbaz",
+            input: "foo\n\n= bar =\nbaz",
             expected: [
               create.P(["foo"]),
               create.H(1, ["bar"]),
