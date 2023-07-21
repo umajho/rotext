@@ -1,6 +1,6 @@
 {{
   import { create, createDocument } from "@rotext/nodes";
-  import { joinInlines, joinLines, trimInlinesShallowInPlace } from "./line.ts";
+  import { joinInlines, joinLines, trimInlinesEndShallowInPlace } from "./line.ts";
   import { buildContainers } from "./container.ts";
 }}
 
@@ -128,14 +128,15 @@ TableRowFragment
   = br __ !TableRelatedLineBeginNoCells
     initCells:(@TableInlineCell ("!" &"!" / "|" & "|"))*
     &{
-      for (let i = 0; i < (initCells?.length ?? 0) - 1; i++) {
-        const inlines = initCells[i].slot;
-        const lastInline = inlines[inlines.length-1];
-        if (!lastInline) continue;
-        const lastItem = lastInline[lastInline.length-1];
-        if (typeof lastItem !== "string") return false;
-        const lastChar = lastItem[lastItem.length-1];
-        if (lastChar !== "\t" && lastChar !== " ") return false;
+      for (let i = 0; i < initCells.length - 1; i++) {
+        const cell = initCells[i];
+        if (!cell.__hasSpacesAtEnd) {
+          return false;
+        }
+        delete cell.__hasSpacesAtEnd;
+      }
+      if (initCells.length) {
+        delete initCells[initCells.length - 1].__hasSpacesAtEnd;
       }
       return true;
     }
@@ -147,17 +148,32 @@ TableInlineCell
   = symbol:TableCellBegin ([ \t]+ / &br)
     inlines:(!TableCellBegin @Inline)*
   {
-    inlines = trimInlinesShallowInPlace(joinInlines(inlines));
-    return create.TABLE$cell(symbol == "!" ? "H" : "D", inlines)
+    let hasSpacesAtEnd;
+    if (inlines.length) {
+      inlines = joinInlines(inlines);
+
+      [inlines, hasSpacesAtEnd] = trimInlinesEndShallowInPlace(inlines);
+    }
+
+    const cell = create.TABLE$cell(symbol == "!" ? "H" : "D", inlines ?? []);
+    cell.__hasSpacesAtEnd = hasSpacesAtEnd;
+    return cell;
   }
 TableLastCell
   = symbol:TableCellBegin ([ \t]+ / &br)
     inlines:Inline* _
     blocks:BlocksInTableCell?
     {
-      let slot = inlines ? trimInlinesShallowInPlace(joinInlines(inlines)) : [];
+      if (inlines.length) {
+        inlines = joinInlines(inlines);
+
+        let _;
+        [inlines, _] = trimInlinesEndShallowInPlace(inlines);
+      }
+
+      let slot = inlines;
       if (blocks?.length) {
-        slot = slot.length ? [...slot, ...blocks] : blocks
+        slot = slot ? [...slot, ...blocks] : blocks;
       }
       return create.TABLE$cell(symbol == "!" ? "H" : "D", slot);
     }

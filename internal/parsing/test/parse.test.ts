@@ -848,6 +848,41 @@ describe("解析", () => {
           },
         ]);
       });
+      describe("regressions", () => {
+        theseCasesAreOk([
+          {
+            input: `
+              {|
+              |+ 文本相关样式一览
+              |-
+              ! 功能 !! 形式 !! 效果
+              |-
+              | 加粗 || [\`['这样']\`] || ['这样']
+              |-
+              | 删除线 || [\`[~这样~]\`] || [~这样~]
+              |}`.trim().split("\n").map((l) => l.trimStart()).join("\n"),
+            expected: [
+              create.TABLE(["文本相关样式一览"], [
+                [
+                  create.TABLE$cell("H", ["功能"]),
+                  create.TABLE$cell("H", ["形式"]),
+                  create.TABLE$cell("H", ["效果"]),
+                ],
+                [
+                  create.TABLE$cell("D", ["加粗"]),
+                  create.TABLE$cell("D", [create.code("['这样']")]),
+                  create.TABLE$cell("D", [create.em("strong", ["这样"])]),
+                ],
+                [
+                  create.TABLE$cell("D", ["删除线"]),
+                  create.TABLE$cell("D", [create.code("[~这样~]")]),
+                  create.TABLE$cell("D", [create.s(["这样"])]),
+                ],
+              ]),
+            ],
+          },
+        ]);
+      });
     });
   });
 });
