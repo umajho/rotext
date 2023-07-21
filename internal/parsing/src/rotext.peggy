@@ -236,21 +236,21 @@ Reference
 */
 RID
   = RID_GlobalPrefix ( RID_PostNumber / RID_Global )
-  / RID_Relative
-  / RID_Global
+  // / RID_Relative
+  // / RID_Global
 
 RID_PostNumber = [0-9]+
 RID_GlobalPrefix = [A-Z]+ "."
 RID_Global
   = RID_ThreadID ( RID_FloorNumber / RID_SubPart )?
-RID_Relative
-  = RID_FloorNumberMaybeRelative
-  / RID_ThreadRelative ( RID_FloorNumber / RID_SubPart )?
+// RID_Relative
+//   = RID_FloorNumberMaybeRelative
+//   / RID_ThreadRelative ( RID_FloorNumber / RID_SubPart )?
 
 RID_ThreadID = [a-z]+
-RID_ThreadRelative = "~"
+// RID_ThreadRelative = "~"
 RID_FloorNumber = "#" [0-9]+
-RID_FloorNumberMaybeRelative = "#" [0-9]*
+// RID_FloorNumberMaybeRelative = "#" [0-9]*
 RID_SubPart = "." RID_ThreadID RID_FloorNumber?
 
 Code

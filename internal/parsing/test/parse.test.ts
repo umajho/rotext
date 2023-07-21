@@ -89,15 +89,30 @@ describe("解析", () => {
         theseCasesAreOk(
           [
             "TP.42",
-            ...["TP.abc", "abc", "~"],
-            ...["TP.abc#123", "abc#123", "#123", "#"],
-            ...["TP.abc.def", "abc.def", "~.def"],
-            ...["TP.abc.def#456", "abc.def#456", "~.def#456"],
+            ...["TP.abc" /*, "abc", "~" */],
+            ...["TP.abc#123" /*, "abc#123", "#123", "#" */],
+            ...["TP.abc.def" /*, "abc.def", "~.def" */],
+            ...["TP.abc.def#456" /*, "abc.def#456", "~.def#456" */],
           ]
             .map((input) => ({
               input: `[>>${input}]`,
               expected: [create.P([create.ref_link(input)])],
             })),
+        );
+      });
+      describe("忽略目前格式被禁用的", () => {
+        theseCasesAreOk(
+          [
+            ...[
+              ...["abc", "~"],
+              ...["abc#123", "#123", "#"],
+              ...["abc.def", "~.def"],
+              ...["abc.def#456", "~.def#456"],
+            ].map((input) => ({
+              input: `[>>${input}]`,
+              expected: [create.P([`[>>${input}]`])],
+            })),
+          ],
         );
       });
       describe("忽略格式不正确的", () => {
