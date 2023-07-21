@@ -42,7 +42,8 @@ const MainCard: Component = () => {
 export default MainCard;
 
 const WIDTH_CLASS = "w-[80vw] lg:max-w-[35rem] lg:w-[45vw]";
-const HEIGHT_CLASS = "h-[calc(50vh-8rem)] lg:h-[calc(100vh-16rem)]";
+const HEIGHT_CLASS =
+  "h-[calc(50vh-8rem)] max-lg:!h-[calc(50dvh-8rem)] lg:h-[calc(100vh-16rem)]";
 
 //==== Editor ====
 
