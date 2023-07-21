@@ -1,5 +1,5 @@
 import { Component } from "solid-js";
-import { Dropdown, DropdownItem, Radio } from "./ui";
+import { Dropdown, DropdownItem } from "./ui";
 import {
   HiSolidArrowTopRightOnSquare,
   HiSolidChevronDown,

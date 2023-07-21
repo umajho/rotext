@@ -3,9 +3,7 @@ import "./preview.scss";
 import {
   Component,
   createEffect,
-  createMemo,
   createSignal,
-  JSX,
   on,
   onMount,
   Setter,
