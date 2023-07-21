@@ -135,17 +135,6 @@ const Preview: Component<
       return;
     }
 
-    if (
-      scrollContainerEl.scrollTop + scrollContainerEl.offsetHeight + 0.5 >=
-        scrollContainerEl.scrollHeight
-    ) {
-      // 配合编辑器的 “滚动过最后一行” 功能。
-      // 否则在当编辑文本，导致预览的高度改变时，编辑器的滚动位置也会复位。
-      // FIXME: 由于未知原因，Chrome 上 scrollTop+offsetHeight 与 scrollHeight
-      //        差了整整 0.5（而 Safari 没有这个问题），这里暂时直接这么补上。
-      return;
-    }
-
     const _lookupList = lookupList();
     if (!_lookupList?.length) return;
 
@@ -157,10 +146,26 @@ const Preview: Component<
       _baselineY,
       outputContainerEl.offsetHeight,
     );
-    props.store.topLine = {
-      number: ScrollSyncUtils.scrollLocalToLine(scrollLocal, _lookupList),
-      setFrom: "preview",
-    };
+    const line = ScrollSyncUtils.scrollLocalToLine(scrollLocal, _lookupList);
+
+    {
+      // 配合编辑器的 “滚动过最后一行” 功能。
+      // 否则在当编辑文本，导致预览的高度改变时，编辑器的滚动位置也会复位。
+      // FIXME: 由于未知原因，Chrome 上 scrollTop+offsetHeight 与 scrollHeight
+      //        差了整整 0.5（而 Safari 没有这个问题），这里暂时直接这么补上。
+      const atBottom =
+        scrollContainerEl.scrollTop + scrollContainerEl.offsetHeight + 0.5 >=
+          scrollContainerEl.scrollHeight;
+      const lastTopLine = props.store.topLine;
+      if (
+        atBottom && lastTopLine.setFrom === "editor" &&
+        line <= lastTopLine.number
+      ) {
+        return;
+      }
+    }
+
+    props.store.topLine = { number: line, setFrom: "preview" };
   }
 
   //==== 组件 ====
