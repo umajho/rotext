@@ -2,8 +2,6 @@ import { decodeHTMLStrict } from "entities";
 
 import { create, type InlineSlot, MixedSlot } from "@rotext/nodes";
 
-import { intersperseWithFactory } from "./utils";
-
 function unescape(text: string) {
   return decodeHTMLStrict(text);
 }
