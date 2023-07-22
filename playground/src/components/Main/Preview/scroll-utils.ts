@@ -93,10 +93,18 @@ function scrollLocalToScrollTop(
   return offsetTop + (offsetBottom - offsetTop) * local.progress;
 }
 
+/**
+ * @returns
+ * - `"scrolled"`: 正常滚动。
+ * - `"adjusted"`: 只是调整一下位置。（内容底部增减内容，且满足一定条件，导致顶部位置改变场合。）
+ * - `"untouched"`: 没有动。
+ */
 export function scrollToLine(
   line: number,
   lookupList: LookupList,
   scrollContainerEl: HTMLElement,
+  wasAtBottom: () => boolean,
+  setWasAtBottom: (v: boolean) => void,
 ): "scrolled" | "untouched" | "adjusted" {
   const scrollLocal = getScrollLocalByLine(lookupList, line);
 
@@ -112,14 +120,26 @@ export function scrollToLine(
     maxScrollTop,
   );
 
-  if (scrollTop < maxScrollTop || scrollTop > scrollContainerEl.scrollTop) {
-    scrollContainerEl.scrollTo({ top: scrollTop, behavior: "instant" });
-    return (scrollTop < maxScrollTop &&
-        scrollTop != scrollContainerEl.scrollTop)
-      ? "scrolled"
-      : "adjusted";
-  }
-  return "untouched";
+  // 原先在底部，现在却往下滚动，代表下方新增了内容，而现在只是因为
+  // “之前编辑器的位置已经越过了预览对应能滚动到的位置（最底部），现在预览的最底部增加了”
+  // 而调整预览的滚动位置。
+  const adjusting = wasAtBottom() && scrollTop > scrollContainerEl.scrollTop;
+
+  scrollContainerEl.scrollTo({ top: scrollTop, behavior: "instant" });
+  setWasAtBottom(isAtBottom(scrollContainerEl));
+
+  return adjusting
+    ? "adjusted"
+    : (scrollTop < maxScrollTop ? "scrolled" : "untouched");
+}
+
+export function isAtBottom(
+  scrollContainerEl: HTMLElement,
+) {
+  // FIXME: 由于未知原因，Chrome 上 scrollTop+offsetHeight 与 scrollHeight
+  //        差了整整 0.5（而 Safari 没有这个问题），这里暂时直接这么补上。
+  return scrollContainerEl.scrollTop + scrollContainerEl.offsetHeight + 0.5 >=
+    scrollContainerEl.scrollHeight;
 }
 
 export function roastLookupList(raw: LookupListRaw, rootClass: string) {

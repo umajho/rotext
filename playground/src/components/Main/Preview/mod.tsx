@@ -250,6 +250,12 @@ function createScrollSyncing(
   let pendingAutoScrolls = 0;
 
   {
+    const [wasAtBottom, setWasAtBottom] = createSignal<boolean>();
+    setWasAtBottom(ScrollUtils.isAtBottom(els.scrollContainer));
+    (new ResizeObserver(() =>
+      setWasAtBottom(ScrollUtils.isAtBottom(els.scrollContainer))
+    )).observe(els.outputContainer);
+
     function scrollToTopLine() {
       const topLineData = props.topLine();
       if (!topLineData.setFrom || topLineData.setFrom === "preview") {
@@ -263,6 +269,8 @@ function createScrollSyncing(
         topLineData.number,
         _lookupList,
         els.scrollContainer,
+        wasAtBottom,
+        setWasAtBottom,
       );
       if (scrollResult === "scrolled") {
         pendingAutoScrolls++;
@@ -300,15 +308,10 @@ function createScrollSyncing(
     {
       // 配合编辑器的 “滚动过最后一行” 功能。
       // 否则在当编辑文本，导致预览的高度改变时，编辑器的滚动位置也会复位。
-      // FIXME: 由于未知原因，Chrome 上 scrollTop+offsetHeight 与 scrollHeight
-      //        差了整整 0.5（而 Safari 没有这个问题），这里暂时直接这么补上。
-      const atBottom =
-        els.scrollContainer.scrollTop + els.scrollContainer.offsetHeight +
-            0.5 >=
-          els.scrollContainer.scrollHeight;
       const lastTopLine = props.topLine();
       if (
-        atBottom && lastTopLine.setFrom === "editor" &&
+        ScrollUtils.isAtBottom(els.scrollContainer) &&
+        lastTopLine.setFrom === "editor" &&
         line <= lastTopLine.number
       ) {
         return;
