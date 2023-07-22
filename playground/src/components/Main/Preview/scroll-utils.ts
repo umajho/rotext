@@ -34,7 +34,7 @@ export function getScrollLocalByY(
   };
 }
 
-function getScrollLocalByLine(
+export function getScrollLocalByLine(
   lookupList: LookupList,
   line: number,
 ): ScrollLocal {
