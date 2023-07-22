@@ -100,7 +100,7 @@ function createEditorParts(store: EditorStore): {
 
 //==== Preview ====
 
-const Preview = lazy(() => import("./Preview"));
+const Preview = lazy(() => import("./Preview/mod"));
 
 function createPreviewParts(store: EditorStore): {
   PreviewTopBar: JSX.Element;
