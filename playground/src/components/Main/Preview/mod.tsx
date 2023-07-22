@@ -3,7 +3,6 @@ import "./mod.scss";
 import {
   Component,
   createEffect,
-  createMemo,
   createSignal,
   on,
   onMount,
@@ -34,25 +33,18 @@ const Preview: Component<
   }
 > = (props) => {
   let scrollContainerEl: HTMLDivElement;
+  let outputContainerEl: HTMLDivElement;
 
   const [err, setErr] = createSignal<Error>(null);
 
-  const [lookupListRaw, setLookupListRaw] = createSignal<LookupList>();
-  const [lookupList, setLookupList] = createSignal<LookupList>();
-  function roastLookupList() {
-    const _raw = lookupListRaw();
-    if (!_raw) return;
-    setLookupList(ScrollUtils.roastLookupList(_raw, ROOT_CLASS));
-  }
-  createEffect(on([lookupListRaw], roastLookupList));
-  onMount(() => {
-    new ResizeObserver(roastLookupList).observe(scrollContainerEl);
-  });
+  const [scrollHandler, setScrollHandler] = createSignal<(ev: Event) => void>();
 
-  let outputContainerEl: HTMLDivElement;
-
-  //==== 文档渲染 ====
   onMount(() => {
+    const [lookupList, setLookupListRaw] = createLookupList({
+      scrollContainer: scrollContainerEl,
+    });
+
+    //==== 文档渲染 ====
     createRendering({
       text: () => props.store.text,
       setLookupListRaw,
@@ -61,14 +53,8 @@ const Preview: Component<
     }, {
       outputContainer: outputContainerEl,
     });
-  });
 
-  //==== 滚动同步 ====
-  const [scrollHandler, setScrollHandler] = createSignal<(ev: Event) => void>();
-  const debouncedScrollHandler = createMemo(() =>
-    scrollHandler() && debounceEventHandler(scrollHandler())
-  );
-  onMount(() => {
+    //==== 滚动同步 ====
     const { handleScroll } = createScrollSyncing({
       text: () => props.store.text,
       topLine: () => props.store.topLine,
@@ -78,7 +64,7 @@ const Preview: Component<
       scrollContainer: scrollContainerEl,
       outputContainer: outputContainerEl,
     });
-    setScrollHandler(() => handleScroll);
+    setScrollHandler(() => debounceEventHandler(handleScroll));
   });
 
   //==== 组件 ====
@@ -88,7 +74,7 @@ const Preview: Component<
         props.class ?? ""
       }`}
       ref={scrollContainerEl}
-      onScroll={(ev) => debouncedScrollHandler()(ev)}
+      onScroll={(ev) => scrollHandler()(ev)}
     >
       <Show when={err()}>
         <ErrorAlert error={err()} showsStack={true} />
@@ -125,6 +111,22 @@ const ErrorAlert: Component<{
     </div>
   );
 };
+
+function createLookupList(els: { scrollContainer: HTMLElement }) {
+  const [lookupListRaw, setLookupListRaw] = createSignal<LookupList>();
+  const [lookupList, setLookupList] = createSignal<LookupList>();
+  function roastLookupList() {
+    const _raw = lookupListRaw();
+    if (!_raw) return;
+    setLookupList(ScrollUtils.roastLookupList(_raw, ROOT_CLASS));
+  }
+  createEffect(on([lookupListRaw], roastLookupList));
+  onMount(() => {
+    new ResizeObserver(roastLookupList).observe(els.scrollContainer);
+  });
+
+  return [lookupList, setLookupListRaw];
+}
 
 /**
  * 用于处理文档渲染。
