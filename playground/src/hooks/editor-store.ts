@@ -9,12 +9,16 @@ export interface TopLine {
   setFrom: "editor" | "preview" | null;
 }
 
+export type ActiveLines = [top: number, bottom: number];
+
 export function createEditorStore(initialText: string = "") {
   const [text, setText] = createSignal(initialText);
   const [topLine, setTopLine] = createSignal<TopLine>({
     number: 1,
     setFrom: null,
   });
+  // FIXME: 初始值应该在编辑器那边设置
+  const [activeLines, setActiveLines] = createSignal<ActiveLines>([1, 1]);
 
   return {
     get text() {
@@ -28,6 +32,12 @@ export function createEditorStore(initialText: string = "") {
     },
     set topLine(v: TopLine) {
       setTopLine(v);
+    },
+    get activeLines(): ActiveLines | null {
+      return activeLines();
+    },
+    set activeLines(v: ActiveLines) {
+      setActiveLines(v);
     },
   };
 }

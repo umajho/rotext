@@ -4,6 +4,7 @@ import {
   Component,
   createEffect,
   createSignal,
+  JSX,
   on,
   onMount,
   Setter,
@@ -17,7 +18,7 @@ import { toSnabbdomChildren } from "@rotext/to-html";
 
 import { debounceEventHandler } from "../../../utils/mod";
 
-import { EditorStore, TopLine } from "../../../hooks/editor-store";
+import { ActiveLines, EditorStore, TopLine } from "../../../hooks/editor-store";
 
 import { LookupList, LookupListRaw } from "./internal-types";
 import * as ScrollUtils from "./scroll-utils";
@@ -33,11 +34,14 @@ const Preview: Component<
   }
 > = (props) => {
   let scrollContainerEl: HTMLDivElement;
+  let widgetAnchorEl: HTMLDivElement;
   let outputContainerEl: HTMLDivElement;
 
   const [err, setErr] = createSignal<Error>(null);
 
   const [scrollHandler, setScrollHandler] = createSignal<(ev: Event) => void>();
+
+  const [highlightElement, setHighlightElement] = createSignal<JSX.Element>();
 
   onMount(() => {
     const [lookupList, setLookupListRaw] = createLookupList({
@@ -65,6 +69,13 @@ const Preview: Component<
       outputContainer: outputContainerEl,
     });
     setScrollHandler(() => debounceEventHandler(handleScroll));
+
+    //==== 活动行对应元素高亮 ====
+    createHighlight({
+      activeLines: () => props.store.activeLines,
+      lookupList: lookupList,
+      setHighlightElement,
+    });
   });
 
   //==== 组件 ====
@@ -79,6 +90,9 @@ const Preview: Component<
       <Show when={err()}>
         <ErrorAlert error={err()} showsStack={true} />
       </Show>
+      <div class="relative" ref={widgetAnchorEl}>
+        {highlightElement()}
+      </div>
       <div
         class={"" +
           "relative " + // 作为计算元素高度位移的锚点
@@ -305,4 +319,55 @@ function createScrollSyncing(
   }
 
   return { handleScroll };
+}
+
+function createHighlight(
+  props: {
+    activeLines: () => ActiveLines;
+    lookupList: () => LookupList;
+    setHighlightElement: (v: () => JSX.Element) => void;
+  },
+) {
+  const [topPx, setTopPx] = createSignal<number>();
+  const [heightPx, setHeightPx] = createSignal<number>();
+
+  const el = () => (
+    <Show when={props.activeLines()}>
+      <div
+        class="absolute w-full"
+        style={{
+          "background-color": "rgb(255, 255, 0, 5%)",
+          top: `${topPx()}px`,
+          height: `${heightPx()}px`,
+        }}
+      />
+    </Show>
+  );
+
+  createEffect(on([props.activeLines, props.lookupList], () => {
+    const lookupList_ = props.lookupList();
+    if (!lookupList_?.length) return;
+    const activeLines_ = props.activeLines();
+
+    const topLineIndex =
+      ScrollUtils.getScrollLocalByLine(lookupList_, activeLines_[0])
+        .indexInLookupList;
+    const bottomLineIndex = activeLines_[0] === activeLines_[1]
+      ? topLineIndex
+      : ScrollUtils.getScrollLocalByLine(lookupList_, activeLines_[1])
+        .indexInLookupList;
+
+    const topLineItem = lookupList_[topLineIndex];
+    const bottomLineItem = topLineIndex === bottomLineIndex
+      ? topLineItem
+      : lookupList_[bottomLineIndex];
+
+    setTopPx(topLineItem.offsetTop);
+    setHeightPx(
+      bottomLineItem.offsetTop + bottomLineItem.element.offsetHeight -
+        topLineItem.offsetTop,
+    );
+  }));
+
+  props.setHighlightElement(el);
 }

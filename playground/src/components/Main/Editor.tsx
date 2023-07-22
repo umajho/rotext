@@ -11,7 +11,7 @@ import { EditorView } from "codemirror";
 
 import { createCodeMirrorEditor } from "../code-mirror-editor";
 import { debounceEventHandler } from "../../utils/mod";
-import { EditorStore } from "../../hooks/editor-store";
+import { ActiveLines, EditorStore } from "../../hooks/editor-store";
 
 let nextEditorID = 1;
 
@@ -29,11 +29,28 @@ const Editor: Component<
   //      这里用计时器检查这种情况，在超过时限时手动将其归零。
   const [pendingAutoScrolls, setPendingAutoScrolls] = createAutoResetCounter();
 
+  const activeLinesWatcher = EditorView.updateListener.of((update) => {
+    if (!update.selectionSet) return;
+    const mainSelection = update.view.state.selection.main;
+
+    const newActiveLines: ActiveLines = [
+      update.view.state.doc.lineAt(mainSelection.from).number,
+      update.view.state.doc.lineAt(mainSelection.to).number,
+    ];
+    const oldActiveLines = props.store.activeLines;
+    if (
+      oldActiveLines && oldActiveLines[0] === newActiveLines[0] &&
+      oldActiveLines[1] === newActiveLines[1]
+    ) return;
+
+    props.store.activeLines = newActiveLines;
+  });
+
   const { element, view, scrollContainerDOM } = createCodeMirrorEditor({
     initialDoc: props.store.text,
     setDoc: (doc: string) => props.store.text = doc,
     class: `${props.class} editor-${editorID}`,
-    extensions: [EditorView.lineWrapping],
+    extensions: [EditorView.lineWrapping, activeLinesWatcher],
   });
 
   const contentPadding = createMemo(() => {
