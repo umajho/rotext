@@ -117,7 +117,7 @@ const RefLink: Component<{ address: string }> = (props) => {
             <div class="flex flex-col">
               <div class="flex justify-between items-center px-2">
                 <BsPinFill
-                  class=" cursor-pointer"
+                  class="cursor-pointer select-none"
                   color={displayMode() === "pinned"
                     ? "red"
                     : /* gray-500 */ "rgb(107 114 128)"}
