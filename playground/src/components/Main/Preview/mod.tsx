@@ -11,7 +11,15 @@ import {
   Show,
 } from "solid-js";
 
-import { classModule, h, init, Module, styleModule, VNode } from "snabbdom";
+import {
+  classModule,
+  h,
+  init,
+  Module,
+  propsModule,
+  styleModule,
+  VNode,
+} from "snabbdom";
 
 import { parse } from "@rotext/parsing";
 import { toSnabbdomChildren } from "@rotext/to-html";
@@ -22,8 +30,12 @@ import { ActiveLines, EditorStore, TopLine } from "../../../hooks/editor-store";
 
 import { LookupList, LookupListRaw } from "./internal-types";
 import * as ScrollUtils from "./scroll-utils";
+import { registerCustomElement } from "./widgets/RefLink";
+import { registerPreviewer } from "../../../stores/previewer";
 
-const ROOT_CLASS = "rotext-preview-root";
+const CONTENT_ROOT_CLASS = "previewer-content-root";
+
+registerCustomElement();
 
 const Preview: Component<
   {
@@ -46,6 +58,7 @@ const Preview: Component<
   onMount(() => {
     const [lookupList, setLookupListRaw] = createLookupList({
       scrollContainer: scrollContainerEl,
+      outputContainer: outputContainerEl,
     });
 
     //==== 文档渲染 ====
@@ -76,12 +89,19 @@ const Preview: Component<
       lookupList: lookupList,
       setHighlightElement,
     });
+
+    //==== 注册进全局存储 ====
+    // NOTE: 目前 scrollContainerEl 就是 previewer 的元素
+    registerPreviewer(scrollContainerEl, {
+      widgetAnchorElement: () => widgetAnchorEl,
+      lookupList,
+    });
   });
 
   //==== 组件 ====
   return (
     <div
-      class={`relative previewer-background overflow-y-auto ${
+      class={`previewer relative previewer-background overflow-y-auto ${
         props.class ?? ""
       }`}
       ref={scrollContainerEl}
@@ -90,14 +110,17 @@ const Preview: Component<
       <Show when={err()}>
         <ErrorAlert error={err()} showsStack={true} />
       </Show>
-      <div class="relative" ref={widgetAnchorEl}>
-        {highlightElement()}
-      </div>
+
+      {/* highlight anchor */}
+      <div class="relative">{highlightElement()}</div>
+
+      <div class="preview-widget-anchor relative z-10" ref={widgetAnchorEl} />
+
       <div
         class={"" +
           "relative " + // 作为计算元素高度位移的锚点
           "self-center mx-auto " + // 保持居中，以及撑起父元素
-          "break-all prose previewer " + // 内容的外观样式
+          "break-all prose previewer-prose " + // 内容的外观样式
           ""}
       >
         <div ref={outputContainerEl} />
@@ -126,17 +149,21 @@ const ErrorAlert: Component<{
   );
 };
 
-function createLookupList(els: { scrollContainer: HTMLElement }) {
+function createLookupList(
+  els: { scrollContainer: HTMLElement; outputContainer: HTMLElement },
+) {
   const [lookupListRaw, setLookupListRaw] = createSignal<LookupList>();
   const [lookupList, setLookupList] = createSignal<LookupList>();
   function roastLookupList() {
     const _raw = lookupListRaw();
     if (!_raw) return;
-    setLookupList(ScrollUtils.roastLookupList(_raw, ROOT_CLASS));
+    setLookupList(ScrollUtils.roastLookupList(_raw, CONTENT_ROOT_CLASS));
   }
   createEffect(on([lookupListRaw], roastLookupList));
   onMount(() => {
-    new ResizeObserver(roastLookupList).observe(els.scrollContainer);
+    const observer = new ResizeObserver(roastLookupList);
+    observer.observe(els.scrollContainer);
+    observer.observe(els.outputContainer);
   });
 
   return [lookupList, setLookupListRaw];
@@ -168,7 +195,7 @@ function createRendering(
     els.outputContainer.appendChild(outputEl);
 
     patch = init(
-      [classModule, styleModule, locationModule],
+      [classModule, styleModule, propsModule, locationModule],
       undefined,
       { experimental: { fragments: true } },
     );
@@ -189,7 +216,7 @@ function createRendering(
       );
 
       const classMap = { "relative": true };
-      classMap[ROOT_CLASS] = true;
+      classMap[CONTENT_ROOT_CLASS] = true;
       const vNode = h("article", { class: classMap }, vChildren);
 
       patch(lastNode, vNode);

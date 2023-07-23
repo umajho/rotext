@@ -9,7 +9,7 @@
   "main": "lib.ts",
   "dependencies": {
     "@rotext/nodes": "workspace:*",
-    "entities": "^4.5.0"
+    "entities": "^4.4.0"
   },
   "devDependencies": {
     "@rotext/example-documentations": "workspace:*",
