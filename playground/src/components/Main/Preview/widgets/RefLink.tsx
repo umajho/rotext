@@ -71,6 +71,10 @@ const RefLink: Component<{ address: string }> = (props) => {
         resizeObserverForWidget?.disconnect();
       }
     });
+
+    if (previewer().level === 1) {
+      setDisplayMode("pinned");
+    }
   });
 
   const { enterHandler, leaveHandler, pinHandler, pinningToggleHandler } =

@@ -95,6 +95,7 @@ const Preview: Component<
     registerPreviewer(scrollContainerEl, {
       widgetAnchorElement: () => widgetAnchorEl,
       lookupList,
+      level: 1,
     });
   });
 

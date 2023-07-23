@@ -7,6 +7,10 @@ interface Previewer {
    *       即使不需要其中的数据，也可以用来检测是否需要重新计算位置等信息。
    */
   lookupList: () => LookupList;
+  /**
+   * 所属层级，`1` 为最顶层。
+   */
+  level: number;
 }
 
 const previewMap = new WeakMap<HTMLElement, Previewer>();
