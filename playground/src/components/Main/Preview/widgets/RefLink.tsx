@@ -105,6 +105,7 @@ const RefLink: Component<{ address: string }> = (props) => {
             style={{
               top: `${widgetPosition().topPx}px`,
               left: `${widgetPosition().leftPx}px`,
+              "z-index": `-${widgetPosition().topPx | 0}`,
             }}
             onMouseEnter={enterHandler}
             onMouseLeave={leaveHandler}
