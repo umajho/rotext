@@ -18,8 +18,8 @@ importers:
         specifier: workspace:*
         version: link:../nodes
       entities:
-        specifier: ^4.5.0
-        version: 4.5.0
+        specifier: ^4.4.0
+        version: 4.4.0
     devDependencies:
       '@rotext/example-documentations':
         specifier: workspace:*
@@ -67,6 +67,9 @@ importers:
       snabbdom:
         specifier: ^3.5.1
         version: 3.5.1
+      solid-element:
+        specifier: ^1.7.1
+        version: 1.7.1(solid-js@1.7.6)
       solid-icons:
         specifier: ^1.0.8
         version: 1.0.8(solid-js@1.7.6)
@@ -1287,6 +1290,10 @@ packages:
     engines: {node: '>= 6'}
     dev: true
 
+  /component-register@0.8.3:
+    resolution: {integrity: sha512-/0u8ov0WPWi2FL78rgB9aFOcfY8pJT4jP/l9NTOukGNLVQ6hk35sEJE1RkEnNQU3yk48Qr7HlDQjRQKEVfgeWg==}
+    dev: false
+
   /concat-map@0.0.1:
     resolution: {integrity: sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg==}
     dev: true
@@ -1366,8 +1373,8 @@ packages:
     resolution: {integrity: sha512-BHpErPSNhb9FB25+OwQP6mCAf3ZXfGbmuvc4LzBNVJwpCcXQJm++LerimocYRG9FRxUVRKZqaB7d0+pImSTPSg==}
     dev: true
 
-  /entities@4.5.0:
-    resolution: {integrity: sha512-V0hjH4dGPh9Ao5p0MoRY6BVqtwCjhz6vI5LT8AJ55H+4g9/4vbHx1I54fS0XuclLhDHArPQCiMjDxjaL8fPxhw==}
+  /entities@4.4.0:
+    resolution: {integrity: sha512-oYp7156SP8LkeGD0GF85ad1X9Ai79WtRsZ2gxJqtBuzH+98YUV6jkHEKlZkMbcrjJjIVJNIDP/3WL9wQkoPbWA==}
     engines: {node: '>=0.12'}
     dev: false
 
@@ -1963,6 +1970,15 @@ packages:
     transitivePeerDependencies:
       - supports-color
     dev: true
+
+  /solid-element@1.7.1(solid-js@1.7.6):
+    resolution: {integrity: sha512-VtG3kg3HRUkq6QN4iyZKX1qmXYCEHMO3yH1DfakifaO+ncxHa56jU8SLtEgD55zR230pXQyPTWaEDDS0hTlmpg==}
+    peerDependencies:
+      solid-js: ^1.7.6
+    dependencies:
+      component-register: 0.8.3
+      solid-js: 1.7.6
+    dev: false
 
   /solid-icons@1.0.8(solid-js@1.7.6):
     resolution: {integrity: sha512-7aQGNjM5ZAGlE25s4APE+2QEQUyltqsTuhfO0OhYZaH2wbY0ZAqL7qRQJPMN98qhoIfroYRNEi/0l7UJN902MA==}

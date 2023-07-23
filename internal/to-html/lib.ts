@@ -22,6 +22,7 @@ export function elementToSnabbdom(
   if ("slot" in el) {
     let sel: string;
     let classes: Record<string, boolean> | undefined;
+    let props: Record<string, string> | undefined;
     switch (el.type) {
       // case "em":
       // case "u":
@@ -39,9 +40,10 @@ export function elementToSnabbdom(
         sel = "code";
         break;
       case "ref-link":
-        sel = "span";
-        classes = { "ref-link": true };
-        children = `>>${el.slot}`;
+        sel = "ref-link";
+        // fallback
+        children = h("span", { class: { "ref-link": true } }, `>>${el.slot}`);
+        props = { address: el.slot };
         break;
       case "P":
         sel = el.type;
@@ -55,7 +57,9 @@ export function elementToSnabbdom(
     }
 
     children ??= slotToChildren(el.slot, locMap);
-    const data = (classes || location) ? { class: classes, location } : null;
+    const data = (classes || location || props)
+      ? { class: classes, location, props }
+      : null;
 
     return h(sel, data, children);
   }

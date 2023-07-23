@@ -30,6 +30,7 @@
     "@rotext/to-html": "workspace:*",
     "codemirror": "^6.0.1",
     "snabbdom": "^3.5.1",
+    "solid-element": "^1.7.1",
     "solid-icons": "^1.0.8",
     "solid-js": "^1.7.6"
   }
