@@ -38,7 +38,13 @@ const RefLink: Component<{ address: string }> = (props) => {
     { widthPx: number; heightPx: number }
   >();
 
-  const [displayMode, setDisplayMode] = createSignal<DisplayMode>("closed");
+  const {
+    displayMode,
+    enterHandler,
+    leaveHandler,
+    pinningToggleHandler,
+    setDisplayMode,
+  } = createDisplayModeFSM("closed");
 
   const address = createMemo(() => parseAddress(props.address));
   const addressDescription = createMemo(() => describeAddress(address()));
@@ -77,8 +83,7 @@ const RefLink: Component<{ address: string }> = (props) => {
     }
   });
 
-  const { enterHandler, leaveHandler, pinHandler, pinningToggleHandler } =
-    createDisplayModeFSM({ displayMode, setDisplayMode });
+  let pinIconTouched = false;
 
   return (
     <>
@@ -87,7 +92,7 @@ const RefLink: Component<{ address: string }> = (props) => {
         style={{ "cursor": displayMode() === "pinned" ? null : "zoom-in" }}
         onMouseEnter={enterHandler}
         onMouseLeave={leaveHandler}
-        onClick={pinHandler}
+        onClick={() => setDisplayMode("pinned")}
       >
         {">>"}
         {props.address}
@@ -124,7 +129,18 @@ const RefLink: Component<{ address: string }> = (props) => {
                   style={displayMode() === "pinned"
                     ? null
                     : { transform: "rotate(45deg)" }}
-                  onClick={pinningToggleHandler}
+                  onTouchEnd={() => {
+                    pinIconTouched = true;
+                    // 为防止有的浏览器 onClick 发生在 onTouchEnd 之前，
+                    // 这里也在一定时间后把 `pinIconTouched` 重置一下。
+                    setTimeout(() => pinIconTouched = false, 100);
+                  }}
+                  onClick={() => {
+                    pinIconTouched
+                      ? setDisplayMode("closed")
+                      : pinningToggleHandler();
+                    pinIconTouched = false;
+                  }}
                 />
                 <div class="w-12" />
                 <div>{props.address}</div>
@@ -177,44 +193,43 @@ function calculateWidgetPosition(
 }
 
 function createDisplayModeFSM(
-  props: {
-    displayMode: () => DisplayMode;
-    setDisplayMode: (v: DisplayMode) => void;
-  },
+  initialValue: DisplayMode,
 ) {
+  const [displayMode, setDisplayMode] = createSignal(initialValue);
+
   let leaving = false;
   function handleEnter() {
     leaving = false;
-    if (props.displayMode() === "closed") {
-      props.setDisplayMode("floating");
+    if (displayMode() === "closed") {
+      setDisplayMode("floating");
     }
   }
   function handleLeave() {
     if (leaving) return;
-    if (props.displayMode() === "floating") {
+    if (displayMode() === "floating") {
       leaving = true;
       setTimeout(() => {
         if (leaving) {
-          props.setDisplayMode("closed");
+          setDisplayMode("closed");
           leaving = false;
         }
       }, LEAVING_DELAY_MS);
     }
   }
 
-  function handlePin() {
-    props.setDisplayMode("pinned");
-  }
   function handleTogglePinning() {
-    const newMode = props.displayMode() === "pinned" ? "floating" : "pinned";
-    props.setDisplayMode(newMode);
+    const newMode = displayMode() === "pinned" ? "floating" : "pinned";
+    setDisplayMode(newMode);
   }
 
   return {
+    displayMode,
+
     enterHandler: handleEnter,
     leaveHandler: handleLeave,
-    pinHandler: handlePin,
     pinningToggleHandler: handleTogglePinning,
+
+    setDisplayMode,
   };
 }
 
