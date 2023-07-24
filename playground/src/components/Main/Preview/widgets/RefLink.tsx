@@ -19,9 +19,17 @@ type DisplayMode = "closed" | "floating" | "pinned";
 
 const LEAVING_DELAY_MS = 100;
 
+const COLLAPSE_HEIGHT_PX = getSizeInPx("6rem");
+
+interface ElementSize {
+  widthPx: number;
+  heightPx: number;
+}
+
 const RefLink: Component<{ address: string }> = (props) => {
   let primeEl: HTMLSpanElement;
   let widgetEl: HTMLDivElement;
+  let widgetContainerEl: HTMLDivElement;
 
   const [hostEl, setHostEl] = createSignal<HTMLElement>();
   const previewer = createMemo(() => {
@@ -37,15 +45,22 @@ const RefLink: Component<{ address: string }> = (props) => {
   const [widgetSize, setWidgetSize] = createSignal<
     { widthPx: number; heightPx: number }
   >();
+  const [widgetContainerSize, setWidgetContainerSize] = createSignal<
+    { widthPx: number; heightPx: number }
+  >();
+
+  const collapsible = () => widgetSize()?.heightPx > COLLAPSE_HEIGHT_PX;
 
   const {
     displayMode,
+    collapsed,
     enterHandler,
     leaveHandler,
     pinningTogglerTouchEndHandler,
     pinningToggleHandler,
-    setDisplayMode,
-  } = createDisplayModeFSM("closed");
+    refLinkClickHandler,
+    pin,
+  } = createDisplayModeFSM("closed", collapsible);
 
   const address = createMemo(() => parseAddress(props.address));
   const addressDescription = createMemo(() => describeAddress(address()));
@@ -64,23 +79,20 @@ const RefLink: Component<{ address: string }> = (props) => {
       );
     }));
 
-    function syncWidgetSize() {
-      const rect = widgetEl.getBoundingClientRect();
-      setWidgetSize({ widthPx: rect.width, heightPx: rect.height });
-    }
-    let resizeObserverForWidget: ResizeObserver | null = null;
-    createEffect(() => {
-      if (displayMode() !== "closed") {
-        syncWidgetSize();
-        resizeObserverForWidget = new ResizeObserver(syncWidgetSize);
-        resizeObserverForWidget.observe(widgetEl);
-      } else {
-        resizeObserverForWidget?.disconnect();
-      }
-    });
+    createSizeSyncer({
+      size: widgetSize,
+      setSize: setWidgetSize,
+      removed: () => displayMode() === "closed",
+    }, () => widgetEl);
+
+    createSizeSyncer({
+      size: widgetContainerSize,
+      setSize: setWidgetContainerSize,
+      removed: () => displayMode() === "closed",
+    }, () => widgetContainerEl);
 
     if (previewer().level === 1) {
-      setDisplayMode("pinned");
+      pin(true);
     }
   });
 
@@ -88,10 +100,14 @@ const RefLink: Component<{ address: string }> = (props) => {
     <>
       <span
         ref={primeEl}
-        style={{ "cursor": displayMode() === "pinned" ? null : "zoom-in" }}
+        style={{
+          "cursor": displayMode() === "pinned"
+            ? (collapsible() ? (collapsed() ? "zoom-in" : "zoom-out") : null)
+            : "zoom-in",
+        }}
         onMouseEnter={enterHandler}
         onMouseLeave={leaveHandler}
-        onClick={() => setDisplayMode("pinned")}
+        onClick={refLinkClickHandler}
       >
         {">>"}
         {props.address}
@@ -99,8 +115,8 @@ const RefLink: Component<{ address: string }> = (props) => {
       <Show when={displayMode() === "pinned"}>
         <div
           style={{
-            width: `${widgetSize()?.widthPx}px`,
-            height: `${widgetSize()?.heightPx}px`,
+            width: `${widgetContainerSize()?.widthPx}px`,
+            height: `${widgetContainerSize()?.heightPx}px`,
           }}
         >
         </div>
@@ -109,34 +125,39 @@ const RefLink: Component<{ address: string }> = (props) => {
         <Show when={displayMode() !== "closed"}>
           <div
             class="absolute border border-white previewer-background"
-            ref={widgetEl}
+            ref={widgetContainerEl}
             style={{
               top: `${widgetPosition().topPx}px`,
               left: `${widgetPosition().leftPx}px`,
               "z-index": `-${widgetPosition().topPx | 0}`,
+              ...(collapsed()
+                ? { "overflow-y": "hidden", height: `${COLLAPSE_HEIGHT_PX}px` }
+                : {}),
             }}
             onMouseEnter={enterHandler}
             onMouseLeave={leaveHandler}
           >
-            <div class="flex flex-col">
-              <div class="flex justify-between items-center px-2">
-                <BsPinFill
-                  class="cursor-pointer select-none"
-                  color={displayMode() === "pinned"
-                    ? "red"
-                    : /* gray-500 */ "rgb(107 114 128)"}
-                  style={displayMode() === "pinned"
-                    ? null
-                    : { transform: "rotate(45deg)" }}
-                  onTouchEnd={pinningTogglerTouchEndHandler}
-                  onClick={pinningToggleHandler}
-                />
-                <div class="w-12" />
-                <div>{props.address}</div>
-              </div>
-              <hr />
-              <div class="p-4">
-                {addressDescription()}
+            <div ref={widgetEl}>
+              <div class="flex flex-col">
+                <div class="flex justify-between items-center px-2">
+                  <BsPinFill
+                    class="cursor-pointer select-none"
+                    color={displayMode() === "pinned"
+                      ? "red"
+                      : /* gray-500 */ "rgb(107 114 128)"}
+                    style={displayMode() === "pinned"
+                      ? null
+                      : { transform: "rotate(45deg)" }}
+                    onTouchEnd={pinningTogglerTouchEndHandler}
+                    onClick={pinningToggleHandler}
+                  />
+                  <div class="w-12" />
+                  <div>{props.address}</div>
+                </div>
+                <hr />
+                <div class="p-4">
+                  {addressDescription()}
+                </div>
               </div>
             </div>
           </div>
@@ -182,9 +203,17 @@ function calculateWidgetPosition(
 }
 
 function createDisplayModeFSM(
-  initialValue: DisplayMode,
+  initialDisplayMode: DisplayMode,
+  collapsible: () => boolean,
 ) {
-  const [displayMode, setDisplayMode] = createSignal(initialValue);
+  const [displayMode, setDisplayMode] = createSignal(initialDisplayMode);
+  const [collapsed, setCollapsed] = createSignal(false);
+
+  createEffect(on([collapsible], () => {
+    if (!collapsible()) {
+      setCollapsed(false);
+    }
+  }));
 
   let leaving = false;
   function handleEnter() {
@@ -223,14 +252,39 @@ function createDisplayModeFSM(
     pinningTogglerTouched = false;
   }
 
+  function handleClickRefLink() {
+    if (!collapsible()) return;
+    if (displayMode() === "pinned") {
+      setCollapsed(!collapsed());
+    } else {
+      setCollapsed(false);
+      setDisplayMode("pinned");
+    }
+  }
+
+  function pin(shouldCollapse: boolean) {
+    if (shouldCollapse) {
+      // NOTE: 调用本函数的时候，挂件可能还没创建，导致 `collapsible()` 返回假。
+      //       这里就不检查 `collapsible()`，直接设置了。这么做也不存在问题。
+
+      setCollapsed(true);
+    }
+    setDisplayMode("pinned");
+  }
+
   return {
     displayMode,
+    collapsed: () => collapsible() && collapsed(),
 
     enterHandler: handleEnter,
     leaveHandler: handleLeave,
 
     pinningTogglerTouchEndHandler: handleTouchPinningTogglerEnd,
     pinningToggleHandler: handleTogglePinning,
+
+    refLinkClickHandler: handleClickRefLink,
+
+    pin,
 
     setDisplayMode,
   };
@@ -325,4 +379,59 @@ function describeAddress(address: Address): JSX.Element {
       {dl}
     </div>
   );
+}
+
+function createSizeSyncer(
+  props: {
+    size: () => ElementSize | null;
+    setSize: (v: ElementSize) => void;
+    removed: () => boolean;
+  },
+  el: () => HTMLElement,
+) {
+  function syncSize(el: HTMLElement) {
+    const rect = el.getBoundingClientRect();
+    const oldSize = props.size();
+    if (
+      oldSize && oldSize.widthPx === rect.width &&
+      oldSize.heightPx === rect.height
+    ) {
+      return;
+    }
+    props.setSize({
+      widthPx: rect.width,
+      heightPx: rect.height,
+    });
+  }
+  let resizeObserverForWidget: ResizeObserver | null = null;
+  createEffect(on([props.removed], () => {
+    if (!props.removed()) {
+      const el_ = el();
+
+      syncSize(el_);
+      resizeObserverForWidget = new ResizeObserver(() => syncSize(el_));
+      resizeObserverForWidget.observe(el_);
+    } else {
+      resizeObserverForWidget?.disconnect();
+    }
+  }));
+}
+
+function getSizeInPx(size: string) {
+  const containerEl = document.createElement("div");
+  containerEl.style.visibility = "hidden";
+  containerEl.style.width = "0";
+  containerEl.style.overflow = "hidden";
+
+  const el = document.createElement("div");
+  el.style.width = size;
+
+  containerEl.appendChild(el);
+  document.body.appendChild(containerEl);
+
+  const sizeInPx = parseFloat(getComputedStyle(el).width);
+
+  containerEl.remove();
+
+  return sizeInPx;
 }
