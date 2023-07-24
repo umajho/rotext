@@ -17,7 +17,7 @@ import { getPreviewer } from "../../../../stores/previewer";
 
 type DisplayMode = "closed" | "floating" | "pinned";
 
-const LEAVING_DELAY_MS = 200;
+const LEAVING_DELAY_MS = 100;
 
 const RefLink: Component<{ address: string }> = (props) => {
   let primeEl: HTMLSpanElement;
