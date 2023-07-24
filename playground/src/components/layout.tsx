@@ -25,7 +25,7 @@ export const NavBar: Component = () => {
             <a href="https://umajho.github.io/dicexp">骰子表达式 Dicexp</a>
           </DropdownItem>
         </Dropdown>
-        <a class="btn btn-ghost normal-case text-xl">
+        <a class="btn btn-ghost normal-case text-xl max-sm:p-0">
           <span>
             Rotext
           </span>
