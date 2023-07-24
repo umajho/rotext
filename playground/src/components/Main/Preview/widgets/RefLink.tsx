@@ -267,43 +267,42 @@ function describeAddress(address: Address): JSX.Element {
   const dl = ((): JSX.Element => {
     if (address.type === "post_number") {
       return (
-        <dl>
-          <dt>帖子</dt>
-          <dd>帖号「{address.postNumber}」</dd>
-        </dl>
+        <ul>
+          <li>帖号是“{address.postNumber}”的帖子。</li>
+        </ul>
       );
     } else if (
       address.type === "thread_id" || address.type === "thread_id_sub"
     ) {
       return (
-        <dl>
-          <dt>串</dt>
-          <dd>串号「{address.threadID}」</dd>
+        <ul>
+          <li>
+            串号是“{address.threadID}”的串
+            {(address.type === "thread_id_sub" ||
+                  address.floorNumber !== undefined) && "的，" || "。"}
+          </li>
           {address.type === "thread_id_sub" && (
-            <>
-              <dt>子级串</dt>
-              <dd>ID「{address.subThreadID}」</dd>
-            </>
+            <li>
+              ID是“{address.subThreadID}”的子级串
+              {address.floorNumber !== undefined && "的，" || "。"}
+            </li>
           )}
           {address.floorNumber !== undefined &&
             (
-              <>
-                <dt>帖子</dt>
-                <dd>
-                  {address.floorNumber
-                    ? `位于第${address.floorNumber}层`
-                    : "位于串首"}
-                </dd>
-              </>
+              <li>
+                {address.floorNumber
+                  ? `位于第${address.floorNumber}层`
+                  : "位于串首"}的帖子。
+              </li>
             )}
-        </dl>
+        </ul>
       );
     } else if (address.type === "unknown") {
       return <p>未知地址</p>;
     }
   })();
   return (
-    <div class="previewer-prose">
+    <div class="prose previewer-prose">
       <p>这里的内容会引用自：</p>
       {dl}
     </div>
