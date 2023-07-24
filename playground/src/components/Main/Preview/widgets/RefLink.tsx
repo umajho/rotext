@@ -15,7 +15,7 @@ import { BsPinFill } from "solid-icons/bs";
 
 import { getPreviewer } from "../../../../stores/previewer";
 
-type DisplayMode = "hidden" | "floating" | "pinned";
+type DisplayMode = "closed" | "floating" | "pinned";
 
 const LEAVING_DELAY_MS = 200;
 
@@ -38,7 +38,7 @@ const RefLink: Component<{ address: string }> = (props) => {
     { widthPx: number; heightPx: number }
   >();
 
-  const [displayMode, setDisplayMode] = createSignal<DisplayMode>("hidden");
+  const [displayMode, setDisplayMode] = createSignal<DisplayMode>("closed");
 
   const address = createMemo(() => parseAddress(props.address));
   const addressDescription = createMemo(() => describeAddress(address()));
@@ -63,7 +63,7 @@ const RefLink: Component<{ address: string }> = (props) => {
     }
     let resizeObserverForWidget: ResizeObserver | null = null;
     createEffect(() => {
-      if (displayMode() !== "hidden") {
+      if (displayMode() !== "closed") {
         syncWidgetSize();
         resizeObserverForWidget = new ResizeObserver(syncWidgetSize);
         resizeObserverForWidget.observe(widgetEl);
@@ -102,7 +102,7 @@ const RefLink: Component<{ address: string }> = (props) => {
         </div>
       </Show>
       <Portal mount={previewer()?.widgetAnchorElement()}>
-        <Show when={displayMode() !== "hidden"}>
+        <Show when={displayMode() !== "closed"}>
           <div
             class="absolute border border-white previewer-background"
             ref={widgetEl}
@@ -185,7 +185,7 @@ function createDisplayModeFSM(
   let leaving = false;
   function handleEnter() {
     leaving = false;
-    if (props.displayMode() === "hidden") {
+    if (props.displayMode() === "closed") {
       props.setDisplayMode("floating");
     }
   }
@@ -195,7 +195,7 @@ function createDisplayModeFSM(
       leaving = true;
       setTimeout(() => {
         if (leaving) {
-          props.setDisplayMode("hidden");
+          props.setDisplayMode("closed");
           leaving = false;
         }
       }, LEAVING_DELAY_MS);
