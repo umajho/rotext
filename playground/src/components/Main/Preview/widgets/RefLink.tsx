@@ -12,7 +12,13 @@ import { customElement } from "solid-element";
 import { Portal } from "solid-js/web";
 
 import { BsPinFill } from "solid-icons/bs";
+import { HiSolidChevronDoubleDown } from "solid-icons/hi";
 
+import {
+  ComputedColor,
+  getComputedColor,
+  getSizeInPx,
+} from "../../../../utils/styles";
 import { getPreviewer } from "../../../../stores/previewer";
 
 type DisplayMode = "closed" | "floating" | "pinned";
@@ -20,6 +26,8 @@ type DisplayMode = "closed" | "floating" | "pinned";
 const LEAVING_DELAY_MS = 100;
 
 const COLLAPSE_HEIGHT_PX = getSizeInPx("6rem");
+
+const gray500: ComputedColor = [107, 114, 128, null];
 
 interface ElementSize {
   widthPx: number;
@@ -49,6 +57,18 @@ const RefLink: Component<{ address: string }> = (props) => {
     { widthPx: number; heightPx: number }
   >();
 
+  const [widgetContainerBackgroundColor, setWidgetContainerBackgroundColor] =
+    createSignal<ComputedColor>();
+  const maskBaseColor = createMemo((): ComputedColor | null => {
+    const wColor = widgetContainerBackgroundColor();
+    if (!wColor) return null;
+    const mixedColor: ComputedColor = [0, 0, 0, null];
+    for (let i = 0; i < 3; i++) {
+      mixedColor[i] = (wColor[i] / 3 * 2 + gray500[i] / 3) | 0;
+    }
+    return mixedColor;
+  });
+
   const collapsible = () => widgetSize()?.heightPx > COLLAPSE_HEIGHT_PX;
 
   const {
@@ -60,6 +80,7 @@ const RefLink: Component<{ address: string }> = (props) => {
     pinningToggleHandler,
     refLinkClickHandler,
     pin,
+    expand,
   } = createDisplayModeFSM("closed", collapsible);
 
   const address = createMemo(() => parseAddress(props.address));
@@ -94,6 +115,14 @@ const RefLink: Component<{ address: string }> = (props) => {
     if (previewer().level === 1) {
       pin(true);
     }
+
+    createEffect(on([displayMode], () => {
+      if (displayMode() !== "closed") {
+        setWidgetContainerBackgroundColor(
+          getComputedColor(getComputedStyle(widgetContainerEl).backgroundColor),
+        );
+      }
+    }));
   });
 
   return (
@@ -137,6 +166,13 @@ const RefLink: Component<{ address: string }> = (props) => {
             onMouseEnter={enterHandler}
             onMouseLeave={leaveHandler}
           >
+            <Show when={collapsed()}>
+              <CollapseMaskLayer
+                containerHeightPx={() => widgetContainerSize()?.heightPx}
+                backgroundColor={maskBaseColor}
+                onExpand={expand}
+              />
+            </Show>
             <div ref={widgetEl}>
               <div class="flex flex-col">
                 <div class="flex justify-between items-center px-2">
@@ -144,7 +180,7 @@ const RefLink: Component<{ address: string }> = (props) => {
                     class="cursor-pointer select-none"
                     color={displayMode() === "pinned"
                       ? "red"
-                      : /* gray-500 */ "rgb(107 114 128)"}
+                      : `rgb(${gray500[0]}, ${gray500[1]}, ${gray500[2]})`}
                     style={displayMode() === "pinned"
                       ? null
                       : { transform: "rotate(45deg)" }}
@@ -243,6 +279,7 @@ function createDisplayModeFSM(
     setTimeout(() => pinningTogglerTouched = false, 100);
   }
   function handleTogglePinning() {
+    setCollapsed(false);
     if (pinningTogglerTouched) {
       setDisplayMode("closed");
     } else {
@@ -272,6 +309,10 @@ function createDisplayModeFSM(
     setDisplayMode("pinned");
   }
 
+  function expand() {
+    setCollapsed(false);
+  }
+
   return {
     displayMode,
     collapsed: () => collapsible() && collapsed(),
@@ -285,6 +326,8 @@ function createDisplayModeFSM(
     refLinkClickHandler: handleClickRefLink,
 
     pin,
+
+    expand,
 
     setDisplayMode,
   };
@@ -417,21 +460,46 @@ function createSizeSyncer(
   }));
 }
 
-function getSizeInPx(size: string) {
-  const containerEl = document.createElement("div");
-  containerEl.style.visibility = "hidden";
-  containerEl.style.width = "0";
-  containerEl.style.overflow = "hidden";
+const CollapseMaskLayer: Component<
+  {
+    containerHeightPx: () => number;
+    backgroundColor: () => ComputedColor;
+    onExpand: () => void;
+  }
+> = (
+  props,
+) => {
+  const [r, g, b] = props.backgroundColor();
+  const baseColorRGB = `${r}, ${g}, ${b}`;
+  const topColor = `rgba(${baseColorRGB}, 0)`;
+  const bottomColor = `rgb(${baseColorRGB})`;
 
-  const el = document.createElement("div");
-  el.style.width = size;
-
-  containerEl.appendChild(el);
-  document.body.appendChild(containerEl);
-
-  const sizeInPx = parseFloat(getComputedStyle(el).width);
-
-  containerEl.remove();
-
-  return sizeInPx;
-}
+  return (
+    <div class="relative">
+      <div
+        class="absolute top-0 w-full pointer-events-none"
+        style={{ height: `${props.containerHeightPx()}px` }}
+      >
+        <div class="flex flex-col h-full">
+          <div class="flex-1" />
+          <div
+            class="relative pointer-events-auto cursor-zoom-in h-8"
+            onClick={props.onExpand}
+          >
+            <div class="absolute top-0 w-full z-10">
+              <div class="flex flex-col justify-center items-center h-8">
+                <HiSolidChevronDoubleDown />
+              </div>
+            </div>
+            <div
+              class="h-full z-0"
+              style={{
+                background: `linear-gradient(${topColor}, ${bottomColor})`,
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
