@@ -42,6 +42,7 @@ const RefLink: Component<{ address: string }> = (props) => {
     displayMode,
     enterHandler,
     leaveHandler,
+    pinningTogglerTouchEndHandler,
     pinningToggleHandler,
     setDisplayMode,
   } = createDisplayModeFSM("closed");
@@ -82,8 +83,6 @@ const RefLink: Component<{ address: string }> = (props) => {
       setDisplayMode("pinned");
     }
   });
-
-  let pinIconTouched = false;
 
   return (
     <>
@@ -129,18 +128,8 @@ const RefLink: Component<{ address: string }> = (props) => {
                   style={displayMode() === "pinned"
                     ? null
                     : { transform: "rotate(45deg)" }}
-                  onTouchEnd={() => {
-                    pinIconTouched = true;
-                    // 为防止有的浏览器 onClick 发生在 onTouchEnd 之前，
-                    // 这里也在一定时间后把 `pinIconTouched` 重置一下。
-                    setTimeout(() => pinIconTouched = false, 100);
-                  }}
-                  onClick={() => {
-                    pinIconTouched
-                      ? setDisplayMode("closed")
-                      : pinningToggleHandler();
-                    pinIconTouched = false;
-                  }}
+                  onTouchEnd={pinningTogglerTouchEndHandler}
+                  onClick={pinningToggleHandler}
                 />
                 <div class="w-12" />
                 <div>{props.address}</div>
@@ -217,9 +206,21 @@ function createDisplayModeFSM(
     }
   }
 
+  let pinningTogglerTouched = false;
+  function handleTouchPinningTogglerEnd() {
+    pinningTogglerTouched = true;
+    // 为防止有的浏览器 onClick 发生在 onTouchEnd 之前，
+    // 这里也在一定时间后把 `pinIconTouched` 重置一下。
+    setTimeout(() => pinningTogglerTouched = false, 100);
+  }
   function handleTogglePinning() {
-    const newMode = displayMode() === "pinned" ? "floating" : "pinned";
-    setDisplayMode(newMode);
+    if (pinningTogglerTouched) {
+      setDisplayMode("closed");
+    } else {
+      const newMode = displayMode() === "pinned" ? "floating" : "pinned";
+      setDisplayMode(newMode);
+    }
+    pinningTogglerTouched = false;
   }
 
   return {
@@ -227,6 +228,8 @@ function createDisplayModeFSM(
 
     enterHandler: handleEnter,
     leaveHandler: handleLeave,
+
+    pinningTogglerTouchEndHandler: handleTouchPinningTogglerEnd,
     pinningToggleHandler: handleTogglePinning,
 
     setDisplayMode,
