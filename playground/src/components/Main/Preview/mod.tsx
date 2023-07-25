@@ -31,7 +31,7 @@ import { ActiveLines, EditorStore, TopLine } from "../../../hooks/editor-store";
 import { LookupList, LookupListRaw } from "./internal-types";
 import * as ScrollUtils from "./scroll-utils";
 import { registerCustomElement } from "./widgets/RefLink";
-import { registerPreviewer } from "../../../stores/previewer";
+import { registerWidgetOwner } from "../../../stores/widget-owners";
 
 const CONTENT_ROOT_CLASS = "previewer-content-root";
 
@@ -92,9 +92,9 @@ const Preview: Component<
 
     //==== 注册进全局存储 ====
     // NOTE: 目前 scrollContainerEl 就是 previewer 的元素
-    registerPreviewer(scrollContainerEl, {
+    registerWidgetOwner(scrollContainerEl, {
       widgetAnchorElement: () => widgetAnchorEl,
-      lookupList,
+      layoutChange: lookupList,
       level: 1,
     });
   });
