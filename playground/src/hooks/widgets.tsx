@@ -17,7 +17,7 @@ import {
   computedColorToCSSValue,
   getSizeInPx,
 } from "../utils/styles";
-import { getPreviewer } from "../stores/previewer";
+import { getWidgetOwner } from "../stores/widget-owners";
 import { closestContainer } from "../utils/elements";
 
 const LEAVING_DELAY_MS = 100;
@@ -67,10 +67,10 @@ export function createWidgetComponent(parts: {
   );
 
   const [hostEl, setHostEl] = createSignal<HTMLElement>();
-  const previewer = createMemo(() => {
+  const widgetOwner = createMemo(() => {
     if (!hostEl()) return;
     const previewerEl = hostEl().closest(".previewer") as HTMLElement;
-    return getPreviewer(previewerEl);
+    return getWidgetOwner(previewerEl);
   });
 
   const [widgetPosition, setWidgetPosition] = createSignal<
@@ -102,11 +102,11 @@ export function createWidgetComponent(parts: {
     setHostEl(primeEl.getRootNode()["host"] as HTMLElement);
 
     const closestContainerEl = closestContainer(hostEl());
-    createEffect(on([previewer().lookupList], () => {
+    createEffect(on([widgetOwner().layoutChange], () => { // TODO: debounce
       setWidgetPosition(
         calculateWidgetPosition({
           prime: primeEl,
-          widgetAnchor: previewer().widgetAnchorElement(),
+          widgetAnchor: widgetOwner().widgetAnchorElement(),
           closestContainer: closestContainerEl,
         }),
       );
@@ -124,7 +124,7 @@ export function createWidgetComponent(parts: {
       removed: () => displayMode() === "closed",
     }, () => wContainerEl);
 
-    if (previewer().level === 1) {
+    if (widgetOwner().level === 1) {
       pin(true);
     }
   }
@@ -158,7 +158,7 @@ export function createWidgetComponent(parts: {
           >
           </div>
         </Show>
-        <Portal mount={previewer()?.widgetAnchorElement()}>
+        <Portal mount={widgetOwner()?.widgetAnchorElement()}>
           <Show when={displayMode() !== "closed"}>
             <parts.widgetContainerComponent
               ref={wContainerEl}
