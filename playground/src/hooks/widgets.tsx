@@ -273,8 +273,8 @@ function createDisplayModeFSM(
   }
 
   function handleClickPrime() {
-    if (!collapsible()) return;
     if (displayMode() === "pinned") {
+      if (!collapsible()) return;
       setCollapsed(!collapsed());
     } else {
       setCollapsed(false);
