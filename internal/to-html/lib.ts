@@ -42,7 +42,7 @@ export function elementToSnabbdom(
       case "ref-link":
         sel = "ref-link";
         // fallback
-        children = h("span", { class: { "ref-link": true } }, `>>${el.slot}`);
+        children = h("span", `>>${el.slot}`);
         props = { address: el.slot };
         break;
       case "P":
