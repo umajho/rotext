@@ -93,7 +93,7 @@ export function createWidgetComponent(parts: {
     leaveHandler,
     pinningTogglerTouchEndHandler,
     pinningToggleHandler,
-    refLinkClickHandler: primeClickHandler,
+    primeClickHandler,
     pin,
     expand,
   } = createDisplayModeFSM("closed", collapsible);
@@ -272,7 +272,7 @@ function createDisplayModeFSM(
     pinningTogglerTouched = false;
   }
 
-  function handleClickRefLink() {
+  function handleClickPrime() {
     if (!collapsible()) return;
     if (displayMode() === "pinned") {
       setCollapsed(!collapsed());
@@ -306,7 +306,7 @@ function createDisplayModeFSM(
     pinningTogglerTouchEndHandler: handleTouchPinningTogglerEnd,
     pinningToggleHandler: handleTogglePinning,
 
-    refLinkClickHandler: handleClickRefLink,
+    primeClickHandler: handleClickPrime,
 
     pin,
 
