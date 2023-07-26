@@ -27,6 +27,12 @@ const COLLAPSE_HEIGHT_PX = getSizeInPx("6rem");
 
 export type DisplayMode = "closed" | "floating" | "pinned";
 
+export interface PrimeContentComponent {
+  cursor: JSX.CSSProperties["cursor"] | null;
+
+  onToggleWidget: () => void;
+}
+
 export interface WidgetContainerProperties {
   ref: HTMLDivElement | undefined;
 
@@ -52,13 +58,16 @@ interface ElementSize {
 }
 
 export function createWidgetComponent(parts: {
-  primeContentComponent: Component;
+  primeContentComponent: Component<PrimeContentComponent>;
   widgetContainerComponent: Component<WidgetContainerProperties>;
   widgetContentComponent: Component<WidgetContentProperties>;
 }, opts: {
+  openable?: () => boolean;
   widgetBackgroundColor: () => ComputedColor;
   maskTintColor: () => ComputedColor;
 }): Component {
+  opts.openable ??= () => true;
+
   if (getCurrentElement()) {
     getCurrentElement().innerText = ""; // 清空 fallback
     noShadowDOM();
@@ -81,7 +90,9 @@ export function createWidgetComponent(parts: {
   const [widgetSize, setWidgetSize] = createSignal<ElementSize>();
   const [wContainerSize, setWContainerSize] = createSignal<ElementSize>();
 
-  const collapsible = () => widgetSize()?.heightPx > COLLAPSE_HEIGHT_PX;
+  const collapsible = () =>
+    opts.openable() &&
+    (widgetSize() ? widgetSize().heightPx > COLLAPSE_HEIGHT_PX : null);
 
   const maskBaseColor = createMemo((): ComputedColor | null =>
     mixColor(opts.widgetBackgroundColor(), 2 / 3, opts.maskTintColor(), 1 / 3)
@@ -95,9 +106,13 @@ export function createWidgetComponent(parts: {
     pinningTogglerTouchEndHandler,
     pinningToggleHandler,
     primeClickHandler,
-    pin,
+    autoOpen,
     expand,
-  } = createDisplayModeFSM("closed", collapsible);
+  } = createDisplayModeFSM({
+    initialDisplayMode: "closed",
+    openable: opts.openable,
+    collapsible,
+  });
 
   function handleMount() {
     setWidgetOwner(getWidgetOwner(primeEl.closest(".previewer")));
@@ -126,7 +141,7 @@ export function createWidgetComponent(parts: {
     }, () => wContainerEl);
 
     if (widgetOwner().level === 1) {
-      pin(true);
+      autoOpen(true);
     }
   }
 
@@ -139,16 +154,20 @@ export function createWidgetComponent(parts: {
       <>
         <span
           ref={primeEl}
-          style={{
-            "cursor": displayMode() === "pinned"
-              ? (collapsible() ? (collapsed() ? "zoom-in" : "zoom-out") : null)
-              : "zoom-in",
-          }}
-          onMouseEnter={enterHandler}
-          onMouseLeave={leaveHandler}
-          onClick={primeClickHandler}
+          class="widget-prime"
+          onMouseEnter={opts.openable() ? enterHandler : null}
+          onMouseLeave={opts.openable() ? leaveHandler : null}
         >
-          <parts.primeContentComponent />
+          <parts.primeContentComponent
+            cursor={opts.openable()
+              ? (displayMode() === "pinned"
+                ? (collapsible()
+                  ? (collapsed() ? "zoom-in" : "zoom-out")
+                  : null)
+                : "zoom-in")
+              : null}
+            onToggleWidget={opts.openable() ? primeClickHandler : null}
+          />
         </span>
         <Show when={displayMode() === "pinned"}>
           <div
@@ -223,26 +242,61 @@ function calculateWidgetPosition(
 }
 
 function createDisplayModeFSM(
-  initialDisplayMode: DisplayMode,
-  collapsible: () => boolean,
+  opts: {
+    initialDisplayMode: DisplayMode;
+    openable: () => boolean;
+    collapsible: () => boolean;
+  },
 ) {
-  const [displayMode, setDisplayMode] = createSignal(initialDisplayMode);
+  const [displayMode, setDisplayMode] = createSignal(opts.initialDisplayMode);
   const [collapsed, setCollapsed] = createSignal(false);
 
-  createEffect(on([collapsible], () => {
-    if (!collapsible()) {
-      setCollapsed(false);
+  const [delayedAutoOpen, setDelayedAutoOpen] = createSignal<
+    { shouldCollapse: boolean }
+  >();
+
+  createEffect(
+    on([opts.collapsible, delayedAutoOpen], () => {
+      if (!opts.collapsible()) {
+        setCollapsed(false);
+      }
+      if (opts.collapsible() !== null) {
+        if (opts.collapsible() && delayedAutoOpen()?.shouldCollapse) {
+          setCollapsed(true);
+        }
+        setDelayedAutoOpen(null);
+      }
+    }),
+  );
+  createEffect(on([opts.openable, delayedAutoOpen], () => {
+    if (!opts.openable()) {
+      setDisplayMode("closed");
+    } else if (delayedAutoOpen()) {
+      setDisplayMode("pinned");
+      if (opts.collapsible() !== null) {
+        setDelayedAutoOpen(null);
+      }
     }
   }));
 
   let leaving = false;
   function handleEnter() {
+    if (!opts.openable()) {
+      console.warn("should not reach here!");
+      return;
+    }
+
     leaving = false;
     if (displayMode() === "closed") {
       setDisplayMode("floating");
     }
   }
   function handleLeave() {
+    if (!opts.openable()) {
+      console.warn("should not reach here!");
+      return;
+    }
+
     if (leaving) return;
     if (displayMode() === "floating") {
       leaving = true;
@@ -263,6 +317,11 @@ function createDisplayModeFSM(
     setTimeout(() => pinningTogglerTouched = false, 100);
   }
   function handleTogglePinning() {
+    if (!opts.openable()) {
+      console.warn("should not reach here!");
+      return;
+    }
+
     setCollapsed(false);
     if (pinningTogglerTouched) {
       setDisplayMode("closed");
@@ -274,8 +333,9 @@ function createDisplayModeFSM(
   }
 
   function handleClickPrime() {
+    if (!opts.openable) return;
     if (displayMode() === "pinned") {
-      if (!collapsible()) return;
+      if (!opts.collapsible()) return;
       setCollapsed(!collapsed());
     } else {
       setCollapsed(false);
@@ -283,23 +343,29 @@ function createDisplayModeFSM(
     }
   }
 
-  function pin(shouldCollapse: boolean) {
-    if (shouldCollapse) {
-      // NOTE: 调用本函数的时候，挂件可能还没创建，导致 `collapsible()` 返回假。
-      //       这里就不检查 `collapsible()`，直接设置了。这么做也不存在问题。
-
-      setCollapsed(true);
+  function autoOpen(shouldCollapse: boolean) {
+    if (opts.openable() && opts.collapsible() !== null) {
+      if (shouldCollapse && opts.collapsible()) {
+        setCollapsed(true);
+      }
+      setDisplayMode("pinned");
+    } else {
+      setDelayedAutoOpen({ shouldCollapse });
     }
-    setDisplayMode("pinned");
   }
 
   function expand() {
+    if (!opts.openable()) {
+      console.warn("should not reach here!");
+      return;
+    }
+
     setCollapsed(false);
   }
 
   return {
     displayMode,
-    collapsed: () => collapsible() && collapsed(),
+    collapsed: () => opts.collapsible() && collapsed(),
 
     enterHandler: handleEnter,
     leaveHandler: handleLeave,
@@ -309,7 +375,7 @@ function createDisplayModeFSM(
 
     primeClickHandler: handleClickPrime,
 
-    pin,
+    autoOpen,
 
     expand,
 

@@ -23,8 +23,12 @@ const RefLink: Component<Properties> = (outerProps) => {
 
   const component = createWidgetComponent(
     {
-      primeContentComponent: (_) => {
-        return <>{`>>${outerProps.address}`}</>;
+      primeContentComponent: (props) => {
+        return (
+          <span style={{ cursor: props.cursor }} onClick={props.onToggleWidget}>
+            {`>>${outerProps.address}`}
+          </span>
+        );
       },
       widgetContainerComponent: WidgetContainer,
       widgetContentComponent: (props) => {

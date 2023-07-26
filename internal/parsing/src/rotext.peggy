@@ -193,6 +193,7 @@ Line
 Inline
   = Escape
   / Reference
+  / Dicexp
   / Code
   / Bold
   / Strikethrough
@@ -252,6 +253,13 @@ RID_ThreadID = [a-z]+
 RID_FloorNumber = "#" [0-9]+
 // RID_FloorNumberMaybeRelative = "#" [0-9]*
 RID_SubPart = "." RID_ThreadID RID_FloorNumber?
+
+Dicexp
+  = "[=" code:$DicexpCodeText "]"
+    { return create.dicexp(code); }
+// XXX: 未来实现了类似字符串之类的功能后，要注意在这里也进行对应的支持。
+//      （在字符串的环境中忽略中括号，以及考虑指示字符串的标记本身是否被转义。）
+DicexpCodeText = ([^\[\]]+ / ("[" DicexpCodeText "]"))+
 
 Code
   = "[`" text:(!"`]" @CodeText)* "`]"

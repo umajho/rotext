@@ -123,8 +123,13 @@
   // 去掉了 ruby 相关的 styles
 
   /* Non-HTML inline-level elements */
-  ref-link {
+  ref-link>.widget-prime {
     color: green
+  }
+
+  dicexp-preview>.widget-prime {
+    @apply inline-flex items-center h-[1.5rem] px-2 mx-2;
+    @apply border rounded-xl border-sky-700 bg-sky-900 text-white;
   }
 
   em.em-dotted {
