@@ -1,5 +1,5 @@
 import { Component, createMemo, JSX } from "solid-js";
-import { customElement } from "solid-element";
+import { customElement, noShadowDOM } from "solid-element";
 
 import { createWidgetComponent } from "../../../../hooks/widgets";
 import { PinButton, WidgetContainer } from "./support";

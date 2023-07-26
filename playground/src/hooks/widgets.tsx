@@ -17,8 +17,9 @@ import {
   computedColorToCSSValue,
   getSizeInPx,
 } from "../utils/styles";
-import { getWidgetOwner } from "../stores/widget-owners";
+import { getWidgetOwner, WidgetOwner } from "../stores/widget-owners";
 import { closestContainer } from "../utils/elements";
+import { getCurrentElement, noShadowDOM } from "solid-element";
 
 const LEAVING_DELAY_MS = 100;
 
@@ -58,6 +59,11 @@ export function createWidgetComponent(parts: {
   widgetBackgroundColor: () => ComputedColor;
   maskTintColor: () => ComputedColor;
 }): Component {
+  if (getCurrentElement()) {
+    getCurrentElement().innerText = ""; // 清空 fallback
+    noShadowDOM();
+  }
+
   let primeEl: HTMLSpanElement;
   let wContainerEl: HTMLDivElement; // “w” -> “widget”
   let widgetEl: HTMLDivElement;
@@ -66,12 +72,7 @@ export function createWidgetComponent(parts: {
     computedColorToCSSValue(opts.widgetBackgroundColor())
   );
 
-  const [hostEl, setHostEl] = createSignal<HTMLElement>();
-  const widgetOwner = createMemo(() => {
-    if (!hostEl()) return;
-    const previewerEl = hostEl().closest(".previewer") as HTMLElement;
-    return getWidgetOwner(previewerEl);
-  });
+  const [widgetOwner, setWidgetOwner] = createSignal<WidgetOwner>();
 
   const [widgetPosition, setWidgetPosition] = createSignal<
     { topPx: number; leftPx: number }
@@ -99,9 +100,9 @@ export function createWidgetComponent(parts: {
   } = createDisplayModeFSM("closed", collapsible);
 
   function handleMount() {
-    setHostEl(primeEl.getRootNode()["host"] as HTMLElement);
+    setWidgetOwner(getWidgetOwner(primeEl.closest(".previewer")));
 
-    const closestContainerEl = closestContainer(hostEl());
+    const closestContainerEl = closestContainer(primeEl);
     createEffect(on([widgetOwner().layoutChange], () => { // TODO: debounce
       setWidgetPosition(
         calculateWidgetPosition({
