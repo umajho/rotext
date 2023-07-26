@@ -6,10 +6,11 @@ export {};
 /**
  * 由于使用 solid-icons 库时无法设置颜色，手动将其放到这里。
  */
-export default function FaSolidDice(props: { color: string }) {
+export default function FaSolidDice(props: { color?: string; class?: string }) {
   return (
     <svg
-      fill={props.color}
+      fill={props.color ?? "currentColor"}
+      class={props.class}
       stroke-width="0"
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 640 512"
