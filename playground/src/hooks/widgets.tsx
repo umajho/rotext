@@ -63,10 +63,12 @@ export function createWidgetComponent(parts: {
   widgetContentComponent: Component<WidgetContentProperties>;
 }, opts: {
   openable?: () => boolean;
+  autoOpenShouldCollapse?: boolean;
   widgetBackgroundColor: () => ComputedColor;
   maskTintColor: () => ComputedColor;
 }): Component {
   opts.openable ??= () => true;
+  opts.autoOpenShouldCollapse ??= true;
 
   if (getCurrentElement()) {
     getCurrentElement().innerText = ""; // 清空 fallback
@@ -91,8 +93,9 @@ export function createWidgetComponent(parts: {
   const [wContainerSize, setWContainerSize] = createSignal<ElementSize>();
 
   const collapsible = () =>
-    opts.openable() &&
-    (widgetSize() ? widgetSize().heightPx > COLLAPSE_HEIGHT_PX : null);
+    opts.openable()
+      ? (widgetSize() ? widgetSize().heightPx > COLLAPSE_HEIGHT_PX : null)
+      : null;
 
   const maskBaseColor = createMemo((): ComputedColor | null =>
     mixColor(opts.widgetBackgroundColor(), 2 / 3, opts.maskTintColor(), 1 / 3)
@@ -141,7 +144,7 @@ export function createWidgetComponent(parts: {
     }, () => wContainerEl);
 
     if (widgetOwner().level === 1) {
-      autoOpen(true);
+      autoOpen(opts.autoOpenShouldCollapse);
     }
   }
 
@@ -254,28 +257,32 @@ function createDisplayModeFSM(
   const [delayedAutoOpen, setDelayedAutoOpen] = createSignal<
     { shouldCollapse: boolean }
   >();
+  const [userInteracted, setUserInteracted] = createSignal(false);
+  createEffect(on([userInteracted], () => {
+    if (userInteracted()) {
+      setDelayedAutoOpen(null);
+    }
+  }));
 
   createEffect(
     on([opts.collapsible, delayedAutoOpen], () => {
       if (!opts.collapsible()) {
         setCollapsed(false);
       }
-      if (opts.collapsible() !== null) {
-        if (opts.collapsible() && delayedAutoOpen()?.shouldCollapse) {
-          setCollapsed(true);
-        }
-        setDelayedAutoOpen(null);
+      if (
+        opts.collapsible() === true /* not null */ &&
+        delayedAutoOpen()?.shouldCollapse
+      ) {
+        setCollapsed(true);
       }
     }),
   );
   createEffect(on([opts.openable, delayedAutoOpen], () => {
     if (!opts.openable()) {
       setDisplayMode("closed");
+      setUserInteracted(false);
     } else if (delayedAutoOpen()) {
       setDisplayMode("pinned");
-      if (opts.collapsible() !== null) {
-        setDelayedAutoOpen(null);
-      }
     }
   }));
 
@@ -321,6 +328,7 @@ function createDisplayModeFSM(
       console.warn("should not reach here!");
       return;
     }
+    setUserInteracted(true);
 
     setCollapsed(false);
     if (pinningTogglerTouched) {
@@ -334,6 +342,8 @@ function createDisplayModeFSM(
 
   function handleClickPrime() {
     if (!opts.openable) return;
+    setUserInteracted(true);
+
     if (displayMode() === "pinned") {
       if (!opts.collapsible()) return;
       setCollapsed(!collapsed());
@@ -344,14 +354,7 @@ function createDisplayModeFSM(
   }
 
   function autoOpen(shouldCollapse: boolean) {
-    if (opts.openable() && opts.collapsible() !== null) {
-      if (shouldCollapse && opts.collapsible()) {
-        setCollapsed(true);
-      }
-      setDisplayMode("pinned");
-    } else {
-      setDelayedAutoOpen({ shouldCollapse });
-    }
+    setDelayedAutoOpen({ shouldCollapse });
   }
 
   function expand() {
@@ -359,6 +362,7 @@ function createDisplayModeFSM(
       console.warn("should not reach here!");
       return;
     }
+    setUserInteracted(true);
 
     setCollapsed(false);
   }
@@ -414,6 +418,7 @@ function createSizeSyncer(
       resizeObserverForWidget = new ResizeObserver(() => syncSize(el_));
       resizeObserverForWidget.observe(el_);
     } else {
+      props.setSize(null);
       resizeObserverForWidget?.disconnect();
     }
   }));

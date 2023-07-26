@@ -31,7 +31,7 @@ import { ActiveLines, EditorStore, TopLine } from "../../../hooks/editor-store";
 import { LookupList, LookupListRaw } from "./internal-types";
 import * as ScrollUtils from "./scroll-utils";
 import { registerCustomElement as registerCustomElementForRefLink } from "./widgets/RefLink";
-import { registerCustomElement as registerCustomElementForDicexp } from "./widgets/Dicexp";
+import { registerCustomElement as registerCustomElementForDicexp } from "./widgets/DicexpPreview";
 import { registerWidgetOwner } from "../../../stores/widget-owners";
 
 const CONTENT_ROOT_CLASS = "previewer-content-root";
