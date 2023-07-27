@@ -132,6 +132,24 @@
     @apply border rounded-xl border-sky-700 bg-sky-900 text-white;
   }
 
+  scratch-off {
+    @apply text-transparent bg-black cursor-pointer select-none;
+
+    * {
+      visibility: hidden;
+    }
+
+    &.revealed,
+    &:not(.by-click):hover {
+      @apply text-inherit bg-transparent cursor-[inherit];
+      user-select: inherit;
+
+      * {
+        visibility: inherit;
+      }
+    }
+  }
+
   em.em-dotted {
     font-style: normal;
     // 点的大小并不理想，未来计划引入「赫蹏」解决
