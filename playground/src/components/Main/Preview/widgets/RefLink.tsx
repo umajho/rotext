@@ -8,6 +8,7 @@ import {
   getComputedColor,
   getComputedCSSValueOfClass,
 } from "../../../../utils/styles";
+import { mouseDownNoDoubleClickToSelect } from "../../../../utils/events";
 
 const BACKGROUND_COLOR = getComputedColor(
   getComputedCSSValueOfClass("background-color", "previewer-background"),
@@ -25,7 +26,11 @@ const RefLink: Component<Properties> = (outerProps) => {
     {
       primeContentComponent: (props) => {
         return (
-          <span style={{ cursor: props.cursor }} onClick={props.onToggleWidget}>
+          <span
+            style={{ cursor: props.cursor }}
+            onClick={props.onToggleWidget}
+            onMouseDown={mouseDownNoDoubleClickToSelect}
+          >
             {`>>${outerProps.address}`}
           </span>
         );
