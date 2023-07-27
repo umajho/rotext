@@ -87,7 +87,6 @@ Containers // TODO: `; foo : bar`
 ContainersLine
   = prefix:ContainerPrefix+ line:Line?
     { 
-      console.log()
       return locMap
         ? { prefix: prefix.join(""), line, location: location() }
         : { prefix: prefix.join(""), line };
