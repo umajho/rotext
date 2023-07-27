@@ -1,4 +1,4 @@
-import { Accessor, createSignal, JSX, onMount } from "solid-js";
+import { Accessor, createEffect, createSignal, JSX, onMount } from "solid-js";
 
 import { basicSetup, EditorView } from "codemirror";
 import { Extension } from "@codemirror/state";
@@ -8,7 +8,7 @@ export function createCodeMirrorEditor(
   props: {
     class?: string;
     extensions?: Extension[];
-    initialDoc: string;
+    doc: () => string;
     setDoc: (doc: string) => void;
   },
 ): {
@@ -19,14 +19,39 @@ export function createCodeMirrorEditor(
   let parentEl: HTMLDivElement;
   const [view, setView] = createSignal<EditorView>();
 
+  let dispatchedBySelf = false, changedBySelf = false;
+  createEffect(() => {
+    const doc = props.doc;
+
+    if (changedBySelf) {
+      changedBySelf = false;
+      return;
+    }
+
+    const view_ = view();
+    if (!view_) return;
+
+    dispatchedBySelf = true;
+    view_.dispatch({
+      changes: { from: 0, to: view_.state.doc.length, insert: doc() },
+    });
+  });
+
   onMount(() => {
     const extSync = EditorView.updateListener.of((update) => {
+      if (!update.docChanged) return;
+      if (dispatchedBySelf) {
+        dispatchedBySelf = false;
+        return;
+      }
+
+      changedBySelf = true;
       props.setDoc(update.state.doc.toString());
     });
 
     setView(
       new EditorView({
-        doc: props.initialDoc,
+        doc: props.doc(),
         extensions: [basicSetup, oneDark, extSync, ...(props.extensions ?? [])],
         parent: parentEl,
       }),

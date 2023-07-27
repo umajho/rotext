@@ -47,7 +47,7 @@ const Editor: Component<
   });
 
   const { element, view, scrollContainerDOM } = createCodeMirrorEditor({
-    initialDoc: props.store.text,
+    doc: () => props.store.text,
     setDoc: (doc: string) => props.store.text = doc,
     class: `${props.class} editor-${editorID}`,
     extensions: [EditorView.lineWrapping, activeLinesWatcher],
