@@ -196,6 +196,7 @@ Inline
   / Code
   / Bold
   / Strikethrough
+  / Spoiler
   / Ruby
   / [^\r\n]
 
@@ -275,6 +276,10 @@ Bold
 Strikethrough
   = "[~" inlines:(!"~]" @Inline)* "~]"
     { return create.s(joinInlines(inlines)); }
+
+Spoiler
+  = "[|" inlines:(!"|]" @Inline)* "|]"
+    { return create.spoiler(joinInlines(inlines)); }
 
 Ruby
   = "[" base:(![(（] @Inline)* pLeft:[(（] text:(!([)）] "]") @Inline)* pRight:[)）] "]"

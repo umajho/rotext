@@ -34,12 +34,14 @@ import { LookupList, LookupListRaw } from "./internal-types";
 import * as ScrollUtils from "./scroll-utils";
 import { registerCustomElement as registerCustomElementForRefLink } from "./widgets/RefLink";
 import { registerCustomElement as registerCustomElementForDicexp } from "./widgets/DicexpPreview";
+import { registerCustomElement as registerCustomElementForScratchOff } from "./ScratchOff";
 import { registerWidgetOwner } from "../../../stores/widget-owners";
 
 const CONTENT_ROOT_CLASS = "previewer-content-root";
 
 registerCustomElementForRefLink();
 registerCustomElementForDicexp();
+registerCustomElementForScratchOff();
 
 const Preview: Component<
   {

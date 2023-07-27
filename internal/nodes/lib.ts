@@ -21,7 +21,7 @@ export type Document = {
  */
 export type InlineElement =
   | { type: "br" }
-  | { type: "em.strong" | "s"; slot: InlineSlot }
+  | { type: "em.strong" | "s" | "spoiler"; slot: InlineSlot }
   | {
     type: "ruby";
     props: {
@@ -99,6 +99,11 @@ export const create = {
   /** 删除线 */
   s(slot: InlineSlot): InlineElement & { type: "s" } {
     return { type: "s", slot };
+  },
+
+  /** 黑幕（防剧透） */
+  spoiler(slot: InlineSlot): InlineElement & { type: "spoiler" } {
+    return { type: "spoiler", slot };
   },
 
   /** 为行内元素添加 ruby 文字，即注音 */

@@ -36,6 +36,9 @@ export function elementToSnabbdom(
       //   sel = "em";
       //   classes = { "em-dotted": true };
       //   break;
+      case "spoiler":
+        sel = "scratch-off";
+        break;
       case "code":
         sel = "code";
         break;
