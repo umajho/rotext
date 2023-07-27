@@ -1,4 +1,14 @@
-import { Component, createEffect, createSignal, on, Show } from "solid-js";
+import {
+  Component,
+  createEffect,
+  createMemo,
+  createSignal,
+  For,
+  Match,
+  on,
+  Show,
+  Switch,
+} from "solid-js";
 import { customElement } from "solid-element";
 
 import "./DicexpPreview.scss";
@@ -12,6 +22,11 @@ import {
 } from "../../../../utils/styles";
 import FaSolidDice from "../../../icons";
 import { Loading } from "../../../ui";
+import { EvaluatingWorkerManager, EvaluationResult } from "dicexp";
+import { scopes } from "../../../../stores/scopes";
+
+import EvaluatingWorker from "../../../../workers/dicexp-evaluator?worker";
+import { ErrorAlert } from "../ui";
 
 const BACKGROUND_COLOR = getComputedColor(
   getComputedCSSValueOfClass("background-color", "previewer-background"),
@@ -21,14 +36,22 @@ interface Properties {
   code: string;
 }
 
-interface RollResult {
-  finalValue: string;
-  steps: string;
-}
-
 const DicexpPreview: Component<Properties> = (outerProps) => {
+  const [loadingRuntime, setLoadingRuntime] = createSignal<"short" | "long">();
   const [rolling, setRolling] = createSignal(false);
-  const [result, setResult] = createSignal<RollResult>();
+  const [result, setResult] = createSignal<EvaluationResult>();
+
+  createEffect(on([() => outerProps.code], () => setResult(null)));
+
+  const resultElement = createMemo(() => {
+    const result_ = result();
+    if (!result_) return null;
+    if (!result_.ok) return <span class="text-red-500">错误！</span>;
+    if (typeof result_.ok !== "number") {
+      return <span class="text-red-500">暂不支持非数字结果！</span>;
+    }
+    return <>{String(result_.ok)}</>;
+  });
 
   const [everRolled, setEverRolled] = createSignal(false);
   createEffect(on([result], () => {
@@ -36,18 +59,46 @@ const DicexpPreview: Component<Properties> = (outerProps) => {
     setEverRolled(true);
   }));
 
-  function roll() {
+  async function roll() {
     if (rolling()) return;
     setRolling(true);
     setResult(null);
-    setTimeout(() => {
-      setResult({
-        finalValue: "42",
-        steps:
-          "Answer to the Ultimate Question of Life, the Universe, and Everything",
-      });
+
+    setLoadingRuntime("short");
+    const cID = //
+      setTimeout(() => loadingRuntime() && setLoadingRuntime("long"), 100);
+    let dicexp: typeof import("dicexp") | undefined;
+    try {
+      dicexp = await import("dicexp");
+    } catch (e) {
+      const reason = (e instanceof Error) ? e.message : `e`;
+      setResult({ error: new Error(`加载运行时失败：${reason}`) });
+    }
+    setLoadingRuntime(null);
+    clearTimeout(cID);
+
+    if (!dicexp) {
+      setResult(null);
       setRolling(false);
-    }, 100 + Math.random() * 300);
+      return;
+    }
+
+    const workerManager = await new Promise<
+      EvaluatingWorkerManager<typeof scopes>
+    >(
+      (resolve) => {
+        const workerManager = new dicexp.EvaluatingWorkerManager(
+          () => new EvaluatingWorker(),
+          (ready) => ready && resolve(workerManager),
+        );
+      },
+    );
+    const result = await workerManager.evaluate(outerProps.code, {
+      execute: { topLevelScopeName: "standard" },
+    });
+
+    setResult(result);
+    setRolling(false);
   }
 
   const component = createWidgetComponent(
@@ -69,14 +120,17 @@ const DicexpPreview: Component<Properties> = (outerProps) => {
             </span>
             <span
               class={"inline-flex items-center h-[1.5rem] -mr-2 pl-1 pr-2 ml-1" +
+                " gap-2" +
                 " border rounded-r-xl border-sky-700 bg-sky-700" +
                 " cursor-pointer select-none"}
               onClick={roll}
             >
-              试投
-              <Show when={result()}>
-                {" ➔ "}
-                {result().finalValue}
+              <span class="text-gray-200">
+                试投{loadingRuntime() === "long" && "（正在加载运行时…）"}
+              </span>
+              <Show when={resultElement()}>
+                <span>➔</span>
+                <span>{resultElement()}</span>
               </Show>
             </span>
           </>
@@ -93,21 +147,38 @@ const DicexpPreview: Component<Properties> = (outerProps) => {
                   onClick={props.onClickOnPinIcon}
                   onTouchEnd={props.onTouchEndOnPinIcon}
                 />
-                <span>掷骰过程</span>
+                <span>掷骰过程（尚未完工）</span>
               </div>
             </div>
             <hr />
             <div class="p-4">
-              <Show
-                when={result()}
-                fallback={
+              <Switch>
+                <Match when={result()}>
+                  <Show when={result().error instanceof Error}>
+                    {
+                      /*
+                        ~~忽略运行时错误（`"type" in .error && .error.type === "error"`），
+                        因为其会出现在步骤当中。~~
+
+                        FIXME: RuntimeError 看起来已经转换成 Error 了，感觉至少还是应该区分一下，
+                               以减少重复信息的显示。
+                      */
+                    }
+                    <ErrorAlert error={result().error} showsStack={false} />
+                  </Show>
+                  <Show when={result().representation}>
+                    {JSON.stringify(result().representation)}
+                  </Show>
+                </Match>
+                <Match when={rolling()}>
                   <div class="flex justify-center items-center">
                     <Loading />
                   </div>
-                }
-              >
-                {result().steps}
-              </Show>
+                </Match>
+                <Match when={true}>
+                  输入变更…
+                </Match>
+              </Switch>
             </div>
           </div>
         );
