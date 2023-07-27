@@ -157,7 +157,7 @@ export function createWidgetComponent(parts: {
       <>
         <span
           ref={primeEl}
-          class="widget-prime"
+          class="widget-prime inline-block"
           onMouseEnter={opts.openable() ? enterHandler : null}
           onMouseLeave={opts.openable() ? leaveHandler : null}
         >
