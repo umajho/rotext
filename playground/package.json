@@ -25,10 +25,12 @@
   "dependencies": {
     "@codemirror/state": "^6.2.1",
     "@codemirror/theme-one-dark": "^6.1.2",
+    "@dicexp/builtins": "^0.1.3",
     "@rotext/example-documentations": "workspace:*",
     "@rotext/parsing": "workspace:*",
     "@rotext/to-html": "workspace:*",
     "codemirror": "^6.0.1",
+    "dicexp": "^0.1.4",
     "snabbdom": "^3.5.1",
     "solid-element": "^1.7.1",
     "solid-icons": "^1.0.11",
