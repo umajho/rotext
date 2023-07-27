@@ -137,6 +137,32 @@ export const DropdownItem: Component<{ children: JSX.Element }> = (props) => {
   return <li>{props.children}</li>;
 };
 
+export const Button: Component<
+  {
+    children?: JSX.Element;
+    size?: "xs";
+    hasOutline?: boolean;
+    onClick?: () => void;
+  }
+> = (props) => {
+  const classes = () =>
+    [
+      (props.size ? `btn-${props.size}` : "") satisfies
+        | ""
+        | "btn-xs",
+      props.hasOutline ? "btn-outline" : "",
+    ].join(" ");
+
+  return (
+    <div
+      class={`btn ${classes()}`}
+      onClick={props.onClick}
+    >
+      {props.children}
+    </div>
+  );
+};
+
 export const Radio: Component<{ checked?: boolean }> = (props) => {
   return (
     <input type="radio" name="radio-1" class="radio" checked={props.checked} />
