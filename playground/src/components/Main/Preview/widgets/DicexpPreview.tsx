@@ -27,6 +27,7 @@ import { scopes } from "../../../../stores/scopes";
 
 import EvaluatingWorker from "../../../../workers/dicexp-evaluator?worker";
 import { ErrorAlert } from "../ui";
+import { mouseDownNoDoubleClickToSelect } from "../../../../utils/events";
 
 const BACKGROUND_COLOR = getComputedColor(
   getComputedCSSValueOfClass("background-color", "previewer-background"),
@@ -110,6 +111,7 @@ const DicexpPreview: Component<Properties> = (outerProps) => {
               class="inline-flex items-center"
               style={{ cursor: props.cursor }}
               onClick={props.onToggleWidget}
+              onMouseDown={mouseDownNoDoubleClickToSelect}
             >
               <FaSolidDice
                 color="white"
