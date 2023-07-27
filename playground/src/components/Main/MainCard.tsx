@@ -8,7 +8,16 @@ import {
   Suspense,
 } from "solid-js";
 
-import { Alert, Badge, BadgeBar, Card, Loading, Tab, Tabs } from "../ui";
+import {
+  Alert,
+  Badge,
+  BadgeBar,
+  Button,
+  Card,
+  Loading,
+  Tab,
+  Tabs,
+} from "../ui";
 
 import * as examples from "@rotext/example-documentations";
 
@@ -77,8 +86,9 @@ function createEditorParts(store: EditorStore): {
 
   return {
     EditorTopBar: (
-      <div class="flex h-full justify-end items-center px-4">
+      <div class="flex h-full justify-end items-center px-4 gap-2">
         <span class="text-xs text-gray-500">{infoText()}</span>
+        <Button size="xs" onClick={() => store.text = ""}>清空</Button>
       </div>
     ),
     Editor: (
