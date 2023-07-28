@@ -198,6 +198,7 @@ Inline
   / Strikethrough
   / Spoiler
   / Ruby
+  / AutoLink
   / [^\r\n]
 
 Escape
@@ -290,6 +291,12 @@ Ruby
         [pLeft, pRight],
       );
     }
+
+AutoLink
+  = &{ return offset() === 0 || !/[a-zA-Z]/.test(input[offset()-1]); }
+    href:$("http" "s"? "://" [^ \t\r\n]+)
+    { return create.autoLink(href); }
+
 
 _ = [ \t]*
 __ = [ \t\r\n]*
