@@ -133,7 +133,7 @@
   }
 
   scratch-off {
-    @apply text-transparent bg-black cursor-pointer select-none;
+    @apply text-transparent bg-white cursor-pointer select-none;
 
     * {
       visibility: hidden;
@@ -141,7 +141,7 @@
 
     &.revealed,
     &:not(.by-click):hover {
-      @apply text-inherit bg-transparent cursor-[inherit];
+      @apply text-inherit bg-opacity-10 cursor-[inherit];
       user-select: inherit;
 
       * {
