@@ -81,6 +81,19 @@ export function elementToSnabbdom(
         h("rt", slotToChildren(el.slots.text, locMap)),
         h("rp", String(el.props.p[1])),
       ]);
+    case "link":
+      if ("props" in el && "auto" in el.props && el.props.auto) {
+        return h("a", {
+          props: {
+            href: el.slots.href,
+            target: "_blank",
+            rel: "noopener noreferrer",
+          },
+        }, el.slots.href);
+      } else {
+        // el satisfies never;
+        throw new Error("unreachable");
+      }
     case "dicexp": {
       const props = {
         code: el.slots.code,
