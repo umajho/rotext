@@ -98,59 +98,59 @@ const Editor: Component<
       "scroll",
       debounceEventHandler(handleScroll),
     );
+
+    {
+      function calculateBlankHeightAtEnd() {
+        const _view = view();
+        const _maxTopLine = _view.state.doc.lines;
+
+        const scrollEl = scrollContainerDOM;
+        if (!scrollEl) return;
+
+        const lineBlock = getLineBlock(_view, _maxTopLine);
+        const yMargin = lineBlock.height * (_maxTopLine - (_maxTopLine | 0));
+        const maxOffsetTop = lineBlock.top + yMargin;
+
+        const lastLineBlock = getLineBlock(_view, _view.state.doc.lines);
+
+        const heightUnscrollableFromPreview = Math.max(
+          maxOffsetTop + scrollEl.offsetHeight - lastLineBlock.bottom -
+            contentPadding().bottom,
+          0,
+        );
+        setBlankHeightAtEnd(heightUnscrollableFromPreview);
+      }
+
+      calculateBlankHeightAtEnd();
+      new ResizeObserver(calculateBlankHeightAtEnd).observe(scrollContainerDOM);
+    }
+
+    {
+      let justMounted = true;
+      let lastTopLineFromPreview: number | null = null;
+      createEffect(on([() => props.store.topLine], (_, prev) => {
+        const topLineData = props.store.topLine;
+        if (justMounted) {
+          justMounted = false;
+          if (topLineData.number === 1) return;
+        } else if (!topLineData.setFrom || topLineData.setFrom === "editor") {
+          lastTopLineFromPreview = null;
+          return;
+        }
+
+        if (lastTopLineFromPreview === topLineData.number) {
+          return;
+        }
+        lastTopLineFromPreview = topLineData.number;
+
+        scrollTopLineTo(view(), topLineData.number, {
+          beforeDispatch: () => {
+            setPendingAutoScrolls.increase(!prev);
+          },
+        });
+      }));
+    }
   });
-
-  let lastTopLineFromPreview: number | null = null;
-  createEffect(on([() => props.store.topLine], () => {
-    const topLineData = props.store.topLine;
-    if (!topLineData.setFrom || topLineData.setFrom === "editor") {
-      lastTopLineFromPreview = null;
-      return;
-    }
-
-    if (lastTopLineFromPreview === topLineData.number) {
-      return;
-    }
-    lastTopLineFromPreview = topLineData.number;
-
-    const _view = view();
-    const _topLine = clampLine(_view, topLineData.number);
-
-    const lineBlock = getLineBlock(_view, _topLine);
-    const yMargin = -lineBlock.height * (_topLine - (_topLine | 0));
-    const scrollEffect = EditorView.scrollIntoView(
-      lineBlock.from,
-      { y: "start", yMargin },
-    );
-
-    setPendingAutoScrolls.increase();
-    _view.dispatch({ effects: [scrollEffect] });
-  }));
-
-  {
-    function calculateBlankHeightAtEnd() {
-      const _view = view();
-      const _maxTopLine = _view.state.doc.lines;
-
-      const scrollEl = scrollContainerDOM;
-      if (!scrollEl) return;
-
-      const lineBlock = getLineBlock(_view, _maxTopLine);
-      const yMargin = lineBlock.height * (_maxTopLine - (_maxTopLine | 0));
-      const maxOffsetTop = lineBlock.top + yMargin;
-
-      const lastLineBlock = getLineBlock(_view, _view.state.doc.lines);
-
-      const heightUnscrollableFromPreview = Math.max(
-        maxOffsetTop + scrollEl.offsetHeight - lastLineBlock.bottom -
-          contentPadding().bottom,
-        0,
-      );
-      setBlankHeightAtEnd(heightUnscrollableFromPreview);
-    }
-
-    new ResizeObserver(calculateBlankHeightAtEnd).observe(scrollContainerDOM);
-  }
 
   return (
     <>
@@ -170,6 +170,24 @@ const Editor: Component<
   );
 };
 export default Editor;
+
+function scrollTopLineTo(
+  view: EditorView,
+  topLine: number,
+  opts?: { beforeDispatch?: () => void },
+) {
+  topLine = clampLine(view, topLine);
+
+  const lineBlock = getLineBlock(view, topLine);
+  const yMargin = -lineBlock.height * (topLine - (topLine | 0));
+  const scrollEffect = EditorView.scrollIntoView(
+    lineBlock.from,
+    { y: "start", yMargin },
+  );
+
+  opts?.beforeDispatch?.();
+  view.dispatch({ effects: [scrollEffect] });
+}
 
 function clampLine(view: EditorView, line: number) {
   return Math.min(view.state.doc.lines, Math.max(line, 1));
@@ -193,43 +211,68 @@ function getPaddingPixels(el: HTMLElement) {
 function createAutoResetCounter() {
   const THRESHOLD_MS = 50;
 
-  const [value, _setValue] = createSignal(0);
+  const [value, setValue_] = createSignal(0);
+  const [hardValue, setHardValue_] = createSignal(0);
+
   let lastChangeTime = 0;
   let checking = false;
 
-  function setValue(v: number) {
-    v = Math.max(v, 0);
-    _setValue(v);
-    lastChangeTime = performance.now();
+  function check() {
+    if (value() <= 0) {
+      checking = false;
+      return;
+    }
 
-    if (checking || !v) return;
-    checking = true;
-
-    function check() {
-      if (value() <= 0) {
-        checking = false;
-        return;
-      }
-
-      if (performance.now() - lastChangeTime >= THRESHOLD_MS) {
-        _setValue(0);
-        checking = false;
-        return;
-      }
-      setTimeout(check, THRESHOLD_MS);
+    if (!hardValue() && performance.now() - lastChangeTime >= THRESHOLD_MS) {
+      setValue_(0);
+      checking = false;
+      return;
     }
     setTimeout(check, THRESHOLD_MS);
   }
 
-  function increase() {
-    setValue(value() + 1);
+  function setValue(value: number) {
+    value = Math.max(value, 0);
+    setValue_(value);
+    lastChangeTime = performance.now();
+
+    if (!checking && value) {
+      checking = true;
+      setTimeout(check, THRESHOLD_MS);
+    }
+  }
+
+  function setHardValue(hardValue: number) {
+    hardValue = Math.max(hardValue, 0);
+    setHardValue_(hardValue);
+    lastChangeTime = performance.now();
+
+    if (!checking && !hardValue && value()) {
+      setTimeout(check, THRESHOLD_MS);
+    }
+  }
+
+  function increase(hard?: boolean) {
+    if (hard) {
+      setHardValue(hardValue() + 1);
+    } else {
+      setValue(value() + 1);
+    }
   }
   function decrease() {
-    setValue(value() - 1);
+    if (hardValue()) {
+      setHardValue(hardValue() - 1);
+    } else {
+      setValue(value() - 1);
+    }
   }
   function reset() {
     setValue(0);
+    setHardValue(0);
   }
 
-  return [value, { increase, decrease, reset }] as const;
+  return [
+    () => value() + hardValue(),
+    { increase, decrease, reset },
+  ] as const;
 }

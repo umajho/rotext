@@ -12,10 +12,10 @@ export const NavBar: Component = () => {
         <Dropdown
           summary={
             <>
-              团岛计划<HiSolidChevronDown size={16} />
+              团岛计划
             </>
           }
-          buttonClass="btn-ghost"
+          labelClass="btn-ghost"
           contentClass="border-[0.5px] border-black"
         >
           <DropdownItem>

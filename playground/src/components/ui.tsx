@@ -1,5 +1,13 @@
-import { Component, JSX, onMount, Show } from "solid-js";
-import { HiOutlineXCircle } from "solid-icons/hi";
+import {
+  Component,
+  createEffect,
+  createSignal,
+  JSX,
+  on,
+  onMount,
+  Show,
+} from "solid-js";
+import { HiOutlineXCircle, HiSolidChevronDown } from "solid-icons/hi";
 
 export const Card: Component<{ children: JSX.Element; class?: string }> = (
   props,
@@ -33,13 +41,56 @@ export const Tabs: Component<{ children: JSX.Element; class?: string }> = (
   return <div class={`tabs ${props.class ?? ""}`}>{props.children}</div>;
 };
 
-export const Tab: Component<{ children: JSX.Element; isActive?: boolean }> = (
+export const Tab: Component<
+  {
+    children: JSX.Element;
+    isActive?: boolean;
+    onClick?: (ev: MouseEvent) => void;
+  }
+> = (
   props,
 ) => {
+  const classes = () =>
+    [
+      props.isActive ? "tab-active" : "",
+      props.onClick ? "" : "cursor-auto",
+    ].join(" ");
+
   return (
-    <div class={`tab tab-bordered ${props.isActive ? "tab-active" : ""}`}>
+    <div
+      class={`tab tab-bordered ${classes()}`}
+      onClick={props.onClick}
+    >
       {props.children}
     </div>
+  );
+};
+
+export const TabWithDropdown: Component<
+  {
+    summary: JSX.Element;
+    isActive?: boolean;
+    children: JSX.Element;
+    onClick?: () => void;
+  }
+> = (props) => {
+  const [labelEl, setLabelEl] = createSignal<HTMLElement>();
+
+  return (
+    <Tab
+      isActive={props.isActive}
+      onClick={props.isActive ? props.onClick : null}
+    >
+      <Dropdown
+        setLabelRef={setLabelEl}
+        summary={props.summary}
+        labelAsButton={false}
+        labelClass="text-xs cursor-pointer"
+        disabled={!props.isActive}
+      >
+        {props.children}
+      </Dropdown>
+    </Tab>
   );
 };
 
@@ -87,18 +138,36 @@ export const Loading: Component = () => {
 
 export const Dropdown: Component<
   {
+    setLabelRef?: (v: HTMLLabelElement) => void;
     summary: JSX.Element;
     children: JSX.Element;
-    buttonClass?: string;
+    labelAsButton?: boolean;
+    labelClass?: string;
     contentClass?: string;
+    disabled?: boolean;
   }
 > = (props) => {
+  props.labelAsButton ??= true;
+  props.disabled ??= false;
+
   let labelEl: HTMLLabelElement;
   let ulEl: HTMLUListElement;
 
+  let isOpen = false;
+
+  createEffect(on([() => props.disabled], () => {
+    if (props.disabled) {
+      isOpen = false;
+    }
+  }));
+
+  const labelButtonClass = () =>
+    props.labelAsButton ? "btn" : "inline-flex gap-1 cursor-pointer";
+
   onMount(() => {
-    let isOpen = false;
     window.addEventListener("click", (ev) => {
+      if (props.disabled) return;
+
       if (!isOpen) {
         if (ev.target === labelEl) {
           isOpen = true;
@@ -109,20 +178,25 @@ export const Dropdown: Component<
       ulEl.blur();
       isOpen = false;
     }, { capture: true });
+
+    props.setLabelRef?.(labelEl);
   });
 
   return (
     <div class="dropdown">
       <label
         ref={labelEl}
-        tabindex="0"
-        class={`btn ${props.buttonClass ?? ""}`}
+        tabindex={!props.disabled && "0"}
+        class={`${labelButtonClass()} ${props.labelClass ?? ""}`}
       >
         {props.summary}
+        <HiSolidChevronDown
+          style={{ "visibility": props.disabled ? "hidden" : null }}
+        />
       </label>
       <ul
         ref={ulEl}
-        tabindex="0"
+        tabindex={!props.disabled && "0"}
         class={`dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box ${
           props.contentClass ?? ""
         }`}
@@ -140,17 +214,26 @@ export const DropdownItem: Component<{ children: JSX.Element }> = (props) => {
 export const Button: Component<
   {
     children?: JSX.Element;
-    size?: "xs";
+    type?: "ghost";
+    size?: "sm" | "xs";
     hasOutline?: boolean;
+    active?: boolean;
+    class?: string;
     onClick?: () => void;
   }
 > = (props) => {
   const classes = () =>
     [
+      (props.type ? `btn-${props.type}` : "") satisfies
+        | ""
+        | "btn-ghost",
       (props.size ? `btn-${props.size}` : "") satisfies
         | ""
+        | "btn-sm"
         | "btn-xs",
       props.hasOutline ? "btn-outline" : "",
+      props.active ? "btn-active" : "",
+      props.class ?? "",
     ].join(" ");
 
   return (

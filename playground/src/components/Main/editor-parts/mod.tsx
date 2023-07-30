@@ -1,10 +1,28 @@
-import { createMemo, JSX, lazy, Suspense } from "solid-js";
+import {
+  createMemo,
+  createSignal,
+  JSX,
+  lazy,
+  Match,
+  Suspense,
+  Switch,
+} from "solid-js";
 
-import { Button, Loading } from "../../ui";
+import {
+  Button,
+  DropdownItem,
+  Loading,
+  Tab,
+  Tabs,
+  TabWithDropdown,
+} from "../../ui";
 
 import { EditorStore } from "../../../hooks/editor-store";
 
-const Editor = lazy(() => import("./Editor"));
+const EditorSolutions = {
+  CodeMirror6: lazy(() => import("./EditorByCodeMirror6")),
+  TextArea: lazy(() => import("./EditorByTextarea")),
+};
 
 const segmenter: Intl.Segmenter | null = (() => {
   if (window.Intl?.Segmenter) {
@@ -35,11 +53,46 @@ export function createEditorParts(
       `${lineCount()}行`,
     ].join(" | ");
 
+  const [solution, setSolution] = createSignal<"CM6" | "ta">("CM6");
+
   return {
     EditorTopBar: (
-      <div class="flex h-full justify-end items-center px-4 gap-2">
-        <span class="text-xs text-gray-500">{infoText()}</span>
-        <Button size="xs" onClick={() => store.text = ""}>清空</Button>
+      <div class="flex h-full justify-between items-center">
+        <div>
+          <Tabs>
+            <TabWithDropdown
+              summary={`编辑器（${solution()}）`}
+              isActive={true}
+            >
+              <DropdownItem>
+                <Button
+                  type="ghost"
+                  size="sm"
+                  class="normal-case"
+                  active={solution() === "CM6"}
+                  onClick={() => setSolution("CM6")}
+                >
+                  CodeMirror 6 (CM6)
+                </Button>
+              </DropdownItem>
+              <DropdownItem>
+                <Button
+                  type="ghost"
+                  size="sm"
+                  class="normal-case"
+                  active={solution() === "ta"}
+                  onClick={() => setSolution("ta")}
+                >
+                  textarea (ta)
+                </Button>
+              </DropdownItem>
+            </TabWithDropdown>
+          </Tabs>
+        </div>
+        <div class="flex items-center">
+          <span class="text-xs text-gray-500">{infoText()}</span>
+          <Button size="xs" onClick={() => store.text = ""}>清空</Button>
+        </div>
       </div>
     ),
     Editor: (
@@ -50,10 +103,20 @@ export function createEditorParts(
           </div>
         }
       >
-        <Editor
-          store={store}
-          class={`${editorSizeClass} overflow-y-scroll`}
-        />
+        <Switch>
+          <Match when={solution() === "CM6"}>
+            <EditorSolutions.CodeMirror6
+              store={store}
+              class={`${editorSizeClass} overflow-y-scroll`}
+            />
+          </Match>
+          <Match when={solution() === "ta"}>
+            <EditorSolutions.TextArea
+              store={store}
+              class={`${editorSizeClass} overflow-y-scroll`}
+            />
+          </Match>
+        </Switch>
       </Suspense>
     ),
   };
