@@ -9,9 +9,9 @@ import {
 import { Portal } from "solid-js/web";
 import { EditorView } from "codemirror";
 
-import { createCodeMirrorEditor } from "../code-mirror-editor";
-import { debounceEventHandler } from "../../utils/mod";
-import { ActiveLines, EditorStore } from "../../hooks/editor-store";
+import { createCodeMirrorEditor } from "../../code-mirror-editor";
+import { debounceEventHandler } from "../../../utils/mod";
+import { ActiveLines, EditorStore } from "../../../hooks/editor-store";
 
 let nextEditorID = 1;
 

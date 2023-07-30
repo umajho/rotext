@@ -13,21 +13,21 @@ import { customElement } from "solid-element";
 
 import "./DicexpPreview.scss";
 
-import { createWidgetComponent } from "../../../../hooks/widgets";
+import { createWidgetComponent } from "../../../../../hooks/widgets";
 import { PinButton, WidgetContainer } from "./support";
-import { gray500 } from "../../../../utils/color-consts";
+import { gray500 } from "../../../../../utils/color-consts";
 import {
   getComputedColor,
   getComputedCSSValueOfClass,
-} from "../../../../utils/styles";
-import FaSolidDice from "../../../icons";
-import { Loading } from "../../../ui";
+} from "../../../../../utils/styles";
+import FaSolidDice from "../../../../icons";
+import { Loading } from "../../../../ui";
 import { EvaluatingWorkerManager, EvaluationResult } from "dicexp";
-import { scopes } from "../../../../stores/scopes";
+import { scopes } from "../../../../../stores/scopes";
 
-import EvaluatingWorker from "../../../../workers/dicexp-evaluator?worker";
+import EvaluatingWorker from "../../../../../workers/dicexp-evaluator?worker";
 import { ErrorAlert } from "../ui";
-import { mouseDownNoDoubleClickToSelect } from "../../../../utils/events";
+import { mouseDownNoDoubleClickToSelect } from "../../../../../utils/events";
 
 const BACKGROUND_COLOR = getComputedColor(
   getComputedCSSValueOfClass("background-color", "previewer-background"),

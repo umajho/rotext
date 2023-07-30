@@ -1,14 +1,14 @@
 import { Component, createMemo, JSX } from "solid-js";
 import { customElement, noShadowDOM } from "solid-element";
 
-import { createWidgetComponent } from "../../../../hooks/widgets";
+import { createWidgetComponent } from "../../../../../hooks/widgets";
 import { PinButton, WidgetContainer } from "./support";
-import { gray500 } from "../../../../utils/color-consts";
+import { gray500 } from "../../../../../utils/color-consts";
 import {
   getComputedColor,
   getComputedCSSValueOfClass,
-} from "../../../../utils/styles";
-import { mouseDownNoDoubleClickToSelect } from "../../../../utils/events";
+} from "../../../../../utils/styles";
+import { mouseDownNoDoubleClickToSelect } from "../../../../../utils/events";
 
 const BACKGROUND_COLOR = getComputedColor(
   getComputedCSSValueOfClass("background-color", "previewer-background"),
