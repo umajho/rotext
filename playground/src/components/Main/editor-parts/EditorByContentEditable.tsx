@@ -70,14 +70,23 @@ const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
   function handleCopy(ev: ClipboardEvent, isCut?: boolean) {
     ev.preventDefault();
 
-    const range = document.getSelection().getRangeAt(0);
-    if (!range) return;
+    const selection = document.getSelection();
+    const range = selection.getRangeAt(0);
+
     const result = rangeToText(range);
 
     ev.clipboardData.setData("text/plain", result.text);
 
     if (isCut) {
-      range.deleteContents();
+      if (result.wholeLine) {
+        const range = new Range();
+        range.selectNode(result.wholeLine.nextSibling);
+        range.insertNode(result.wholeLine);
+
+        selection.empty();
+        selection.addRange(range);
+      }
+      document.execCommand("delete", false);
     }
   }
 
