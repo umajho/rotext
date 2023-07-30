@@ -5,9 +5,9 @@ import { BsPinFill } from "solid-icons/bs";
 import {
   DisplayMode,
   WidgetContainerProperties,
-} from "../../../../hooks/widgets";
-import { gray500 } from "../../../../utils/color-consts";
-import { computedColorToCSSValue } from "../../../../utils/styles";
+} from "../../../../../hooks/widgets";
+import { gray500 } from "../../../../../utils/color-consts";
+import { computedColorToCSSValue } from "../../../../../utils/styles";
 
 export const WidgetContainer: Component<WidgetContainerProperties> = (
   props,
