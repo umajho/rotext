@@ -21,7 +21,7 @@ import { EditorStore } from "../../../hooks/editor-store";
 
 const EditorSolutions = {
   CodeMirror6: lazy(() => import("./EditorByCodeMirror6")),
-  TextArea: lazy(() => import("./EditorByTextarea")),
+  TextArea: lazy(() => import("./EditorByTextArea")),
 };
 
 const segmenter: Intl.Segmenter | null = (() => {
