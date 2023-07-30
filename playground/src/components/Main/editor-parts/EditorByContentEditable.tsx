@@ -124,7 +124,7 @@ function rangeToText(range: Range): { text: string; wholeLine?: Node } {
   ) {
     const nodeValue = range.startContainer.nodeValue;
     if (range.startOffset === range.endOffset) {
-      // 在某一行没有选择地复制/剪贴，代表对象是那一整行
+      // 在某一行没有选择地复制/剪切，代表对象是那一整行
       return { text: nodeValue + "\n", wholeLine: range.startContainer };
     }
     return { text: nodeValue.slice(range.startOffset, range.endOffset) };
