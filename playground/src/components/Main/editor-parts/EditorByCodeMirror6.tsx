@@ -11,7 +11,7 @@ import { EditorView } from "codemirror";
 
 import { createCodeMirrorEditor } from "../../code-mirror-editor";
 import { debounceEventHandler } from "../../../utils/mod";
-import { ActiveLines, EditorStore } from "../../../hooks/editor-store";
+import { ActiveLines, EditorStore, TopLine } from "../../../hooks/editor-store";
 
 let nextEditorID = 1;
 
@@ -60,96 +60,38 @@ const Editor: Component<
   });
 
   onMount(() => {
-    function handleScroll(
-      ev: Event & { target: HTMLElement },
-    ) {
-      const _view = view();
-      if (!_view || ev.target !== scrollContainerDOM) return;
-
-      if (pendingAutoScrolls() > 0) {
-        setPendingAutoScrolls.decrease();
-        return;
-      }
-      setPendingAutoScrolls.reset();
-
-      let scrollTop = Math.max(ev.target.scrollTop - contentPadding()!.top, 0);
-
-      const topLineBlock = _view.lineBlockAtHeight(scrollTop);
-      const topLineInfo = _view.state.doc.lineAt(topLineBlock.from);
-      const offsetTop = topLineBlock.top;
-
-      const nextLineInfo = topLineInfo.number + 1 <= _view.state.doc.lines
-        ? _view.state.doc.line(topLineInfo.number + 1)
-        : null;
-      const nextLineBlock = nextLineInfo &&
-        _view.lineBlockAt(nextLineInfo.from);
-      const nextOffsetTop = nextLineBlock
-        ? nextLineBlock.top
-        : topLineBlock.bottom;
-
-      const progress = (scrollTop - offsetTop) /
-        (nextOffsetTop - offsetTop);
-      const line = Math.max(topLineInfo.number + progress, 1);
-
-      props.store.topLine = { number: line, setFrom: "editor" };
+    {
+      const { scrollHandler } = createScrollHandler({
+        view,
+        pendingAutoScrolls,
+        setPendingAutoScrolls,
+        contentPadding,
+        setTopLine: (v) => props.store.topLine = v,
+        scrollContainerDOM,
+      });
+      scrollContainerDOM.addEventListener(
+        "scroll",
+        debounceEventHandler(scrollHandler),
+      );
     }
 
-    scrollContainerDOM.addEventListener(
-      "scroll",
-      debounceEventHandler(handleScroll),
-    );
-
     {
-      function calculateBlankHeightAtEnd() {
-        const _view = view();
-        const _maxTopLine = _view.state.doc.lines;
-
-        const scrollEl = scrollContainerDOM;
-        if (!scrollEl) return;
-
-        const lineBlock = getLineBlock(_view, _maxTopLine);
-        const yMargin = lineBlock.height * (_maxTopLine - (_maxTopLine | 0));
-        const maxOffsetTop = lineBlock.top + yMargin;
-
-        const lastLineBlock = getLineBlock(_view, _view.state.doc.lines);
-
-        const heightUnscrollableFromPreview = Math.max(
-          maxOffsetTop + scrollEl.offsetHeight - lastLineBlock.bottom -
-            contentPadding().bottom,
-          0,
-        );
-        setBlankHeightAtEnd(heightUnscrollableFromPreview);
-      }
+      const { calculateBlankHeightAtEnd } = createBlankHeightAtEndCalculator({
+        view,
+        contentPadding,
+        setBlankHeightAtEnd,
+        scrollContainerDOM,
+      });
 
       calculateBlankHeightAtEnd();
       new ResizeObserver(calculateBlankHeightAtEnd).observe(scrollContainerDOM);
     }
 
-    {
-      let justMounted = true;
-      let lastTopLineFromPreview: number | null = null;
-      createEffect(on([() => props.store.topLine], (_, prev) => {
-        const topLineData = props.store.topLine;
-        if (justMounted) {
-          justMounted = false;
-          if (topLineData.number === 1) return;
-        } else if (!topLineData.setFrom || topLineData.setFrom === "editor") {
-          lastTopLineFromPreview = null;
-          return;
-        }
-
-        if (lastTopLineFromPreview === topLineData.number) {
-          return;
-        }
-        lastTopLineFromPreview = topLineData.number;
-
-        scrollTopLineTo(view(), topLineData.number, {
-          beforeDispatch: () => {
-            setPendingAutoScrolls.increase(!prev);
-          },
-        });
-      }));
-    }
+    createTopLineAutoScroller({
+      view,
+      topLine: () => props.store.topLine,
+      setPendingAutoScrolls,
+    });
   });
 
   return (
@@ -170,6 +112,118 @@ const Editor: Component<
   );
 };
 export default Editor;
+
+function createScrollHandler(
+  opts: {
+    view: () => EditorView;
+    pendingAutoScrolls: () => number;
+    setPendingAutoScrolls: { decrease: () => void; reset: () => void };
+    contentPadding: () => { top: number };
+    setTopLine: (v: TopLine) => void;
+    scrollContainerDOM: HTMLElement;
+  },
+) {
+  function handleScroll(
+    ev: Event & { target: HTMLElement },
+  ) {
+    const view = opts.view();
+    if (!view || ev.target !== opts.scrollContainerDOM) return;
+
+    if (opts.pendingAutoScrolls() > 0) {
+      opts.setPendingAutoScrolls.decrease();
+      return;
+    }
+    opts.setPendingAutoScrolls.reset();
+
+    let scrollTop = Math.max(
+      ev.target.scrollTop - opts.contentPadding()!.top,
+      0,
+    );
+
+    const topLineBlock = view.lineBlockAtHeight(scrollTop);
+    const topLineInfo = view.state.doc.lineAt(topLineBlock.from);
+    const offsetTop = topLineBlock.top;
+
+    const nextLineInfo = topLineInfo.number + 1 <= view.state.doc.lines
+      ? view.state.doc.line(topLineInfo.number + 1)
+      : null;
+    const nextLineBlock = nextLineInfo &&
+      view.lineBlockAt(nextLineInfo.from);
+    const nextOffsetTop = nextLineBlock
+      ? nextLineBlock.top
+      : topLineBlock.bottom;
+
+    const progress = (scrollTop - offsetTop) /
+      (nextOffsetTop - offsetTop);
+    const line = Math.max(topLineInfo.number + progress, 1);
+
+    opts.setTopLine({ number: line, setFrom: "editor" });
+  }
+
+  return {
+    scrollHandler: handleScroll,
+  };
+}
+
+function createBlankHeightAtEndCalculator(opts: {
+  view: () => EditorView;
+  contentPadding: () => { bottom: number };
+  setBlankHeightAtEnd: (v: number) => void;
+  scrollContainerDOM: HTMLElement;
+}) {
+  function calculateBlankHeightAtEnd() {
+    const view = opts.view();
+    const maxTopLine = view.state.doc.lines;
+
+    const scrollEl = opts.scrollContainerDOM;
+    if (!scrollEl) return;
+
+    const lineBlock = getLineBlock(view, maxTopLine);
+    const yMargin = lineBlock.height * (maxTopLine - (maxTopLine | 0));
+    const maxOffsetTop = lineBlock.top + yMargin;
+
+    const lastLineBlock = getLineBlock(view, view.state.doc.lines);
+
+    const heightUnscrollableFromPreview = Math.max(
+      maxOffsetTop + scrollEl.offsetHeight - lastLineBlock.bottom -
+        opts.contentPadding().bottom,
+      0,
+    );
+    opts.setBlankHeightAtEnd(heightUnscrollableFromPreview);
+  }
+
+  return { calculateBlankHeightAtEnd };
+}
+
+function createTopLineAutoScroller(opts: {
+  view: () => EditorView;
+  topLine: () => TopLine;
+  setPendingAutoScrolls: { increase: (hard?: boolean) => void };
+}) {
+  let justMounted = true;
+  let lastTopLineFromPreview: number | null = null;
+  createEffect(on([opts.topLine], (_, prev) => {
+    const topLineData = opts.topLine();
+    if (justMounted) {
+      justMounted = false;
+      if (topLineData.number === 1) return;
+    } else if (!topLineData.setFrom || topLineData.setFrom === "editor") {
+      lastTopLineFromPreview = null;
+      return;
+    }
+
+    if (lastTopLineFromPreview === topLineData.number) {
+      return;
+    }
+    lastTopLineFromPreview = topLineData.number;
+
+    scrollTopLineTo(opts.view(), topLineData.number, {
+      beforeDispatch: () => {
+        opts.setPendingAutoScrolls.increase(!prev);
+      },
+    });
+  }));
+}
 
 function scrollTopLineTo(
   view: EditorView,
