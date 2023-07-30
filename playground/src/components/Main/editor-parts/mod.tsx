@@ -1,4 +1,5 @@
 import {
+  Component,
   createMemo,
   createSignal,
   JSX,
@@ -22,6 +23,7 @@ import { EditorStore } from "../../../hooks/editor-store";
 const EditorSolutions = {
   CodeMirror6: lazy(() => import("./EditorByCodeMirror6")),
   TextArea: lazy(() => import("./EditorByTextArea")),
+  ContentEditable: lazy(() => import("./EditorByContentEditable")),
 };
 
 const segmenter: Intl.Segmenter | null = (() => {
@@ -53,7 +55,7 @@ export function createEditorParts(
       `${lineCount()}行`,
     ].join(" | ");
 
-  const [solution, setSolution] = createSignal<"CM6" | "ta">("CM6");
+  const [solution, setSolution] = createSignal<"CM6" | "ce" | "ta">("CM6");
 
   return {
     EditorTopBar: (
@@ -64,28 +66,24 @@ export function createEditorParts(
               summary={`编辑器（${solution()}）`}
               isActive={true}
             >
-              <DropdownItem>
-                <Button
-                  type="ghost"
-                  size="sm"
-                  class="normal-case"
-                  active={solution() === "CM6"}
-                  onClick={() => setSolution("CM6")}
-                >
-                  CodeMirror 6 (CM6)
-                </Button>
-              </DropdownItem>
-              <DropdownItem>
-                <Button
-                  type="ghost"
-                  size="sm"
-                  class="normal-case"
-                  active={solution() === "ta"}
-                  onClick={() => setSolution("ta")}
-                >
-                  textarea (ta)
-                </Button>
-              </DropdownItem>
+              <DropDownItemForSolution
+                solutionID="CM6"
+                solutionFullName="CodeMirror 6"
+                currentSolution={solution}
+                setCurrentSolution={setSolution}
+              />
+              <DropDownItemForSolution
+                solutionID="ce"
+                solutionFullName="contenteditable"
+                currentSolution={solution}
+                setCurrentSolution={setSolution}
+              />
+              <DropDownItemForSolution
+                solutionID="ta"
+                solutionFullName="textarea"
+                currentSolution={solution}
+                setCurrentSolution={setSolution}
+              />
             </TabWithDropdown>
           </Tabs>
         </div>
@@ -110,6 +108,12 @@ export function createEditorParts(
               class={`${editorSizeClass} overflow-y-scroll`}
             />
           </Match>
+          <Match when={solution() === "ce"}>
+            <EditorSolutions.ContentEditable
+              store={store}
+              class={`${editorSizeClass} overflow-y-scroll`}
+            />
+          </Match>
           <Match when={solution() === "ta"}>
             <EditorSolutions.TextArea
               store={store}
@@ -121,3 +125,26 @@ export function createEditorParts(
     ),
   };
 }
+
+export const DropDownItemForSolution: Component<
+  {
+    solutionID: string;
+    solutionFullName: string;
+    currentSolution: () => string;
+    setCurrentSolution: (v: string) => void;
+  }
+> = (props) => {
+  return (
+    <DropdownItem>
+      <Button
+        type="ghost"
+        size="sm"
+        class="normal-case"
+        active={props.currentSolution() === props.solutionID}
+        onClick={() => props.setCurrentSolution(props.solutionID)}
+      >
+        {props.solutionFullName} ({props.solutionID})
+      </Button>
+    </DropdownItem>
+  );
+};
