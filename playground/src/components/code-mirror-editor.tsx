@@ -21,7 +21,7 @@ export function createCodeMirrorEditor(
 
   let dispatchedBySelf = false, changedBySelf = false;
   createEffect(() => {
-    const doc = props.doc;
+    const doc = props.doc();
 
     if (changedBySelf) {
       changedBySelf = false;
@@ -33,7 +33,7 @@ export function createCodeMirrorEditor(
 
     dispatchedBySelf = true;
     view_.dispatch({
-      changes: { from: 0, to: view_.state.doc.length, insert: doc() },
+      changes: { from: 0, to: view_.state.doc.length, insert: doc },
     });
   });
 
