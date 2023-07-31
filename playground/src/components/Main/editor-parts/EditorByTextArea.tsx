@@ -1,3 +1,5 @@
+import "./one-dark.scss";
+
 import { Component } from "solid-js";
 
 import { EditorStore } from "../../../hooks/editor-store";
@@ -9,7 +11,7 @@ const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
 
   return (
     <textarea
-      class={`${props.class} resize-none`}
+      class={`one-dark px-4 ${props.class} resize-none focus:!outline-none`}
       value={props.store.text}
       onInput={handleChange}
     />
