@@ -27,13 +27,39 @@ const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
     props.store.text = nodesToText([...currentTarget.childNodes]);
   }
 
+  const {
+    beforeInputHandler,
+    pasteHandle,
+    copyHandler,
+    cutHandler,
+  } = createBasicEditorFunctionalities(() => el);
+
+  return (
+    <div
+      ref={el}
+      class={`one-dark px-4 ${props.class} resize-none focus:!outline-none`}
+      contentEditable
+      onInput={handleChange}
+      onBeforeInput={beforeInputHandler}
+      onPaste={pasteHandle}
+      onCopy={copyHandler}
+      onCut={cutHandler}
+    />
+  );
+};
+export default Editor;
+
+/**
+ * @param containerEl 无需追踪，需要是闭包纯粹是因为调用时 ref 尚未被赋值。
+ */
+function createBasicEditorFunctionalities(containerEl: () => HTMLElement) {
   let draggingFromSelf = false;
   document.addEventListener("dragstart", handleDragStart);
   onCleanup(() => {
     document.removeEventListener("dragstart", handleDragStart);
   });
   function handleDragStart(ev: DragEvent) {
-    draggingFromSelf = ev.target === el;
+    draggingFromSelf = ev.target === containerEl();
   }
 
   /**
@@ -92,20 +118,13 @@ const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
     }
   }
 
-  return (
-    <div
-      ref={el}
-      class={`one-dark px-4 ${props.class} resize-none focus:!outline-none`}
-      contentEditable
-      onInput={handleChange}
-      onBeforeInput={handleBeforeInput}
-      onPaste={handlePaste}
-      onCopy={handleCopy}
-      onCut={(ev) => handleCopy(ev, true)}
-    />
-  );
-};
-export default Editor;
+  return {
+    beforeInputHandler: handleBeforeInput,
+    pasteHandle: handlePaste,
+    copyHandler: handleCopy,
+    cutHandler: (ev) => handleCopy(ev, true),
+  };
+}
 
 function nodesToText(nodes: Node[]): string {
   return nodes
