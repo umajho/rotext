@@ -1,3 +1,5 @@
+import "./one-dark.scss";
+
 import { Component, createEffect, on, onCleanup, onMount } from "solid-js";
 
 import { EditorStore } from "../../../hooks/editor-store";
@@ -93,7 +95,7 @@ const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
   return (
     <div
       ref={el}
-      class={` ${props.class} resize-none`}
+      class={`one-dark px-4 ${props.class} resize-none focus:!outline-none`}
       contentEditable
       onInput={handleChange}
       onBeforeInput={handleBeforeInput}
