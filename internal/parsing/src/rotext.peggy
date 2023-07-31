@@ -190,13 +190,18 @@ Line
     { return joinInlines(inlines.flat() /* 用于特定情况下展平 `InlineContainer` */); }
 
 Inline
+  = InlineElementWithoutContainer
+  / InlineContainer
+  / InlineCharacter
+
+InlineElementWithoutContainer
   = Escape
   / Reference
   / Dicexp
   / Code
-  / InlineContainer
   / AutoLink
-  / [^\r\n]
+
+InlineCharacter = [^\r\n]
 
 Escape
   = "\\" @.
@@ -288,14 +293,22 @@ InlineContainerInner
   / RubyInner
 
 RubyInner
-  = base:(![(（] @Inline)* pLeft:[(（] text:(!([)）] "]") @Inline)* pRight:[)）]
+  = 
+    base:(!(lParen / rParen "]") @InlineInRuby)*
+    lParen:lParen
+    text:(!(rParen "]") @InlineInRuby)+
+    rParen:rParen
     {
       return create.ruby(
         joinInlines(base),
         joinInlines(text),
-        [pLeft, pRight],
+        [lParen, rParen],
       );
     }
+lParen = [(（]
+rParen = [)）]
+
+InlineInRuby = Escape / InlineCharacter
 
 AutoLink
   = &{ return offset() === 0 || !/[a-zA-Z]/.test(input[offset()-1]); }
