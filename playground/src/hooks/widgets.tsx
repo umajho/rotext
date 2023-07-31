@@ -143,7 +143,7 @@ export function createWidgetComponent(parts: {
       removed: () => displayMode() === "closed",
     }, () => wContainerEl);
 
-    if (widgetOwner().level === 1) {
+    if (widgetOwner().level === 1 && !primeEl.closest("scratch-off")) {
       autoOpen(opts.autoOpenShouldCollapse);
     }
   }
