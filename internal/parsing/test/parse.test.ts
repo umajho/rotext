@@ -404,10 +404,10 @@ describe("解析", () => {
       });
       describe("多行的块引用", () => {
         theseCasesAreOk([
-          {
-            input: "> foo\n> bar",
+          ...["> foo\n> bar", "> foo\n> bar\n>"].map((input) => ({
+            input,
             expected: [create.QUOTE([create.P(["foo", create.br(), "bar"])])],
-          },
+          })),
           {
             input: "> foo\n> bar\n> \n> baz",
             expected: [

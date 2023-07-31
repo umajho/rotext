@@ -91,7 +91,7 @@ ContainersLine
         ? { prefix: prefix.join(""), line, location: location() }
         : { prefix: prefix.join(""), line };
     }
-ContainerPrefix = @[>#*;:] spacesOrNewLine
+ContainerPrefix = @[>#*;:] spacesOrLineEnd
 
 Table
   = TableBegin /*无视首行后边的内容*/ @TableRows __ TableEnd
@@ -144,7 +144,7 @@ TableRowFragment
     { return [...initCells, ...(lastCell ? [lastCell] : [])] }
 
 TableInlineCell
-  = symbol:TableCellBegin spacesOrNewLine
+  = symbol:TableCellBegin spacesOrLineEnd
     inlines:(!TableCellBegin @Inline)*
   {
     let hasSpacesAtEnd;
@@ -159,7 +159,7 @@ TableInlineCell
     return cell;
   }
 TableLastCell
-  = symbol:TableCellBegin spacesOrNewLine
+  = symbol:TableCellBegin spacesOrLineEnd
     inlines:Inline* _
     blocks:BlocksInTableCell?
     {
@@ -301,4 +301,4 @@ AutoLink
 _ = [ \t]*
 __ = [ \t\r\n]*
 br = "\r\n" / "\r" / "\n"
-spacesOrNewLine = [ \t]+ / &br
+spacesOrLineEnd = [ \t]+ / &(br / !.)
