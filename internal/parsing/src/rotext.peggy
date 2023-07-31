@@ -279,22 +279,12 @@ InlineContainer
     }
 
 InlineContainerInner
-  = l:['~|] inlines:(!(['~|] "]") @Inline)* r:['~|]
-    {
-      if (l !== r) {
-        inlines.splice(0, 0, l);
-        inlines.push(r);
-        return inlines;
-      }
-      switch (l) {
-        case "'": // Bold
-          return create.em("strong", joinInlines(inlines));
-        case "~": // Strikethrough
-          return create.s(joinInlines(inlines));
-        case "|": // Spoiler
-          return create.spoiler(joinInlines(inlines));
-      }
-    }
+  = "'" inlines:(!"']" @Inline)* "'" // Bold
+    { return create.em("strong", joinInlines(inlines)); }
+  / "~" inlines:(!"~]" @Inline)* "~" // Strikethrough
+    { return create.s(joinInlines(inlines)); }
+  / "|" inlines:(!"|]" @Inline)* "|" // Spoiler
+    { return create.spoiler(joinInlines(inlines)); }
   / RubyInner
 
 RubyInner
