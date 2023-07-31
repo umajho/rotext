@@ -187,17 +187,14 @@ BlocksInTableCell
 
 Line
   = _ inlines:Inline+
-    { return joinInlines(inlines); }
+    { return joinInlines(inlines.flat() /* 用于特定情况下展平 `InlineContainer` */); }
 
 Inline
   = Escape
   / Reference
   / Dicexp
   / Code
-  / Bold
-  / Strikethrough
-  / Spoiler
-  / Ruby
+  / InlineContainer
   / AutoLink
   / [^\r\n]
 
@@ -270,20 +267,38 @@ CodeText
   = @"`" "`"
   / $[^`]+
 
-Bold
-  = "['" inlines:(!"']" @Inline)* "']"
-    { return create.em("strong", joinInlines(inlines)); }
+InlineContainer
+  = "[" inner:InlineContainerInner "]"
+    {
+      if (Array.isArray(inner)) { // 没有任何行内容器时，外边的中括号要保留
+        inner.splice(0, 0, "[");
+        inner.push("]");
+        return inner;
+      }
+      return inner;
+    }
 
-Strikethrough
-  = "[~" inlines:(!"~]" @Inline)* "~]"
-    { return create.s(joinInlines(inlines)); }
+InlineContainerInner
+  = l:['~|] inlines:(!(['~|] "]") @Inline)* r:['~|]
+    {
+      if (l !== r) {
+        inlines.splice(0, 0, l);
+        inlines.push(r);
+        return inlines;
+      }
+      switch (l) {
+        case "'": // Bold
+          return create.em("strong", joinInlines(inlines));
+        case "~": // Strikethrough
+          return create.s(joinInlines(inlines));
+        case "|": // Spoiler
+          return create.spoiler(joinInlines(inlines));
+      }
+    }
+  / RubyInner
 
-Spoiler
-  = "[|" inlines:(!"|]" @Inline)* "|]"
-    { return create.spoiler(joinInlines(inlines)); }
-
-Ruby
-  = "[" base:(![(（] @Inline)* pLeft:[(（] text:(!([)）] "]") @Inline)* pRight:[)）] "]"
+RubyInner
+  = base:(![(（] @Inline)* pLeft:[(（] text:(!([)）] "]") @Inline)* pRight:[)）]
     {
       return create.ruby(
         joinInlines(base),
