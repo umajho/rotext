@@ -92,6 +92,19 @@ const Editor: Component<
       topLine: () => props.store.topLine,
       setPendingAutoScrolls,
     });
+
+    {
+      // const startLine = props.store.activeLines[0];
+      // if (startLine !== 1) {
+      //   const view_ = view();
+      //   const lineStartPos = view_.state.doc.line(startLine).from;
+      //   view_.dispatch({ selection: { anchor: lineStartPos } });
+      // }
+
+      // FIXME: 不知为何，上述注释掉的代码无法（大体）复位编辑器的活动行。
+      //        现在只好退而求其次，通过在挂在时将活动行数设置为 1 保持活动行的同步。
+      props.store.activeLines = [1, 1];
+    }
   });
 
   return (
