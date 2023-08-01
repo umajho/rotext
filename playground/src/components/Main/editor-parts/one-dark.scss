@@ -27,9 +27,12 @@
 // see: https://github.com/atom/one-dark-syntax
 // see: https://github.com/codemirror/theme-one-dark
 
+.one-dark-background {
+  background-color: #282c34;
+}
+
 .one-dark {
   color: #abb2bf;
-  background-color: #282c34;
   caret-color: #528bff;
 
   &::selection,

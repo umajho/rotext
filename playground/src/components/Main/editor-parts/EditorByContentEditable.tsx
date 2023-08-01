@@ -1,11 +1,19 @@
 import "./one-dark.scss";
 
-import { Component, createEffect, on, onCleanup, onMount } from "solid-js";
+import {
+  Component,
+  createEffect,
+  createSignal,
+  on,
+  onCleanup,
+  onMount,
+} from "solid-js";
 
-import { EditorStore } from "../../../hooks/editor-store";
+import { ActiveLines, EditorStore } from "../../../hooks/editor-store";
+import { binarySearch } from "../../../utils/algorithm";
 
 const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
-  let el: HTMLDivElement;
+  let scrollContainerEl: HTMLDivElement, contentContainerEl: HTMLDivElement;
 
   let changing = false;
 
@@ -15,7 +23,7 @@ const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
         changing = false;
         return;
       }
-      el.innerHTML = textToInlineHTML(props.store.text);
+      contentContainerEl.innerHTML = textToInlineHTML(props.store.text);
     }));
   });
 
@@ -32,19 +40,38 @@ const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
     pasteHandle,
     copyHandler,
     cutHandler,
-  } = createBasicEditorFunctionalities(() => el);
+  } = createBasicEditorFunctionalities(() => contentContainerEl);
+
+  onMount(() => {
+    const lookupData = createLookupList({
+      textChanged: () => props.store.text,
+      scrollContainerSizeChanged: createResizeNotifier(scrollContainerEl),
+      contentContainerEl: contentContainerEl,
+    });
+
+    createActiveLinesTracker({
+      lookupData,
+      contentContainerEl,
+      setActiveLines: (v) => props.store.activeLines = v,
+    });
+  });
 
   return (
     <div
-      ref={el}
-      class={`one-dark px-4 ${props.class} resize-none focus:!outline-none`}
-      contentEditable
-      onInput={handleChange}
-      onBeforeInput={beforeInputHandler}
-      onPaste={pasteHandle}
-      onCopy={copyHandler}
-      onCut={cutHandler}
-    />
+      ref={scrollContainerEl}
+      class={`one-dark-background px-4 ${props.class}`}
+    >
+      <div
+        ref={contentContainerEl}
+        class="one-dark focus:!outline-none"
+        contentEditable
+        onInput={handleChange}
+        onBeforeInput={beforeInputHandler}
+        onPaste={pasteHandle}
+        onCopy={copyHandler}
+        onCut={cutHandler}
+      />
+    </div>
   );
 };
 export default Editor;
@@ -221,4 +248,143 @@ function textToInlineHTML(text: string): string {
   }
 
   return dummyEl.innerHTML;
+}
+
+interface LookupData {
+  /** NOTE: 第一行是索引为 0 的元素。 */
+  lines: LineData[];
+  offsetBottom: number;
+}
+
+interface LineData {
+  offsetTop: number;
+}
+
+function createLookupList(
+  opts: {
+    textChanged: () => void;
+    scrollContainerSizeChanged: () => void;
+    contentContainerEl: HTMLElement;
+  },
+) {
+  const [lookupData, setLookupData] = createSignal<LookupData>();
+
+  createEffect(on([opts.textChanged, opts.scrollContainerSizeChanged], () => {
+    const lineHeight = getLineHeightPx(opts.contentContainerEl);
+    const contentRect = opts.contentContainerEl.getBoundingClientRect();
+    const children = opts.contentContainerEl.children;
+    const lastNode = opts.contentContainerEl.lastChild;
+    const totalLines = children.length +
+      (lastNode?.nodeType === Node.TEXT_NODE ? 1 : 0);
+
+    const lines: LineData[] = [{ offsetTop: 0 }];
+    for (let i = 0; i < totalLines - 1; i++) {
+      const br = children[i];
+      const brBottom = br.getBoundingClientRect().bottom - contentRect.top;
+      const nextLineTop = Math.ceil(brBottom / lineHeight) * lineHeight;
+      lines.push({ offsetTop: nextLineTop });
+    }
+
+    setLookupData({
+      lines,
+      offsetBottom: contentRect.bottom - contentRect.top,
+    });
+  }));
+
+  return lookupData;
+}
+
+function getLineHeightPx(el: HTMLElement) {
+  return parseFloat(getComputedStyle(el).lineHeight);
+}
+
+function getBoundingClientTop(node: Node) {
+  const range = new Range();
+  range.selectNode(node);
+  return range.getBoundingClientRect().top;
+}
+
+function createResizeNotifier(el: HTMLElement) {
+  const [resized, notifyResize] = createNotifier();
+  const observer = new ResizeObserver(notifyResize);
+  observer.observe(el);
+  onCleanup(() => observer.disconnect());
+
+  return resized;
+}
+
+function createNotifier(): [() => void, () => void] {
+  const [signal, setSignal] = createSignal<boolean>();
+
+  return [
+    () => {
+      signal();
+      return;
+    },
+    () => setSignal(!signal()),
+  ];
+}
+
+function createActiveLinesTracker(
+  opts: {
+    lookupData: () => LookupData;
+    contentContainerEl: HTMLElement;
+    setActiveLines: (v: ActiveLines) => void;
+  },
+) {
+  function handleSelectionChange() {
+    const lookupData_ = opts.lookupData();
+    if (!lookupData_) return;
+
+    const selection = document.getSelection();
+    const range = selection.getRangeAt(0);
+    if (
+      range.commonAncestorContainer !== opts.contentContainerEl &&
+      range.endContainer.parentElement !== opts.contentContainerEl
+    ) {
+      return;
+    }
+
+    const startLineNumber = getLineNumberByY(
+      lookupData_.lines,
+      getNodeOffestTopInRangeAt(range, "start", opts.contentContainerEl),
+    );
+    const endLineNumber = getLineNumberByY(
+      lookupData_.lines,
+      getNodeOffestTopInRangeAt(range, "end", opts.contentContainerEl),
+    );
+
+    opts.setActiveLines([startLineNumber, endLineNumber]);
+  }
+
+  document.addEventListener("selectionchange", handleSelectionChange);
+  onCleanup(() =>
+    document.removeEventListener("selectionchange", handleSelectionChange)
+  );
+}
+
+function getNodeOffestTopInRangeAt(
+  range: Range,
+  position: "start" | "end",
+  containerEl: HTMLElement,
+) {
+  const node = range[`${position}Container`] === containerEl
+    ? containerEl.childNodes[range[`${position}Offset`]]
+    : range[`${position}Container`];
+
+  const containerTop = containerEl.getBoundingClientRect().top;
+  const clientTop = getBoundingClientTop(node);
+  return clientTop - containerTop;
+}
+
+function getLineNumberByY(lines: LineData[], y: number) {
+  const index = binarySearch(lines, (item, i) => {
+    if (item.offsetTop > y) return "less";
+
+    const nextItem = lines[i + 1];
+    if (!nextItem || y < nextItem.offsetTop) return true;
+    return "greater";
+  }) ?? 0;
+
+  return index + 1;
 }
