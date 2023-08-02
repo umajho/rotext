@@ -7,6 +7,7 @@ import {
   on,
   onCleanup,
   onMount,
+  Show,
 } from "solid-js";
 
 import { ActiveLines, EditorStore } from "../../../hooks/editor-store";
@@ -42,6 +43,10 @@ const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
     cutHandler,
   } = createBasicEditorFunctionalities(() => contentContainerEl);
 
+  const [activeLinesOffsets, setActiveLinesOffsets] = createSignal<
+    { topPx: number; bottomPx: number }
+  >();
+
   onMount(() => {
     const lookupData = createLookupList({
       textChanged: () => props.store.text,
@@ -54,16 +59,46 @@ const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
       contentContainerEl,
       setActiveLines: (v) => props.store.activeLines = v,
     });
+
+    createEffect(on([lookupData, () => props.store.activeLines], () => {
+      const lookupData_ = lookupData();
+      if (!lookupData_) return;
+
+      const [startLine, endLine] = props.store.activeLines;
+
+      const startLineOffsetTop = lookupData_.lines[startLine - 1].offsetTop;
+      const endLineOffsetBottom = endLine < lookupData_.lines.length
+        ? lookupData_.lines[endLine - 1 + 1].offsetTop
+        : contentContainerEl.getBoundingClientRect().height;
+
+      setActiveLinesOffsets({
+        topPx: startLineOffsetTop,
+        bottomPx: endLineOffsetBottom,
+      });
+    }));
   });
 
   return (
     <div
       ref={scrollContainerEl}
-      class={`one-dark-background px-4 ${props.class}`}
+      class={`one-dark-background ${props.class}`}
     >
+      <div class="relative">
+        <Show when={activeLinesOffsets()}>
+          {(offsets) => (
+            <div
+              class="one-dark-background-active-lines absolute w-full"
+              style={{
+                top: `${offsets().topPx}px`,
+                height: `${offsets().bottomPx - offsets().topPx}px`,
+              }}
+            />
+          )}
+        </Show>
+      </div>
       <div
         ref={contentContainerEl}
-        class="one-dark focus:!outline-none"
+        class="relative one-dark focus:!outline-none mx-4"
         contentEditable
         onInput={handleChange}
         onBeforeInput={beforeInputHandler}
