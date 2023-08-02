@@ -4,6 +4,7 @@ import {
   Component,
   createEffect,
   createSignal,
+  JSX,
   on,
   onCleanup,
   onMount,
@@ -44,9 +45,7 @@ const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
     cutHandler,
   } = createBasicEditorFunctionalities(() => contentContainerEl);
 
-  const [activeLinesOffsets, setActiveLinesOffsets] = createSignal<
-    { topPx: number; bottomPx: number }
-  >();
+  const [highlightElement, setHighlightElement] = createSignal<JSX.Element>();
 
   onMount(() => {
     const lookupData = createLookupList({
@@ -61,23 +60,12 @@ const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
       setActiveLines: (v) => props.store.activeLines = v,
     });
 
-    createEffect(on([lookupData, () => props.store.activeLines], () => {
-      const lookupData_ = lookupData();
-      if (!lookupData_) return;
-      if (!props.store.activeLines) return;
-
-      const [startLine, endLine] = props.store.activeLines;
-
-      const startLineOffsetTop = lookupData_.lines[startLine - 1].offsetTop;
-      const endLineOffsetBottom = endLine < lookupData_.lines.length
-        ? lookupData_.lines[endLine - 1 + 1].offsetTop
-        : contentContainerEl.getBoundingClientRect().height;
-
-      setActiveLinesOffsets({
-        topPx: startLineOffsetTop,
-        bottomPx: endLineOffsetBottom,
-      });
-    }));
+    createHighlight({
+      activeLines: () => props.store.activeLines,
+      lookupData,
+      setHighlightElement,
+      contentContainerEl,
+    });
   });
 
   return (
@@ -86,17 +74,7 @@ const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
       class={`one-dark-background ${props.class}`}
     >
       <div class="relative">
-        <Show when={activeLinesOffsets()}>
-          {(offsets) => (
-            <div
-              class="one-dark-background-active-lines absolute w-full"
-              style={{
-                top: `${offsets().topPx}px`,
-                height: `${offsets().bottomPx - offsets().topPx}px`,
-              }}
-            />
-          )}
-        </Show>
+        {highlightElement()}
       </div>
       <div
         ref={contentContainerEl}
@@ -401,6 +379,49 @@ function createActiveLinesTracker(
   onCleanup(() =>
     document.removeEventListener("selectionchange", debouncedHandler)
   );
+}
+
+function createHighlight(opts: {
+  activeLines: () => ActiveLines;
+  lookupData: () => LookupData;
+  setHighlightElement: (v: () => JSX.Element) => void;
+  contentContainerEl: HTMLElement;
+}) {
+  const [activeLinesOffsets, setActiveLinesOffsets] = createSignal<
+    { topPx: number; bottomPx: number }
+  >();
+
+  createEffect(on([opts.lookupData, opts.activeLines], () => {
+    const lookupData_ = opts.lookupData();
+    if (!lookupData_) return;
+    if (!opts.activeLines()) return;
+
+    const [startLine, endLine] = opts.activeLines();
+
+    const startLineOffsetTop = lookupData_.lines[startLine - 1].offsetTop;
+    const endLineOffsetBottom = endLine < lookupData_.lines.length
+      ? lookupData_.lines[endLine - 1 + 1].offsetTop
+      : opts.contentContainerEl.getBoundingClientRect().height;
+
+    setActiveLinesOffsets({
+      topPx: startLineOffsetTop,
+      bottomPx: endLineOffsetBottom,
+    });
+  }));
+
+  opts.setHighlightElement(() => (
+    <Show when={activeLinesOffsets()}>
+      {(offsets) => (
+        <div
+          class="one-dark-background-active-lines absolute w-full"
+          style={{
+            top: `${offsets().topPx}px`,
+            height: `${offsets().bottomPx - offsets().topPx}px`,
+          }}
+        />
+      )}
+    </Show>
+  ));
 }
 
 function getNodeOffestTopInRangeAt(
