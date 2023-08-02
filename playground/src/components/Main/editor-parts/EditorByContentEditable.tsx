@@ -12,6 +12,7 @@ import {
 
 import { ActiveLines, EditorStore } from "../../../hooks/editor-store";
 import { binarySearch } from "../../../utils/algorithm";
+import { debounceEventHandler } from "../../../utils/mod";
 
 const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
   let scrollContainerEl: HTMLDivElement, contentContainerEl: HTMLDivElement;
@@ -373,6 +374,7 @@ function createActiveLinesTracker(
     if (!lookupData_) return;
 
     const selection = document.getSelection();
+    if (!selection.rangeCount) return;
     const range = selection.getRangeAt(0);
     if (
       range.commonAncestorContainer !== opts.contentContainerEl &&
@@ -393,9 +395,11 @@ function createActiveLinesTracker(
     opts.setActiveLines([startLineNumber, endLineNumber]);
   }
 
-  document.addEventListener("selectionchange", handleSelectionChange);
+  const debouncedHandler = debounceEventHandler(handleSelectionChange);
+
+  document.addEventListener("selectionchange", debouncedHandler);
   onCleanup(() =>
-    document.removeEventListener("selectionchange", handleSelectionChange)
+    document.removeEventListener("selectionchange", debouncedHandler)
   );
 }
 
