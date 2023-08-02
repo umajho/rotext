@@ -14,6 +14,7 @@ import {
 import { ActiveLines, EditorStore } from "../../../hooks/editor-store";
 import { binarySearch } from "../../../utils/algorithm";
 import { debounceEventHandler } from "../../../utils/mod";
+import { createAutoResetCounter } from "../../../hooks/auto-reset-counter";
 
 const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
   let scrollContainerEl: HTMLDivElement, contentContainerEl: HTMLDivElement;
@@ -47,6 +48,8 @@ const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
 
   const [highlightElement, setHighlightElement] = createSignal<JSX.Element>();
 
+  const [scrollHandler, setScrollHandler] = createSignal<(ev: Event) => void>();
+
   onMount(() => {
     const lookupData = createLookupList({
       textChanged: () => props.store.text,
@@ -66,12 +69,61 @@ const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
       setHighlightElement,
       contentContainerEl,
     });
+
+    const [pendingAutoScrolls, setPendingAutoScrolls] =
+      createAutoResetCounter();
+
+    function handleScroll() {
+      if (pendingAutoScrolls()) {
+        setPendingAutoScrolls.decrease();
+        return;
+      }
+      setPendingAutoScrolls.reset();
+
+      // XXX: 没有算入内容顶部与滚动容器顶部之间空隙的高度（目前必定为 0）
+      const topY = Math.max(scrollContainerEl.scrollTop, 0);
+      const scrollLocal = getScrollLocalByY(lookupData(), topY);
+      const number = scrollLocal.line + scrollLocal.progress;
+
+      if (props.store.topLine.number === number) return;
+      props.store.topLine = { number, setFrom: "editor" };
+    }
+    setScrollHandler(() => debounceEventHandler(handleScroll));
+
+    createEffect(on([() => props.store.topLine], () => {
+      if (props.store.topLine.setFrom === "editor") return;
+
+      const lookupData_ = lookupData();
+      if (!lookupData_) return;
+
+      const line = props.store.topLine.number;
+      const lineInt = line | 0;
+      const offsetTop = lookupData_.lines[lineInt - 1].offsetTop;
+      const offsetBottom = lineInt < lookupData_.lines.length
+        ? lookupData_.lines[lineInt - 1 + 1].offsetTop
+        : lookupData_.offsetBottom;
+
+      // XXX: 没有考虑内容顶部与滚动容器顶部之间有空隙的情况
+      const newScrollTop = Math.min(
+        offsetTop + (offsetBottom - offsetTop) * (line - lineInt),
+        scrollContainerEl.scrollHeight - scrollContainerEl.offsetHeight,
+      );
+
+      if (newScrollTop !== scrollContainerEl.scrollTop) {
+        setPendingAutoScrolls.increase();
+        scrollContainerEl.scrollTo({
+          top: newScrollTop,
+          behavior: "instant",
+        });
+      }
+    }));
   });
 
   return (
     <div
       ref={scrollContainerEl}
-      class={`one-dark-background ${props.class}`}
+      class={`one-dark-background ${props.class} overscroll-y-none`}
+      onScroll={(ev) => scrollHandler()(ev)}
     >
       <div class="relative">
         {highlightElement()}
@@ -448,4 +500,21 @@ function getLineNumberByY(lines: LineData[], y: number) {
   }) ?? 0;
 
   return index + 1;
+}
+
+interface ScrollLocal {
+  line: number;
+  progress: number;
+}
+
+function getScrollLocalByY(lookupData: LookupData, y: number): ScrollLocal {
+  const line = getLineNumberByY(lookupData.lines, y);
+  const lineData = lookupData.lines[line - 1];
+  const offsetBottom = line < lookupData.lines.length
+    ? lookupData.lines[line - 1 + 1].offsetTop
+    : lookupData.offsetBottom;
+  const progress = (y - lineData.offsetTop) /
+    (offsetBottom - lineData.offsetTop);
+
+  return { line, progress };
 }
