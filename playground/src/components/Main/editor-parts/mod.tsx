@@ -1,10 +1,12 @@
 import {
   Component,
+  createEffect,
   createMemo,
   createSignal,
   JSX,
   lazy,
   Match,
+  on,
   Suspense,
   Switch,
 } from "solid-js";
@@ -56,6 +58,10 @@ export function createEditorParts(
     ].join(" | ");
 
   const [solution, setSolution] = createSignal<"CM6" | "ce" | "ta">("CM6");
+  createEffect(
+    on([solution], () =>
+      store.topLine = { number: store.topLine.number, setFrom: null }),
+  );
 
   return {
     EditorTopBar: (
