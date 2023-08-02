@@ -370,6 +370,7 @@ function createHighlight(
     const lookupList_ = props.lookupList();
     if (!lookupList_?.length) return;
     const activeLines_ = props.activeLines();
+    if (!activeLines_) return;
 
     const topLineIndex =
       ScrollUtils.getScrollLocalByLine(lookupList_, activeLines_[0])
