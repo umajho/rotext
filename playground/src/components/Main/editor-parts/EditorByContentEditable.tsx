@@ -11,7 +11,7 @@ import {
   Show,
 } from "solid-js";
 
-import { ActiveLines, EditorStore } from "../../../hooks/editor-store";
+import { ActiveLines, EditorStore, TopLine } from "../../../hooks/editor-store";
 import { binarySearch } from "../../../utils/algorithm";
 import { debounceEventHandler } from "../../../utils/mod";
 import { createAutoResetCounter } from "../../../hooks/auto-reset-counter";
@@ -70,53 +70,13 @@ const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
       contentContainerEl,
     });
 
-    const [pendingAutoScrolls, setPendingAutoScrolls] =
-      createAutoResetCounter();
-
-    function handleScroll() {
-      if (pendingAutoScrolls()) {
-        setPendingAutoScrolls.decrease();
-        return;
-      }
-      setPendingAutoScrolls.reset();
-
-      // XXX: 没有算入内容顶部与滚动容器顶部之间空隙的高度（目前必定为 0）
-      const topY = Math.max(scrollContainerEl.scrollTop, 0);
-      const scrollLocal = getScrollLocalByY(lookupData(), topY);
-      const number = scrollLocal.line + scrollLocal.progress;
-
-      if (props.store.topLine.number === number) return;
-      props.store.topLine = { number, setFrom: "editor" };
-    }
-    setScrollHandler(() => debounceEventHandler(handleScroll));
-
-    createEffect(on([() => props.store.topLine], () => {
-      if (props.store.topLine.setFrom === "editor") return;
-
-      const lookupData_ = lookupData();
-      if (!lookupData_) return;
-
-      const line = props.store.topLine.number;
-      const lineInt = line | 0;
-      const offsetTop = lookupData_.lines[lineInt - 1].offsetTop;
-      const offsetBottom = lineInt < lookupData_.lines.length
-        ? lookupData_.lines[lineInt - 1 + 1].offsetTop
-        : lookupData_.offsetBottom;
-
-      // XXX: 没有考虑内容顶部与滚动容器顶部之间有空隙的情况
-      const newScrollTop = Math.min(
-        offsetTop + (offsetBottom - offsetTop) * (line - lineInt),
-        scrollContainerEl.scrollHeight - scrollContainerEl.offsetHeight,
-      );
-
-      if (newScrollTop !== scrollContainerEl.scrollTop) {
-        setPendingAutoScrolls.increase();
-        scrollContainerEl.scrollTo({
-          top: newScrollTop,
-          behavior: "instant",
-        });
-      }
-    }));
+    const { scrollHandler } = createScrollSyncer({
+      topLine: () => props.store.topLine,
+      setTopLine: (v) => props.store.topLine = v,
+      lookupData,
+      scrollContainerEl,
+    });
+    setScrollHandler(() => debounceEventHandler(scrollHandler));
   });
 
   return (
@@ -517,4 +477,62 @@ function getScrollLocalByY(lookupData: LookupData, y: number): ScrollLocal {
     (offsetBottom - lineData.offsetTop);
 
   return { line, progress };
+}
+
+function createScrollSyncer(opts: {
+  topLine: () => TopLine;
+  setTopLine: (v: TopLine) => void;
+  lookupData: () => LookupData;
+  scrollContainerEl: HTMLElement;
+}) {
+  const [pendingAutoScrolls, setPendingAutoScrolls] = createAutoResetCounter();
+
+  function handleScroll() {
+    if (pendingAutoScrolls()) {
+      setPendingAutoScrolls.decrease();
+      return;
+    }
+    setPendingAutoScrolls.reset();
+
+    // XXX: 没有算入内容顶部与滚动容器顶部之间空隙的高度（目前必定为 0）
+    const topY = Math.max(opts.scrollContainerEl.scrollTop, 0);
+    const scrollLocal = getScrollLocalByY(opts.lookupData(), topY);
+    const number = scrollLocal.line + scrollLocal.progress;
+
+    if (opts.topLine().number === number) return;
+    opts.setTopLine({ number, setFrom: "editor" });
+  }
+
+  createEffect(on([opts.topLine], () => {
+    const topLine = opts.topLine();
+    if (topLine.setFrom === "editor") return;
+
+    const lookupData_ = opts.lookupData();
+    if (!lookupData_) return;
+
+    const line = topLine.number;
+    const lineInt = line | 0;
+    const offsetTop = lookupData_.lines[lineInt - 1].offsetTop;
+    const offsetBottom = lineInt < lookupData_.lines.length
+      ? lookupData_.lines[lineInt - 1 + 1].offsetTop
+      : lookupData_.offsetBottom;
+
+    // XXX: 没有考虑内容顶部与滚动容器顶部之间有空隙的情况
+    const newScrollTop = Math.min(
+      offsetTop + (offsetBottom - offsetTop) * (line - lineInt),
+      opts.scrollContainerEl.scrollHeight - opts.scrollContainerEl.offsetHeight,
+    );
+
+    if (newScrollTop !== opts.scrollContainerEl.scrollTop) {
+      setPendingAutoScrolls.increase();
+      opts.scrollContainerEl.scrollTo({
+        top: newScrollTop,
+        behavior: "instant",
+      });
+    }
+  }));
+
+  return {
+    scrollHandler: handleScroll,
+  };
 }
