@@ -284,6 +284,21 @@ function createScrollSyncing(
       const _lookupList = props.lookupList();
       if (!_lookupList.length) return;
 
+      if (!Number.isFinite(topLineData.number)) { // 编辑器要求预览滚动到最底部
+        const maxTop = els.scrollContainer.scrollHeight -
+          els.scrollContainer.offsetHeight;
+        if (maxTop < 0) return;
+
+        const scrollLocal = ScrollUtils.getScrollLocalByY(
+          _lookupList,
+          maxTop,
+          els.outputContainer.offsetHeight,
+        );
+        const line = ScrollUtils.scrollLocalToLine(scrollLocal, _lookupList);
+        props.setTopLine({ number: line, setFrom: "editor" });
+        return;
+      }
+
       const scrollResult = ScrollUtils.scrollToLine(
         topLineData.number,
         _lookupList,
