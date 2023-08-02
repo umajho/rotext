@@ -18,7 +18,7 @@ export function createEditorStore(initialText: string = "") {
     setFrom: null,
   });
   // FIXME: 初始值应该在编辑器那边设置
-  const [activeLines, setActiveLines] = createSignal<ActiveLines>([1, 1]);
+  const [activeLines, setActiveLines] = createSignal<ActiveLines>();
 
   return {
     get text() {

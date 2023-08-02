@@ -63,6 +63,7 @@ const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
     createEffect(on([lookupData, () => props.store.activeLines], () => {
       const lookupData_ = lookupData();
       if (!lookupData_) return;
+      if (!props.store.activeLines) return;
 
       const [startLine, endLine] = props.store.activeLines;
 
