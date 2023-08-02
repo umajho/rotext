@@ -99,7 +99,9 @@ const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
     const range = new Range();
 
     const lastChild = contentContainerEl.lastChild;
-    if (lastChild.nodeType === Node.TEXT_NODE) {
+    if (!lastChild) {
+      contentContainerEl.focus();
+    } else if (lastChild.nodeType === Node.TEXT_NODE) {
       range.setStart(lastChild, lastChild.nodeValue.length);
     } else {
       range.setStart(
@@ -397,6 +399,8 @@ function createActiveLinesTracker(
   },
 ) {
   function handleSelectionChange() {
+    if (!opts.contentContainerEl.childNodes.length) return;
+
     const lookupData_ = opts.lookupData();
     if (!lookupData_) return;
 
