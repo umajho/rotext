@@ -100,14 +100,14 @@ const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
 
     const lastChild = contentContainerEl.lastChild;
     if (lastChild.nodeType === Node.TEXT_NODE) {
-      range.setStart(lastChild, lastChild.nodeValue.length - 1);
+      range.setStart(lastChild, lastChild.nodeValue.length);
     } else {
       range.setStart(
         contentContainerEl,
         contentContainerEl.childNodes.length - 1,
       );
-      selection.addRange(range);
     }
+    selection.addRange(range);
   }
 
   return (
@@ -428,6 +428,13 @@ function createActiveLinesTracker(
   onCleanup(() =>
     document.removeEventListener("selectionchange", debouncedHandler)
   );
+
+  // Safari (macOS, 16.5) 在连续的第二次回车换行起，不会触发 `selectionchange` 事件，
+  // 只好 workeraround 一下，每次输入后也掉用一次。
+  opts.contentContainerEl.addEventListener("input", debouncedHandler);
+  onCleanup(() => {
+    opts.contentContainerEl.removeEventListener("input", debouncedHandler);
+  });
 }
 
 function createHighlight(opts: {
