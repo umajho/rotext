@@ -50,6 +50,8 @@ const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
 
   const [scrollHandler, setScrollHandler] = createSignal<(ev: Event) => void>();
 
+  const [blankHeightAtEnd, setBlankHeightAtEnd] = createSignal<number>();
+
   onMount(() => {
     const lookupData = createLookupList({
       textChanged: () => props.store.text,
@@ -77,7 +79,36 @@ const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
       scrollContainerEl,
     });
     setScrollHandler(() => debounceEventHandler(scrollHandler));
+
+    createEffect(on([lookupData], () => {
+      const lookupData_ = lookupData();
+      if (!lookupData_ || !lookupData_.lines.length) return;
+
+      // TODO: 以 “没有折行的单行高度” 作为 “滚动到底部时余留下来的唯一一行的高度”？
+      const lastHeight = lookupData_.offsetBottom -
+        lookupData_.lines[lookupData_.lines.length - 1].offsetTop;
+      setBlankHeightAtEnd(
+        Math.max(scrollContainerEl.offsetHeight - lastHeight, 0),
+      );
+    }));
   });
+
+  function handleClickBlankAtEnd() {
+    const selection = document.getSelection();
+    selection.empty();
+    const range = new Range();
+
+    const lastChild = contentContainerEl.lastChild;
+    if (lastChild.nodeType === Node.TEXT_NODE) {
+      range.setStart(lastChild, lastChild.nodeValue.length - 1);
+    } else {
+      range.setStart(
+        contentContainerEl,
+        contentContainerEl.childNodes.length - 1,
+      );
+      selection.addRange(range);
+    }
+  }
 
   return (
     <div
@@ -90,13 +121,19 @@ const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
       </div>
       <div
         ref={contentContainerEl}
-        class="relative one-dark focus:!outline-none mx-4"
+        class={"editor-ce-content-container" +
+          " relative one-dark focus:!outline-none mx-4"}
         contentEditable
         onInput={handleChange}
         onBeforeInput={beforeInputHandler}
         onPaste={pasteHandle}
         onCopy={copyHandler}
         onCut={cutHandler}
+      />
+      <div
+        class="cursor-text"
+        style={{ height: `${blankHeightAtEnd()}px` }}
+        onClick={handleClickBlankAtEnd}
       />
     </div>
   );
@@ -408,7 +445,9 @@ function createHighlight(opts: {
     if (!lookupData_) return;
     if (!opts.activeLines()) return;
 
-    const [startLine, endLine] = opts.activeLines();
+    let [startLine, endLine] = opts.activeLines();
+    startLine = Math.min(startLine, lookupData_.lines.length);
+    endLine = Math.min(endLine, lookupData_.lines.length);
 
     const startLineOffsetTop = lookupData_.lines[startLine - 1].offsetTop;
     const endLineOffsetBottom = endLine < lookupData_.lines.length

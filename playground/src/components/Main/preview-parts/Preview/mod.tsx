@@ -298,7 +298,9 @@ function createScrollSyncing(
 
     createEffect(
       on([() => props.topLine(), () => props.text()], (cur, prev) => {
-        if (prev && cur && prev[0].number === cur[0].number) return;
+        // NOTE: 即使与之前相同也要处理，以在编辑器滚动到预览无法继续同步滚动的位置之下时，
+        //       在使预览的高度增加而导致可以继续滚动的位置向下延伸时，预览可以同步位置。
+        // if (prev && cur && prev[0].number === cur[0].number) return;
         scrollToTopLine();
       }),
     );
