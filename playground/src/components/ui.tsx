@@ -9,12 +9,14 @@ import {
 } from "solid-js";
 import { HiOutlineXCircle, HiSolidChevronDown } from "solid-icons/hi";
 
-export const Card: Component<{ children: JSX.Element; class?: string }> = (
+export const Card: Component<
+  { children: JSX.Element; class?: string; bodyClass?: string }
+> = (
   props,
 ) => {
   return (
     <div class={`card bg-base-100 shadow-xl ${props.class ?? ""}`}>
-      <div class="card-body h-full">
+      <div class={`card-body h-full ${props.bodyClass ?? ""}`}>
         {props.children}
       </div>
     </div>

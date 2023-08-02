@@ -1,5 +1,7 @@
 import { JSX } from "solid-js/jsx-runtime";
 
+export const SUPPORTS_DVH = CSS.supports?.("height", "1dvh");
+
 type CSSKey = keyof JSX.CSSProperties;
 
 function getComputedCSSValueFromRaw(key: CSSKey, rawValue: string) {
