@@ -12,6 +12,7 @@ import { EditorView } from "codemirror";
 import { createCodeMirrorEditor } from "../../code-mirror-editor";
 import { debounceEventHandler } from "../../../utils/mod";
 import { ActiveLines, EditorStore, TopLine } from "../../../hooks/editor-store";
+import { createAutoResetCounter } from "../../../hooks/auto-reset-counter";
 
 let nextEditorID = 1;
 
@@ -273,73 +274,4 @@ function getPaddingPixels(el: HTMLElement) {
     top: parseFloat(top),
     bottom: parseFloat(bottom),
   };
-}
-
-function createAutoResetCounter() {
-  const THRESHOLD_MS = 50;
-
-  const [value, setValue_] = createSignal(0);
-  const [hardValue, setHardValue_] = createSignal(0);
-
-  let lastChangeTime = 0;
-  let checking = false;
-
-  function check() {
-    if (value() <= 0) {
-      checking = false;
-      return;
-    }
-
-    if (!hardValue() && performance.now() - lastChangeTime >= THRESHOLD_MS) {
-      setValue_(0);
-      checking = false;
-      return;
-    }
-    setTimeout(check, THRESHOLD_MS);
-  }
-
-  function setValue(value: number) {
-    value = Math.max(value, 0);
-    setValue_(value);
-    lastChangeTime = performance.now();
-
-    if (!checking && value) {
-      checking = true;
-      setTimeout(check, THRESHOLD_MS);
-    }
-  }
-
-  function setHardValue(hardValue: number) {
-    hardValue = Math.max(hardValue, 0);
-    setHardValue_(hardValue);
-    lastChangeTime = performance.now();
-
-    if (!checking && !hardValue && value()) {
-      setTimeout(check, THRESHOLD_MS);
-    }
-  }
-
-  function increase(hard?: boolean) {
-    if (hard) {
-      setHardValue(hardValue() + 1);
-    } else {
-      setValue(value() + 1);
-    }
-  }
-  function decrease() {
-    if (hardValue()) {
-      setHardValue(hardValue() - 1);
-    } else {
-      setValue(value() - 1);
-    }
-  }
-  function reset() {
-    setValue(0);
-    setHardValue(0);
-  }
-
-  return [
-    () => value() + hardValue(),
-    { increase, decrease, reset },
-  ] as const;
 }

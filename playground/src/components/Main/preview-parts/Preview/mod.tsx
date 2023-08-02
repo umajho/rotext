@@ -297,7 +297,10 @@ function createScrollSyncing(
     }
 
     createEffect(
-      on([() => props.topLine(), () => props.text()], scrollToTopLine),
+      on([() => props.topLine(), () => props.text()], (cur, prev) => {
+        if (prev && cur && prev[0].number === cur[0].number) return;
+        scrollToTopLine();
+      }),
     );
   }
 
