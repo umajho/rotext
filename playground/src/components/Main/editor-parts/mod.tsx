@@ -22,10 +22,13 @@ import {
 
 import { EditorStore } from "../../../hooks/editor-store";
 
+import ContentEditable from "./EditorByContentEditable";
+import TextArea from "./EditorByTextArea";
+
 const EditorSolutions = {
   CodeMirror6: lazy(() => import("./EditorByCodeMirror6")),
-  TextArea: lazy(() => import("./EditorByTextArea")),
-  ContentEditable: lazy(() => import("./EditorByContentEditable")),
+  ContentEditable,
+  TextArea,
 };
 
 const segmenter: Intl.Segmenter | null = (() => {
@@ -57,10 +60,12 @@ export function createEditorParts(
       `${lineCount()}行`,
     ].join(" | ");
 
-  const [solution, setSolution] = createSignal<"CM6" | "ce" | "ta">("CM6");
+  const [solution, setSolution] = createSignal<"ce" | "ta" | "CM6">("ce");
   createEffect(
-    on([solution], () =>
-      store.topLine = { number: store.topLine.number, setFrom: null }),
+    on(
+      [solution],
+      () => store.topLine = { number: store.topLine.number, setFrom: null },
+    ),
   );
 
   return {
@@ -73,12 +78,6 @@ export function createEditorParts(
               isActive={true}
             >
               <DropDownItemForSolution
-                solutionID="CM6"
-                solutionFullName="CodeMirror 6"
-                currentSolution={solution}
-                setCurrentSolution={setSolution}
-              />
-              <DropDownItemForSolution
                 solutionID="ce"
                 solutionFullName="contenteditable"
                 currentSolution={solution}
@@ -87,6 +86,12 @@ export function createEditorParts(
               <DropDownItemForSolution
                 solutionID="ta"
                 solutionFullName="textarea"
+                currentSolution={solution}
+                setCurrentSolution={setSolution}
+              />
+              <DropDownItemForSolution
+                solutionID="CM6"
+                solutionFullName="【遗留】CodeMirror 6"
                 currentSolution={solution}
                 setCurrentSolution={setSolution}
               />
