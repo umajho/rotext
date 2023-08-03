@@ -85,13 +85,16 @@ Containers // TODO: `; foo : bar`
   = first:ContainersLine rest:(br @ContainersLine)*
     { return buildContainers([first, ...rest], breaks, locMap); }
 ContainersLine
-  = prefix:ContainerPrefix+ line:Line?
-    { 
+  = prefix:ContainerPrefix+ leadingSpaces:$[ \t]* line:Line?
+    &{ // 开头只有一个空白字符时，`line` 会吃掉那个字符，需要特殊判断此种情况
+      return leadingSpaces.length > 0 || !line || line[0].trim() === "";
+    }
+    {
       return locMap
         ? { prefix: prefix.join(""), line, location: location() }
         : { prefix: prefix.join(""), line };
     }
-ContainerPrefix = @[>#*;:] spacesOrLineEnd
+ContainerPrefix = @[>#*;:]
 
 Table
   = TableBegin /*无视首行后边的内容*/ @TableRows __ TableEnd
