@@ -30,7 +30,7 @@ import { ErrorAlert } from "../ui";
 import { mouseDownNoDoubleClickToSelect } from "../../../../../utils/events";
 
 const BACKGROUND_COLOR = getComputedColor(
-  getComputedCSSValueOfClass("background-color", "previewer-background"),
+  getComputedCSSValueOfClass("background-color", "tuan-background"),
 );
 
 interface Properties {

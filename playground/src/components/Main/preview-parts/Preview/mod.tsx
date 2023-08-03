@@ -114,7 +114,7 @@ const Preview: Component<
   //==== 组件 ====
   return (
     <div
-      class={`previewer relative bg-[#1f1f1f] overflow-y-auto ${
+      class={`previewer relative tuan-background overflow-y-auto ${
         props.class ?? ""
       }`}
       ref={scrollContainerEl}
