@@ -6,12 +6,12 @@
 
   $futaba-green: #789922;
 
-  @apply font-sans text-gray-300 font-light;
+  @apply font-sans text-gray-300 font-light leading-[2rem];
 
   //======== BLOCK LEVEL ========
 
   p {
-    @apply mb-4 leading-[2rem];
+    @apply mb-4;
 
     &:not(:first-child) {
       @apply mt-4;
