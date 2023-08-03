@@ -11,10 +11,22 @@
   //======== BLOCK LEVEL ========
 
   p {
-    @apply mb-4;
+    @apply my-4;
+  }
 
-    &:not(:first-child) {
-      @apply mt-4;
+  li,
+  dt,
+  dd,
+  th,
+  td {
+    &>p {
+      &:first-child {
+        @apply mt-0
+      }
+
+      &:last-child {
+        @apply mb-0;
+      }
     }
   }
 
