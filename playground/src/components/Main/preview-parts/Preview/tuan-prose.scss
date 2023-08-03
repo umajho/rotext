@@ -1,0 +1,217 @@
+.tuan-prose {
+
+  $futaba-green: #789922;
+
+  @apply font-sans text-gray-300 font-light;
+
+  //======== BLOCK LEVEL ========
+
+  p {
+    @apply my-4 leading-[2rem];
+  }
+
+  hr {
+    @apply border-t border-[#444];
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply text-white;
+  }
+
+  h1 {
+    @apply font-extrabold text-4xl mb-6;
+    @apply w-full pb-2 border-b border-gray-500;
+  }
+
+  h2 {
+    @apply font-bold text-3xl mb-4;
+    @apply w-full pb-2 border-b-[0.5px] border-gray-500;
+  }
+
+  h3 {
+    @apply text-2xl mb-2;
+  }
+
+  h4 {
+    @apply text-xl mb-2;
+  }
+
+  h5 {
+    @apply text-lg mb-1;
+  }
+
+  h6 {
+    @apply text-base mb-1;
+  }
+
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-medium;
+  }
+
+  :not(h1, h2, h3, h4, h5, h6) {
+    &+h1 {
+      @apply mt-8;
+    }
+
+    &+h2 {
+      @apply mt-6;
+    }
+
+    &+h3,
+    &+h4 {
+      @apply mt-4;
+    }
+
+    &+h5,
+    &+h6 {
+      @apply mt-2;
+    }
+  }
+
+  blockquote {
+    @apply border-l-[6px] py-1 px-4 my-4 bg-black bg-opacity-25 font-normal;
+    border-left-color: $futaba-green;
+    // color: $futaba-green;
+    background-color: rgba($futaba-green, .05);
+  }
+
+  ul,
+  ol {
+    @apply ml-8;
+  }
+
+  ul,
+  ol,
+  dl {
+    @apply mb-4;
+  }
+
+  ul {
+    @apply list-disc;
+  }
+
+  ol {
+    @apply list-decimal;
+  }
+
+  li {
+    @apply my-2 pl-1;
+  }
+
+  dt {
+    @apply font-bold text-gray-200 my-1;
+  }
+
+  dd {
+    @apply ml-4 my-1;
+  }
+
+  table {
+    @apply mb-4 w-full;
+
+    caption {
+      @apply font-black text-white;
+    }
+
+    th,
+    td {
+      @apply border border-[#444] px-6 py-2;
+    }
+
+    th {
+      @apply font-bold text-white text-left;
+
+    }
+  }
+
+  //======== INLINE LEVEL ========
+
+  ref-link>.widget-prime {
+    @apply font-mono;
+    color: $futaba-green;
+  }
+
+  dicexp-preview>.widget-prime {
+    @apply inline-flex items-center h-[1.5rem] px-2 mx-2;
+    @apply border rounded-xl border-sky-700 bg-sky-900 text-white;
+
+    .widget-prime-summary {
+      @apply gap-1;
+    }
+
+    .widget-prime-raw-text {
+      @apply font-mono;
+    }
+
+    .widget-prime-action {
+      @apply inline-flex items-center h-[1.5rem] -mr-2 pl-1 pr-2 ml-1;
+      @apply gap-2;
+      @apply border rounded-r-xl border-sky-700 bg-sky-700;
+      @apply cursor-pointer select-none;
+
+      @apply font-bold;
+    }
+  }
+
+  strong {
+    font-weight: bold;
+  }
+
+  strike {
+    text-decoration: line-through;
+  }
+
+  scratch-off {
+    @apply cursor-pointer select-none;
+    @apply bg-white bg-opacity-100 transition-[background-color] duration-[400ms];
+
+    &.by-click:not(.revealed),
+    &:not(.by-click):not(:hover) {
+      @apply text-transparent;
+
+      * {
+        visibility: hidden;
+      }
+    }
+
+    &.revealed,
+    &:not(.by-click):hover {
+      @apply text-inherit bg-opacity-10 cursor-[inherit];
+      user-select: inherit;
+    }
+  }
+
+  ruby {}
+
+  code {
+    // 下列颜色出自 https://github.com/chriskempson/tomorrow-theme
+    /*!
+      LICENSE
+
+      Tomorrow Theme is released under the MIT License:
+
+      Copyright (C) 2011 Chris Kempson
+
+      Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+      The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+    */
+    $tomorrow-night-eighties-background: #2d2d2d;
+    $tomorrow-night-yellow: #f0c674;
+
+    @apply px-[0.2rem] py-[0.2rem] mx-[0.2rem] rounded-[3px];
+    @apply font-mono font-normal text-sm;
+    background-color: $tomorrow-night-eighties-background;
+    color: $tomorrow-night-yellow;
+  }
+}

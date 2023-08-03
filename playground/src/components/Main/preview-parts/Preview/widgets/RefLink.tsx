@@ -1,4 +1,4 @@
-import { Component, createMemo, JSX } from "solid-js";
+import { Component, createMemo, createSignal, JSX } from "solid-js";
 import { customElement, noShadowDOM } from "solid-element";
 
 import { createWidgetComponent } from "../../../../../hooks/widgets";
@@ -9,6 +9,7 @@ import {
   getComputedCSSValueOfClass,
 } from "../../../../../utils/styles";
 import { mouseDownNoDoubleClickToSelect } from "../../../../../utils/events";
+import { WidgetOwner } from "../../../../../stores/widget-owners";
 
 const BACKGROUND_COLOR = getComputedColor(
   getComputedCSSValueOfClass("background-color", "previewer-background"),
@@ -19,8 +20,12 @@ interface Properties {
 }
 
 const RefLink: Component<Properties> = (outerProps) => {
+  const [widgetOwner, setWidgetOwner] = createSignal<WidgetOwner>();
+
   const address = createMemo(() => parseAddress(outerProps.address));
-  const addressDescription = createMemo(() => describeAddress(address()));
+  const addressDescription = createMemo(() =>
+    widgetOwner() && describeAddress(address(), widgetOwner().proseClass)
+  );
 
   const component = createWidgetComponent(
     {
@@ -57,6 +62,7 @@ const RefLink: Component<Properties> = (outerProps) => {
       },
     },
     {
+      setWidgetOwner,
       widgetBackgroundColor: () => BACKGROUND_COLOR,
       maskTintColor: () => gray500,
     },
@@ -115,7 +121,7 @@ type Address =
   )
   | { type: "unknown" };
 
-function describeAddress(address: Address): JSX.Element {
+function describeAddress(address: Address, proseClass: string): JSX.Element {
   const dl = ((): JSX.Element => {
     if (address.type === "post_number") {
       return (
@@ -154,7 +160,7 @@ function describeAddress(address: Address): JSX.Element {
     }
   })();
   return (
-    <div class="prose previewer-prose">
+    <div class={proseClass}>
       <p>这里的内容会引用自：</p>
       {dl}
     </div>

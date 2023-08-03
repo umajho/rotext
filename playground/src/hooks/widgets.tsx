@@ -62,6 +62,7 @@ export function createWidgetComponent(parts: {
   widgetContainerComponent: Component<WidgetContainerProperties>;
   widgetContentComponent: Component<WidgetContentProperties>;
 }, opts: {
+  setWidgetOwner?: (v: WidgetOwner) => void;
   openable?: () => boolean;
   autoOpenShouldCollapse?: boolean;
   widgetBackgroundColor: () => ComputedColor;
@@ -119,6 +120,7 @@ export function createWidgetComponent(parts: {
 
   function handleMount() {
     setWidgetOwner(getWidgetOwner(primeEl.closest(".previewer")));
+    opts.setWidgetOwner?.(widgetOwner());
 
     const closestContainerEl = closestContainer(primeEl);
     createEffect(on([widgetOwner().layoutChange], () => { // TODO: debounce
