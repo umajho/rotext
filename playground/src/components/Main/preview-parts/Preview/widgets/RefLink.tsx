@@ -12,7 +12,7 @@ import { mouseDownNoDoubleClickToSelect } from "../../../../../utils/events";
 import { WidgetOwner } from "../../../../../stores/widget-owners";
 
 const BACKGROUND_COLOR = getComputedColor(
-  getComputedCSSValueOfClass("background-color", "previewer-background"),
+  getComputedCSSValueOfClass("background-color", "tuan-background"),
 );
 
 interface Properties {
