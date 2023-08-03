@@ -52,7 +52,7 @@ Heading
     &{ // 末尾至少需要有一个对应的标记符号
       let last = line[line.length - 1];
       if (typeof last !== "string") return false;
-      return last.trimEnd().endsWith(" " + level);
+      return last.trimEnd().endsWith(level);
     }
     {
       const last = line[line.length - 1]
