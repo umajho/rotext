@@ -1,4 +1,3 @@
-import "./mod.scss";
 import "./tuan-prose.scss";
 
 import {
@@ -115,7 +114,7 @@ const Preview: Component<
   //==== 组件 ====
   return (
     <div
-      class={`previewer relative previewer-background overflow-y-auto ${
+      class={`previewer relative bg-[#1f1f1f] overflow-y-auto ${
         props.class ?? ""
       }`}
       ref={scrollContainerEl}
