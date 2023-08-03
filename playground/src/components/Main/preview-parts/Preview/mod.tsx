@@ -1,4 +1,5 @@
 import "./mod.scss";
+import "./tuan-prose.scss";
 
 import {
   Component,
@@ -42,6 +43,7 @@ import { registerCustomElement as registerCustomElementForScratchOff } from "./S
 import { registerWidgetOwner } from "../../../../stores/widget-owners";
 
 const CONTENT_ROOT_CLASS = "previewer-content-root";
+const PROSE_CLASS = "tuan-prose";
 
 registerCustomElementForRefLink();
 registerCustomElementForDicexp();
@@ -103,6 +105,7 @@ const Preview: Component<
     //==== 注册进全局存储 ====
     // NOTE: 目前 scrollContainerEl 就是 previewer 的元素
     registerWidgetOwner(scrollContainerEl, {
+      proseClass: PROSE_CLASS,
       widgetAnchorElement: () => widgetAnchorEl,
       layoutChange: lookupList,
       level: 1,
@@ -131,7 +134,8 @@ const Preview: Component<
         class={"" +
           "relative " + // 作为计算元素高度位移的锚点
           "self-center mx-auto " + // 保持居中，以及撑起父元素
-          "break-all prose previewer-prose " + // 内容的外观样式
+          "break-all " + // 内容的外观样式
+          `${PROSE_CLASS} ` +
           ""}
       >
         <div ref={outputContainerEl} />

@@ -1,6 +1,5 @@
-import { LookupList } from "../components/Main/Preview/internal-types";
-
 export interface WidgetOwner {
+  proseClass: string;
   widgetAnchorElement: () => HTMLElement;
   layoutChange: () => void;
   /**

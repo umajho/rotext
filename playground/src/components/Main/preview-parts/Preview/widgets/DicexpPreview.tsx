@@ -108,7 +108,7 @@ const DicexpPreview: Component<Properties> = (outerProps) => {
         return (
           <>
             <span
-              class="inline-flex items-center"
+              class="widget-prime-summary inline-flex items-center"
               style={{ cursor: props.cursor }}
               onClick={props.onToggleWidget}
               onMouseDown={mouseDownNoDoubleClickToSelect}
@@ -117,14 +117,12 @@ const DicexpPreview: Component<Properties> = (outerProps) => {
                 color="white"
                 class={rolling() ? "animate-spin-400ms" : ""}
               />
-              <div class="w-2" />
-              <span>{`[=${outerProps.code}]`}</span>
+              <span class="widget-prime-raw-text">
+                {`[=${outerProps.code}]`}
+              </span>
             </span>
             <span
-              class={"inline-flex items-center h-[1.5rem] -mr-2 pl-1 pr-2 ml-1" +
-                " gap-2" +
-                " border rounded-r-xl border-sky-700 bg-sky-700" +
-                " cursor-pointer select-none"}
+              class="widget-prime-action"
               onClick={roll}
             >
               <span class="text-gray-200">
