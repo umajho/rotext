@@ -11,7 +11,11 @@
   //======== BLOCK LEVEL ========
 
   p {
-    @apply my-4 leading-[2rem];
+    @apply mb-4 leading-[2rem];
+
+    &:not(:first-child) {
+      @apply mt-4;
+    }
   }
 
   hr {
@@ -107,15 +111,28 @@
   }
 
   li {
-    @apply my-2 pl-1;
+    @apply pl-1 mb-2;
+
+    &:not(:first-child) {
+      @apply mt-2;
+    }
   }
 
   dt {
-    @apply font-bold text-gray-200 my-1;
+    @apply font-bold text-gray-200;
   }
 
   dd {
-    @apply ml-4 my-1;
+    @apply ml-4;
+  }
+
+  dt,
+  dd {
+    @apply mb-1;
+
+    &:not(:first-child) {
+      @apply mt-1;
+    }
   }
 
   table {
@@ -214,7 +231,7 @@
     $tomorrow-night-yellow: #f0c674;
 
     @apply px-[0.2rem] py-[0.2rem] mx-[0.2rem] rounded-[3px];
-    @apply font-mono font-normal text-sm;
+    @apply font-mono font-normal text-[smaller];
     background-color: $tomorrow-night-eighties-background;
     color: $tomorrow-night-yellow;
   }
