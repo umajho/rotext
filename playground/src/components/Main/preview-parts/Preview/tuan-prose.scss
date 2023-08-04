@@ -173,20 +173,21 @@
   }
 
   dicexp-preview>.widget-prime {
-    @apply inline-flex items-center h-[1.5rem] px-2 mx-2;
+    @apply inline-flex max-w-full items-center h-[1.5rem] px-2 mx-2;
     @apply border rounded-xl border-sky-700 bg-sky-900 text-white;
 
     .widget-prime-summary {
-      @apply gap-1;
-    }
+      @apply gap-1 w-auto min-w-0;
 
-    .widget-prime-raw-text {
-      @apply font-mono;
+      .widget-prime-raw-text {
+        @apply font-mono text-[smaller];
+        @apply whitespace-nowrap overflow-hidden text-ellipsis;
+      }
     }
 
     .widget-prime-action {
-      @apply inline-flex items-center h-[1.5rem] -mr-2 pl-1 pr-2 ml-1;
-      @apply gap-2;
+      @apply inline-flex min-w-max items-center h-[1.5rem];
+      @apply -mr-2 pl-1 pr-2 ml-1 gap-2;
       @apply border rounded-r-xl border-sky-700 bg-sky-700;
       @apply cursor-pointer select-none;
 

@@ -126,7 +126,9 @@ const DicexpPreview: Component<Properties> = (outerProps) => {
               onClick={roll}
             >
               <span class="text-gray-200">
-                试投{loadingRuntime() === "long" && "（正在加载运行时…）"}
+                {loadingRuntime() === "long"
+                  ? "正在加载运行时…"
+                  : (rolling() ? "正在试投…" : "试投")}
               </span>
               <Show when={resultElement()}>
                 <span>➔</span>
