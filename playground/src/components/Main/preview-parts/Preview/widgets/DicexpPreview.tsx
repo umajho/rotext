@@ -88,9 +88,14 @@ const DicexpPreview: Component<Properties> = (outerProps) => {
       EvaluatingWorkerManager<typeof scopes>
     >(
       (resolve) => {
+        let resolved = false;
         const workerManager = new dicexp.EvaluatingWorkerManager(
           () => new EvaluatingWorker(),
-          (ready) => ready && resolve(workerManager),
+          (ready) => {
+            if (resolved || !ready) return;
+            resolve(workerManager);
+            resolved = true;
+          },
         );
       },
     );
