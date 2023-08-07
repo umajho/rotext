@@ -103,6 +103,8 @@ const DicexpPreview: Component<Properties> = (outerProps) => {
       execute: { topLevelScopeName: "standard" },
     });
 
+    workerManager.destroy();
+
     setResult(result);
     setRolling(false);
   }

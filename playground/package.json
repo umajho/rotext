@@ -30,7 +30,7 @@
     "@rotext/parsing": "workspace:*",
     "@rotext/to-html": "workspace:*",
     "codemirror": "^6.0.1",
-    "dicexp": "^0.1.4",
+    "dicexp": "^0.1.5",
     "snabbdom": "^3.5.1",
     "solid-element": "^1.7.1",
     "solid-icons": "^1.0.11",

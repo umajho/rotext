@@ -68,8 +68,8 @@ importers:
         specifier: ^6.0.1
         version: 6.0.1(@lezer/common@1.0.3)
       dicexp:
-        specifier: ^0.1.4
-        version: 0.1.4(@lezer/highlight@1.1.6)(@lezer/lr@1.3.7)(esm-seedrandom@3.0.5)
+        specifier: ^0.1.5
+        version: 0.1.5(@lezer/highlight@1.1.6)(@lezer/lr@1.3.7)(esm-seedrandom@3.0.5)
       snabbdom:
         specifier: ^3.5.1
         version: 3.5.1
@@ -1366,8 +1366,8 @@ packages:
       type-detect: 4.0.8
     dev: true
 
-  /dicexp@0.1.4(@lezer/highlight@1.1.6)(@lezer/lr@1.3.7)(esm-seedrandom@3.0.5):
-    resolution: {integrity: sha512-2KPV/QkfLblWpc1VsHGn/78tMHyH31xgwFOExNwgKBinNNAkdPZbd0VkhuHbjyojLQOm8Zmbbq2kc9QlJi2gyg==}
+  /dicexp@0.1.5(@lezer/highlight@1.1.6)(@lezer/lr@1.3.7)(esm-seedrandom@3.0.5):
+    resolution: {integrity: sha512-SB0eVzec90vmh+rd5CXzLQPJ1qfgkBtZTbB7jl1b2+VIBCvCe5aG3C6nlS3Ykfajc7I0o9x7hpENTGaxZAvr8Q==}
     peerDependencies:
       '@lezer/highlight': ^1.1.6
       '@lezer/lr': ^1.3.7
