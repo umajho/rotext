@@ -81,7 +81,7 @@ export function elementToSnabbdom(
         h("rt", slotToChildren(el.slots.text, locMap)),
         h("rp", String(el.props.p[1])),
       ]);
-    case "link":
+    case "hyperlink":
       if ("props" in el && "auto" in el.props && el.props.auto) {
         return h("a", {
           props: {

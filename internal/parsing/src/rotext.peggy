@@ -316,7 +316,7 @@ InlineInRuby = Escape / InlineCharacter
 AutoLink
   = &{ return offset() === 0 || !/[a-zA-Z]/.test(input[offset()-1]); }
     href:$("http" "s"? "://" [^ \t\r\n]+)
-    { return create.autoLink(href); }
+    { return create.hyperlink(href, { auto: true }); }
 
 
 _ = [ \t]*
