@@ -30,7 +30,7 @@ export type InlineElement =
     };
     slots: { base: InlineSlot; text: InlineSlot };
   }
-  | { type: "link"; props: { auto: true }; slots: { href: RawTextSlot } }
+  | { type: "hyperlink"; props: { auto: true }; slots: { href: RawTextSlot } }
   | { type: "code"; slot: RawTextSlot }
   | { type: "ref-link"; slot: RawTextSlot }
   | { type: "dicexp"; slots: { code: RawTextSlot; assignTo?: RawTextSlot } };
@@ -116,8 +116,16 @@ export const create = {
     return { type: "ruby", props: { p }, slots: { base, text } };
   },
 
-  autoLink(url: RawTextSlot): InlineElement & { type: "link" } {
-    return { type: "link", props: { auto: true }, slots: { href: url } };
+  /** 超链接 */
+  hyperlink(
+    url: RawTextSlot,
+    opts: { auto: true },
+  ): InlineElement & { type: "hyperlink" } {
+    return {
+      type: "hyperlink",
+      props: { auto: opts.auto },
+      slots: { href: url },
+    };
   },
 
   /** 行内显示代码片段 */
