@@ -41,6 +41,7 @@ import { registerCustomElement as registerCustomElementForRefLink } from "./widg
 import { registerCustomElement as registerCustomElementForDicexp } from "./widgets/DicexpPreview";
 import { registerCustomElement as registerCustomElementForScratchOff } from "./ScratchOff";
 import { registerWidgetOwner } from "../../../../stores/widget-owners";
+import { createAutoResetCounter } from "../../../../hooks/auto-reset-counter";
 
 const CONTENT_ROOT_CLASS = "previewer-content-root";
 const PROSE_CLASS = "tuan-prose";
@@ -270,7 +271,7 @@ function createScrollSyncing(
     outputContainer: HTMLElement;
   },
 ) {
-  let pendingAutoScrolls = 0;
+  const [pendingAutoScrolls, setPendingAutoScrolls] = createAutoResetCounter();
 
   {
     const [wasAtBottom, setWasAtBottom] = createSignal<boolean>(false);
@@ -312,7 +313,7 @@ function createScrollSyncing(
         { triggeredBy: opts?.triggeredBy },
       );
       if (scrollResult === "scrolled") {
-        pendingAutoScrolls++;
+        setPendingAutoScrolls.increase();
       }
     }
 
@@ -329,8 +330,8 @@ function createScrollSyncing(
    *  除了预览内容之外，还包含可能存在的错误展示等内容。
    */
   function handleScroll(_ev: Event) {
-    if (pendingAutoScrolls > 0) {
-      pendingAutoScrolls = Math.max(pendingAutoScrolls - 1, 0);
+    if (pendingAutoScrolls() > 0) {
+      setPendingAutoScrolls.decrease();
       return;
     }
 
