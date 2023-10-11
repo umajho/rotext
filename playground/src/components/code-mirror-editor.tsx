@@ -13,10 +13,10 @@ export function createCodeMirrorEditor(
   },
 ): {
   element: JSX.Element;
-  view: Accessor<EditorView>;
+  view: Accessor<EditorView | undefined>;
   scrollContainerDOM: HTMLDivElement;
 } {
-  let parentEl: HTMLDivElement;
+  let parentEl!: HTMLDivElement;
   const [view, setView] = createSignal<EditorView>();
 
   let dispatchedBySelf = false, changedBySelf = false;

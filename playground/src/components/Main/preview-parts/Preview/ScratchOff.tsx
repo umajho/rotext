@@ -1,16 +1,15 @@
 import { customElement, getCurrentElement, noShadowDOM } from "solid-element";
 import { Component, onMount } from "solid-js";
-import { JSX } from "solid-js/jsx-runtime";
 
-const ScratchOff: Component<{ children: JSX.Element }> = (props) => {
-  let dummyEl: HTMLSpanElement;
+const ScratchOff: Component = () => {
+  let dummyEl!: HTMLSpanElement;
 
   let currentElement = getCurrentElement();
   if (currentElement) {
     noShadowDOM();
   }
 
-  const customEl = currentElement.closest("scratch-off");
+  const customEl = currentElement.closest("scratch-off")!;
 
   function handleClick() {
     customEl.classList.add("revealed");
@@ -33,5 +32,5 @@ const ScratchOff: Component<{ children: JSX.Element }> = (props) => {
 export default ScratchOff;
 
 export function registerCustomElement() {
-  customElement("scratch-off", null, ScratchOff);
+  customElement("scratch-off", {}, ScratchOff);
 }

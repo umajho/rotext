@@ -3,7 +3,6 @@ import {
   createEffect,
   createMemo,
   createSignal,
-  For,
   Match,
   on,
   Show,
@@ -37,16 +36,18 @@ import StepsRepresentation from "../../../../steps-representation";
 
 const BACKGROUND_COLOR = getComputedColor(
   getComputedCSSValueOfClass("background-color", "tuan-background"),
-);
+)!;
 
 interface Properties {
   code: string;
 }
 
 const DicexpPreview: Component<Properties> = (outerProps) => {
-  const [loadingRuntime, setLoadingRuntime] = createSignal<"short" | "long">();
+  const [loadingRuntime, setLoadingRuntime] = //
+    createSignal<"short" | "long" | null>(null);
   const [rolling, setRolling] = createSignal(false);
-  const [result, setResult] = createSignal<EvaluationResultForWorker>();
+  const [result, setResult] = //
+    createSignal<EvaluationResultForWorker | null>(null);
 
   createEffect(on([() => outerProps.code], () => setResult(null)));
 
@@ -95,7 +96,7 @@ const DicexpPreview: Component<Properties> = (outerProps) => {
     >(
       (resolve) => {
         let resolved = false;
-        const workerManager = new dicexp.EvaluatingWorkerManager(
+        const workerManager = new dicexp!.EvaluatingWorkerManager(
           () => new EvaluatingWorker(),
           (ready) => {
             if (resolved || !ready) return;
@@ -155,7 +156,7 @@ const DicexpPreview: Component<Properties> = (outerProps) => {
       widgetContentComponent: (props) => {
         const resultError = (): Error | null => {
           const result_ = result();
-          if (result_[0] === "error" /* && result_[1] !== "execute" */) {
+          if (result_?.[0] === "error" /* && result_[1] !== "execute" */) {
             return result_[2];
           }
           return null;
@@ -163,9 +164,9 @@ const DicexpPreview: Component<Properties> = (outerProps) => {
         const resultRepr = () => {
           const result_ = result();
           let repr: Repr | null = null;
-          if (result_[0] === "ok") {
+          if (result_?.[0] === "ok") {
             repr = result_[2].representation;
-          } else if (result_[0] === "error" && result_[1] === "execute") {
+          } else if (result_?.[0] === "error" && result_[1] === "execute") {
             repr = result_[3].representation;
           }
           return repr;
@@ -190,7 +191,9 @@ const DicexpPreview: Component<Properties> = (outerProps) => {
                   <Show
                     when={resultError()}
                   >
-                    <ErrorAlert error={resultError()} showsStack={false} />
+                    {(resultError) => (
+                      <ErrorAlert error={resultError()} showsStack={false} />
+                    )}
                   </Show>
                   <Show when={resultRepr()}>
                     <StepsRepresentation repr={resultRepr()} />
@@ -223,5 +226,5 @@ const DicexpPreview: Component<Properties> = (outerProps) => {
 export default DicexpPreview;
 
 export function registerCustomElement(tag = "dicexp-preview") {
-  customElement(tag, { code: null }, DicexpPreview);
+  customElement(tag, { code: "" }, DicexpPreview);
 }

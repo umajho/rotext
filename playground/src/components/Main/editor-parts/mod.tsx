@@ -11,14 +11,7 @@ import {
   Switch,
 } from "solid-js";
 
-import {
-  Button,
-  DropdownItem,
-  Loading,
-  Tab,
-  Tabs,
-  TabWithDropdown,
-} from "../../ui";
+import { Button, DropdownItem, Loading, Tabs, TabWithDropdown } from "../../ui";
 
 import { EditorStore } from "../../../hooks/editor-store";
 
@@ -31,9 +24,10 @@ const EditorSolutions = {
   TextArea,
 };
 
+// `Intl.Segmenter` 来自 ES2022，目前（2023/10）Firefox 还不支持
 const segmenter: Intl.Segmenter | null = (() => {
-  if (window.Intl?.Segmenter) {
-    return new Intl.Segmenter(undefined, { granularity: "grapheme" });
+  if ("Segmenter" in window.Intl) {
+    return new (Intl as any).Segmenter(undefined, { granularity: "grapheme" });
   }
   return null;
 })();

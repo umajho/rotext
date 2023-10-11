@@ -17,7 +17,8 @@ import { debounceEventHandler } from "../../../utils/mod";
 import { createAutoResetCounter } from "../../../hooks/auto-reset-counter";
 
 const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
-  let scrollContainerEl: HTMLDivElement, contentContainerEl: HTMLDivElement;
+  let scrollContainerEl!: HTMLDivElement,
+    contentContainerEl!: HTMLDivElement;
 
   let changing = false;
 
@@ -56,7 +57,7 @@ const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
     const lookupData = createLookupList({
       textChanged: () => props.store.text,
       scrollContainerSizeChanged: createResizeNotifier(scrollContainerEl),
-      contentContainerEl: contentContainerEl,
+      contentContainerEl,
     });
 
     createActiveLinesTracker({
@@ -86,7 +87,7 @@ const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
 
       // TODO: 以 “没有折行的单行高度” 作为 “滚动到底部时余留下来的唯一一行的高度”？
       const lastHeight = lookupData_.offsetBottom -
-        lookupData_.lines[lookupData_.lines.length - 1].offsetTop;
+        lookupData_.lines[lookupData_.lines.length - 1]!.offsetTop;
       setBlankHeightAtEnd(
         Math.max(scrollContainerEl.offsetHeight - lastHeight, 0),
       );
@@ -94,7 +95,7 @@ const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
   });
 
   function handleClickBlankAtEnd() {
-    const selection = document.getSelection();
+    const selection = document.getSelection()!;
     selection.empty();
     const range = new Range();
 
@@ -102,7 +103,7 @@ const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
     if (!lastChild) {
       contentContainerEl.focus();
     } else if (lastChild.nodeType === Node.TEXT_NODE) {
-      range.setStart(lastChild, lastChild.nodeValue.length);
+      range.setStart(lastChild, lastChild.nodeValue!.length);
     } else {
       range.setStart(
         contentContainerEl,
@@ -116,7 +117,7 @@ const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
     <div
       ref={scrollContainerEl}
       class={`one-dark-background ${props.class} overscroll-y-none`}
-      onScroll={(ev) => scrollHandler()(ev)}
+      onScroll={(ev) => scrollHandler()!(ev)}
     >
       <div class="relative">
         {highlightElement()}
@@ -184,24 +185,24 @@ function createBasicEditorFunctionalities(containerEl: () => HTMLElement) {
   function handlePaste(ev: ClipboardEvent) {
     ev.preventDefault();
 
-    const text = ev.clipboardData.getData("text/plain");
+    const text = ev.clipboardData!.getData("text/plain");
     document.execCommand("insertHTML", false, textToInlineHTML(text));
   }
 
   function handleCopy(ev: ClipboardEvent, isCut?: boolean) {
     ev.preventDefault();
 
-    const selection = document.getSelection();
+    const selection = document.getSelection()!;
     const range = selection.getRangeAt(0);
 
     const result = rangeToText(range);
 
-    ev.clipboardData.setData("text/plain", result.text);
+    ev.clipboardData!.setData("text/plain", result.text);
 
     if (isCut) {
       if (result.wholeLine) {
         const range = new Range();
-        range.selectNode(result.wholeLine.nextSibling);
+        range.selectNode(result.wholeLine.nextSibling!);
         range.insertNode(result.wholeLine);
 
         selection.empty();
@@ -215,7 +216,7 @@ function createBasicEditorFunctionalities(containerEl: () => HTMLElement) {
     beforeInputHandler: handleBeforeInput,
     pasteHandle: handlePaste,
     copyHandler: handleCopy,
-    cutHandler: (ev) => handleCopy(ev, true),
+    cutHandler: (ev: ClipboardEvent) => handleCopy(ev, true),
   };
 }
 
@@ -236,7 +237,7 @@ function rangeToText(range: Range): { text: string; wholeLine?: Node } {
     range.startContainer.nodeType === Node.TEXT_NODE &&
     range.startContainer === range.endContainer
   ) {
-    const nodeValue = range.startContainer.nodeValue;
+    const nodeValue = range.startContainer.nodeValue!;
     if (range.startOffset === range.endOffset) {
       // 在某一行没有选择地复制/剪切，代表对象是那一整行
       return { text: nodeValue + "\n", wholeLine: range.startContainer };
@@ -248,8 +249,8 @@ function rangeToText(range: Range): { text: string; wholeLine?: Node } {
   const container = range.commonAncestorContainer;
 
   let text = "";
-  let startIndex: number;
-  let endIndex: number;
+  let startIndex!: number;
+  let endIndex!: number;
 
   if (range.startContainer === container) {
     startIndex = range.startOffset;
@@ -257,7 +258,7 @@ function rangeToText(range: Range): { text: string; wholeLine?: Node } {
     const childNodes = container.childNodes;
     for (const [i, node] of childNodes.entries()) {
       if (node === range.startContainer) {
-        text = node.nodeValue.slice(range.startOffset);
+        text = node.nodeValue!.slice(range.startOffset);
         startIndex = i + 1;
         break;
       }
@@ -276,7 +277,7 @@ function rangeToText(range: Range): { text: string; wholeLine?: Node } {
   }
 
   for (let i = startIndex;; i++) {
-    const curNode = container.childNodes[i];
+    const curNode = container.childNodes[i]!;
 
     if (
       curNode.nodeType === Node.ELEMENT_NODE &&
@@ -292,7 +293,7 @@ function rangeToText(range: Range): { text: string; wholeLine?: Node } {
       text += curNode.nodeValue;
       break;
     } else if (curNode === range.endContainer) {
-      text += curNode.nodeValue.slice(0, range.endOffset);
+      text += curNode.nodeValue!.slice(0, range.endOffset);
       break;
     }
 
@@ -345,7 +346,7 @@ function createLookupList(
 
     const lines: LineData[] = [{ offsetTop: 0 }];
     for (let i = 0; i < totalLines - 1; i++) {
-      const br = children[i];
+      const br = children[i]!;
       const brBottom = br.getBoundingClientRect().bottom - contentRect.top;
       const nextLineTop = Math.ceil(brBottom / lineHeight) * lineHeight;
       lines.push({ offsetTop: nextLineTop });
@@ -393,7 +394,7 @@ function createNotifier(): [() => void, () => void] {
 
 function createActiveLinesTracker(
   opts: {
-    lookupData: () => LookupData;
+    lookupData: () => LookupData | undefined;
     contentContainerEl: HTMLElement;
     setActiveLines: (v: ActiveLines) => void;
   },
@@ -405,7 +406,7 @@ function createActiveLinesTracker(
     if (!lookupData_) return;
 
     const selection = document.getSelection();
-    if (!selection.rangeCount) return;
+    if (!selection?.rangeCount) return;
     const range = selection.getRangeAt(0);
     if (
       range.commonAncestorContainer !== opts.contentContainerEl &&
@@ -442,8 +443,8 @@ function createActiveLinesTracker(
 }
 
 function createHighlight(opts: {
-  activeLines: () => ActiveLines;
-  lookupData: () => LookupData;
+  activeLines: () => ActiveLines | null;
+  lookupData: () => LookupData | undefined;
   setHighlightElement: (v: () => JSX.Element) => void;
   contentContainerEl: HTMLElement;
 }) {
@@ -454,15 +455,16 @@ function createHighlight(opts: {
   createEffect(on([opts.lookupData, opts.activeLines], () => {
     const lookupData_ = opts.lookupData();
     if (!lookupData_) return;
-    if (!opts.activeLines()) return;
+    const activeLines_ = opts.activeLines();
+    if (!activeLines_) return;
 
-    let [startLine, endLine] = opts.activeLines();
+    let [startLine, endLine] = activeLines_;
     startLine = Math.min(startLine, lookupData_.lines.length);
     endLine = Math.min(endLine, lookupData_.lines.length);
 
-    const startLineOffsetTop = lookupData_.lines[startLine - 1].offsetTop;
+    const startLineOffsetTop = lookupData_.lines[startLine - 1]!.offsetTop;
     const endLineOffsetBottom = endLine < lookupData_.lines.length
-      ? lookupData_.lines[endLine - 1 + 1].offsetTop
+      ? lookupData_.lines[endLine - 1 + 1]!.offsetTop
       : opts.contentContainerEl.getBoundingClientRect().height;
 
     setActiveLinesOffsets({
@@ -492,8 +494,8 @@ function getNodeOffestTopInRangeAt(
   containerEl: HTMLElement,
 ) {
   const node = range[`${position}Container`] === containerEl
-    ? containerEl.childNodes[range[`${position}Offset`]]
-    : range[`${position}Container`];
+    ? containerEl.childNodes[range[`${position}Offset`]]!
+    : range[`${position}Container`]!;
 
   const containerTop = containerEl.getBoundingClientRect().top;
   const clientTop = getBoundingClientTop(node);
@@ -519,9 +521,9 @@ interface ScrollLocal {
 
 function getScrollLocalByY(lookupData: LookupData, y: number): ScrollLocal {
   const line = getLineNumberByY(lookupData.lines, y);
-  const lineData = lookupData.lines[line - 1];
+  const lineData = lookupData.lines[line - 1]!;
   const offsetBottom = line < lookupData.lines.length
-    ? lookupData.lines[line - 1 + 1].offsetTop
+    ? lookupData.lines[line - 1 + 1]!.offsetTop
     : lookupData.offsetBottom;
   const progress = (y - lineData.offsetTop) /
     (offsetBottom - lineData.offsetTop);
@@ -532,7 +534,7 @@ function getScrollLocalByY(lookupData: LookupData, y: number): ScrollLocal {
 function createScrollSyncer(opts: {
   topLine: () => TopLine;
   setTopLine: (v: TopLine) => void;
-  lookupData: () => LookupData;
+  lookupData: () => LookupData | undefined;
   scrollContainerEl: HTMLElement;
 }) {
   const [pendingAutoScrolls, setPendingAutoScrolls] = createAutoResetCounter();
@@ -546,7 +548,7 @@ function createScrollSyncer(opts: {
 
     // XXX: 没有算入内容顶部与滚动容器顶部之间空隙的高度（目前必定为 0）
     const topY = Math.max(opts.scrollContainerEl.scrollTop, 0);
-    const scrollLocal = getScrollLocalByY(opts.lookupData(), topY);
+    const scrollLocal = getScrollLocalByY(opts.lookupData()!, topY);
     const number = scrollLocal.line + scrollLocal.progress;
 
     if (opts.topLine().number === number) return;
@@ -562,9 +564,9 @@ function createScrollSyncer(opts: {
 
     const line = topLine.number;
     const lineInt = line | 0;
-    const offsetTop = lookupData_.lines[lineInt - 1].offsetTop;
+    const offsetTop = lookupData_.lines[lineInt - 1]!.offsetTop;
     const offsetBottom = lineInt < lookupData_.lines.length
-      ? lookupData_.lines[lineInt - 1 + 1].offsetTop
+      ? lookupData_.lines[lineInt - 1 + 1]!.offsetTop
       : lookupData_.offsetBottom;
 
     // XXX: 没有考虑内容顶部与滚动容器顶部之间有空隙的情况

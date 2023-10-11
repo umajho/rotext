@@ -14,6 +14,7 @@ import {
 import { ErrorAlert } from "./ui";
 
 import {
+  Classes,
   classModule,
   h,
   init,
@@ -56,11 +57,11 @@ const Preview: Component<
     onThrowInParsing: (thrown: unknown) => void;
   }
 > = (props) => {
-  let scrollContainerEl: HTMLDivElement;
-  let widgetAnchorEl: HTMLDivElement;
-  let outputContainerEl: HTMLDivElement;
+  let scrollContainerEl!: HTMLDivElement;
+  let widgetAnchorEl!: HTMLDivElement;
+  let outputContainerEl!: HTMLDivElement;
 
-  const [err, setErr] = createSignal<Error>(null);
+  const [err, setErr] = createSignal<Error | null>(null);
 
   const [scrollHandler, setScrollHandler] = createSignal<(ev: Event) => void>();
 
@@ -118,10 +119,10 @@ const Preview: Component<
         props.class ?? ""
       }`}
       ref={scrollContainerEl}
-      onScroll={(ev) => scrollHandler()(ev)}
+      onScroll={(ev) => scrollHandler()!(ev)}
     >
       <Show when={err()}>
-        <ErrorAlert error={err()} showsStack={true} />
+        {(err) => <ErrorAlert error={err()} showsStack={true} />}
       </Show>
 
       {/* highlight anchor */}
@@ -147,8 +148,8 @@ export default Preview;
 function createLookupList(
   els: { scrollContainer: HTMLElement; outputContainer: HTMLElement },
 ) {
-  const [lookupListRaw, setLookupListRaw] = createSignal<LookupList>();
-  const [lookupList, setLookupList] = createSignal<LookupList>();
+  const [lookupListRaw, setLookupListRaw] = createSignal<LookupList>([]);
+  const [lookupList, setLookupList] = createSignal<LookupList>([]);
   function roastLookupList() {
     const _raw = lookupListRaw();
     if (!_raw) return;
@@ -161,7 +162,7 @@ function createLookupList(
     observer.observe(els.outputContainer);
   });
 
-  return [lookupList, setLookupListRaw];
+  return [lookupList, setLookupListRaw] as const;
 }
 
 /**
@@ -172,7 +173,7 @@ function createRendering(
     text: () => string;
     setLookupListRaw: (v: LookupListRaw) => void;
     setParsingTimeText(v: string): void;
-    setErr: (v: Error) => void;
+    setErr: (v: Error | null) => void;
   },
   els: {
     outputContainer: HTMLElement;
@@ -210,7 +211,7 @@ function createRendering(
         `${+(performance.now() - parsingStart).toFixed(3)}ms`,
       );
 
-      const classMap = { "relative": true };
+      const classMap: Classes = { "relative": true };
       classMap[CONTENT_ROOT_CLASS] = true;
       const vNode = h("article", { class: classMap }, vChildren);
 
@@ -218,9 +219,9 @@ function createRendering(
       lastNode = vNode;
     } catch (e) {
       if (!(e instanceof Error)) {
-        e = new Error(e);
+        e = new Error(`${e}`);
       }
-      props.setErr(e);
+      props.setErr(e as Error);
     }
   }));
 }
@@ -235,7 +236,7 @@ function createLocationModule(
       loookupListRaw = [];
     },
     create: (_oldVNode: VNode, vnode: VNode) => {
-      if (vnode.data.location) {
+      if (vnode.data?.location) {
         const el = vnode.elm as HTMLElement;
         loookupListRaw.push({
           element: el,
@@ -272,7 +273,7 @@ function createScrollSyncing(
   let pendingAutoScrolls = 0;
 
   {
-    const [wasAtBottom, setWasAtBottom] = createSignal<boolean>();
+    const [wasAtBottom, setWasAtBottom] = createSignal<boolean>(false);
     setWasAtBottom(ScrollUtils.isAtBottom(els.scrollContainer));
     (new ResizeObserver(() =>
       setWasAtBottom(ScrollUtils.isAtBottom(els.scrollContainer))
@@ -315,7 +316,7 @@ function createScrollSyncing(
     }
 
     createEffect(
-      on([() => props.topLine(), () => props.text()], (cur, prev) => {
+      on([() => props.topLine(), () => props.text()], (_cur, _prev) => {
         // NOTE: 即使与之前相同也要处理，以在编辑器滚动到预览无法继续同步滚动的位置之下时，
         //       在使预览的高度增加而导致可以继续滚动的位置向下延伸时，预览可以同步位置。
         // if (prev && cur && prev[0].number === cur[0].number) return;
@@ -368,7 +369,7 @@ function createScrollSyncing(
 
 function createHighlight(
   props: {
-    activeLines: () => ActiveLines;
+    activeLines: () => ActiveLines | null;
     lookupList: () => LookupList;
     setHighlightElement: (v: () => JSX.Element) => void;
   },
@@ -403,10 +404,10 @@ function createHighlight(
       : ScrollUtils.getScrollLocalByLine(lookupList_, activeLines_[1])
         .indexInLookupList;
 
-    const topLineItem = lookupList_[topLineIndex];
+    const topLineItem = lookupList_[topLineIndex]!;
     const bottomLineItem = topLineIndex === bottomLineIndex
       ? topLineItem
-      : lookupList_[bottomLineIndex];
+      : lookupList_[bottomLineIndex]!;
 
     setTopPx(topLineItem.offsetTop);
     setHeightPx(

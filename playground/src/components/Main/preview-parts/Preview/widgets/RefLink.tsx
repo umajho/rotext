@@ -1,5 +1,5 @@
 import { Component, createMemo, createSignal, JSX } from "solid-js";
-import { customElement, noShadowDOM } from "solid-element";
+import { customElement } from "solid-element";
 
 import { createWidgetComponent } from "../../../../../hooks/widgets";
 import { PinButton, WidgetContainer } from "./support";
@@ -13,7 +13,7 @@ import { WidgetOwner } from "../../../../../stores/widget-owners";
 
 const BACKGROUND_COLOR = getComputedColor(
   getComputedCSSValueOfClass("background-color", "tuan-background"),
-);
+)!;
 
 interface Properties {
   address: string;
@@ -24,7 +24,7 @@ const RefLink: Component<Properties> = (outerProps) => {
 
   const address = createMemo(() => parseAddress(outerProps.address));
   const addressDescription = createMemo(() =>
-    widgetOwner() && describeAddress(address(), widgetOwner().proseClass)
+    widgetOwner() && describeAddress(address(), widgetOwner()!.proseClass)
   );
 
   const component = createWidgetComponent(
@@ -73,13 +73,14 @@ const RefLink: Component<Properties> = (outerProps) => {
 export default RefLink;
 
 export function registerCustomElement(tag = "ref-link") {
-  customElement(tag, { address: null }, RefLink);
+  customElement(tag, { address: "" }, RefLink);
 }
 
 function parseAddress(address: string): Address {
   const prefixAndContent = /^([A-Z]+)\.(.*)$/.exec(address);
   if (!prefixAndContent) return { type: "unknown" };
-  const [_1, prefix, content] = prefixAndContent;
+  const [_1, prefix, content] = //
+    prefixAndContent as unknown as [string, string, string];
 
   if (/^\d+$/.test(content)) {
     const postNumber = parseInt(content);
@@ -88,7 +89,8 @@ function parseAddress(address: string): Address {
 
   const threadIDAndRest = /^([a-z]+)(?:\.([a-z]+))?(?:#(\d+))?$/.exec(content);
   if (!threadIDAndRest) return { type: "unknown" };
-  const [_2, threadID, subThreadID, floorNumberText] = threadIDAndRest;
+  const [_2, threadID, subThreadID, floorNumberText] = //
+    threadIDAndRest as unknown as [string, string, string?, string?];
 
   return {
     prefix,
@@ -155,7 +157,8 @@ function describeAddress(address: Address, proseClass: string): JSX.Element {
             )}
         </ul>
       );
-    } else if (address.type === "unknown") {
+    } else {
+      address.type satisfies "unknown";
       return <p>未知地址</p>;
     }
   })();

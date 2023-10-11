@@ -1,9 +1,6 @@
 import { Component } from "solid-js";
 import { Dropdown, DropdownItem } from "./ui";
-import {
-  HiSolidArrowTopRightOnSquare,
-  HiSolidChevronDown,
-} from "solid-icons/hi";
+import { HiSolidArrowTopRightOnSquare } from "solid-icons/hi";
 
 export const NavBar: Component = () => {
   return (

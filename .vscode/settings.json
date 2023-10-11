@@ -3,5 +3,13 @@
     "Inlines",
     "rotext",
     "unescapes"
+  ],
+  "json.schemas": [
+    {
+      "fileMatch": [
+        "tsconfig.*.json"
+      ],
+      "url": "http://json.schemastore.org/tsconfig"
+    }
   ]
 }

@@ -7,7 +7,7 @@ export function binarySearch<T>(
   while (true) {
     if (h < l) return null;
     const i = ((h - l + 1) >> 2) + l;
-    const item = list[i];
+    const item = list[i]!;
     const p = predicate(item, i);
     if (p === true) return i;
     if (p === "greater") {

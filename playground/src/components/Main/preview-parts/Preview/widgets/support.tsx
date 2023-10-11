@@ -37,7 +37,7 @@ export const PinButton: Component<{
         ? "red"
         : computedColorToCSSValue(gray500)}
       style={props.displayMode() === "pinned"
-        ? null
+        ? undefined
         : { transform: "rotate(45deg)" }}
       onTouchEnd={props.onTouchEnd}
       onClick={props.onClick}

@@ -52,9 +52,9 @@ export function joinLines(
 ): InlineSlot {
   if (!lines.length) return [];
 
-  const result: InlineSlot = lines[0];
+  const result: InlineSlot = lines[0]!;
   for (let i = 1; i < lines.length; i++) {
-    const line = lines[i];
+    const line = lines[i]!;
     appendLine(result, line, breaks);
   }
 
@@ -66,8 +66,8 @@ function appendLine(
   line: InlineSlot,
   breaks: boolean,
 ) {
-  const topEnd = target[target.length - 1];
-  const bottomStart = line[0];
+  const topEnd = target[target.length - 1]!;
+  const bottomStart = line[0]!;
 
   if (
     // NOTE: 规定行内元素必定小写字母打头，以此来判断
@@ -86,7 +86,7 @@ function appendLine(
 }
 
 function startsWithLowerCase(x: string) {
-  return x[0].toLowerCase() === x[0];
+  return x[0]!.toLowerCase() === x[0]!;
 }
 
 /**
