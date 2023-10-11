@@ -11,6 +11,12 @@ import {
 } from "solid-js";
 import { customElement } from "solid-element";
 
+import {
+  EvaluatingWorkerManager,
+  EvaluationResultForWorker,
+  Repr,
+} from "dicexp";
+
 import "./DicexpPreview.scss";
 
 import { createWidgetComponent } from "../../../../../hooks/widgets";
@@ -22,12 +28,12 @@ import {
 } from "../../../../../utils/styles";
 import FaSolidDice from "../../../../icons";
 import { Loading } from "../../../../ui";
-import { EvaluatingWorkerManager, EvaluationResult } from "dicexp";
 import { scopes } from "../../../../../stores/scopes";
 
 import EvaluatingWorker from "../../../../../workers/dicexp-evaluator?worker";
 import { ErrorAlert } from "../ui";
 import { mouseDownNoDoubleClickToSelect } from "../../../../../utils/events";
+import StepsRepresentation from "../../../../steps-representation";
 
 const BACKGROUND_COLOR = getComputedColor(
   getComputedCSSValueOfClass("background-color", "tuan-background"),
@@ -40,18 +46,18 @@ interface Properties {
 const DicexpPreview: Component<Properties> = (outerProps) => {
   const [loadingRuntime, setLoadingRuntime] = createSignal<"short" | "long">();
   const [rolling, setRolling] = createSignal(false);
-  const [result, setResult] = createSignal<EvaluationResult>();
+  const [result, setResult] = createSignal<EvaluationResultForWorker>();
 
   createEffect(on([() => outerProps.code], () => setResult(null)));
 
   const resultElement = createMemo(() => {
     const result_ = result();
     if (!result_) return null;
-    if (!result_.ok) return <span class="text-red-500">错误！</span>;
-    if (typeof result_.ok !== "number") {
+    if (result_[0] !== "ok") return <span class="text-red-500">错误！</span>;
+    if (typeof result_[1] !== "number") {
       return <span class="text-red-500">暂不支持非数字结果！</span>;
     }
-    return <>{String(result_.ok)}</>;
+    return <>{String(result_[1])}</>;
   });
 
   const [everRolled, setEverRolled] = createSignal(false);
@@ -73,7 +79,7 @@ const DicexpPreview: Component<Properties> = (outerProps) => {
       dicexp = await import("dicexp");
     } catch (e) {
       const reason = (e instanceof Error) ? e.message : `e`;
-      setResult({ error: new Error(`加载运行时失败：${reason}`) });
+      setResult(["error", "other", new Error(`加载运行时失败：${reason}`)]);
     }
     setLoadingRuntime(null);
     clearTimeout(cID);
@@ -147,6 +153,24 @@ const DicexpPreview: Component<Properties> = (outerProps) => {
       },
       widgetContainerComponent: WidgetContainer,
       widgetContentComponent: (props) => {
+        const resultError = (): Error | null => {
+          const result_ = result();
+          if (result_[0] === "error" /* && result_[1] !== "execute" */) {
+            return result_[2];
+          }
+          return null;
+        };
+        const resultRepr = () => {
+          const result_ = result();
+          let repr: Repr | null = null;
+          if (result_[0] === "ok") {
+            repr = result_[2].representation;
+          } else if (result_[0] === "error" && result_[1] === "execute") {
+            repr = result_[3].representation;
+          }
+          return repr;
+        };
+
         return (
           <div class="flex flex-col">
             <div class="flex justify-between items-center px-2">
@@ -156,27 +180,20 @@ const DicexpPreview: Component<Properties> = (outerProps) => {
                   onClick={props.onClickOnPinIcon}
                   onTouchEnd={props.onTouchEndOnPinIcon}
                 />
-                <span>掷骰过程（尚未完工）</span>
+                <span>掷骰过程</span>
               </div>
             </div>
             <hr />
             <div class="p-4">
               <Switch>
                 <Match when={result()}>
-                  <Show when={result().error instanceof Error}>
-                    {
-                      /*
-                        ~~忽略运行时错误（`"type" in .error && .error.type === "error"`），
-                        因为其会出现在步骤当中。~~
-
-                        FIXME: RuntimeError 看起来已经转换成 Error 了，感觉至少还是应该区分一下，
-                               以减少重复信息的显示。
-                      */
-                    }
-                    <ErrorAlert error={result().error} showsStack={false} />
+                  <Show
+                    when={resultError()}
+                  >
+                    <ErrorAlert error={resultError()} showsStack={false} />
                   </Show>
-                  <Show when={result().representation}>
-                    {JSON.stringify(result().representation)}
+                  <Show when={resultRepr()}>
+                    <StepsRepresentation repr={resultRepr()} />
                   </Show>
                 </Match>
                 <Match when={rolling()}>
