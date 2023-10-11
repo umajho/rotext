@@ -248,4 +248,9 @@
     background-color: $tomorrow-night-eighties-background;
     color: $tomorrow-night-yellow;
   }
+
+  a {
+    // see: https://stackoverflow.com/a/63883723 
+    @apply underline text-blue-600 hover:text-blue-800 visited:text-purple-600
+  }
 }
