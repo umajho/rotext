@@ -13,8 +13,10 @@ export function createPreviewParts(
   PreviewTopBar: JSX.Element;
   Preview: JSX.Element;
 } {
-  const [parsingTimeText, setParsingTimeText] = createSignal<string>(null);
-  const [errParseInfo, setErrParseInfo] = createSignal<PreviewErrorInfo>(null);
+  const [parsingTimeText, setParsingTimeText] = //
+    createSignal<string | null>(null);
+  const [errParseInfo, setErrParseInfo] = //
+    createSignal<PreviewErrorInfo | null>(null);
 
   const handleThrowInParsing = (thrown: unknown) => {
     setErrParseInfo(extractPreviewErrorInfoFromThrown(thrown, "解析期间"));
@@ -35,13 +37,15 @@ export function createPreviewParts(
     ),
     Preview: (
       <div class={`flex flex-col items-center ${opts.heightClass}`}>
-        <Show when={errParseInfo() !== null}>
-          <Alert
-            type="error"
-            title={errParseInfo().title}
-            message={errParseInfo().message}
-            details={errParseInfo().details}
-          />
+        <Show when={errParseInfo()}>
+          {(errParseInfo) => (
+            <Alert
+              type="error"
+              title={errParseInfo().title}
+              message={errParseInfo().message}
+              details={errParseInfo().details}
+            />
+          )}
         </Show>
         <Suspense
           fallback={

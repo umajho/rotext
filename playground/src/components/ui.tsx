@@ -76,12 +76,12 @@ export const TabWithDropdown: Component<
     onClick?: () => void;
   }
 > = (props) => {
-  const [labelEl, setLabelEl] = createSignal<HTMLElement>();
+  const [_labelEl, setLabelEl] = createSignal<HTMLElement>();
 
   return (
     <Tab
       isActive={props.isActive}
-      onClick={props.isActive ? props.onClick : null}
+      onClick={props.isActive ? props.onClick : undefined}
     >
       <Dropdown
         setLabelRef={setLabelEl}
@@ -152,8 +152,8 @@ export const Dropdown: Component<
   props.labelAsButton ??= true;
   props.disabled ??= false;
 
-  let labelEl: HTMLLabelElement;
-  let ulEl: HTMLUListElement;
+  let labelEl!: HTMLLabelElement;
+  let ulEl!: HTMLUListElement;
 
   let isOpen = false;
 
@@ -188,17 +188,17 @@ export const Dropdown: Component<
     <div class="dropdown">
       <label
         ref={labelEl}
-        tabindex={!props.disabled && "0"}
+        tabindex={props.disabled ? undefined : "0"}
         class={`${labelButtonClass()} ${props.labelClass ?? ""}`}
       >
         {props.summary}
         <HiSolidChevronDown
-          style={{ "visibility": props.disabled ? "hidden" : null }}
+          style={{ "visibility": props.disabled ? "hidden" : undefined }}
         />
       </label>
       <ul
         ref={ulEl}
-        tabindex={!props.disabled && "0"}
+        tabindex={props.disabled ? undefined : "0"}
         class={`dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box ${
           props.contentClass ?? ""
         }`}

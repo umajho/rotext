@@ -5,7 +5,10 @@ export const SUPPORTS_DVH = CSS.supports?.("height", "1dvh");
 type CSSKey = keyof JSX.CSSProperties;
 
 function getComputedCSSValueFromRaw(key: CSSKey, rawValue: string) {
-  return getComputedCSSValue(key, (el) => el.style[key] = rawValue);
+  return getComputedCSSValue(
+    key,
+    (el) => el.style[key as unknown as any] = rawValue,
+  );
 }
 
 export function getComputedCSSValueOfClass(key: CSSKey, klass: string) {
@@ -28,11 +31,11 @@ function getComputedCSSValue(
   containerEl.appendChild(el);
   document.body.appendChild(containerEl);
 
-  const value = getComputedStyle(el)[key];
+  const value = getComputedStyle(el)[key as unknown as any];
 
   containerEl.remove();
 
-  return value;
+  return value!;
 }
 
 export function getSizeInPx(size: string) {

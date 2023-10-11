@@ -1,4 +1,4 @@
-export function debounceEventHandler<Ev extends Event, T>(
+export function debounceEventHandler<Ev extends Event>(
   handler: (ev: Ev) => void,
 ) {
   let lastEv: Ev | null = null;

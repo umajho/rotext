@@ -19,7 +19,7 @@ export function getScrollLocalByY(
     if (!nextItem || y < nextItem.offsetTop) return true;
     return "greater";
   }) ?? 0;
-  const localItem = lookupList[localIndex];
+  const localItem = lookupList[localIndex]!;
 
   const offsetTop = localItem.offsetTop;
   const offsetBottom = getOffsetBottom(
@@ -47,7 +47,7 @@ export function getScrollLocalByLine(
     if (!nextItem || line < nextItem.location.start.line) return true;
     return "greater";
   }) ?? 0;
-  const localItem = lookupList[localIndex];
+  const localItem = lookupList[localIndex]!;
 
   const startLine = localItem.location.start.line;
   const endLine = getEndLine(
@@ -65,7 +65,7 @@ export function getScrollLocalByLine(
 }
 
 export function scrollLocalToLine(local: ScrollLocal, list: LookupList) {
-  const item = list[local.indexInLookupList];
+  const item = list[local.indexInLookupList]!;
 
   const startLine = item.location.start.line;
   const endLine = getEndLine(
@@ -118,7 +118,7 @@ export function scrollToLine(
       scrollLocal,
       lookupList,
       scrollContainerEl.scrollHeight,
-    ),
+    ) ?? 0,
     maxScrollTop,
   );
 
@@ -145,17 +145,18 @@ export function isAtBottom(
 }
 
 export function roastLookupList(raw: LookupListRaw, rootClass: string) {
+  if (!raw.length) return [];
+
   // 按理来讲应该已经是按起始行数排序的了，不过以免万一就再排序一次。
   // 其实原本还会保证越深的元素排在越后面，不过后面的操作不用考虑这件事。
   raw.sort((a, b) => a.location.start.line - b.location.start.line);
 
-  const [rootElementViewportOffsetTop] = (() => {
-    if (!raw.length) return [null, null];
-    let el = raw[0].element;
+  const rootElementViewportOffsetTop = (() => {
+    let el = raw[0]!.element;
     while (!el.classList.contains(rootClass)) {
-      el = el.parentElement;
+      el = el.parentElement!;
     }
-    return [el.getBoundingClientRect().top];
+    return el.getBoundingClientRect().top;
   })();
 
   // 为每一项就地设置位移高度
@@ -170,7 +171,7 @@ export function roastLookupList(raw: LookupListRaw, rootClass: string) {
   // 根据规则，在起始行数相同的项有多项时只保留一项
   const reduced = roasted.reduce((acc, cur) => {
     if (!acc) return [cur];
-    const last = acc[acc.length - 1];
+    const last = acc[acc.length - 1]!;
 
     // NOTE: 有可能两个元素的起始行数、高度都一样，
     //       这时用哪个都一样，因为用不到更细的信息。

@@ -72,7 +72,8 @@ const Editor: Component<
       });
       scrollContainerDOM.addEventListener(
         "scroll",
-        debounceEventHandler(scrollHandler),
+        // 不知为何，回调函数签名里的第一个参数没有 target/currentTarget
+        debounceEventHandler(scrollHandler) as (ev: Event) => void,
       );
     }
 
@@ -110,7 +111,7 @@ const Editor: Component<
 
   return (
     <>
-      <Portal mount={document.querySelector("head")}>
+      <Portal mount={document.querySelector("head")!}>
         <style>
           {blankHeightAtEnd() && `
           .editor-${editorID} .cm-content::after {
@@ -129,7 +130,7 @@ export default Editor;
 
 function createScrollHandler(
   opts: {
-    view: () => EditorView;
+    view: () => EditorView | undefined;
     pendingAutoScrolls: () => number;
     setPendingAutoScrolls: { decrease: () => void; reset: () => void };
     contentPadding: () => { top: number };
@@ -180,13 +181,13 @@ function createScrollHandler(
 }
 
 function createBlankHeightAtEndCalculator(opts: {
-  view: () => EditorView;
+  view: () => EditorView | undefined;
   contentPadding: () => { bottom: number };
   setBlankHeightAtEnd: (v: number) => void;
   scrollContainerDOM: HTMLElement;
 }) {
   function calculateBlankHeightAtEnd() {
-    const view = opts.view();
+    const view = opts.view()!;
     const maxTopLine = view.state.doc.lines;
 
     const scrollEl = opts.scrollContainerDOM;
@@ -210,7 +211,7 @@ function createBlankHeightAtEndCalculator(opts: {
 }
 
 function createTopLineAutoScroller(opts: {
-  view: () => EditorView;
+  view: () => EditorView | undefined;
   topLine: () => TopLine;
   setPendingAutoScrolls: { increase: (hard?: boolean) => void };
 }) {
@@ -231,7 +232,7 @@ function createTopLineAutoScroller(opts: {
     }
     lastTopLineFromPreview = topLineData.number;
 
-    scrollTopLineTo(opts.view(), topLineData.number, {
+    scrollTopLineTo(opts.view()!, topLineData.number, {
       beforeDispatch: () => {
         opts.setPendingAutoScrolls.increase(!prev);
       },

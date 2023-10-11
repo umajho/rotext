@@ -94,7 +94,7 @@ export function buildContainers(
           throw new Error("unreachable");
         }
 
-        const isFirst = last.type === null
+        const isFirst: boolean = last.type === null
           ? true
           : (last.parentEl !== parentEl);
         const isBlank = item.line.length === 0 ||

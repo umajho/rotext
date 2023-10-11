@@ -28,9 +28,9 @@ const COLLAPSE_HEIGHT_PX = getSizeInPx("6rem");
 export type DisplayMode = "closed" | "floating" | "pinned";
 
 export interface PrimeContentComponent {
-  cursor: JSX.CSSProperties["cursor"] | null;
+  cursor: JSX.CSSProperties["cursor"];
 
-  onToggleWidget: () => void;
+  onToggleWidget?: () => void;
 }
 
 export interface WidgetContainerProperties {
@@ -76,9 +76,9 @@ export function createWidgetComponent(parts: {
     noShadowDOM();
   }
 
-  let primeEl: HTMLSpanElement;
-  let wContainerEl: HTMLDivElement; // “w” -> “widget”
-  let widgetEl: HTMLDivElement;
+  let primeEl!: HTMLSpanElement;
+  let wContainerEl!: HTMLDivElement; // “w” -> “widget”
+  let widgetEl!: HTMLDivElement;
 
   const backgroundColorCSSValue = createMemo(() =>
     computedColorToCSSValue(opts.widgetBackgroundColor())
@@ -90,15 +90,18 @@ export function createWidgetComponent(parts: {
     { topPx: number; leftPx: number }
   >({ topPx: 0, leftPx: 0 });
 
-  const [widgetSize, setWidgetSize] = createSignal<ElementSize>();
-  const [wContainerSize, setWContainerSize] = createSignal<ElementSize>();
+  const [widgetSize, setWidgetSize] = createSignal<ElementSize | null>(null);
+  const [wContainerSize, setWContainerSize] = //
+    createSignal<ElementSize | null>(null);
 
   const collapsible = () =>
-    opts.openable()
-      ? (widgetSize() ? widgetSize().heightPx > COLLAPSE_HEIGHT_PX : null)
+    opts.openable?.()
+      ? (widgetSize()
+        ? (widgetSize()?.heightPx ?? 0) > COLLAPSE_HEIGHT_PX
+        : null)
       : null;
 
-  const maskBaseColor = createMemo((): ComputedColor | null =>
+  const maskBaseColor = createMemo((): ComputedColor =>
     mixColor(opts.widgetBackgroundColor(), 2 / 3, opts.maskTintColor(), 1 / 3)
   );
 
@@ -119,15 +122,16 @@ export function createWidgetComponent(parts: {
   });
 
   function handleMount() {
-    setWidgetOwner(getWidgetOwner(primeEl.closest(".previewer")));
-    opts.setWidgetOwner?.(widgetOwner());
+    const widgetOwner_ = getWidgetOwner(primeEl.closest(".previewer")!)!;
+    setWidgetOwner(widgetOwner_);
+    opts.setWidgetOwner?.(widgetOwner_);
 
-    const closestContainerEl = closestContainer(primeEl);
-    createEffect(on([widgetOwner().layoutChange], () => { // TODO: debounce
+    const closestContainerEl = closestContainer(primeEl)!;
+    createEffect(on([widgetOwner_.layoutChange], () => { // TODO: debounce
       setWidgetPosition(
         calculateWidgetPosition({
           prime: primeEl,
-          widgetAnchor: widgetOwner().widgetAnchorElement(),
+          widgetAnchor: widgetOwner_.widgetAnchorElement(),
           closestContainer: closestContainerEl,
         }),
       );
@@ -145,12 +149,12 @@ export function createWidgetComponent(parts: {
       removed: () => displayMode() === "closed",
     }, () => wContainerEl);
 
-    if (widgetOwner().level === 1 && !primeEl.closest("scratch-off")) {
-      autoOpen(opts.autoOpenShouldCollapse);
+    if (widgetOwner_.level === 1 && !primeEl.closest("scratch-off")) {
+      autoOpen(!!opts.autoOpenShouldCollapse);
     }
   }
 
-  return (props) => {
+  return () => {
     onMount(() => {
       handleMount();
     });
@@ -160,18 +164,18 @@ export function createWidgetComponent(parts: {
         <span
           ref={primeEl}
           class="widget-prime inline-block"
-          onMouseEnter={opts.openable() ? enterHandler : null}
-          onMouseLeave={opts.openable() ? leaveHandler : null}
+          onMouseEnter={opts.openable?.() ? enterHandler : undefined}
+          onMouseLeave={opts.openable?.() ? leaveHandler : undefined}
         >
           <parts.primeContentComponent
-            cursor={opts.openable()
+            cursor={opts.openable?.()
               ? (displayMode() === "pinned"
                 ? (collapsible()
                   ? (collapsed() ? "zoom-in" : "zoom-out")
-                  : null)
+                  : undefined)
                 : "zoom-in")
-              : null}
-            onToggleWidget={opts.openable() ? primeClickHandler : null}
+              : undefined}
+            onToggleWidget={opts.openable?.() ? primeClickHandler : undefined}
           />
         </span>
         <Show when={displayMode() === "pinned"}>
@@ -250,14 +254,14 @@ function createDisplayModeFSM(
   opts: {
     initialDisplayMode: DisplayMode;
     openable: () => boolean;
-    collapsible: () => boolean;
+    collapsible: () => boolean | null;
   },
 ) {
   const [displayMode, setDisplayMode] = createSignal(opts.initialDisplayMode);
   const [collapsed, setCollapsed] = createSignal(false);
 
   const [delayedAutoOpen, setDelayedAutoOpen] = createSignal<
-    { shouldCollapse: boolean }
+    { shouldCollapse: boolean } | null
   >();
   const [userInteracted, setUserInteracted] = createSignal(false);
   createEffect(on([userInteracted], () => {
@@ -392,7 +396,7 @@ function createDisplayModeFSM(
 function createSizeSyncer(
   props: {
     size: () => ElementSize | null;
-    setSize: (v: ElementSize) => void;
+    setSize: (v: ElementSize | null) => void;
     removed: () => boolean;
   },
   el: () => HTMLElement,
@@ -434,14 +438,14 @@ function mixColor(
 ) {
   const mixedColor: ComputedColor = [0, 0, 0, null];
   for (let i = 0; i < 3; i++) {
-    mixedColor[i] = (colorA[i] * weightA + colorB[i] * weightB) | 0;
+    mixedColor[i] = (colorA[i]! * weightA + colorB[i]! * weightB) | 0;
   }
   return mixedColor;
 }
 
 const CollapseMaskLayer: Component<
   {
-    containerHeightPx: () => number;
+    containerHeightPx: () => number | undefined;
     backgroundColor: () => ComputedColor;
     onExpand: () => void;
   }
