@@ -107,6 +107,7 @@ export function scrollToLine(
   scrollContainerEl: HTMLElement,
   wasAtBottom: () => boolean,
   setWasAtBottom: (v: boolean) => void,
+  opts?: { triggeredBy?: "text-changes" },
 ): "scrolled" | "untouched" | "adjusted" {
   const scrollLocal = getScrollLocalByLine(lookupList, line);
 
@@ -126,6 +127,7 @@ export function scrollToLine(
   // “之前编辑器的位置已经越过了预览对应能滚动到的位置（最底部），现在预览的最底部增加了”
   // 而调整预览的滚动位置。
   const adjusting = wasAtBottom() && scrollTop > scrollContainerEl.scrollTop;
+  if (opts?.triggeredBy === "text-changes" && !adjusting) return "untouched";
 
   scrollContainerEl.scrollTo({ top: scrollTop, behavior: "instant" });
   setWasAtBottom(isAtBottom(scrollContainerEl));
