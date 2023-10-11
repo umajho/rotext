@@ -279,7 +279,7 @@ function createScrollSyncing(
       setWasAtBottom(ScrollUtils.isAtBottom(els.scrollContainer))
     )).observe(els.outputContainer);
 
-    function scrollToTopLine() {
+    function scrollToTopLine(opts?: { triggeredBy?: "text-changes" }) {
       const topLineData = props.topLine();
       if (!topLineData.setFrom || topLineData.setFrom === "preview") {
         return;
@@ -309,19 +309,18 @@ function createScrollSyncing(
         els.scrollContainer,
         wasAtBottom,
         setWasAtBottom,
+        { triggeredBy: opts?.triggeredBy },
       );
       if (scrollResult === "scrolled") {
         pendingAutoScrolls++;
       }
     }
 
+    // NOTE: 即使与之前相同也要处理，以在编辑器滚动到预览无法继续同步滚动的位置之下时，
+    //       在使预览的高度增加而导致可以继续滚动的位置向下延伸时，预览可以同步位置。
+    createEffect(on([props.topLine], () => scrollToTopLine()));
     createEffect(
-      on([() => props.topLine(), () => props.text()], (_cur, _prev) => {
-        // NOTE: 即使与之前相同也要处理，以在编辑器滚动到预览无法继续同步滚动的位置之下时，
-        //       在使预览的高度增加而导致可以继续滚动的位置向下延伸时，预览可以同步位置。
-        // if (prev && cur && prev[0].number === cur[0].number) return;
-        scrollToTopLine();
-      }),
+      on([props.text], () => scrollToTopLine({ triggeredBy: "text-changes" })),
     );
   }
 
