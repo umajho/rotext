@@ -57,6 +57,7 @@ const PROSE_CLASS = "tuan-prose";
 registerCustomElementForRoWidgetRefLink("ref-link");
 registerCustomElementForStepRepresentations("steps-representation");
 registerCustomElementForRoWidgetDicexp("dicexp-preview", {
+  dicexpImporter: () => import("dicexp"),
   EvaluatingWorker,
   ErrorAlert,
   Loading,
