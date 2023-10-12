@@ -1,15 +1,19 @@
 import { Component, createMemo, createSignal, JSX } from "solid-js";
 import { customElement } from "solid-element";
 
-import { createWidgetComponent } from "../../../../../hooks/widgets";
-import { PinButton, WidgetContainer } from "./support";
-import { gray500 } from "../../../../../utils/color-consts";
 import {
   getComputedColor,
   getComputedCSSValueOfClass,
-} from "../../../../../utils/styles";
+} from "@rotext/web-utils";
+import {
+  createRoWidgetComponent,
+  RoWidgetOwner,
+} from "@rotext/solid-components/internal";
+
+import { PinButton, WidgetContainer } from "./support";
+import { gray500 } from "../../../../../utils/color-consts";
+
 import { mouseDownNoDoubleClickToSelect } from "../../../../../utils/events";
-import { WidgetOwner } from "../../../../../stores/widget-owners";
 
 const BACKGROUND_COLOR = getComputedColor(
   getComputedCSSValueOfClass("background-color", "tuan-background"),
@@ -20,14 +24,14 @@ interface Properties {
 }
 
 const RefLink: Component<Properties> = (outerProps) => {
-  const [widgetOwner, setWidgetOwner] = createSignal<WidgetOwner>();
+  const [widgetOwner, setWidgetOwner] = createSignal<RoWidgetOwner>();
 
   const address = createMemo(() => parseAddress(outerProps.address));
   const addressDescription = createMemo(() =>
     widgetOwner() && describeAddress(address(), widgetOwner()!.proseClass)
   );
 
-  const component = createWidgetComponent(
+  const component = createRoWidgetComponent(
     {
       primeContentComponent: (props) => {
         return (

@@ -1,3 +1,5 @@
+import styles from "./styles.module.scss";
+
 import {
   Component,
   createEffect,
@@ -13,13 +15,15 @@ import { Portal } from "solid-js/web";
 import { HiSolidChevronDoubleDown } from "solid-icons/hi";
 
 import {
+  closestContainer,
   ComputedColor,
   computedColorToCSSValue,
   getSizeInPx,
-} from "../utils/styles";
-import { getWidgetOwner, WidgetOwner } from "../stores/widget-owners";
-import { closestContainer } from "../utils/elements";
+} from "@rotext/web-utils";
 import { getCurrentElement, noShadowDOM } from "solid-element";
+
+import { getWidgetOwner, WidgetOwner } from "./widget-owners-store";
+import { mixColor } from "./utils";
 
 const LEAVING_DELAY_MS = 100;
 
@@ -36,8 +40,8 @@ export interface PrimeContentComponent {
 export interface WidgetContainerProperties {
   ref: HTMLDivElement | undefined;
 
-  class: string;
-  style: JSX.CSSProperties;
+  class?: string;
+  style?: JSX.CSSProperties;
 
   onMouseEnter: () => void;
   onMouseLeave: () => void;
@@ -163,7 +167,7 @@ export function createWidgetComponent(parts: {
       <>
         <span
           ref={primeEl}
-          class="widget-prime inline-block"
+          class={`widget-prime ${styles["widget-prime"]}`}
           onMouseEnter={opts.openable?.() ? enterHandler : undefined}
           onMouseLeave={opts.openable?.() ? leaveHandler : undefined}
         >
@@ -191,8 +195,8 @@ export function createWidgetComponent(parts: {
           <Show when={displayMode() !== "closed"}>
             <parts.widgetContainerComponent
               ref={wContainerEl}
-              class="absolute"
               style={{
+                position: "absolute",
                 top: `${widgetPosition().topPx}px`,
                 left: `${widgetPosition().leftPx}px`,
                 "z-index": `-${widgetPosition().topPx | 0}`,
@@ -430,19 +434,6 @@ function createSizeSyncer(
   }));
 }
 
-function mixColor(
-  colorA: ComputedColor,
-  weightA: number,
-  colorB: ComputedColor,
-  weightB: number,
-) {
-  const mixedColor: ComputedColor = [0, 0, 0, null];
-  for (let i = 0; i < 3; i++) {
-    mixedColor[i] = (colorA[i]! * weightA + colorB[i]! * weightB) | 0;
-  }
-  return mixedColor;
-}
-
 const CollapseMaskLayer: Component<
   {
     containerHeightPx: () => number | undefined;
@@ -458,29 +449,27 @@ const CollapseMaskLayer: Component<
   const bottomColor = `rgb(${baseColorRGB})`;
 
   return (
-    <div class="relative">
+    <div class={styles["widget-collapse-mask-layer"]}>
       <div
-        class="absolute top-0 w-full pointer-events-none"
+        class={styles["pointer-masker"]}
         style={{ height: `${props.containerHeightPx()}px` }}
       >
-        <div class="flex flex-col h-full">
-          <div class="flex-1" />
-          <div
-            class="relative pointer-events-auto cursor-zoom-in h-8"
-            onClick={props.onExpand}
-          >
-            <div class="absolute top-0 w-full z-10">
-              <div class="flex flex-col justify-center items-center h-8">
-                <HiSolidChevronDoubleDown />
-              </div>
+        <div class={styles["space-taker"]} />
+        <div
+          class={styles["action-area-for-expansion"]}
+          onClick={props.onExpand}
+        >
+          <div class={styles["icon-area"]}>
+            <div class={styles["aligner"]}>
+              <HiSolidChevronDoubleDown />
             </div>
-            <div
-              class="h-full z-0"
-              style={{
-                background: `linear-gradient(${topColor}, ${bottomColor})`,
-              }}
-            />
           </div>
+          <div
+            class={styles["mask-area"]}
+            style={{
+              background: `linear-gradient(${topColor}, ${bottomColor})`,
+            }}
+          />
         </div>
       </div>
     </div>

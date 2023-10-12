@@ -3,13 +3,14 @@ import { Component } from "solid-js";
 import { BsPinFill } from "solid-icons/bs";
 
 import {
-  DisplayMode,
-  WidgetContainerProperties,
-} from "../../../../../hooks/widgets";
-import { gray500 } from "../../../../../utils/color-consts";
-import { computedColorToCSSValue } from "../../../../../utils/styles";
+  RoWidgetContainerProperties,
+  RoWidgetDisplayMode,
+} from "@rotext/solid-components/internal";
 
-export const WidgetContainer: Component<WidgetContainerProperties> = (
+import { gray500 } from "../../../../../utils/color-consts";
+import { computedColorToCSSValue } from "@rotext/web-utils";
+
+export const WidgetContainer: Component<RoWidgetContainerProperties> = (
   props,
 ) => {
   return (
@@ -26,7 +27,7 @@ export const WidgetContainer: Component<WidgetContainerProperties> = (
 };
 
 export const PinButton: Component<{
-  displayMode: () => DisplayMode;
+  displayMode: () => RoWidgetDisplayMode;
   onTouchEnd: () => void;
   onClick: () => void;
 }> = (props) => {
