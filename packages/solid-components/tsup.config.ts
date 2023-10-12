@@ -1,6 +1,10 @@
 import { defineConfig } from "tsup";
 import * as preset from "tsup-preset-solid";
 
+import { postcssModules, sassPlugin } from "esbuild-sass-plugin";
+import autoprefixer from "autoprefixer";
+import tailwindcss from "tailwindcss";
+
 const preset_options: preset.PresetOptions = {
   // array or single object
   entries: [
@@ -44,5 +48,21 @@ export default defineConfig((config) => {
     preset.writePackageJson(package_fields);
   }
 
-  return preset.generateTsupOptions(parsed_options);
+  const tsUpOptions = preset.generateTsupOptions(parsed_options)
+    .map((opt) => {
+      // opt.loader ??= {};
+      // // 如果只用 CSS 不用 SCSS 的话：
+      // // https://github.com/egoist/tsup/issues/536#issuecomment-1752121594
+      // opt.loader[".css"] = "local-css";
+
+      opt.esbuildPlugins ??= [];
+      opt.esbuildPlugins.push(...[
+        sassPlugin({
+          transform: postcssModules({}, [tailwindcss as any, autoprefixer]),
+        }),
+      ]);
+
+      return opt;
+    });
+  return tsUpOptions;
 });
