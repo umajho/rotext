@@ -9,12 +9,18 @@ const preset_options: preset.PresetOptions = {
   // array or single object
   entries: [
     // default entry (index)
-    {
+    ...[
+      { entry: "src/index.tsx" },
+      { entry: "src/ro-widget-core/mod.tsx", name: "widget-core" },
+      { entry: "src/ro-widgets/RefLink.tsx", name: "RefLink" },
+      { entry: "src/ro-widgets/Dicexp/mod.tsx", name: "Dicexp" },
+    ].map(({ entry, name }) => ({
       // entries with '.tsx' extension will have `solid` export condition generated
-      entry: "src/index.tsx",
+      entry,
+      name,
       // will generate a separate development entry
       dev_entry: true,
-    },
+    })),
   ],
   // Set to `true` to remove all `console.*` calls and `debugger` statements in prod builds
   drop_console: true,
@@ -35,10 +41,15 @@ export default defineConfig((config) => {
   if (!watching && !CI) {
     const package_fields = preset.generatePackageExports(parsed_options);
 
-    package_fields.exports = {
-      ".": package_fields.exports,
-      "./internal": "./internal.ts", // 让 workspace 内的其他项目能直接引入
-    };
+    const exportKeys = Object.keys(package_fields.exports);
+    if (exportKeys.length && !exportKeys[0]!.startsWith(".")) {
+      package_fields.exports = {
+        ".": package_fields.exports,
+      };
+    }
+
+    // 让 workspace 内的其他项目能直接引入
+    package_fields.exports["./internal"] = "./internal.ts";
 
     console.log(
       `package.json: \n\n${JSON.stringify(package_fields, null, 2)}\n\n`,
@@ -58,6 +69,7 @@ export default defineConfig((config) => {
       opt.esbuildPlugins ??= [];
       opt.esbuildPlugins.push(...[
         sassPlugin({
+          type: "style",
           transform: postcssModules({}, [tailwindcss as any, autoprefixer]),
         }),
       ]);

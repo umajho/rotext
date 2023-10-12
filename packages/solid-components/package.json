@@ -10,30 +10,90 @@
   "private": false,
   "sideEffects": false,
   "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/index/index.js",
+  "module": "./dist/index/index.js",
+  "types": "./dist/index/index.d.ts",
   "browser": {},
   "exports": {
     ".": {
       "solid": {
-        "development": "./dist/dev.jsx",
-        "import": "./dist/index.jsx"
+        "development": "./dist/index/dev.jsx",
+        "import": "./dist/index/index.jsx"
       },
       "development": {
         "import": {
-          "types": "./dist/index.d.ts",
-          "default": "./dist/dev.js"
+          "types": "./dist/index/index.d.ts",
+          "default": "./dist/index/dev.js"
         }
       },
       "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
+        "types": "./dist/index/index.d.ts",
+        "default": "./dist/index/index.js"
+      }
+    },
+    "./widget-core": {
+      "solid": {
+        "development": "./dist/widget-core/dev.jsx",
+        "import": "./dist/widget-core/index.jsx"
+      },
+      "development": {
+        "import": {
+          "types": "./dist/widget-core/index.d.ts",
+          "default": "./dist/widget-core/dev.js"
+        }
+      },
+      "import": {
+        "types": "./dist/widget-core/index.d.ts",
+        "default": "./dist/widget-core/index.js"
+      }
+    },
+    "./RefLink": {
+      "solid": {
+        "development": "./dist/RefLink/dev.jsx",
+        "import": "./dist/RefLink/index.jsx"
+      },
+      "development": {
+        "import": {
+          "types": "./dist/RefLink/index.d.ts",
+          "default": "./dist/RefLink/dev.js"
+        }
+      },
+      "import": {
+        "types": "./dist/RefLink/index.d.ts",
+        "default": "./dist/RefLink/index.js"
+      }
+    },
+    "./Dicexp": {
+      "solid": {
+        "development": "./dist/Dicexp/dev.jsx",
+        "import": "./dist/Dicexp/index.jsx"
+      },
+      "development": {
+        "import": {
+          "types": "./dist/Dicexp/index.d.ts",
+          "default": "./dist/Dicexp/dev.js"
+        }
+      },
+      "import": {
+        "types": "./dist/Dicexp/index.d.ts",
+        "default": "./dist/Dicexp/index.js"
       }
     },
     "./internal": "./internal.ts"
   },
-  "typesVersions": {},
+  "typesVersions": {
+    "*": {
+      "widget-core": [
+        "./dist/widget-core/index.d.ts"
+      ],
+      "RefLink": [
+        "./dist/RefLink/index.d.ts"
+      ],
+      "Dicexp": [
+        "./dist/Dicexp/index.d.ts"
+      ]
+    }
+  },
   "scripts": {
     "dev": "vite serve dev",
     "build": "tsup",
