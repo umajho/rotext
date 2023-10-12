@@ -1,6 +1,14 @@
 import styles from "./RefLink.module.scss";
 
-import { Component, createMemo, createSignal, JSX } from "solid-js";
+import {
+  Component,
+  createEffect,
+  createMemo,
+  createSignal,
+  on,
+  onCleanup,
+  onMount,
+} from "solid-js";
 import { customElement } from "solid-element";
 
 import {
@@ -22,16 +30,28 @@ interface Properties {
   address: string;
 }
 
-const RefLink: Component<Properties> = (outerProps) => {
-  const [widgetOwner, setWidgetOwner] = createSignal<RoWidgetOwner>();
+export type RefContentRenderer = (
+  el: HTMLElement,
+  address: RefAddress,
+  onAddressChange: (listener: (addr: RefAddress) => void) => void,
+  onCleanup: (listener: () => void) => void,
+) => void;
 
-  const address = createMemo(() => parseAddress(outerProps.address));
-  const addressDescription = createMemo(() =>
-    widgetOwner() && describeAddress(address(), widgetOwner()!.proseClass)
-  );
+interface CreateRefLinkComponentOptions {
+  refContentRenderer: RefContentRenderer;
+}
 
-  const component = createRoWidgetComponent(
-    {
+function createRefLinkComponent(
+  opts: CreateRefLinkComponentOptions,
+): Component<Properties> {
+  return (outerProps) => {
+    const { refContentRenderer } = opts;
+
+    const [_widgetOwner, setWidgetOwner] = createSignal<RoWidgetOwner>();
+
+    const address = createMemo(() => parseAddress(outerProps.address));
+
+    const component = createRoWidgetComponent({
       primeContentComponent: (props) => {
         return (
           <span
@@ -45,6 +65,25 @@ const RefLink: Component<Properties> = (outerProps) => {
       },
       widgetContainerComponent: WidgetContainer,
       widgetContentComponent: (props) => {
+        let refContentEl!: HTMLDivElement;
+
+        onMount(() => {
+          const changeListeners: ((addr: RefAddress) => void)[] = [];
+          const cleanupListeners: (() => void)[] = [];
+          refContentRenderer(
+            refContentEl,
+            address(),
+            (listener) => changeListeners.push(listener),
+            (listener) => cleanupListeners.push(listener),
+          );
+          createEffect(on(
+            [address],
+            () => changeListeners.forEach((listener) => listener(address())),
+            { defer: true },
+          ));
+          onCleanup(() => cleanupListeners.forEach((listener) => listener()));
+        });
+
         return (
           <div class={styles["ref-link-widget-content"]}>
             <div class={styles["header"]}>
@@ -58,28 +97,29 @@ const RefLink: Component<Properties> = (outerProps) => {
             </div>
             <hr />
             <div style={{ padding: "1rem" }}>
-              {addressDescription()}
+              <div ref={refContentEl} />
             </div>
           </div>
         );
       },
-    },
-    {
+    }, {
       setWidgetOwner,
       widgetBackgroundColor: () => BACKGROUND_COLOR,
       maskTintColor: () => gray500,
-    },
-  );
+    });
 
-  return <>{component}</>;
-};
-export default RefLink;
-
-export function registerCustomElement(tag: string) {
-  customElement(tag, { address: "" }, RefLink);
+    return <>{component}</>;
+  };
 }
 
-function parseAddress(address: string): Address {
+export function registerCustomElement(
+  tag: string,
+  opts: CreateRefLinkComponentOptions,
+) {
+  customElement(tag, { address: "" }, createRefLinkComponent(opts));
+}
+
+function parseAddress(address: string): RefAddress {
   const prefixAndContent = /^([A-Z]+)\.(.*)$/.exec(address);
   if (!prefixAndContent) return { type: "unknown" };
   const [_1, prefix, content] = //
@@ -110,7 +150,7 @@ function parseAddress(address: string): Address {
   };
 }
 
-type Address =
+export type RefAddress =
   | (
     & { prefix: string }
     & (
@@ -125,50 +165,3 @@ type Address =
     )
   )
   | { type: "unknown" };
-
-function describeAddress(address: Address, proseClass: string): JSX.Element {
-  const dl = ((): JSX.Element => {
-    if (address.type === "post_number") {
-      return (
-        <ul>
-          <li>帖号是“{address.postNumber}”的帖子。</li>
-        </ul>
-      );
-    } else if (
-      address.type === "thread_id" || address.type === "thread_id_sub"
-    ) {
-      return (
-        <ul>
-          <li>
-            串号是“{address.threadID}”的串
-            {(address.type === "thread_id_sub" ||
-                  address.floorNumber !== undefined) && "的，" || "。"}
-          </li>
-          {address.type === "thread_id_sub" && (
-            <li>
-              ID是“{address.subThreadID}”的子级串
-              {address.floorNumber !== undefined && "的，" || "。"}
-            </li>
-          )}
-          {address.floorNumber !== undefined &&
-            (
-              <li>
-                {address.floorNumber
-                  ? `位于第${address.floorNumber}层`
-                  : "位于串首"}的帖子。
-              </li>
-            )}
-        </ul>
-      );
-    } else {
-      address.type satisfies "unknown";
-      return <p>未知地址</p>;
-    }
-  })();
-  return (
-    <div class={proseClass}>
-      <p>这里的内容会引用自：</p>
-      {dl}
-    </div>
-  );
-}

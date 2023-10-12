@@ -50,11 +50,14 @@ import {
 import { registerCustomElementForStepRepresentations } from "@dicexp/solid-components";
 
 import EvaluatingWorker from "../../../../workers/dicexp-evaluator?worker";
+import { createDemoRefContentRenderer } from "./ref-content-demo";
 
 const CONTENT_ROOT_CLASS = "previewer-content-root";
 const PROSE_CLASS = "tuan-prose";
 
-registerCustomElementForRoWidgetRefLink("ref-link");
+registerCustomElementForRoWidgetRefLink("ref-link", {
+  refContentRenderer: createDemoRefContentRenderer({ proseClass: PROSE_CLASS }),
+});
 registerCustomElementForStepRepresentations("steps-representation");
 registerCustomElementForRoWidgetDicexp("dicexp-preview", {
   dicexpImporter: () => import("dicexp"),
