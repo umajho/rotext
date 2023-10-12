@@ -1,6 +1,6 @@
 export {
   registerCustomElement as registerCustomElementForRoWidgetDicexp,
-} from "./DicexpPreview";
+} from "./Dicexp/mod";
 
 export {
   registerCustomElement as registerCustomElementForRoWidgetRefLink,
