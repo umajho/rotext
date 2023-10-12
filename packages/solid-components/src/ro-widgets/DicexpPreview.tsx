@@ -231,7 +231,7 @@ const DicexpPreview: Component<Properties> = (outerProps) => {
 export default DicexpPreview;
 
 export function registerCustomElement(
-  tag = "dicexp-preview",
+  tag: string,
   opts: {
     EvaluatingWorker: new () => Worker;
     Loading: Component;

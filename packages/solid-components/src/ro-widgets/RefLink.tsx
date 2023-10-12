@@ -75,7 +75,7 @@ const RefLink: Component<Properties> = (outerProps) => {
 };
 export default RefLink;
 
-export function registerCustomElement(tag = "ref-link") {
+export function registerCustomElement(tag: string) {
   customElement(tag, { address: "" }, RefLink);
 }
 
