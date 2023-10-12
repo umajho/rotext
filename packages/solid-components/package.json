@@ -14,6 +14,7 @@
     "@rotext/web-utils": "workspace:*"
   },
   "devDependencies": {
+    "dicexp": "^0.2.0",
     "vite": "^4.3.9"
   },
   "peerDependencies": {

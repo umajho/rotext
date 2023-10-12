@@ -11,8 +11,6 @@ import {
   Show,
 } from "solid-js";
 
-import { ErrorAlert } from "./ui";
-
 import {
   Classes,
   classModule,
@@ -29,6 +27,9 @@ import { toSnabbdomChildren } from "@rotext/to-html";
 
 import { registerRoWidgetOwner } from "@rotext/solid-components/internal";
 
+import { ErrorAlert } from "./ui";
+import { Loading } from "../../../ui";
+
 import { debounceEventHandler } from "../../../../utils/mod";
 
 import {
@@ -39,16 +40,28 @@ import {
 
 import { LookupList, LookupListRaw } from "./internal-types";
 import * as ScrollUtils from "./scroll-utils";
-import { registerCustomElement as registerCustomElementForRefLink } from "./widgets/RefLink";
-import { registerCustomElement as registerCustomElementForDicexp } from "./widgets/DicexpPreview";
-import { registerCustomElement as registerCustomElementForScratchOff } from "./ScratchOff";
 import { createAutoResetCounter } from "../../../../hooks/auto-reset-counter";
+
+import { registerCustomElement as registerCustomElementForScratchOff } from "./ScratchOff";
+import {
+  registerCustomElementForRoWidgetDicexp,
+  registerCustomElementForRoWidgetRefLink,
+} from "@rotext/solid-components/internal";
+import { registerCustomElementForStepRepresentations } from "@dicexp/solid-components";
+
+import EvaluatingWorker from "../../../../workers/dicexp-evaluator?worker";
 
 const CONTENT_ROOT_CLASS = "previewer-content-root";
 const PROSE_CLASS = "tuan-prose";
 
-registerCustomElementForRefLink();
-registerCustomElementForDicexp();
+registerCustomElementForRoWidgetRefLink();
+registerCustomElementForStepRepresentations("steps-representation");
+registerCustomElementForRoWidgetDicexp("dicexp-preview", {
+  EvaluatingWorker,
+  ErrorAlert,
+  Loading,
+  tagNameForStepsRepresentation: "steps-representation",
+});
 registerCustomElementForScratchOff();
 
 const Preview: Component<

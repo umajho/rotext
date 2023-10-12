@@ -1,0 +1,45 @@
+/**
+ * 改自 tailwind 的 `animate-spin`。
+ * 参见：<https://tailwindcss.com/docs/animation>。
+*/
+.animate-spin-400ms {
+  animation: spin 400ms linear infinite;
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}
+
+.text-color-error {
+  @apply text-red-500;
+}
+
+.text-color-loading {
+  @apply text-gray-200;
+}
+
+.dicexp-prime-content {
+  @apply inline-flex items-center;
+}
+
+.dicexp-widget-content {
+  @apply flex flex-col;
+
+  .header {
+    @apply flex justify-between items-center px-2;
+
+    .left-area {
+      @apply flex items-center gap-2;
+    }
+  }
+
+  .center-aligner {
+    @apply flex justify-center items-center;
+  }
+}
