@@ -54,7 +54,7 @@ import EvaluatingWorker from "../../../../workers/dicexp-evaluator?worker";
 const CONTENT_ROOT_CLASS = "previewer-content-root";
 const PROSE_CLASS = "tuan-prose";
 
-registerCustomElementForRoWidgetRefLink();
+registerCustomElementForRoWidgetRefLink("ref-link");
 registerCustomElementForStepRepresentations("steps-representation");
 registerCustomElementForRoWidgetDicexp("dicexp-preview", {
   EvaluatingWorker,
