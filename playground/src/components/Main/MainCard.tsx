@@ -1,11 +1,12 @@
 import { Component } from "solid-js";
 
-import { Card } from "../ui";
-
 import * as examples from "@rotext/example-documentations";
 
+import { SUPPORTS_DVH } from "@rotext/web-utils";
+
+import { Card } from "../ui";
+
 import { createEditorStore } from "../../hooks/editor-store";
-import { SUPPORTS_DVH } from "../../utils/styles";
 
 import { createPreviewParts } from "./preview-parts/mod";
 import { createEditorParts } from "./editor-parts/mod";

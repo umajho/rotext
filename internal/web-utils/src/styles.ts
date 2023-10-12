@@ -1,8 +1,10 @@
-import { JSX } from "solid-js/jsx-runtime";
+import * as CSSType from "csstype";
+
+export type ComputedColor = [r: number, g: number, b: number, a: number | null];
 
 export const SUPPORTS_DVH = CSS.supports?.("height", "1dvh");
 
-type CSSKey = keyof JSX.CSSProperties;
+type CSSKey = keyof CSSType.PropertiesHyphen;
 
 function getComputedCSSValueFromRaw(key: CSSKey, rawValue: string) {
   return getComputedCSSValue(
@@ -31,7 +33,7 @@ function getComputedCSSValue(
   containerEl.appendChild(el);
   document.body.appendChild(containerEl);
 
-  const value = getComputedStyle(el)[key as unknown as any];
+  const value = getComputedStyle(el)[key as any] as string;
 
   containerEl.remove();
 
@@ -41,8 +43,6 @@ function getComputedCSSValue(
 export function getSizeInPx(size: string) {
   return parseFloat(getComputedCSSValueFromRaw("width", size));
 }
-
-export type ComputedColor = [r: number, g: number, b: number, a: number | null];
 
 export function getComputedColor(
   color: string,

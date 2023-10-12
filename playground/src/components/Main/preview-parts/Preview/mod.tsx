@@ -27,6 +27,8 @@ import {
 import { parse } from "@rotext/parsing";
 import { toSnabbdomChildren } from "@rotext/to-html";
 
+import { registerRoWidgetOwner } from "@rotext/solid-components/internal";
+
 import { debounceEventHandler } from "../../../../utils/mod";
 
 import {
@@ -40,7 +42,6 @@ import * as ScrollUtils from "./scroll-utils";
 import { registerCustomElement as registerCustomElementForRefLink } from "./widgets/RefLink";
 import { registerCustomElement as registerCustomElementForDicexp } from "./widgets/DicexpPreview";
 import { registerCustomElement as registerCustomElementForScratchOff } from "./ScratchOff";
-import { registerWidgetOwner } from "../../../../stores/widget-owners";
 import { createAutoResetCounter } from "../../../../hooks/auto-reset-counter";
 
 const CONTENT_ROOT_CLASS = "previewer-content-root";
@@ -105,7 +106,7 @@ const Preview: Component<
 
     //==== 注册进全局存储 ====
     // NOTE: 目前 scrollContainerEl 就是 previewer 的元素
-    registerWidgetOwner(scrollContainerEl, {
+    registerRoWidgetOwner(scrollContainerEl, {
       proseClass: PROSE_CLASS,
       widgetAnchorElement: () => widgetAnchorEl,
       layoutChange: lookupList,

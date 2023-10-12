@@ -16,15 +16,16 @@ import {
   Repr,
 } from "dicexp";
 
+import { createRoWidgetComponent } from "@rotext/solid-components/internal";
+
 import "./DicexpPreview.scss";
 
-import { createWidgetComponent } from "../../../../../hooks/widgets";
 import { PinButton, WidgetContainer } from "./support";
 import { gray500 } from "../../../../../utils/color-consts";
 import {
   getComputedColor,
   getComputedCSSValueOfClass,
-} from "../../../../../utils/styles";
+} from "@rotext/web-utils";
 import FaSolidDice from "../../../../icons";
 import { Loading } from "../../../../ui";
 import { scopes } from "../../../../../stores/scopes";
@@ -116,7 +117,7 @@ const DicexpPreview: Component<Properties> = (outerProps) => {
     setRolling(false);
   }
 
-  const component = createWidgetComponent(
+  const component = createRoWidgetComponent(
     {
       primeContentComponent: (props) => {
         return (

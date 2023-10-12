@@ -2,7 +2,7 @@ import type { Component } from "solid-js";
 
 import { NavBar } from "./components/layout";
 import Main from "./components/Main/mod";
-import { SUPPORTS_DVH } from "./utils/styles";
+import { SUPPORTS_DVH } from "@rotext/web-utils";
 
 const App: Component = () => {
   const minH = SUPPORTS_DVH ? "min-h-[100dvh]" : "min-h-screen";

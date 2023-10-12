@@ -30,6 +30,8 @@
     "@rotext/example-documentations": "workspace:*",
     "@rotext/parsing": "workspace:*",
     "@rotext/to-html": "workspace:*",
+    "@rotext/solid-components": "workspace:*",
+    "@rotext/web-utils": "workspace:*",
     "codemirror": "^6.0.1",
     "dicexp": "^0.2.0",
     "snabbdom": "^3.5.1",
