@@ -1,19 +1,18 @@
+import styles from "./RefLink.module.scss";
+
 import { Component, createMemo, createSignal, JSX } from "solid-js";
 import { customElement } from "solid-element";
 
 import {
   getComputedColor,
   getComputedCSSValueOfClass,
+  gray500,
+  mouseDownNoDoubleClickToSelect,
 } from "@rotext/web-utils";
-import {
-  createRoWidgetComponent,
-  RoWidgetOwner,
-} from "@rotext/solid-components/internal";
+
+import { createRoWidgetComponent, RoWidgetOwner } from "../ro-widget-core/mod";
 
 import { PinButton, WidgetContainer } from "./support";
-import { gray500 } from "../../../../../utils/color-consts";
-
-import { mouseDownNoDoubleClickToSelect } from "../../../../../utils/events";
 
 const BACKGROUND_COLOR = getComputedColor(
   getComputedCSSValueOfClass("background-color", "tuan-background"),
@@ -47,18 +46,18 @@ const RefLink: Component<Properties> = (outerProps) => {
       widgetContainerComponent: WidgetContainer,
       widgetContentComponent: (props) => {
         return (
-          <div class="flex flex-col">
-            <div class="flex justify-between items-center px-2">
+          <div class={styles["ref-link-widget-content"]}>
+            <div class={styles["header"]}>
               <PinButton
                 displayMode={props.displayMode}
                 onClick={props.onClickOnPinIcon}
                 onTouchEnd={props.onTouchEndOnPinIcon}
               />
-              <div class="w-12" />
+              <div style={{ width: "3rem" }} />
               <div>{outerProps.address}</div>
             </div>
             <hr />
-            <div class="p-4">
+            <div style={{ padding: "1rem" }}>
               {addressDescription()}
             </div>
           </div>

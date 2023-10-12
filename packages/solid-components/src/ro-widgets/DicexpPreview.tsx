@@ -1,3 +1,5 @@
+import styles from "./DicexpPreview.module.scss";
+
 import {
   Component,
   createEffect,
@@ -10,30 +12,24 @@ import {
 } from "solid-js";
 import { customElement } from "solid-element";
 
-import {
+import type {
   EvaluatingWorkerManager,
   EvaluationResultForWorker,
   Repr,
 } from "dicexp";
 
-import { createRoWidgetComponent } from "@rotext/solid-components/internal";
-
-import "./DicexpPreview.scss";
-
-import { PinButton, WidgetContainer } from "./support";
-import { gray500 } from "../../../../../utils/color-consts";
 import {
   getComputedColor,
   getComputedCSSValueOfClass,
+  gray500,
+  mouseDownNoDoubleClickToSelect,
 } from "@rotext/web-utils";
-import FaSolidDice from "../../../../icons";
-import { Loading } from "../../../../ui";
-import { scopes } from "../../../../../stores/scopes";
 
-import EvaluatingWorker from "../../../../../workers/dicexp-evaluator?worker";
-import { ErrorAlert } from "../ui";
-import { mouseDownNoDoubleClickToSelect } from "../../../../../utils/events";
-import StepsRepresentation from "../../../../steps-representation";
+import { createRoWidgetComponent } from "../ro-widget-core/mod";
+
+import { PinButton, WidgetContainer } from "./support";
+import FaSolidDice from "./internal/icons";
+import { createStepsRepresentationComponent } from "./internal/steps-representation";
 
 const BACKGROUND_COLOR = getComputedColor(
   getComputedCSSValueOfClass("background-color", "tuan-background"),
@@ -42,6 +38,12 @@ const BACKGROUND_COLOR = getComputedColor(
 interface Properties {
   code: string;
 }
+
+// TODO!: 临时放在这里，下次提交时会重构掉。
+let EvaluatingWorker: new () => Worker,
+  Loading: Component,
+  ErrorAlert: Component<{ error: Error; showsStack: boolean }>,
+  StepsRepresentation: ReturnType<typeof createStepsRepresentationComponent>;
 
 const DicexpPreview: Component<Properties> = (outerProps) => {
   const [loadingRuntime, setLoadingRuntime] = //
@@ -55,9 +57,13 @@ const DicexpPreview: Component<Properties> = (outerProps) => {
   const resultElement = createMemo(() => {
     const result_ = result();
     if (!result_) return null;
-    if (result_[0] !== "ok") return <span class="text-red-500">错误！</span>;
+    if (result_[0] !== "ok") {
+      return <span class={styles["text-color-error"]}>错误！</span>;
+    }
     if (typeof result_[1] !== "number") {
-      return <span class="text-red-500">暂不支持非数字结果！</span>;
+      return (
+        <span class={styles["text-color-error"]}>暂不支持非数字结果！</span>
+      );
     }
     return <>{String(result_[1])}</>;
   });
@@ -92,9 +98,7 @@ const DicexpPreview: Component<Properties> = (outerProps) => {
       return;
     }
 
-    const workerManager = await new Promise<
-      EvaluatingWorkerManager<typeof scopes>
-    >(
+    const workerManager = await new Promise<EvaluatingWorkerManager<any>>(
       (resolve) => {
         let resolved = false;
         const workerManager = new dicexp!.EvaluatingWorkerManager(
@@ -123,14 +127,14 @@ const DicexpPreview: Component<Properties> = (outerProps) => {
         return (
           <>
             <span
-              class="widget-prime-summary inline-flex items-center"
+              class={`widget-prime-summary ${styles["dicexp-prime-content"]}`}
               style={{ cursor: props.cursor }}
               onClick={props.onToggleWidget}
               onMouseDown={mouseDownNoDoubleClickToSelect}
             >
               <FaSolidDice
                 color="white"
-                class={rolling() ? "animate-spin-400ms" : ""}
+                class={rolling() ? styles["animate-spin-400ms"] : ""}
               />
               <span class="widget-prime-raw-text">
                 {`[=${outerProps.code}]`}
@@ -140,7 +144,7 @@ const DicexpPreview: Component<Properties> = (outerProps) => {
               class="widget-prime-action"
               onClick={roll}
             >
-              <span class="text-gray-200">
+              <span class={styles["text-color-loading"]}>
                 {loadingRuntime() === "long"
                   ? "正在加载运行时…"
                   : (rolling() ? "正在试投…" : "试投")}
@@ -174,9 +178,9 @@ const DicexpPreview: Component<Properties> = (outerProps) => {
         };
 
         return (
-          <div class="flex flex-col">
-            <div class="flex justify-between items-center px-2">
-              <div class="flex items-center gap-2">
+          <div class={styles["dicexp-widget-content"]}>
+            <div class={styles["header"]}>
+              <div class={styles["left-area"]}>
                 <PinButton
                   displayMode={props.displayMode}
                   onClick={props.onClickOnPinIcon}
@@ -186,7 +190,7 @@ const DicexpPreview: Component<Properties> = (outerProps) => {
               </div>
             </div>
             <hr />
-            <div class="p-4">
+            <div style={{ padding: "1rem" }}>
               <Switch>
                 <Match when={result()}>
                   <Show
@@ -201,7 +205,7 @@ const DicexpPreview: Component<Properties> = (outerProps) => {
                   </Show>
                 </Match>
                 <Match when={rolling()}>
-                  <div class="flex justify-center items-center">
+                  <div class={styles["center-aligner"]}>
                     <Loading />
                   </div>
                 </Match>
@@ -226,6 +230,20 @@ const DicexpPreview: Component<Properties> = (outerProps) => {
 };
 export default DicexpPreview;
 
-export function registerCustomElement(tag = "dicexp-preview") {
+export function registerCustomElement(
+  tag = "dicexp-preview",
+  opts: {
+    EvaluatingWorker: new () => Worker;
+    Loading: Component;
+    ErrorAlert: Component<{ error: Error; showsStack: boolean }>;
+    tagNameForStepsRepresentation: string;
+  },
+) {
+  EvaluatingWorker = opts.EvaluatingWorker;
+  Loading = opts.Loading;
+  ErrorAlert = opts.ErrorAlert;
+  StepsRepresentation = //
+    createStepsRepresentationComponent(opts.tagNameForStepsRepresentation);
+
   customElement(tag, { code: "" }, DicexpPreview);
 }

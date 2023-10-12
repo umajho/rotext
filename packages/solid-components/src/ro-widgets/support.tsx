@@ -2,13 +2,13 @@ import { Component } from "solid-js";
 
 import { BsPinFill } from "solid-icons/bs";
 
+import { gray500 } from "@rotext/web-utils";
+import { computedColorToCSSValue } from "@rotext/web-utils";
+
 import {
   RoWidgetContainerProperties,
   RoWidgetDisplayMode,
-} from "@rotext/solid-components/internal";
-
-import { gray500 } from "../../../../../utils/color-consts";
-import { computedColorToCSSValue } from "@rotext/web-utils";
+} from "../ro-widget-core/mod";
 
 export const WidgetContainer: Component<RoWidgetContainerProperties> = (
   props,

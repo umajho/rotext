@@ -1,0 +1,7 @@
+.ref-link-widget-content {
+  @apply flex flex-col;
+
+  .header {
+    @apply flex justify-between items-center px-2;
+  }
+}
