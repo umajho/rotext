@@ -1,26 +1,144 @@
 {
-  "packageManager": "pnpm@8.6.1",
   "name": "@rotext/solid-components",
   "version": "0.0.1",
-  "keywords": [],
-  "author": "Umaĵo",
   "license": "MIT",
+  "author": "Umaĵo",
+  "contributors": [],
+  "files": [
+    "dist"
+  ],
+  "private": false,
+  "sideEffects": false,
   "type": "module",
-  "main": "lib.ts",
+  "main": "./dist/index/index.js",
+  "module": "./dist/index/index.js",
+  "types": "./dist/index/index.d.ts",
+  "browser": {},
   "exports": {
+    ".": {
+      "solid": {
+        "development": "./dist/index/dev.jsx",
+        "import": "./dist/index/index.jsx"
+      },
+      "development": {
+        "import": {
+          "types": "./dist/index/index.d.ts",
+          "default": "./dist/index/dev.js"
+        }
+      },
+      "import": {
+        "types": "./dist/index/index.d.ts",
+        "default": "./dist/index/index.js"
+      }
+    },
+    "./widget-core": {
+      "solid": {
+        "development": "./dist/widget-core/dev.jsx",
+        "import": "./dist/widget-core/index.jsx"
+      },
+      "development": {
+        "import": {
+          "types": "./dist/widget-core/index.d.ts",
+          "default": "./dist/widget-core/dev.js"
+        }
+      },
+      "import": {
+        "types": "./dist/widget-core/index.d.ts",
+        "default": "./dist/widget-core/index.js"
+      }
+    },
+    "./RefLink": {
+      "solid": {
+        "development": "./dist/RefLink/dev.jsx",
+        "import": "./dist/RefLink/index.jsx"
+      },
+      "development": {
+        "import": {
+          "types": "./dist/RefLink/index.d.ts",
+          "default": "./dist/RefLink/dev.js"
+        }
+      },
+      "import": {
+        "types": "./dist/RefLink/index.d.ts",
+        "default": "./dist/RefLink/index.js"
+      }
+    },
+    "./Dicexp": {
+      "solid": {
+        "development": "./dist/Dicexp/dev.jsx",
+        "import": "./dist/Dicexp/index.jsx"
+      },
+      "development": {
+        "import": {
+          "types": "./dist/Dicexp/index.d.ts",
+          "default": "./dist/Dicexp/dev.js"
+        }
+      },
+      "import": {
+        "types": "./dist/Dicexp/index.d.ts",
+        "default": "./dist/Dicexp/index.js"
+      }
+    },
     "./internal": "./internal.ts"
+  },
+  "typesVersions": {
+    "*": {
+      "widget-core": [
+        "./dist/widget-core/index.d.ts"
+      ],
+      "RefLink": [
+        "./dist/RefLink/index.d.ts"
+      ],
+      "Dicexp": [
+        "./dist/Dicexp/index.d.ts"
+      ]
+    }
+  },
+  "scripts": {
+    "dev": "vite serve dev",
+    "build": "tsup",
+    "test": "concurrently pnpm:test:*",
+    "test:client": "vitest",
+    "test:ssr": "pnpm run test:client --mode ssr",
+    "prepublishOnly": "pnpm build",
+    "lint": "concurrently pnpm:lint:*",
+    "lint:types": "tsc --noEmit",
+    "update-deps": "pnpm up -Li"
   },
   "dependencies": {
     "@rotext/web-utils": "workspace:*"
   },
-  "devDependencies": {
-    "dicexp": "^0.2.0",
-    "vite": "^4.3.9"
-  },
   "peerDependencies": {
     "solid-element": "^1.8.0",
     "solid-icons": "^1.0.11",
-    "solid-js": "^1.8.1",
-    "tailwindcss": "^3.3.2"
+    "solid-js": "^1.8.1"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.14",
+    "concurrently": "^8.2.0",
+    "dicexp": "^0.2.0",
+    "esbuild": "^0.18.15",
+    "esbuild-plugin-solid": "^0.5.0",
+    "esbuild-sass-plugin": "^2.16.0",
+    "jsdom": "^22.1.0",
+    "postcss": "^8.4.24",
+    "postcss-modules": "^6.0.0",
+    "sass": "^1.63.6",
+    "solid-js": "^1.7.8",
+    "tailwindcss": "^3.3.2",
+    "tsup": "^7.1.0",
+    "tsup-preset-solid": "^2.0.1",
+    "typescript": "^5.1.6",
+    "vite": "^4.4.6",
+    "vite-plugin-solid": "^2.7.0",
+    "vitest": "^0.33.0"
+  },
+  "keywords": [
+    "solid"
+  ],
+  "packageManager": "pnpm@8.6.12",
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=8.6.0"
   }
 }

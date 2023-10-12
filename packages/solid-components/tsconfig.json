@@ -1,8 +1,15 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "strict": true,
+    "lib": ["DOM", "DOM.Iterable", "ES2020"],
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "noEmit": true,
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
-    "types": ["vite/client"]
-  }
+    "types": ["vite/client"],
+    "baseUrl": "."
+  },
+  "exclude": ["node_modules", "dist", "./dev"]
 }
