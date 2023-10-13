@@ -1,7 +1,7 @@
 import { Component } from "solid-js";
 import { customElement } from "solid-element";
 
-import { createStepsRepresentationComponent } from "../internal/steps-representation";
+import { createStepsRepresentationComponent } from "./steps-representation";
 import { createDicexpComponent } from "./create-dicexp-component";
 
 export function registerCustomElement(
