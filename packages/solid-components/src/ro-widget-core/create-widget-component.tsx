@@ -134,7 +134,7 @@ export function createWidgetComponent(parts: {
     opts.setWidgetOwner?.(widgetOwner_);
 
     const closestContainerEl = closestContainer(primeEl)!;
-    widgetOwner_.onLayoutChange(() => { // TODO: debounce
+    function calculateAndSetWidgetPosition() {
       setWidgetPosition(
         calculateWidgetPosition({
           prime: primeEl,
@@ -142,7 +142,9 @@ export function createWidgetComponent(parts: {
           closestContainer: closestContainerEl,
         }),
       );
-    });
+    }
+    widgetOwner_.onLayoutChange(calculateAndSetWidgetPosition); // TODO: debounce
+    calculateAndSetWidgetPosition();
 
     createSizeSyncer({
       size: widgetSize,
