@@ -14,8 +14,7 @@ import {
 import type { Repr } from "dicexp";
 
 import {
-  getComputedColor,
-  getComputedCSSValueOfClass,
+  ComputedColor,
   gray500,
   mouseDownNoDoubleClickToSelect,
 } from "@rotext/web-utils";
@@ -27,15 +26,12 @@ import FaSolidDice from "./icons";
 import { createStepsRepresentationComponent } from "./steps-representation";
 import { createRoller } from "./create-roller";
 
-const BACKGROUND_COLOR = getComputedColor(
-  getComputedCSSValueOfClass("background-color", "tuan-background"),
-)!;
-
 interface Properties {
   code: string;
 }
 
 export interface CreateDicexpComponentOptions {
+  backgroundColor: ComputedColor;
   widgetOwnerClass: string;
   innerNoAutoOpenClass?: string;
   dicexpImporter: () => Promise<typeof import("dicexp")>;
@@ -185,7 +181,7 @@ export function createDicexpComponent(
       innerNoAutoOpenClass: opts.innerNoAutoOpenClass,
       openable: everRolled,
       autoOpenShouldCollapse: false,
-      widgetBackgroundColor: () => BACKGROUND_COLOR,
+      widgetBackgroundColor: () => opts.backgroundColor,
       maskTintColor: () => gray500,
     });
 

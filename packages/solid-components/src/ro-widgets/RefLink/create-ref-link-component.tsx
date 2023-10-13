@@ -10,8 +10,7 @@ import {
 } from "solid-js";
 
 import {
-  getComputedColor,
-  getComputedCSSValueOfClass,
+  ComputedColor,
   gray500,
   mouseDownNoDoubleClickToSelect,
 } from "@rotext/web-utils";
@@ -19,10 +18,6 @@ import {
 import { createRoWidgetComponent } from "../../ro-widget-core/mod";
 
 import { HorizontalRule, PinButton, WidgetContainer } from "../support";
-
-const BACKGROUND_COLOR = getComputedColor(
-  getComputedCSSValueOfClass("background-color", "tuan-background"),
-)!;
 
 interface Properties {
   address: string;
@@ -36,6 +31,7 @@ export type RefContentRenderer = (
 ) => void;
 
 export interface CreateRefLinkComponentOptions {
+  backgroundColor: ComputedColor;
   widgetOwnerClass: string;
   innerNoAutoOpenClass?: string;
   refContentRenderer: RefContentRenderer;
@@ -103,7 +99,7 @@ export function createRefLinkComponent(
     }, {
       widgetOwnerClass: opts.widgetOwnerClass,
       innerNoAutoOpenClass: opts.innerNoAutoOpenClass,
-      widgetBackgroundColor: () => BACKGROUND_COLOR,
+      widgetBackgroundColor: () => opts.backgroundColor,
       maskTintColor: () => gray500,
     });
 
