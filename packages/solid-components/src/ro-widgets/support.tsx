@@ -1,3 +1,5 @@
+import styles from "./support.module.scss";
+
 import { Component } from "solid-js";
 
 import { BsPinFill } from "solid-icons/bs";
@@ -16,7 +18,7 @@ export const WidgetContainer: Component<RoWidgetContainerProperties> = (
   return (
     <div
       ref={props.ref}
-      class={`border border-white ${props.class}`}
+      class={`${styles["widget-container"]} ${props.class}`}
       style={props.style}
       onMouseEnter={props.onMouseEnter}
       onMouseLeave={props.onMouseLeave}
@@ -33,13 +35,10 @@ export const PinButton: Component<{
 }> = (props) => {
   return (
     <BsPinFill
-      class="cursor-pointer select-none"
-      color={props.displayMode() === "pinned"
-        ? "red"
-        : computedColorToCSSValue(gray500)}
-      style={props.displayMode() === "pinned"
-        ? undefined
-        : { transform: "rotate(45deg)" }}
+      class={[
+        styles["pin-button"],
+        props.displayMode() === "pinned" ? styles["pinned"] : "",
+      ].join(" ")}
       onTouchEnd={props.onTouchEnd}
       onClick={props.onClick}
     />
