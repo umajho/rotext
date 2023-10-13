@@ -4,7 +4,6 @@ import {
   Component,
   createEffect,
   createMemo,
-  createSignal,
   on,
   onCleanup,
   onMount,
@@ -18,7 +17,7 @@ import {
   mouseDownNoDoubleClickToSelect,
 } from "@rotext/web-utils";
 
-import { createRoWidgetComponent, RoWidgetOwner } from "../ro-widget-core/mod";
+import { createRoWidgetComponent } from "../ro-widget-core/mod";
 
 import { PinButton, WidgetContainer } from "./support";
 
@@ -46,8 +45,6 @@ function createRefLinkComponent(
 ): Component<Properties> {
   return (outerProps) => {
     const { refContentRenderer } = opts;
-
-    const [_widgetOwner, setWidgetOwner] = createSignal<RoWidgetOwner>();
 
     const address = createMemo(() => parseAddress(outerProps.address));
 
@@ -103,7 +100,6 @@ function createRefLinkComponent(
         );
       },
     }, {
-      setWidgetOwner,
       widgetBackgroundColor: () => BACKGROUND_COLOR,
       maskTintColor: () => gray500,
     });
