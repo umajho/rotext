@@ -8,7 +8,6 @@ import {
   onCleanup,
   onMount,
 } from "solid-js";
-import { customElement } from "solid-element";
 
 import {
   getComputedColor,
@@ -17,9 +16,9 @@ import {
   mouseDownNoDoubleClickToSelect,
 } from "@rotext/web-utils";
 
-import { createRoWidgetComponent } from "../ro-widget-core/mod";
+import { createRoWidgetComponent } from "../../ro-widget-core/mod";
 
-import { PinButton, WidgetContainer } from "./support";
+import { PinButton, WidgetContainer } from "../support";
 
 const BACKGROUND_COLOR = getComputedColor(
   getComputedCSSValueOfClass("background-color", "tuan-background"),
@@ -36,13 +35,13 @@ export type RefContentRenderer = (
   onCleanup: (listener: () => void) => void,
 ) => void;
 
-interface CreateRefLinkComponentOptions {
+export interface CreateRefLinkComponentOptions {
   widgetOwnerClass: string;
   innerNoAutoOpenClass?: string;
   refContentRenderer: RefContentRenderer;
 }
 
-function createRefLinkComponent(
+export function createRefLinkComponent(
   opts: CreateRefLinkComponentOptions,
 ): Component<Properties> {
   return (outerProps) => {
@@ -110,13 +109,6 @@ function createRefLinkComponent(
 
     return <>{component}</>;
   };
-}
-
-export function registerCustomElement(
-  tag: string,
-  opts: CreateRefLinkComponentOptions,
-) {
-  customElement(tag, { address: "" }, createRefLinkComponent(opts));
 }
 
 function parseAddress(address: string): RefAddress {

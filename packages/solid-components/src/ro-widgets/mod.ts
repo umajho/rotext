@@ -1,9 +1,11 @@
 export {
   registerCustomElement as registerCustomElementForRoWidgetDicexp,
+  withDefaultStyle as withDefaultDicexpStyle,
 } from "./Dicexp/mod";
 
 export {
   type RefAddress,
   type RefContentRenderer,
   registerCustomElement as registerCustomElementForRoWidgetRefLink,
-} from "./RefLink";
+  withDefaultStyle as withDefaultRefLinkStyle,
+} from "./RefLink/mod";
