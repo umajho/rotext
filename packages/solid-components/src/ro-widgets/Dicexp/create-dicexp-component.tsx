@@ -23,8 +23,8 @@ import {
 import { createRoWidgetComponent } from "../../ro-widget-core/mod";
 
 import { PinButton, WidgetContainer } from "../support";
-import FaSolidDice from "../internal/icons";
-import { createStepsRepresentationComponent } from "../internal/steps-representation";
+import FaSolidDice from "./icons";
+import { createStepsRepresentationComponent } from "./steps-representation";
 import { createRoller } from "./create-roller";
 
 const BACKGROUND_COLOR = getComputedColor(
