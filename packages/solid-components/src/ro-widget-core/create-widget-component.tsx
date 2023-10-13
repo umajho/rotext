@@ -67,7 +67,7 @@ export function createWidgetComponent(parts: {
   widgetContentComponent: Component<WidgetContentProperties>;
 }, opts: {
   widgetOwnerClass: string;
-  innerNoAutoOpenClass: string;
+  innerNoAutoOpenClass?: string;
   setWidgetOwner?: (v: WidgetOwner) => void;
   openable?: () => boolean;
   autoOpenShouldCollapse?: boolean;
@@ -158,7 +158,8 @@ export function createWidgetComponent(parts: {
 
     if (
       widgetOwner_.level === 1 &&
-      !primeEl.closest("." + opts.innerNoAutoOpenClass)
+      !(opts.innerNoAutoOpenClass &&
+        primeEl.closest("." + opts.innerNoAutoOpenClass))
     ) {
       autoOpen(!!opts.autoOpenShouldCollapse);
     }

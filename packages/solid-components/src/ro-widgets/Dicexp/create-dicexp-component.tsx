@@ -37,7 +37,7 @@ interface Properties {
 
 export interface CreateDicexpComponentOptions {
   widgetOwnerClass: string;
-  innerNoAutoOpenClass: string;
+  innerNoAutoOpenClass?: string;
   dicexpImporter: () => Promise<typeof import("dicexp")>;
   EvaluatingWorker: new () => Worker;
   Loading: Component;

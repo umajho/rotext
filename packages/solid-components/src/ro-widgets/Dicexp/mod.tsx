@@ -8,7 +8,7 @@ export function registerCustomElement(
   tag: string,
   opts: {
     widgetOwnerClass: string;
-    innerNoAutoOpenClass: string;
+    innerNoAutoOpenClass?: string;
     dicexpImporter: () => Promise<typeof import("dicexp")>;
     EvaluatingWorker: new () => Worker;
     Loading: Component;

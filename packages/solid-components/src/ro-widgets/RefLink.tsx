@@ -38,7 +38,7 @@ export type RefContentRenderer = (
 
 interface CreateRefLinkComponentOptions {
   widgetOwnerClass: string;
-  innerNoAutoOpenClass: string;
+  innerNoAutoOpenClass?: string;
   refContentRenderer: RefContentRenderer;
 }
 
