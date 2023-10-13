@@ -22,7 +22,7 @@ import {
 
 import { createRoWidgetComponent } from "../../ro-widget-core/mod";
 
-import { PinButton, WidgetContainer } from "../support";
+import { HorizontalRule, PinButton, WidgetContainer } from "../support";
 import FaSolidDice from "./icons";
 import { createStepsRepresentationComponent } from "./steps-representation";
 import { createRoller } from "./create-roller";
@@ -152,7 +152,7 @@ export function createDicexpComponent(
                 <span>掷骰过程</span>
               </div>
             </div>
-            <hr />
+            <HorizontalRule />
             <div style={{ padding: "1rem" }}>
               <Switch>
                 <Match when={result()}>

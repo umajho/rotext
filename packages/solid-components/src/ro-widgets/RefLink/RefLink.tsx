@@ -18,7 +18,7 @@ import {
 
 import { createRoWidgetComponent } from "../../ro-widget-core/mod";
 
-import { PinButton, WidgetContainer } from "../support";
+import { HorizontalRule, PinButton, WidgetContainer } from "../support";
 
 const BACKGROUND_COLOR = getComputedColor(
   getComputedCSSValueOfClass("background-color", "tuan-background"),
@@ -93,7 +93,7 @@ export function createRefLinkComponent(
               <div style={{ width: "3rem" }} />
               <div>{outerProps.address}</div>
             </div>
-            <hr />
+            <HorizontalRule />
             <div style={{ padding: "1rem" }}>
               <div ref={refContentEl} />
             </div>
