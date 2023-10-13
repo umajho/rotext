@@ -1,6 +1,6 @@
 dicexp-tag>.widget-prime {
   @apply inline-flex max-w-full items-center h-[1.5rem] px-2 mx-2;
-  @apply border rounded-xl border-sky-700 bg-sky-900 text-white;
+  @apply border border-solid rounded-xl border-sky-700 bg-sky-900 text-white;
 
   .widget-prime-summary {
     @apply gap-1 w-auto min-w-0;
@@ -14,7 +14,7 @@ dicexp-tag>.widget-prime {
   .widget-prime-action {
     @apply inline-flex min-w-max items-center h-[1.5rem];
     @apply -mr-2 pl-1 pr-2 ml-1 gap-2;
-    @apply border rounded-r-xl border-sky-700 bg-sky-700;
+    @apply border border-solid rounded-r-xl border-sky-700 bg-sky-700;
     @apply cursor-pointer select-none;
 
     @apply font-bold;
