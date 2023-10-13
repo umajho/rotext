@@ -37,6 +37,8 @@ export type RefContentRenderer = (
 ) => void;
 
 interface CreateRefLinkComponentOptions {
+  widgetOwnerClass: string;
+  innerNoAutoOpenClass: string;
   refContentRenderer: RefContentRenderer;
 }
 
@@ -100,6 +102,8 @@ function createRefLinkComponent(
         );
       },
     }, {
+      widgetOwnerClass: opts.widgetOwnerClass,
+      innerNoAutoOpenClass: opts.innerNoAutoOpenClass,
       widgetBackgroundColor: () => BACKGROUND_COLOR,
       maskTintColor: () => gray500,
     });

@@ -66,6 +66,8 @@ export function createWidgetComponent(parts: {
   widgetContainerComponent: Component<WidgetContainerProperties>;
   widgetContentComponent: Component<WidgetContentProperties>;
 }, opts: {
+  widgetOwnerClass: string;
+  innerNoAutoOpenClass: string;
   setWidgetOwner?: (v: WidgetOwner) => void;
   openable?: () => boolean;
   autoOpenShouldCollapse?: boolean;
@@ -126,7 +128,8 @@ export function createWidgetComponent(parts: {
   });
 
   function handleMount() {
-    const widgetOwner_ = getWidgetOwner(primeEl.closest(".previewer")!)!;
+    const widgetOwner_ = //
+      getWidgetOwner(primeEl.closest("." + opts.widgetOwnerClass)!)!;
     setWidgetOwner(widgetOwner_);
     opts.setWidgetOwner?.(widgetOwner_);
 
@@ -153,7 +156,10 @@ export function createWidgetComponent(parts: {
       removed: () => displayMode() === "closed",
     }, () => wContainerEl);
 
-    if (widgetOwner_.level === 1 && !primeEl.closest("scratch-off")) {
+    if (
+      widgetOwner_.level === 1 &&
+      !primeEl.closest("." + opts.innerNoAutoOpenClass)
+    ) {
       autoOpen(!!opts.autoOpenShouldCollapse);
     }
   }
