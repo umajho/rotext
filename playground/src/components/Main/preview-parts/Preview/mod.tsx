@@ -131,12 +131,13 @@ const Preview: Component<
 
     //==== 注册进全局存储 ====
     // NOTE: 目前 scrollContainerEl 就是 previewer 的元素
-    registerRoWidgetOwner(scrollContainerEl, {
-      proseClass: PROSE_CLASS,
-      widgetAnchorElement: () => widgetAnchorEl,
-      layoutChange: lookupList,
+    const widgetOwnerController = registerRoWidgetOwner(scrollContainerEl, {
+      widgetAnchorElement: widgetAnchorEl,
       level: 1,
     });
+    createEffect(
+      on([lookupList], () => widgetOwnerController.nofityLayoutChange()),
+    );
   });
 
   //==== 组件 ====
