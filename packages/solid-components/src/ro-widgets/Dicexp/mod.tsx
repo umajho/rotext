@@ -1,6 +1,8 @@
 import { Component } from "solid-js";
 import { customElement } from "solid-element";
 
+import { ComputedColor } from "@rotext/web-utils";
+
 import { createStepsRepresentationComponent } from "./steps-representation";
 import { createDicexpComponent } from "./create-dicexp-component";
 
@@ -10,6 +12,7 @@ export function registerCustomElement(
   tag: string,
   opts: {
     withStyle: (tagName: string) => string;
+    backgroundColor: ComputedColor;
     widgetOwnerClass: string;
     innerNoAutoOpenClass?: string;
     dicexpImporter: () => Promise<typeof import("dicexp")>;

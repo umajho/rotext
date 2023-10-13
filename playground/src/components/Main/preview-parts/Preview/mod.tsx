@@ -31,6 +31,11 @@ import {
   withDefaultRefLinkStyle,
 } from "@rotext/solid-components/internal";
 
+import {
+  getComputedColor,
+  getComputedCSSValueOfClass,
+} from "@rotext/web-utils";
+
 import { ErrorAlert } from "./ui";
 import { Loading } from "../../../ui";
 
@@ -61,8 +66,13 @@ const PROSE_CLASS = "tuan-prose";
 const WIDGET_OWNER_CLASS = "widget-owner";
 const INNER_NO_AUTO_OPEN_CLASS = "inner-no-auto-open";
 
+const BACKGROUND_COLOR = getComputedColor(
+  getComputedCSSValueOfClass("background-color", "tuan-background"),
+)!;
+
 registerCustomElementForRoWidgetRefLink("ref-link", {
   withStyle: withDefaultRefLinkStyle,
+  backgroundColor: BACKGROUND_COLOR,
   widgetOwnerClass: WIDGET_OWNER_CLASS,
   innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,
   refContentRenderer: createDemoRefContentRenderer({ proseClass: PROSE_CLASS }),
@@ -70,6 +80,7 @@ registerCustomElementForRoWidgetRefLink("ref-link", {
 registerCustomElementForStepRepresentations("steps-representation");
 registerCustomElementForRoWidgetDicexp("dicexp-preview", {
   withStyle: withDefaultDicexpStyle,
+  backgroundColor: BACKGROUND_COLOR,
   widgetOwnerClass: WIDGET_OWNER_CLASS,
   innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,
   dicexpImporter: () => import("dicexp"),
