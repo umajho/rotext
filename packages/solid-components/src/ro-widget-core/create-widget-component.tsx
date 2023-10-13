@@ -134,15 +134,15 @@ export function createWidgetComponent(parts: {
     opts.setWidgetOwner?.(widgetOwner_);
 
     const closestContainerEl = closestContainer(primeEl)!;
-    createEffect(on([widgetOwner_.layoutChange], () => { // TODO: debounce
+    widgetOwner_.onLayoutChange(() => { // TODO: debounce
       setWidgetPosition(
         calculateWidgetPosition({
           prime: primeEl,
-          widgetAnchor: widgetOwner_.widgetAnchorElement(),
+          widgetAnchor: widgetOwner_.widgetAnchorElement,
           closestContainer: closestContainerEl,
         }),
       );
-    }));
+    });
 
     createSizeSyncer({
       size: widgetSize,
@@ -197,7 +197,7 @@ export function createWidgetComponent(parts: {
           >
           </div>
         </Show>
-        <Portal mount={widgetOwner()?.widgetAnchorElement()}>
+        <Portal mount={widgetOwner()?.widgetAnchorElement}>
           <Show when={displayMode() !== "closed"}>
             <parts.widgetContainerComponent
               ref={wContainerEl}
