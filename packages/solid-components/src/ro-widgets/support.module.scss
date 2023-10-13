@@ -1,0 +1,16 @@
+.widget-container {
+  @apply border border-white;
+}
+
+.pin-button {
+  @apply cursor-pointer select-none;
+
+  &.pinned {
+    @apply text-red-500;
+  }
+
+  &:not(.pinned) {
+    @apply text-gray-500;
+    transform: rotate(45deg);
+  }
+}
