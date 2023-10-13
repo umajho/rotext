@@ -54,19 +54,27 @@ import { createDemoRefContentRenderer } from "./ref-content-demo";
 
 const CONTENT_ROOT_CLASS = "previewer-content-root";
 const PROSE_CLASS = "tuan-prose";
+const WIDGET_OWNER_CLASS = "widget-owner";
+const INNER_NO_AUTO_OPEN_CLASS = "inner-no-auto-open";
 
 registerCustomElementForRoWidgetRefLink("ref-link", {
+  widgetOwnerClass: WIDGET_OWNER_CLASS,
+  innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,
   refContentRenderer: createDemoRefContentRenderer({ proseClass: PROSE_CLASS }),
 });
 registerCustomElementForStepRepresentations("steps-representation");
 registerCustomElementForRoWidgetDicexp("dicexp-preview", {
+  widgetOwnerClass: WIDGET_OWNER_CLASS,
+  innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,
   dicexpImporter: () => import("dicexp"),
   EvaluatingWorker,
   ErrorAlert,
   Loading,
   tagNameForStepsRepresentation: "steps-representation",
 });
-registerCustomElementForScratchOff();
+registerCustomElementForScratchOff("scratch-off", {
+  innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,
+});
 
 const Preview: Component<
   {
@@ -134,9 +142,11 @@ const Preview: Component<
   //==== 组件 ====
   return (
     <div
-      class={`previewer relative tuan-background overflow-y-auto ${
-        props.class ?? ""
-      }`}
+      class={[
+        `previewer ${WIDGET_OWNER_CLASS}`,
+        "relative tuan-background overflow-y-auto",
+        props.class,
+      ].join(" ")}
       ref={scrollContainerEl}
       onScroll={(ev) => scrollHandler()!(ev)}
     >

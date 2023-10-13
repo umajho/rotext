@@ -36,6 +36,8 @@ interface Properties {
 }
 
 export interface CreateDicexpComponentOptions {
+  widgetOwnerClass: string;
+  innerNoAutoOpenClass: string;
   dicexpImporter: () => Promise<typeof import("dicexp")>;
   EvaluatingWorker: new () => Worker;
   Loading: Component;
@@ -179,6 +181,8 @@ export function createDicexpComponent(
         );
       },
     }, {
+      widgetOwnerClass: opts.widgetOwnerClass,
+      innerNoAutoOpenClass: opts.innerNoAutoOpenClass,
       openable: everRolled,
       autoOpenShouldCollapse: false,
       widgetBackgroundColor: () => BACKGROUND_COLOR,
