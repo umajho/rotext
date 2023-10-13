@@ -1,11 +1,14 @@
 import { customElement } from "solid-element";
 
-export type { RefAddress, RefContentRenderer } from "./RefLink";
+export type {
+  RefAddress,
+  RefContentRenderer,
+} from "./create-ref-link-component";
 
 import {
   createRefLinkComponent,
   CreateRefLinkComponentOptions,
-} from "./RefLink";
+} from "./create-ref-link-component";
 
 import defaultStyle from "./default.scss?inline";
 
