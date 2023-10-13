@@ -4,9 +4,6 @@ import { Component } from "solid-js";
 
 import { BsPinFill } from "solid-icons/bs";
 
-import { gray500 } from "@rotext/web-utils";
-import { computedColorToCSSValue } from "@rotext/web-utils";
-
 import {
   RoWidgetContainerProperties,
   RoWidgetDisplayMode,
@@ -18,7 +15,7 @@ export const WidgetContainer: Component<RoWidgetContainerProperties> = (
   return (
     <div
       ref={props.ref}
-      class={`${styles["widget-container"]} ${props.class}`}
+      class={`${styles["widget-container"]} ${props.class ?? ""}`}
       style={props.style}
       onMouseEnter={props.onMouseEnter}
       onMouseLeave={props.onMouseLeave}
