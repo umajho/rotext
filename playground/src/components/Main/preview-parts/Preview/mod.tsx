@@ -25,7 +25,11 @@ import {
 import { parse } from "@rotext/parsing";
 import { toSnabbdomChildren } from "@rotext/to-html";
 
-import { registerRoWidgetOwner } from "@rotext/solid-components/internal";
+import {
+  registerRoWidgetOwner,
+  withDefaultDicexpStyle,
+  withDefaultRefLinkStyle,
+} from "@rotext/solid-components/internal";
 
 import { ErrorAlert } from "./ui";
 import { Loading } from "../../../ui";
@@ -58,12 +62,14 @@ const WIDGET_OWNER_CLASS = "widget-owner";
 const INNER_NO_AUTO_OPEN_CLASS = "inner-no-auto-open";
 
 registerCustomElementForRoWidgetRefLink("ref-link", {
+  withStyle: withDefaultRefLinkStyle,
   widgetOwnerClass: WIDGET_OWNER_CLASS,
   innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,
   refContentRenderer: createDemoRefContentRenderer({ proseClass: PROSE_CLASS }),
 });
 registerCustomElementForStepRepresentations("steps-representation");
 registerCustomElementForRoWidgetDicexp("dicexp-preview", {
+  withStyle: withDefaultDicexpStyle,
   widgetOwnerClass: WIDGET_OWNER_CLASS,
   innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,
   dicexpImporter: () => import("dicexp"),

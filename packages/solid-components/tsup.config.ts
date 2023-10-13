@@ -2,6 +2,7 @@ import { defineConfig } from "tsup";
 import * as preset from "tsup-preset-solid";
 
 import { postcssModules, sassPlugin } from "esbuild-sass-plugin";
+import postcss from "postcss";
 import autoprefixer from "autoprefixer";
 import tailwindcss from "tailwindcss";
 
@@ -12,7 +13,7 @@ const preset_options: preset.PresetOptions = {
     ...[
       { entry: "src/index.tsx" },
       { entry: "src/ro-widget-core/mod.tsx", name: "widget-core" },
-      { entry: "src/ro-widgets/RefLink.tsx", name: "RefLink" },
+      { entry: "src/ro-widgets/RefLink/mod.tsx", name: "RefLink" },
       { entry: "src/ro-widgets/Dicexp/mod.tsx", name: "Dicexp" },
     ].map(({ entry, name }) => ({
       // entries with '.tsx' extension will have `solid` export condition generated
@@ -66,11 +67,20 @@ export default defineConfig((config) => {
       // // https://github.com/egoist/tsup/issues/536#issuecomment-1752121594
       // opt.loader[".css"] = "local-css";
 
+      const postcssPlugins = [tailwindcss as any, autoprefixer];
+
       opt.esbuildPlugins ??= [];
       opt.esbuildPlugins.push(...[
         sassPlugin({
+          filter: /module\.[^.]+$/,
           type: "style",
-          transform: postcssModules({}, [tailwindcss as any, autoprefixer]),
+          transform: postcssModules({}, postcssPlugins),
+        }),
+        sassPlugin({
+          type: "css-text",
+          transform: async (source) => {
+            return (await postcss(postcssPlugins).process(source)).css;
+          },
         }),
       ]);
 
