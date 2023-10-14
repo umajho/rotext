@@ -22,39 +22,39 @@
         "default": "./dist/index/index.js"
       }
     },
-    "./widget-core": {
-      "solid": "./dist/widget-core/index.jsx",
+    "./ro-widget-core": {
+      "solid": "./dist/ro-widget-core/index.jsx",
       "import": {
-        "types": "./dist/widget-core/index.d.ts",
-        "default": "./dist/widget-core/index.js"
+        "types": "./dist/ro-widget-core/index.d.ts",
+        "default": "./dist/ro-widget-core/index.js"
       }
     },
-    "./RefLink": {
-      "solid": "./dist/RefLink/index.jsx",
+    "./ro-widgets/RefLink": {
+      "solid": "./dist/ro-widgets/RefLink/index.jsx",
       "import": {
-        "types": "./dist/RefLink/index.d.ts",
-        "default": "./dist/RefLink/index.js"
+        "types": "./dist/ro-widgets/RefLink/index.d.ts",
+        "default": "./dist/ro-widgets/RefLink/index.js"
       }
     },
-    "./Dicexp": {
-      "solid": "./dist/Dicexp/index.jsx",
+    "./ro-widgets/Dicexp": {
+      "solid": "./dist/ro-widgets/Dicexp/index.jsx",
       "import": {
-        "types": "./dist/Dicexp/index.d.ts",
-        "default": "./dist/Dicexp/index.js"
+        "types": "./dist/ro-widgets/Dicexp/index.d.ts",
+        "default": "./dist/ro-widgets/Dicexp/index.js"
       }
     },
     "./internal": "./internal.ts"
   },
   "typesVersions": {
     "*": {
-      "widget-core": [
-        "./dist/widget-core/index.d.ts"
+      "ro-widget-core": [
+        "./dist/ro-widget-core/index.d.ts"
       ],
-      "RefLink": [
-        "./dist/RefLink/index.d.ts"
+      "ro-widgets/RefLink": [
+        "./dist/ro-widgets/RefLink/index.d.ts"
       ],
-      "Dicexp": [
-        "./dist/Dicexp/index.d.ts"
+      "ro-widgets/Dicexp": [
+        "./dist/ro-widgets/Dicexp/index.d.ts"
       ]
     }
   },

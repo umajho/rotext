@@ -12,9 +12,9 @@ const preset_options: preset.PresetOptions = {
     // default entry (index)
     ...[
       { entry: "src/index.tsx" },
-      { entry: "src/ro-widget-core/mod.tsx", name: "widget-core" },
-      { entry: "src/ro-widgets/RefLink/mod.tsx", name: "RefLink" },
-      { entry: "src/ro-widgets/Dicexp/mod.tsx", name: "Dicexp" },
+      { entry: "src/ro-widget-core/mod.tsx", name: "ro-widget-core" },
+      { entry: "src/ro-widgets/RefLink/mod.tsx", name: "ro-widgets/RefLink" },
+      { entry: "src/ro-widgets/Dicexp/mod.tsx", name: "ro-widgets/Dicexp" },
     ].map(({ entry, name }) => ({
       // entries with '.tsx' extension will have `solid` export condition generated
       entry,
