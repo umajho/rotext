@@ -3,16 +3,13 @@ import { createSignal } from "solid-js";
 import type {
   EvaluatingWorkerManager,
   EvaluationResultForWorker,
-} from "dicexp";
+} from "@dicexp/evaluating-worker-manager";
 
 type RuntimeLoadingStatus = "short" | "long" | null;
 
 export function createRoller(opts: {
-  dicexpImporter: () => Promise<typeof import("dicexp")>;
-  EvaluatingWorker: new () => Worker;
+  evaluatorProvider: () => Promise<EvaluatingWorkerManager<any>>;
 }) {
-  const { dicexpImporter, EvaluatingWorker } = opts;
-
   const [rtmLoadingStatus, setRtmLoadingStatus] = //
       createSignal<RuntimeLoadingStatus>(null),
     [isRolling, setIsRolling] = createSignal(false),
@@ -26,9 +23,9 @@ export function createRoller(opts: {
     setRtmLoadingStatus("short");
     const cID = //
       setTimeout(() => rtmLoadingStatus() && setRtmLoadingStatus("long"), 100);
-    let dicexp: typeof import("dicexp") | undefined;
+    let evaluator: EvaluatingWorkerManager<any> | undefined;
     try {
-      dicexp = await dicexpImporter();
+      evaluator = await opts.evaluatorProvider();
     } catch (e) {
       const reason = (e instanceof Error) ? e.message : `e`;
       setResult(["error", "other", new Error(`加载运行时失败：${reason}`)]);
@@ -36,30 +33,17 @@ export function createRoller(opts: {
     setRtmLoadingStatus(null);
     clearTimeout(cID);
 
-    if (!dicexp) {
+    if (!evaluator) {
       setResult(null);
       setIsRolling(false);
       return;
     }
 
-    const workerManager = await new Promise<EvaluatingWorkerManager<any>>(
-      (resolve) => {
-        let resolved = false;
-        const workerManager = new dicexp!.EvaluatingWorkerManager(
-          () => new EvaluatingWorker(),
-          (ready) => {
-            if (resolved || !ready) return;
-            resolve(workerManager);
-            resolved = true;
-          },
-        );
-      },
-    );
-    const result = await workerManager.evaluate(code, {
+    const result = await evaluator.evaluate(code, {
       execute: { topLevelScopeName: "standard" },
     });
 
-    workerManager.destroy();
+    evaluator.destroy();
 
     setResult(result);
     setIsRolling(false);

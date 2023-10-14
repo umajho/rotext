@@ -12,6 +12,7 @@ import {
 } from "solid-js";
 
 import type { Repr } from "dicexp";
+import type { EvaluatingWorkerManager } from "@dicexp/evaluating-worker-manager";
 
 import {
   ComputedColor,
@@ -34,8 +35,7 @@ export interface CreateDicexpComponentOptions {
   backgroundColor: ComputedColor;
   widgetOwnerClass: string;
   innerNoAutoOpenClass?: string;
-  dicexpImporter: () => Promise<typeof import("dicexp")>;
-  EvaluatingWorker: new () => Worker;
+  evaluatorProvider: () => Promise<EvaluatingWorkerManager<any>>;
   Loading: Component;
   ErrorAlert: Component<{ error: Error; showsStack: boolean }>;
   StepsRepresentation: ReturnType<typeof createStepsRepresentationComponent>;
@@ -45,8 +45,7 @@ export function createDicexpComponent(
   opts: CreateDicexpComponentOptions,
 ): Component<Properties> {
   const {
-    dicexpImporter,
-    EvaluatingWorker,
+    evaluatorProvider,
     Loading,
     ErrorAlert,
     StepsRepresentation,
@@ -54,10 +53,7 @@ export function createDicexpComponent(
 
   return (outerProps) => {
     const { rtmLoadingStatus, isRolling, result, setResult, roll } = //
-      createRoller({
-        dicexpImporter,
-        EvaluatingWorker,
-      });
+      createRoller({ evaluatorProvider });
 
     createEffect(on([() => outerProps.code], () => setResult(null)));
 

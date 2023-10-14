@@ -18,7 +18,12 @@ import {
   withDefaultRefLinkStyle,
 } from "../src/index";
 
-import EvaluatingWorker from "./dicexp-evaluator.worker?worker";
+import {
+  createWorkerByImportURLs,
+  EvaluatingWorkerManager,
+} from "@dicexp/evaluating-worker-manager";
+import dicexpImportURL from "@dicexp/essences-for-worker/dicexp?url";
+import scopesImportURL from "@dicexp/essences-for-worker/standard-scopes?url";
 
 const WIDGET_OWNER_CLASS = "widget-owner";
 
@@ -40,8 +45,26 @@ registerCustomElementForRoWidgetDicexp("ro-widget-dicexp", {
   withStyle: withDefaultDicexpStyle,
   backgroundColor: BACKGROUND_COLOR,
   widgetOwnerClass: WIDGET_OWNER_CLASS,
-  dicexpImporter: () => import("dicexp"),
-  EvaluatingWorker,
+  evaluatorProvider: () => {
+    const createWorker = () =>
+      createWorkerByImportURLs(
+        (new URL(dicexpImportURL, window.location.href)).href,
+        (new URL(scopesImportURL, window.location.href)).href,
+      );
+    return new Promise(
+      (resolve) => {
+        let resolved = false;
+        const workerManager = new EvaluatingWorkerManager(
+          createWorker,
+          (ready) => {
+            if (resolved || !ready) return;
+            resolve(workerManager);
+            resolved = true;
+          },
+        );
+      },
+    );
+  },
   Loading: () => "loading…",
   ErrorAlert: () => "error!",
   tagNameForStepsRepresentation: "steps-representation",
