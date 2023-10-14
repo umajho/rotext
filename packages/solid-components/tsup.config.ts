@@ -78,8 +78,11 @@ export default defineConfig((config) => {
         }),
         sassPlugin({
           type: "css-text",
-          transform: async (source) => {
-            return (await postcss(postcssPlugins).process(source)).css;
+          transform: async (source, _dir, path) => {
+            const result = //
+              await postcss(postcssPlugins)
+                .process(source, { from: path });
+            return result.css;
           },
         }),
       ]);
