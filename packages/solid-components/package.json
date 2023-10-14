@@ -16,64 +16,28 @@
   "browser": {},
   "exports": {
     ".": {
-      "solid": {
-        "development": "./dist/index/dev.jsx",
-        "import": "./dist/index/index.jsx"
-      },
-      "development": {
-        "import": {
-          "types": "./dist/index/index.d.ts",
-          "default": "./dist/index/dev.js"
-        }
-      },
+      "solid": "./dist/index/index.jsx",
       "import": {
         "types": "./dist/index/index.d.ts",
         "default": "./dist/index/index.js"
       }
     },
     "./widget-core": {
-      "solid": {
-        "development": "./dist/widget-core/dev.jsx",
-        "import": "./dist/widget-core/index.jsx"
-      },
-      "development": {
-        "import": {
-          "types": "./dist/widget-core/index.d.ts",
-          "default": "./dist/widget-core/dev.js"
-        }
-      },
+      "solid": "./dist/widget-core/index.jsx",
       "import": {
         "types": "./dist/widget-core/index.d.ts",
         "default": "./dist/widget-core/index.js"
       }
     },
     "./RefLink": {
-      "solid": {
-        "development": "./dist/RefLink/dev.jsx",
-        "import": "./dist/RefLink/index.jsx"
-      },
-      "development": {
-        "import": {
-          "types": "./dist/RefLink/index.d.ts",
-          "default": "./dist/RefLink/dev.js"
-        }
-      },
+      "solid": "./dist/RefLink/index.jsx",
       "import": {
         "types": "./dist/RefLink/index.d.ts",
         "default": "./dist/RefLink/index.js"
       }
     },
     "./Dicexp": {
-      "solid": {
-        "development": "./dist/Dicexp/dev.jsx",
-        "import": "./dist/Dicexp/index.jsx"
-      },
-      "development": {
-        "import": {
-          "types": "./dist/Dicexp/index.d.ts",
-          "default": "./dist/Dicexp/dev.js"
-        }
-      },
+      "solid": "./dist/Dicexp/index.jsx",
       "import": {
         "types": "./dist/Dicexp/index.d.ts",
         "default": "./dist/Dicexp/index.js"
