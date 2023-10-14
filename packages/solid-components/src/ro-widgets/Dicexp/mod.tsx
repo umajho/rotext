@@ -1,6 +1,8 @@
 import { Component } from "solid-js";
 import { customElement } from "solid-element";
 
+import type { EvaluatingWorkerManager } from "@dicexp/evaluating-worker-manager";
+
 import { ComputedColor } from "@rotext/web-utils";
 
 import { createStepsRepresentationComponent } from "./steps-representation";
@@ -15,8 +17,7 @@ export function registerCustomElement(
     backgroundColor: ComputedColor;
     widgetOwnerClass: string;
     innerNoAutoOpenClass?: string;
-    dicexpImporter: () => Promise<typeof import("dicexp")>;
-    EvaluatingWorker: new () => Worker;
+    evaluatorProvider: () => Promise<EvaluatingWorkerManager<any>>;
     Loading: Component;
     ErrorAlert: Component<{ error: Error; showsStack: boolean }>;
     tagNameForStepsRepresentation: string;

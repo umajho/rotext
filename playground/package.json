@@ -25,7 +25,8 @@
   "dependencies": {
     "@codemirror/state": "^6.2.1",
     "@codemirror/theme-one-dark": "^6.1.2",
-    "@dicexp/builtins": "^0.2.0",
+    "@dicexp/essences-for-worker": "^0.3.0",
+    "@dicexp/evaluating-worker-manager": "^0.3.2",
     "@dicexp/solid-components": "^0.2.0",
     "@rotext/example-documentations": "workspace:*",
     "@rotext/parsing": "workspace:*",
@@ -33,7 +34,7 @@
     "@rotext/solid-components": "workspace:*",
     "@rotext/web-utils": "workspace:*",
     "codemirror": "^6.0.1",
-    "dicexp": "^0.2.0",
+    "dicexp": "^0.3.0",
     "snabbdom": "^3.5.1",
     "solid-element": "^1.8.0",
     "solid-icons": "^1.0.11",

@@ -58,8 +58,8 @@ import {
 } from "@rotext/solid-components/internal";
 import { registerCustomElementForStepRepresentations } from "@dicexp/solid-components";
 
-import EvaluatingWorker from "../../../../workers/dicexp-evaluator?worker";
 import { createDemoRefContentRenderer } from "./ref-content-demo";
+import { evaluatorProvider } from "./evaluator-provider";
 
 const CONTENT_ROOT_CLASS = "previewer-content-root";
 const PROSE_CLASS = "tuan-prose";
@@ -83,8 +83,7 @@ registerCustomElementForRoWidgetDicexp("dicexp-preview", {
   backgroundColor: BACKGROUND_COLOR,
   widgetOwnerClass: WIDGET_OWNER_CLASS,
   innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,
-  dicexpImporter: () => import("dicexp"),
-  EvaluatingWorker,
+  evaluatorProvider,
   ErrorAlert,
   Loading,
   tagNameForStepsRepresentation: "steps-representation",

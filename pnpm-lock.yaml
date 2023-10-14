@@ -62,9 +62,12 @@ importers:
         specifier: ^1.0.11
         version: 1.0.11(solid-js@1.8.1)
     devDependencies:
-      '@dicexp/builtins':
-        specifier: ^0.2.0
-        version: 0.2.0
+      '@dicexp/essences-for-worker':
+        specifier: ^0.3.0
+        version: 0.3.0
+      '@dicexp/evaluating-worker-manager':
+        specifier: ^0.3.2
+        version: 0.3.2
       '@dicexp/solid-components':
         specifier: ^0.2.0
         version: 0.2.0(solid-element@1.8.0)(solid-js@1.8.1)
@@ -75,8 +78,8 @@ importers:
         specifier: ^8.2.0
         version: 8.2.0
       dicexp:
-        specifier: ^0.2.0
-        version: 0.2.0(@lezer/highlight@1.1.6)(@lezer/lr@1.3.7)(esm-seedrandom@3.0.5)
+        specifier: ^0.3.0
+        version: 0.3.0(@lezer/highlight@1.1.6)(@lezer/lr@1.3.7)(esm-seedrandom@3.0.5)
       esbuild:
         specifier: ^0.18.20
         version: 0.18.20
@@ -131,9 +134,12 @@ importers:
       '@codemirror/theme-one-dark':
         specifier: ^6.1.2
         version: 6.1.2
-      '@dicexp/builtins':
-        specifier: ^0.2.0
-        version: 0.2.0
+      '@dicexp/essences-for-worker':
+        specifier: ^0.3.0
+        version: 0.3.0
+      '@dicexp/evaluating-worker-manager':
+        specifier: ^0.3.2
+        version: 0.3.2
       '@dicexp/solid-components':
         specifier: ^0.2.0
         version: 0.2.0(solid-element@1.8.0)(solid-js@1.8.1)
@@ -156,8 +162,8 @@ importers:
         specifier: ^6.0.1
         version: 6.0.1(@lezer/common@1.0.3)
       dicexp:
-        specifier: ^0.2.0
-        version: 0.2.0(@lezer/highlight@1.1.6)(@lezer/lr@1.3.7)(esm-seedrandom@3.0.5)
+        specifier: ^0.3.0
+        version: 0.3.0(@lezer/highlight@1.1.6)(@lezer/lr@1.3.7)(esm-seedrandom@3.0.5)
       snabbdom:
         specifier: ^3.5.1
         version: 3.5.1
@@ -629,8 +635,11 @@ packages:
       w3c-keyname: 2.2.8
     dev: false
 
-  /@dicexp/builtins@0.2.0:
-    resolution: {integrity: sha512-X2E3nl2gIgwRWN4xbSJiQEu6rJrr4tglR5yHGuY8WnGT4c8qlHCj4tHyHPwEC358f7Ql7Pu7ePHGWcfJWb0OPw==}
+  /@dicexp/essences-for-worker@0.3.0:
+    resolution: {integrity: sha512-65rEFcytr9LStDaGUzovEeXZOOLYe2a0ziXYDPCZo1sSo55gdl4fubFjT1ILF41oXLUO9GyucF8ImIlYkj1+Zg==}
+
+  /@dicexp/evaluating-worker-manager@0.3.2:
+    resolution: {integrity: sha512-EYHmTEL1W5DG9p7dU+tmbsbBsYVYlg+OPNCBdnAGWZNNs8pVTcP6Ch5NdqlFkRhc2fLCGFK1XawiZ98yvfcGcw==}
 
   /@dicexp/solid-components@0.2.0(solid-element@1.8.0)(solid-js@1.8.1):
     resolution: {integrity: sha512-vk4Jw32Mw89Z3Ouw3tLUOd4Ksm/mXdyFmpdubR281DLcL8UHRfmp9DH2wlLRbiBoX8RrE0HamC2ejjFkG5n80Q==}
@@ -1805,8 +1814,8 @@ packages:
     engines: {node: '>=0.4.0'}
     dev: true
 
-  /dicexp@0.2.0(@lezer/highlight@1.1.6)(@lezer/lr@1.3.7)(esm-seedrandom@3.0.5):
-    resolution: {integrity: sha512-ktAJkuCtHIdic9AGNY7lycMQ5IQHrfawWktqcSKLORCKCx9xE90EMs3rlzmsvhRfD5/9/Z2cv6Lag1SQ0WnbQg==}
+  /dicexp@0.3.0(@lezer/highlight@1.1.6)(@lezer/lr@1.3.7)(esm-seedrandom@3.0.5):
+    resolution: {integrity: sha512-JTNBtIhCTB5NG8p3eJ04pf2hXcWo9/Ugd05SVuswP+d0wVBI5+PtQa4diODSKRsoLK+NjNiPeWmbCvR8qW622Q==}
     peerDependencies:
       '@lezer/highlight': ^1.1.6
       '@lezer/lr': ^1.3.7
