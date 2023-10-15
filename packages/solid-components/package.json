@@ -78,12 +78,12 @@
     "solid-js": "^1.8.1"
   },
   "devDependencies": {
-    "@dicexp/essences-for-worker": "^0.3.0",
-    "@dicexp/evaluating-worker-manager": "^0.3.2",
+    "@dicexp/builtins": "^0.4.0",
+    "@dicexp/evaluating-worker-manager": "^0.4.0",
     "@dicexp/solid-components": "^0.2.0",
     "autoprefixer": "^10.4.14",
     "concurrently": "^8.2.0",
-    "dicexp": "^0.3.0",
+    "dicexp": "^0.4.1",
     "esbuild": "^0.18.20",
     "esbuild-plugin-solid": "^0.5.0",
     "esbuild-sass-plugin": "^2.16.0",
