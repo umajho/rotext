@@ -22,8 +22,8 @@ import {
   createWorkerByImportURLs,
   EvaluatingWorkerManager,
 } from "@dicexp/evaluating-worker-manager";
-import dicexpImportURL from "@dicexp/essences-for-worker/dicexp?url";
-import scopesImportURL from "@dicexp/essences-for-worker/standard-scopes?url";
+import dicexpImportURL from "dicexp/essence/for-worker?url";
+import scopesImportURL from "@dicexp/builtins/essence/standard-scopes?url";
 
 const WIDGET_OWNER_CLASS = "widget-owner";
 
