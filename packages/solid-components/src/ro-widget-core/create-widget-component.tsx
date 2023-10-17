@@ -52,8 +52,8 @@ export interface WidgetContainerProperties {
 export interface WidgetContentProperties {
   displayMode: () => DisplayMode;
 
-  onTouchEndOnPinIcon: () => void;
-  onClickOnPinIcon: () => void;
+  handlerForTouchEndOnPinIcon: () => void;
+  handlerForClickOnPinIcon: () => void;
 }
 
 interface ElementSize {
@@ -230,8 +230,8 @@ export function createWidgetComponent(parts: {
               <div ref={widgetEl}>
                 <parts.widgetContentComponent
                   displayMode={displayMode}
-                  onTouchEndOnPinIcon={pinningTogglerTouchEndHandler}
-                  onClickOnPinIcon={pinningToggleHandler}
+                  handlerForTouchEndOnPinIcon={pinningTogglerTouchEndHandler}
+                  handlerForClickOnPinIcon={pinningToggleHandler}
                 />
               </div>
             </parts.widgetContainerComponent>
