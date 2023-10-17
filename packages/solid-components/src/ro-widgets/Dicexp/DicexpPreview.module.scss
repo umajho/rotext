@@ -52,8 +52,12 @@
     @apply text-sm
   }
 
-  .statistics {
-    @apply flex flex-row-reverse pb-[0.5rem];
+  .extra-info {
+    @apply flex flex-col items-end pb-[0.5rem];
     @apply text-xs text-slate-300;
+
+    .more {
+      @apply underline cursor-pointer select-none;
+    }
   }
 }

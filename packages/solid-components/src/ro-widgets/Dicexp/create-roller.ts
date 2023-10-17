@@ -4,6 +4,7 @@ import type {
   EvaluatingWorkerManager,
   EvaluationResultForWorker,
 } from "@dicexp/evaluating-worker-manager";
+import { DicexpResult } from "./create-dicexp-component";
 
 export type RuntimeLoadingStatus = "short" | "long" | null;
 
@@ -13,7 +14,9 @@ export function createRoller(opts: {
   const [rtmLoadingStatus, setRtmLoadingStatus] = //
       createSignal<RuntimeLoadingStatus>(null),
     [isRolling, setIsRolling] = createSignal(false),
-    [result, setResult] = createSignal<EvaluationResultForWorker | null>(null);
+    [result, setResult] = createSignal<EvaluationResultForWorker | null>(null),
+    [evaluationInfo, setEvaluatorInfo] = //
+      createSignal<NonNullable<DicexpResult["evaluationInfo"]> | null>(null);
 
   async function roll(code: string) {
     if (isRolling()) return;
@@ -39,15 +42,20 @@ export function createRoller(opts: {
       return;
     }
 
+    const seed = crypto.getRandomValues(new Uint32Array(1))[0]!;
     const result = await evaluator.evaluate(code, {
-      execute: { topLevelScopeName: "standard" },
+      execute: {
+        topLevelScopeName: "standard",
+        seed,
+      },
     });
 
     evaluator.destroy();
 
     setResult(result);
+    setEvaluatorInfo(["?", JSON.stringify({ r: seed, s: "?" })]);
     setIsRolling(false);
   }
 
-  return { rtmLoadingStatus, isRolling, result, roll };
+  return { rtmLoadingStatus, isRolling, result, evaluationInfo, roll };
 }
