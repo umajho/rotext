@@ -15,7 +15,6 @@ import {
 import type { ExecutionAppendix, JSValue, Repr } from "dicexp";
 import type {
   EvaluatingWorkerManager,
-  EvaluationResultForWorker,
 } from "@dicexp/evaluating-worker-manager";
 
 import {
@@ -174,32 +173,28 @@ export function createDicexpComponent(
             <div style={{ padding: "0.5rem 0.5rem 0 0.5rem" }}>
               <div style={{ padding: "0 0.5rem 0 0.5rem" }}>
                 <Switch>
-                  <Match when={resultDisplaying}>
-                    {(resultDisplaying) => (
-                      <>
-                        <Show when={resultDisplaying().error()}>
-                          {(resultError) => (
-                            <ErrorAlert
-                              error={resultError()}
-                              showsStack={false}
-                            />
-                          )}
-                        </Show>
-                        <Show when={resultDisplaying().repr()}>
-                          {(resultRepr) => (
-                            <>
-                              <div>
-                                <code class={styles["code"]}>
-                                  {outerProps.code}
-                                </code>
-                                {" ➔"}
-                              </div>
-                              <StepsRepresentation repr={resultRepr()} />
-                            </>
-                          )}
-                        </Show>
-                      </>
-                    )}
+                  <Match when={resultDisplaying?.summary()}>
+                    <Show when={resultDisplaying!.error()}>
+                      {(resultError) => (
+                        <ErrorAlert
+                          error={resultError()}
+                          showsStack={false}
+                        />
+                      )}
+                    </Show>
+                    <Show when={resultDisplaying!.repr()}>
+                      {(resultRepr) => (
+                        <>
+                          <div>
+                            <code class={styles["code"]}>
+                              {outerProps.code}
+                            </code>
+                            {" ➔"}
+                          </div>
+                          <StepsRepresentation repr={resultRepr()} />
+                        </>
+                      )}
+                    </Show>
                   </Match>
                   <Match when={rolling?.isRolling()}>
                     <div class={styles["center-aligner"]}>
@@ -290,16 +285,12 @@ function processProps(
       evaluatorProvider: opts.evaluatorProvider.default,
     });
 
-    const [result, setResult] = //
-      createSignal<EvaluationResultForWorker | null>(null);
-    createEffect(on([roller.result], ([result]) => setResult(result)));
-
     const appendix = createMemo((): ExecutionAppendix | null => {
-      const result_ = result();
-      if (result_?.[0] === "ok") {
-        return result_[2];
-      } else if (result_?.[0] === "error" && result_[1] === "execute") {
-        return result_[3];
+      const result = roller.result();
+      if (result?.[0] === "ok") {
+        return result[2];
+      } else if (result?.[0] === "error" && result[1] === "execute") {
+        return result[3];
       }
       return null;
     });
@@ -312,17 +303,17 @@ function processProps(
       },
       resultDisplaying: {
         summary: () => {
-          const result_ = result();
-          if (!result_) return null;
+          const result = roller.result();
+          if (!result) return null;
 
-          if (result_[0] !== "ok") {
+          if (result[0] !== "ok") {
             return {
               text: "错误！",
               textClass: styles["text-color-error"]!,
             };
           }
 
-          const summary = summarizeValue(result_[1]);
+          const summary = summarizeValue(result[1]);
           if (summary === "too_complex") {
             return {
               text: "暂不支持显示的复杂值。",
@@ -332,9 +323,9 @@ function processProps(
           return { text: summary[1] };
         },
         error: () => {
-          const result_ = result();
-          if (result_?.[0] === "error" /* && result_[1] !== "execute" */) {
-            return result_[2];
+          const result = roller.result();
+          if (result?.[0] === "error" /* && result_[1] !== "execute" */) {
+            return result[2];
           }
           return null;
         },
@@ -342,7 +333,7 @@ function processProps(
         evaluationInfo: roller.evaluationInfo,
         statistics: () => appendix()?.statistics ?? null,
 
-        clear: () => setResult(null),
+        clear: roller.clear,
       },
     };
   } else if (outerProps.result) {
