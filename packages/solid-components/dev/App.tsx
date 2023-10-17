@@ -113,6 +113,11 @@ const App: Component = () => {
 
   const forgedResults: DicexpResult[] = [
     { result: ["value", 42], repr: ["vp", 42] },
+    {
+      result: ["value", 42],
+      repr: ["vp", 42],
+      statistics: { timeConsumption: { ms: 1 } },
+    },
     { result: ["value_summary", "四十二"], repr: ["vp", 42] },
     { result: "error", repr: ["e", "error"] },
     { result: ["error", "?"], repr: ["e", "?"] },
