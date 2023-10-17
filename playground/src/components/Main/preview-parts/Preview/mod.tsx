@@ -96,7 +96,7 @@ const Preview: Component<
   {
     store: EditorStore;
     class?: string;
-    setParsingTimeText: Setter<string>;
+    setParsingTimeText: Setter<string | null>;
     onThrowInParsing: (thrown: unknown) => void;
   }
 > = (props) => {
@@ -218,7 +218,7 @@ function createRendering(
   props: {
     text: () => string;
     setLookupListRaw: (v: LookupListRaw) => void;
-    setParsingTimeText(v: string): void;
+    setParsingTimeText(v: string | null): void;
     setErr: (v: Error | null) => void;
   },
   els: {
