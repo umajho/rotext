@@ -4,6 +4,7 @@ import {
   Accessor,
   Component,
   createEffect,
+  createMemo,
   createSignal,
   Match,
   on,
@@ -11,7 +12,7 @@ import {
   Switch,
 } from "solid-js";
 
-import type { JSValue, Repr } from "dicexp";
+import type { ExecutionAppendix, JSValue, Repr } from "dicexp";
 import type {
   EvaluatingWorkerManager,
   EvaluationResultForWorker,
@@ -42,9 +43,9 @@ export interface DicexpResult {
     string | Error,
   ];
   repr?: Repr;
-  // statistics?: {
-  //   timeConsumption?: { ms: number };
-  // };
+  statistics?: {
+    timeConsumption?: { ms: number };
+  };
 }
 
 export interface SolutionSpecifier {
@@ -165,42 +166,58 @@ export function createDicexpComponent(
               </div>
             </div>
             <HorizontalRule />
-            <div style={{ padding: "1rem" }}>
-              <Switch>
-                <Match when={resultDisplaying}>
-                  {(resultDisplaying) => (
-                    <>
-                      <Show when={resultDisplaying().error()}>
-                        {(resultError) => (
-                          <ErrorAlert
-                            error={resultError()}
-                            showsStack={false}
-                          />
-                        )}
-                      </Show>
-                      <Show when={resultDisplaying().repr()}>
-                        {(resultRepr) => (
-                          <>
-                            <div style={{ "padding-bottom": "0.5rem" }}>
-                              <code>{outerProps.code}</code>
-                              {" ➔"}
-                            </div>
-                            <StepsRepresentation repr={resultRepr()} />
-                          </>
-                        )}
-                      </Show>
-                    </>
-                  )}
-                </Match>
-                <Match when={rolling?.isRolling()}>
-                  <div class={styles["center-aligner"]}>
-                    <Loading />
+            <div style={{ padding: "0.5rem 0.5rem 0 0.5rem" }}>
+              <div style={{ padding: "0 0.5rem 0 0.5rem" }}>
+                <Switch>
+                  <Match when={resultDisplaying}>
+                    {(resultDisplaying) => (
+                      <>
+                        <Show when={resultDisplaying().error()}>
+                          {(resultError) => (
+                            <ErrorAlert
+                              error={resultError()}
+                              showsStack={false}
+                            />
+                          )}
+                        </Show>
+                        <Show when={resultDisplaying().repr()}>
+                          {(resultRepr) => (
+                            <>
+                              <div>
+                                <code class={styles["code"]}>
+                                  {outerProps.code}
+                                </code>
+                                {" ➔"}
+                              </div>
+                              <StepsRepresentation repr={resultRepr()} />
+                            </>
+                          )}
+                        </Show>
+                      </>
+                    )}
+                  </Match>
+                  <Match when={rolling?.isRolling()}>
+                    <div class={styles["center-aligner"]}>
+                      <Loading />
+                    </div>
+                  </Match>
+                  <Match when={true}>
+                    输入变更…
+                  </Match>
+                </Switch>
+              </div>
+              <Show
+                when={resultDisplaying?.statistics()}
+                fallback={<div style={{ height: "0.5rem" }} />}
+              >
+                {(statistics) => (
+                  <div class={styles["statistics"]}>
+                    <Show when={statistics().timeConsumption}>
+                      {(timeConsumption) => `耗时≈${timeConsumption().ms}ms`}
+                    </Show>
                   </div>
-                </Match>
-                <Match when={true}>
-                  输入变更…
-                </Match>
-              </Switch>
+                )}
+              </Show>
             </div>
           </div>
         );
@@ -231,6 +248,7 @@ function processProps(
     summary: () => { text: string; textClass?: string } | null;
     error: () => Error | null;
     repr: () => Repr | null;
+    statistics: () => NonNullable<DicexpResult["statistics"]> | null;
 
     clear?: () => void;
   };
@@ -243,6 +261,16 @@ function processProps(
     const [result, setResult] = //
       createSignal<EvaluationResultForWorker | null>(null);
     createEffect(on([roller.result], ([result]) => setResult(result)));
+
+    const appendix = createMemo((): ExecutionAppendix | null => {
+      const result_ = result();
+      if (result_?.[0] === "ok") {
+        return result_[2];
+      } else if (result_?.[0] === "error" && result_[1] === "execute") {
+        return result_[3];
+      }
+      return null;
+    });
 
     return {
       rolling: {
@@ -278,16 +306,8 @@ function processProps(
           }
           return null;
         },
-        repr: () => {
-          const result_ = result();
-          let repr: Repr | null = null;
-          if (result_?.[0] === "ok") {
-            repr = result_[2].representation;
-          } else if (result_?.[0] === "error" && result_[1] === "execute") {
-            repr = result_[3].representation;
-          }
-          return repr;
-        },
+        repr: () => appendix()?.representation ?? null,
+        statistics: () => appendix()?.statistics ?? null,
 
         clear: () => setResult(null),
       },
@@ -329,7 +349,8 @@ function processProps(
           }
           return null;
         },
-        repr: () => outerProps.result?.repr,
+        repr: () => outerProps.result?.repr ?? null,
+        statistics: () => outerProps.result?.statistics ?? null,
       },
     };
   }

@@ -34,6 +34,7 @@
 
 .dicexp-widget-content {
   @apply flex flex-col;
+  @apply min-w-[12rem];
 
   .header {
     @apply flex justify-between items-center px-2;
@@ -45,5 +46,14 @@
 
   .center-aligner {
     @apply flex justify-center items-center;
+  }
+
+  .code {
+    @apply text-sm
+  }
+
+  .statistics {
+    @apply flex flex-row-reverse pb-[0.5rem];
+    @apply text-xs text-slate-300;
   }
 }
