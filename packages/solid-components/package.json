@@ -69,9 +69,6 @@
     "lint:types": "tsc --noEmit",
     "update-deps": "pnpm up -Li"
   },
-  "dependencies": {
-    "@rotext/web-utils": "workspace:*"
-  },
   "peerDependencies": {
     "solid-element": "^1.8.0",
     "solid-icons": "^1.0.11",
@@ -81,6 +78,7 @@
     "@dicexp/builtins": "^0.4.0",
     "@dicexp/evaluating-worker-manager": "^0.4.0",
     "@dicexp/solid-components": "^0.2.0",
+    "@rotext/web-utils": "workspace:*",
     "autoprefixer": "^10.4.14",
     "concurrently": "^8.2.0",
     "dicexp": "^0.4.1",

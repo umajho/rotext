@@ -52,9 +52,6 @@ importers:
 
   packages/solid-components:
     dependencies:
-      '@rotext/web-utils':
-        specifier: workspace:*
-        version: link:../../internal/web-utils
       solid-element:
         specifier: ^1.8.0
         version: 1.8.0(solid-js@1.8.1)
@@ -71,6 +68,9 @@ importers:
       '@dicexp/solid-components':
         specifier: ^0.2.0
         version: 0.2.0(solid-element@1.8.0)(solid-js@1.8.1)
+      '@rotext/web-utils':
+        specifier: workspace:*
+        version: link:../../internal/web-utils
       autoprefixer:
         specifier: ^10.4.14
         version: 10.4.14(postcss@8.4.24)
