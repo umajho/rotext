@@ -158,8 +158,8 @@ export function createDicexpComponent(
               <div class={styles["left-area"]}>
                 <PinButton
                   displayMode={props.displayMode}
-                  onClick={props.onClickOnPinIcon}
-                  onTouchEnd={props.onTouchEndOnPinIcon}
+                  onClick={props.handlerForClickOnPinIcon}
+                  onTouchEnd={props.handlerForTouchEndOnPinIcon}
                 />
                 <span>掷骰</span>
               </div>

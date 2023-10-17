@@ -83,8 +83,8 @@ export function createRefLinkComponent(
             <div class={styles["header"]}>
               <PinButton
                 displayMode={props.displayMode}
-                onClick={props.onClickOnPinIcon}
-                onTouchEnd={props.onTouchEndOnPinIcon}
+                onClick={props.handlerForClickOnPinIcon}
+                onTouchEnd={props.handlerForTouchEndOnPinIcon}
               />
               <div style={{ width: "3rem" }} />
               <div>{outerProps.address}</div>
