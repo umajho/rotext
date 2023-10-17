@@ -1,7 +1,7 @@
 import "./App.css";
 import styles from "./App.module.css";
 
-import { type Component, onMount } from "solid-js";
+import { type Component, Index, onMount } from "solid-js";
 
 import { registerCustomElementForStepRepresentations } from "@dicexp/solid-components";
 
@@ -24,6 +24,7 @@ import {
 } from "@dicexp/evaluating-worker-manager";
 import dicexpImportURL from "dicexp/essence/for-worker?url";
 import scopesImportURL from "@dicexp/builtins/essence/standard-scopes?url";
+import { DicexpResult } from "src/ro-widgets/Dicexp/create-dicexp-component";
 
 const WIDGET_OWNER_CLASS = "widget-owner";
 
@@ -45,26 +46,36 @@ registerCustomElementForRoWidgetDicexp("ro-widget-dicexp", {
   withStyle: withDefaultDicexpStyle,
   backgroundColor: BACKGROUND_COLOR,
   widgetOwnerClass: WIDGET_OWNER_CLASS,
-  evaluatorProvider: () => {
-    const createWorker = () =>
-      createWorkerByImportURLs(
-        (new URL(dicexpImportURL, window.location.href)).href,
-        (new URL(scopesImportURL, window.location.href)).href,
-      );
-    return new Promise(
-      (resolve) => {
-        let resolved = false;
-        const workerManager = new EvaluatingWorkerManager(
-          createWorker,
-          (ready) => {
-            if (resolved || !ready) return;
-            resolve(workerManager);
-            resolved = true;
-          },
+  evaluatorProvider: {
+    default: () => {
+      const createWorker = () =>
+        createWorkerByImportURLs(
+          (new URL(dicexpImportURL, window.location.href)).href,
+          (new URL(scopesImportURL, window.location.href)).href,
         );
-      },
-    );
+      return new Promise(
+        (resolve) => {
+          let resolved = false;
+          const workerManager = new EvaluatingWorkerManager(
+            createWorker,
+            (ready) => {
+              if (resolved || !ready) return;
+              resolve(workerManager);
+              resolved = true;
+            },
+          );
+        },
+      );
+    },
   },
+  Loading: () => "loading…",
+  ErrorAlert: () => "error!",
+  tagNameForStepsRepresentation: "steps-representation",
+});
+registerCustomElementForRoWidgetDicexp("ro-widget-dicexp-no-runtime", {
+  withStyle: withDefaultDicexpStyle,
+  backgroundColor: BACKGROUND_COLOR,
+  widgetOwnerClass: WIDGET_OWNER_CLASS,
   Loading: () => "loading…",
   ErrorAlert: () => "error!",
   tagNameForStepsRepresentation: "steps-representation",
@@ -74,7 +85,8 @@ declare module "solid-js" {
   namespace JSX {
     interface IntrinsicElements {
       "ro-widget-ref-link": { address: string };
-      "ro-widget-dicexp": { code: string };
+      "ro-widget-dicexp": { code: string; result?: DicexpResult };
+      "ro-widget-dicexp-no-runtime": { code: string; result?: DicexpResult };
     }
   }
 }
@@ -99,14 +111,24 @@ const App: Component = () => {
     );
   });
 
+  const forgedResults: DicexpResult[] = [
+    { result: ["value", 42], repr: ["vp", 42] },
+    { result: ["value_summary", "四十二"], repr: ["vp", 42] },
+    { result: "error", repr: ["e", "error"] },
+    { result: ["error", "?"], repr: ["e", "?"] },
+    { result: ["error", new Error("?")], repr: ["e", "?"] },
+  ];
+
   return (
     <div class={styles.App}>
       <div class="grid grid-cols-2 bg-slate-950">
         <div class={`${WIDGET_OWNER_CLASS}`}>
           <div ref={widgetAnchorLeftEl} class="relative z-10" />
-          <div class="grid grid-rows-3 h-screen">
-            <ro-widget-dicexp code="d100" />
-            <div class="p-4 overflow-y-scroll">
+          <div class="flex flex-col min-h-screen">
+            <div class="h-[33vh]">
+              <ro-widget-dicexp code="d100" />
+            </div>
+            <div class="h-[33vh] p-4 overflow-y-scroll">
               <div class="h-screen bg-slate-900">
                 <div
                   class={`${WIDGET_OWNER_CLASS} bg-slate-800`}
@@ -120,8 +142,26 @@ const App: Component = () => {
                 </div>
               </div>
             </div>
-            <div>
-              <ro-widget-dicexp code="d100" />
+            <div class="grid grid-cols-2">
+              <div class="flex flex-col">
+                <ro-widget-dicexp code="d100" />
+                <Index each={forgedResults}>
+                  {(result) => (
+                    <ro-widget-dicexp code="d100" result={result()} />
+                  )}
+                </Index>
+              </div>
+              <div class="flex flex-col">
+                <ro-widget-dicexp-no-runtime code="d100" />
+                <Index each={forgedResults}>
+                  {(result) => (
+                    <ro-widget-dicexp-no-runtime
+                      code="d100"
+                      result={result()}
+                    />
+                  )}
+                </Index>
+              </div>
             </div>
           </div>
         </div>

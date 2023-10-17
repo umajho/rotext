@@ -1,12 +1,13 @@
 import { Component } from "solid-js";
 import { customElement } from "solid-element";
 
-import type { EvaluatingWorkerManager } from "@dicexp/evaluating-worker-manager";
-
 import { ComputedColor } from "@rotext/web-utils";
 
 import { createStepsRepresentationComponent } from "./steps-representation";
-import { createDicexpComponent } from "./create-dicexp-component";
+import {
+  createDicexpComponent,
+  type DicexpEvaluatorProvider,
+} from "./create-dicexp-component";
 
 import defaultStyle from "./default.scss?inline";
 
@@ -17,7 +18,7 @@ export function registerCustomElement(
     backgroundColor: ComputedColor;
     widgetOwnerClass: string;
     innerNoAutoOpenClass?: string;
-    evaluatorProvider: () => Promise<EvaluatingWorkerManager<any>>;
+    evaluatorProvider?: DicexpEvaluatorProvider;
     Loading: Component;
     ErrorAlert: Component<{ error: Error; showsStack: boolean }>;
     tagNameForStepsRepresentation: string;
@@ -33,7 +34,7 @@ export function registerCustomElement(
   document.head.appendChild(document.createElement("style"))
     .appendChild(document.createTextNode(opts.withStyle(tag)));
 
-  customElement(tag, { code: "" }, DicexpComponent);
+  customElement(tag, { code: "", result: null }, DicexpComponent);
 }
 
 export function withDefaultStyle(tagName: string) {

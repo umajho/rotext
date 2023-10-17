@@ -5,7 +5,7 @@ import type {
   EvaluationResultForWorker,
 } from "@dicexp/evaluating-worker-manager";
 
-type RuntimeLoadingStatus = "short" | "long" | null;
+export type RuntimeLoadingStatus = "short" | "long" | null;
 
 export function createRoller(opts: {
   evaluatorProvider: () => Promise<EvaluatingWorkerManager<any>>;
@@ -49,11 +49,5 @@ export function createRoller(opts: {
     setIsRolling(false);
   }
 
-  return {
-    rtmLoadingStatus,
-    isRolling,
-    result,
-    setResult,
-    roll,
-  };
+  return { rtmLoadingStatus, isRolling, result, roll };
 }
