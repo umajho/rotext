@@ -57,5 +57,16 @@ export function createRoller(opts: {
     setIsRolling(false);
   }
 
-  return { rtmLoadingStatus, isRolling, result, evaluationInfo, roll };
+  return {
+    rtmLoadingStatus,
+    isRolling,
+    result,
+    evaluationInfo,
+    roll,
+    clear: () => {
+      console.log("c");
+      setResult(null);
+      setEvaluatorInfo(null);
+    },
+  };
 }
