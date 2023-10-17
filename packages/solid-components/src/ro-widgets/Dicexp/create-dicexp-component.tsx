@@ -33,11 +33,13 @@ import { createRoller, RuntimeLoadingStatus } from "./create-roller";
 import { summarizeValue } from "./value-summary";
 
 export interface DicexpResult {
-  // runtimeInfo?: {
-  //   evaluator?: SolutionSpecifier;
-  //   topLevelScope?: SolutionSpecifier;
-  //   seed?: string;
-  // };
+  evaluationInfo?: [
+    // 比如 `"$@0.4.1"` 或者等价的 `"dicexp@0.4.1"`
+    evaluatorName: string,
+    // 比如 `"{r:42,s:"0.4.0"}"`，或者等价的 `"{r:["xorshift7",42],s:["@dicexp/builtins@0.4.0","./essence/standard-soceps","standard"]}"`。
+    // 其中，“r” 代表 “Rng (Random number generator)”，“s” 代表 “top level Scope”。
+    runtimeInfo: string,
+  ];
   result: ["value", JSValue] | ["value_summary", string] | "error" | [
     "error",
     string | Error,
@@ -153,6 +155,9 @@ export function createDicexpComponent(
       },
       widgetContainerComponent: WidgetContainer,
       widgetContentComponent: (props) => {
+        const [showsMoreInExtraInfo, setShowsMoreInExtraInfo] = //
+          createSignal(false);
+
         return (
           <div class={styles["dicexp-widget-content"]}>
             <div class={styles["header"]}>
@@ -207,16 +212,42 @@ export function createDicexpComponent(
                 </Switch>
               </div>
               <Show
-                when={resultDisplaying?.statistics()}
+                when={resultDisplaying?.statistics() ||
+                  resultDisplaying?.evaluationInfo()}
                 fallback={<div style={{ height: "0.5rem" }} />}
               >
-                {(statistics) => (
-                  <div class={styles["statistics"]}>
-                    <Show when={statistics().timeConsumption}>
+                <div class={styles["extra-info"]}>
+                  <div>
+                    <Show
+                      when={resultDisplaying!.statistics()?.timeConsumption}
+                    >
                       {(timeConsumption) => `耗时≈${timeConsumption().ms}ms`}
                     </Show>
+                    <Show
+                      when={!showsMoreInExtraInfo() &&
+                        resultDisplaying!.evaluationInfo()}
+                    >
+                      {" "}
+                      <span
+                        class={styles["more"]}
+                        onClick={() => setShowsMoreInExtraInfo(true)}
+                      >
+                        …
+                      </span>
+                    </Show>
                   </div>
-                )}
+                  <Show
+                    when={showsMoreInExtraInfo() &&
+                      resultDisplaying!.evaluationInfo()}
+                  >
+                    {(evaluationInfo) => (
+                      <>
+                        <div>{`求值器=${evaluationInfo()[0]}`}</div>
+                        <div>{`运行时信息=${evaluationInfo()[1]}`}</div>
+                      </>
+                    )}
+                  </Show>
+                </div>
               </Show>
             </div>
           </div>
@@ -248,6 +279,7 @@ function processProps(
     summary: () => { text: string; textClass?: string } | null;
     error: () => Error | null;
     repr: () => Repr | null;
+    evaluationInfo: () => NonNullable<DicexpResult["evaluationInfo"]> | null;
     statistics: () => NonNullable<DicexpResult["statistics"]> | null;
 
     clear?: () => void;
@@ -307,6 +339,7 @@ function processProps(
           return null;
         },
         repr: () => appendix()?.representation ?? null,
+        evaluationInfo: roller.evaluationInfo,
         statistics: () => appendix()?.statistics ?? null,
 
         clear: () => setResult(null),
@@ -350,6 +383,7 @@ function processProps(
           return null;
         },
         repr: () => outerProps.result?.repr ?? null,
+        evaluationInfo: () => outerProps.result?.evaluationInfo ?? null,
         statistics: () => outerProps.result?.statistics ?? null,
       },
     };

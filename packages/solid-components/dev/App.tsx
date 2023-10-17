@@ -118,6 +118,17 @@ const App: Component = () => {
       repr: ["vp", 42],
       statistics: { timeConsumption: { ms: 1 } },
     },
+    {
+      result: ["value", 42],
+      repr: ["vp", 42],
+      evaluationInfo: ["dicexp@0.4.1", `{r:42,s:"0.4.0"}`],
+      statistics: { timeConsumption: { ms: 1 } },
+    },
+    {
+      result: ["value", 42],
+      repr: ["vp", 42],
+      evaluationInfo: ["dicexp@0.4.1", `{r:42,s:"0.4.0"}`],
+    },
     { result: ["value_summary", "四十二"], repr: ["vp", 42] },
     { result: "error", repr: ["e", "error"] },
     { result: ["error", "?"], repr: ["e", "?"] },
