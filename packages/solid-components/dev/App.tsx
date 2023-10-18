@@ -3,7 +3,7 @@ import styles from "./App.module.css";
 
 import { type Component, Index, onMount } from "solid-js";
 
-import { registerCustomElementForStepRepresentations } from "@dicexp/solid-components";
+import { registerCustomElementForStepsRepresentation } from "@dicexp/solid-components";
 
 import {
   getComputedColor,
@@ -41,7 +41,7 @@ registerCustomElementForRoWidgetRefLink("ro-widget-ref-link", {
     onAddressChange(() => el.innerText = JSON.stringify(addr));
   },
 });
-registerCustomElementForStepRepresentations("steps-representation");
+registerCustomElementForStepsRepresentation("steps-representation");
 registerCustomElementForRoWidgetDicexp("ro-widget-dicexp", {
   withStyle: withDefaultDicexpStyle,
   backgroundColor: BACKGROUND_COLOR,

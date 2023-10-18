@@ -66,8 +66,8 @@ importers:
         specifier: ^0.4.0
         version: 0.4.0
       '@dicexp/solid-components':
-        specifier: ^0.2.0
-        version: 0.2.0(solid-element@1.8.0)(solid-js@1.8.1)
+        specifier: ^0.2.1
+        version: 0.2.1(solid-element@1.8.0)(solid-js@1.8.1)
       '@rotext/web-utils':
         specifier: workspace:*
         version: link:../../internal/web-utils
@@ -141,8 +141,8 @@ importers:
         specifier: ^0.4.0
         version: 0.4.0
       '@dicexp/solid-components':
-        specifier: ^0.2.0
-        version: 0.2.0(solid-element@1.8.0)(solid-js@1.8.1)
+        specifier: ^0.2.1
+        version: 0.2.1(solid-element@1.8.0)(solid-js@1.8.1)
       '@rotext/example-documentations':
         specifier: workspace:*
         version: link:../internal/example-documentations
@@ -641,8 +641,8 @@ packages:
   /@dicexp/evaluating-worker-manager@0.4.0:
     resolution: {integrity: sha512-nrBD5Aycg7FfSqod32qUOjVI1sXSZ+XJWmf7dmRvxtNtOtuHagknoRXmZvfucbV/nEodpBBxrqBzu5kOhOCm3A==}
 
-  /@dicexp/solid-components@0.2.0(solid-element@1.8.0)(solid-js@1.8.1):
-    resolution: {integrity: sha512-vk4Jw32Mw89Z3Ouw3tLUOd4Ksm/mXdyFmpdubR281DLcL8UHRfmp9DH2wlLRbiBoX8RrE0HamC2ejjFkG5n80Q==}
+  /@dicexp/solid-components@0.2.1(solid-element@1.8.0)(solid-js@1.8.1):
+    resolution: {integrity: sha512-nvm2rguMrWhgsRyFYDv5AcKAzLnR9U0B4Yz3BCJo73qrDPsy1dNyeeLveGM0HggmNX4SaquO4VWes0nLzq1aCA==}
     engines: {node: '>=18', pnpm: '>=8.6.0'}
     peerDependencies:
       solid-element: ^1.7.1

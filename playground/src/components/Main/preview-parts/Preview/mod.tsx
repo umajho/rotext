@@ -56,7 +56,7 @@ import {
   registerCustomElementForRoWidgetDicexp,
   registerCustomElementForRoWidgetRefLink,
 } from "@rotext/solid-components/internal";
-import { registerCustomElementForStepRepresentations } from "@dicexp/solid-components";
+import { registerCustomElementForStepsRepresentation } from "@dicexp/solid-components";
 
 import { createDemoRefContentRenderer } from "./ref-content-demo";
 import { evaluatorProvider } from "./evaluator-provider";
@@ -77,7 +77,7 @@ registerCustomElementForRoWidgetRefLink("ref-link", {
   innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,
   refContentRenderer: createDemoRefContentRenderer({ proseClass: PROSE_CLASS }),
 });
-registerCustomElementForStepRepresentations("steps-representation");
+registerCustomElementForStepsRepresentation("steps-representation");
 registerCustomElementForRoWidgetDicexp("dicexp-preview", {
   withStyle: withDefaultDicexpStyle,
   backgroundColor: BACKGROUND_COLOR,
