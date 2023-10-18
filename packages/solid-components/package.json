@@ -1,6 +1,6 @@
 {
   "name": "@rotext/solid-components",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "license": "MIT",
   "author": "Umaĵo",
   "contributors": [],
@@ -10,34 +10,30 @@
   "private": false,
   "sideEffects": false,
   "type": "module",
-  "main": "./dist/index/index.js",
-  "module": "./dist/index/index.js",
-  "types": "./dist/index/index.d.ts",
+  "main": "./dist/mod/index.js",
+  "module": "./dist/mod/index.js",
+  "types": "./dist/mod/index.d.ts",
   "browser": {},
   "exports": {
-    ".": {
-      "solid": "./dist/index/index.jsx",
+    "./mod": {
       "import": {
-        "types": "./dist/index/index.d.ts",
-        "default": "./dist/index/index.js"
+        "types": "./dist/mod/index.d.ts",
+        "default": "./dist/mod/index.js"
       }
     },
     "./ro-widget-core": {
-      "solid": "./dist/ro-widget-core/index.jsx",
       "import": {
         "types": "./dist/ro-widget-core/index.d.ts",
         "default": "./dist/ro-widget-core/index.js"
       }
     },
     "./ro-widgets/RefLink": {
-      "solid": "./dist/ro-widgets/RefLink/index.jsx",
       "import": {
         "types": "./dist/ro-widgets/RefLink/index.d.ts",
         "default": "./dist/ro-widgets/RefLink/index.js"
       }
     },
     "./ro-widgets/Dicexp": {
-      "solid": "./dist/ro-widgets/Dicexp/index.jsx",
       "import": {
         "types": "./dist/ro-widgets/Dicexp/index.d.ts",
         "default": "./dist/ro-widgets/Dicexp/index.js"
@@ -47,6 +43,9 @@
   },
   "typesVersions": {
     "*": {
+      "mod": [
+        "./dist/mod/index.d.ts"
+      ],
       "ro-widget-core": [
         "./dist/ro-widget-core/index.d.ts"
       ],
