@@ -1,1 +1,1 @@
-export * from "./src/mod";
+export * from "./src/index";
