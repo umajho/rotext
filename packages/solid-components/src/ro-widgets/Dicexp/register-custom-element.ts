@@ -34,7 +34,7 @@ export function registerCustomElement(
   document.head.appendChild(document.createElement("style"))
     .appendChild(document.createTextNode(opts.withStyle(tag)));
 
-  customElement(tag, { code: "", result: null }, DicexpComponent);
+  customElement(tag, { code: "", evaluation: null }, DicexpComponent);
 }
 
 export function withDefaultStyle(tagName: string) {

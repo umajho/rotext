@@ -4,7 +4,7 @@ import type {
   EvaluatingWorkerManager,
   EvaluationResultForWorker,
 } from "@dicexp/evaluating-worker-manager";
-import { DicexpResult } from "./create-dicexp-component";
+import { DicexpEvaluation } from "./create-dicexp-component";
 
 export type RuntimeLoadingStatus = "short" | "long" | null;
 
@@ -15,8 +15,10 @@ export function createRoller(opts: {
       createSignal<RuntimeLoadingStatus>(null),
     [isRolling, setIsRolling] = createSignal(false),
     [result, setResult] = createSignal<EvaluationResultForWorker | null>(null),
-    [evaluationInfo, setEvaluatorInfo] = //
-      createSignal<NonNullable<DicexpResult["evaluationInfo"]> | null>(null);
+    [environment, setEnvironment] = //
+      createSignal<NonNullable<DicexpEvaluation["environment"]> | null>(
+        null,
+      );
 
   async function roll(code: string) {
     if (isRolling()) return;
@@ -53,7 +55,7 @@ export function createRoller(opts: {
     evaluator.destroy();
 
     setResult(result);
-    setEvaluatorInfo(["?", JSON.stringify({ r: seed, s: "?" })]);
+    setEnvironment(["?", JSON.stringify({ r: seed, s: "?" })]);
     setIsRolling(false);
   }
 
@@ -61,12 +63,12 @@ export function createRoller(opts: {
     rtmLoadingStatus,
     isRolling,
     result,
-    evaluationInfo,
+    environment,
     roll,
     clear: () => {
       console.log("c");
       setResult(null);
-      setEvaluatorInfo(null);
+      setEnvironment(null);
     },
   };
 }
