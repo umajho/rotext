@@ -60,6 +60,14 @@ export interface DicexpEvaluation {
   statistics?: {
     timeConsumption?: { ms: number };
   };
+  /**
+   * 标记求值是在哪里进行的。
+   *
+   * TODO: 未来实现重建步骤的功能时，以数组类型的计算值存储统计，每项统计新增一个 location
+   *       属性，以实现区分原先和重建后的统计内容。
+   *      （如果原先本来就带步骤，那数组就只会有一项。）
+   */
+  location?: "local" | "server";
 }
 
 export interface SolutionSpecifier {
@@ -229,7 +237,21 @@ export function createDicexpComponent(
                     <Show
                       when={resultDisplaying!.statistics()?.timeConsumption}
                     >
-                      {(timeConsumption) => `耗时≈${timeConsumption().ms}ms`}
+                      {(timeConsumption) =>
+                        (() => {
+                          const location = resultDisplaying!.location();
+                          switch (location) {
+                            case null:
+                              return "";
+                            case "local":
+                              return "本地";
+                            case "server":
+                              return "服务器";
+                            default:
+                              return "？";
+                          }
+                        })() +
+                        `耗时≈${timeConsumption().ms}ms`}
                     </Show>
                     <Show
                       when={!showsMoreInExtraInfo() &&
@@ -291,6 +313,7 @@ function processProps(
       | NonNullable<DicexpEvaluation["environment"]>
       | null;
     statistics: () => NonNullable<DicexpEvaluation["statistics"]> | null;
+    location: () => NonNullable<DicexpEvaluation["location"]> | null;
 
     clear?: () => void;
   };
@@ -347,6 +370,7 @@ function processProps(
         repr: () => appendix()?.representation ?? null,
         environment: roller.environment,
         statistics: () => appendix()?.statistics ?? null,
+        location: () => "local",
 
         clear: roller.clear,
       },
@@ -391,6 +415,7 @@ function processProps(
         repr: () => outerProps.evaluation?.repr ?? null,
         environment: () => outerProps.evaluation?.environment ?? null,
         statistics: () => outerProps.evaluation?.statistics ?? null,
+        location: () => outerProps.evaluation?.location ?? null,
       },
     };
   }
