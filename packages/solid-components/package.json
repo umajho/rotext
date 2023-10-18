@@ -1,6 +1,6 @@
 {
   "name": "@rotext/solid-components",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "license": "MIT",
   "author": "Umaĵo",
   "contributors": [],
@@ -10,15 +10,15 @@
   "private": false,
   "sideEffects": false,
   "type": "module",
-  "main": "./dist/mod/index.js",
-  "module": "./dist/mod/index.js",
-  "types": "./dist/mod/index.d.ts",
+  "main": "./dist/index/index.js",
+  "module": "./dist/index/index.js",
+  "types": "./dist/index/index.d.ts",
   "browser": {},
   "exports": {
-    "./mod": {
+    ".": {
       "import": {
-        "types": "./dist/mod/index.d.ts",
-        "default": "./dist/mod/index.js"
+        "types": "./dist/index/index.d.ts",
+        "default": "./dist/index/index.js"
       }
     },
     "./ro-widget-core": {
@@ -43,9 +43,6 @@
   },
   "typesVersions": {
     "*": {
-      "mod": [
-        "./dist/mod/index.d.ts"
-      ],
       "ro-widget-core": [
         "./dist/ro-widget-core/index.d.ts"
       ],
