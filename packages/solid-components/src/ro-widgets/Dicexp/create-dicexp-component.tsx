@@ -31,12 +31,25 @@ import { createStepsRepresentationComponent } from "./steps-representation";
 import { createRoller, RuntimeLoadingStatus } from "./create-roller";
 import { summarizeValue } from "./value-summary";
 
-export interface DicexpResult {
-  evaluationInfo?: [
-    // 比如 `"$@0.4.1"` 或者等价的 `"dicexp@0.4.1"`
+export interface DicexpEvaluation {
+  /**
+   * 求值环境。在重建求值结果时需要用到。
+   */
+  environment?: [
+    /**
+     * 求值器的名称。版本是名称的一部分。
+     *
+     * 如：`"$@0.4.1"` 或者等价的 `"dicexp@0.4.1"`
+     */
     evaluatorName: string,
-    // 比如 `"{r:42,s:"0.4.0"}"`，或者等价的 `"{r:["xorshift7",42],s:["@dicexp/builtins@0.4.0","./essence/standard-soceps","standard"]}"`。
-    // 其中，“r” 代表 “Rng (Random number generator)”，“s” 代表 “top level Scope”。
+    /**
+     * 求值器运行时的信息。求值器应该保证在相同的信息下，求值的结果（包括步骤）总是相同。
+     *
+     * 比如，对于 dicexp@0.4.1 而言，要满足上述条件，信息要包括：随机数生成方案名、种子数、顶部作用域的路径。
+     *
+     * 如：`"{r:42,s:"0.4.0"}"`，或者等价的 `"{r:["xorshift7",42],s:["@dicexp/builtins@0.4.0","./essence/standard-soceps","standard"]}"`。
+     * （其中，“r” 代表 “Rng (Random number generator)”，“s” 代表 “top level Scope”。）
+     */
     runtimeInfo: string,
   ];
   result: ["value", JSValue] | ["value_summary", string] | "error" | [
@@ -62,9 +75,9 @@ export interface DicexpEvaluatorProvider {
   ) => Promise<EvaluatingWorkerManager<any>>;
 }
 
-interface Properties {
+export interface Properties {
   code: string;
-  result: DicexpResult | null;
+  evaluation: DicexpEvaluation | null;
 }
 
 export interface CreateDicexpComponentOptions {
@@ -208,7 +221,7 @@ export function createDicexpComponent(
               </div>
               <Show
                 when={resultDisplaying?.statistics() ||
-                  resultDisplaying?.evaluationInfo()}
+                  resultDisplaying?.environment()}
                 fallback={<div style={{ height: "0.5rem" }} />}
               >
                 <div class={styles["extra-info"]}>
@@ -220,7 +233,7 @@ export function createDicexpComponent(
                     </Show>
                     <Show
                       when={!showsMoreInExtraInfo() &&
-                        resultDisplaying!.evaluationInfo()}
+                        resultDisplaying!.environment()}
                     >
                       {" "}
                       <span
@@ -233,12 +246,12 @@ export function createDicexpComponent(
                   </div>
                   <Show
                     when={showsMoreInExtraInfo() &&
-                      resultDisplaying!.evaluationInfo()}
+                      resultDisplaying!.environment()}
                   >
-                    {(evaluationInfo) => (
+                    {(environment) => (
                       <>
-                        <div>{`求值器=${evaluationInfo()[0]}`}</div>
-                        <div>{`运行时信息=${evaluationInfo()[1]}`}</div>
+                        <div>{`求值器=${environment()[0]}`}</div>
+                        <div>{`运行时信息=${environment()[1]}`}</div>
                       </>
                     )}
                   </Show>
@@ -274,13 +287,15 @@ function processProps(
     summary: () => { text: string; textClass?: string } | null;
     error: () => Error | null;
     repr: () => Repr | null;
-    evaluationInfo: () => NonNullable<DicexpResult["evaluationInfo"]> | null;
-    statistics: () => NonNullable<DicexpResult["statistics"]> | null;
+    environment: () =>
+      | NonNullable<DicexpEvaluation["environment"]>
+      | null;
+    statistics: () => NonNullable<DicexpEvaluation["statistics"]> | null;
 
     clear?: () => void;
   };
 } {
-  if (opts.evaluatorProvider && !outerProps.result) {
+  if (opts.evaluatorProvider && !outerProps.evaluation) {
     const roller = createRoller({
       evaluatorProvider: opts.evaluatorProvider.default,
     });
@@ -330,17 +345,17 @@ function processProps(
           return null;
         },
         repr: () => appendix()?.representation ?? null,
-        evaluationInfo: roller.evaluationInfo,
+        environment: roller.environment,
         statistics: () => appendix()?.statistics ?? null,
 
         clear: roller.clear,
       },
     };
-  } else if (outerProps.result) {
+  } else if (outerProps.evaluation) {
     return {
       resultDisplaying: {
         summary: () => {
-          const resultSum = outerProps.result!.result;
+          const resultSum = outerProps.evaluation!.result;
           if (resultSum === "error" || resultSum[0] === "error") {
             return {
               text: "错误！",
@@ -364,7 +379,7 @@ function processProps(
           }
         },
         error: () => {
-          const resultSum = outerProps.result!.result;
+          const resultSum = outerProps.evaluation!.result;
           if (Array.isArray(resultSum) && resultSum[0] === "error") {
             // TODO: 应该让 ErrorAlert 本身支持 string
             return typeof resultSum[1] === "string"
@@ -373,9 +388,9 @@ function processProps(
           }
           return null;
         },
-        repr: () => outerProps.result?.repr ?? null,
-        evaluationInfo: () => outerProps.result?.evaluationInfo ?? null,
-        statistics: () => outerProps.result?.statistics ?? null,
+        repr: () => outerProps.evaluation?.repr ?? null,
+        environment: () => outerProps.evaluation?.environment ?? null,
+        statistics: () => outerProps.evaluation?.statistics ?? null,
       },
     };
   }

@@ -16,7 +16,7 @@ import {
   registerRoWidgetOwner,
   withDefaultDicexpStyle,
   withDefaultRefLinkStyle,
-} from "../src/index";
+} from "../internal";
 
 import {
   createWorkerByImportURLs,
@@ -24,7 +24,7 @@ import {
 } from "@dicexp/evaluating-worker-manager";
 import dicexpImportURL from "dicexp/essence/for-worker?url";
 import scopesImportURL from "@dicexp/builtins/essence/standard-scopes?url";
-import { DicexpResult } from "src/ro-widgets/Dicexp/create-dicexp-component";
+import { DicexpEvaluation } from "src/ro-widgets/Dicexp/create-dicexp-component";
 
 const WIDGET_OWNER_CLASS = "widget-owner";
 
@@ -85,8 +85,11 @@ declare module "solid-js" {
   namespace JSX {
     interface IntrinsicElements {
       "ro-widget-ref-link": { address: string };
-      "ro-widget-dicexp": { code: string; result?: DicexpResult };
-      "ro-widget-dicexp-no-runtime": { code: string; result?: DicexpResult };
+      "ro-widget-dicexp": { code: string; evaluation?: DicexpEvaluation };
+      "ro-widget-dicexp-no-runtime": {
+        code: string;
+        evaluation?: DicexpEvaluation;
+      };
     }
   }
 }
@@ -111,7 +114,7 @@ const App: Component = () => {
     );
   });
 
-  const forgedResults: DicexpResult[] = [
+  const forgedResults: DicexpEvaluation[] = [
     { result: ["value", 42], repr: ["vp", 42] },
     {
       result: ["value", 42],
@@ -121,13 +124,13 @@ const App: Component = () => {
     {
       result: ["value", 42],
       repr: ["vp", 42],
-      evaluationInfo: ["dicexp@0.4.1", `{r:42,s:"0.4.0"}`],
+      environment: ["dicexp@0.4.1", `{r:42,s:"0.4.0"}`],
       statistics: { timeConsumption: { ms: 1 } },
     },
     {
       result: ["value", 42],
       repr: ["vp", 42],
-      evaluationInfo: ["dicexp@0.4.1", `{r:42,s:"0.4.0"}`],
+      environment: ["dicexp@0.4.1", `{r:42,s:"0.4.0"}`],
     },
     { result: ["value_summary", "四十二"], repr: ["vp", 42] },
     { result: "error", repr: ["e", "error"] },
@@ -163,7 +166,7 @@ const App: Component = () => {
                 <ro-widget-dicexp code="d100" />
                 <Index each={forgedResults}>
                   {(result) => (
-                    <ro-widget-dicexp code="d100" result={result()} />
+                    <ro-widget-dicexp code="d100" evaluation={result()} />
                   )}
                 </Index>
               </div>
@@ -173,7 +176,7 @@ const App: Component = () => {
                   {(result) => (
                     <ro-widget-dicexp-no-runtime
                       code="d100"
-                      result={result()}
+                      evaluation={result()}
                     />
                   )}
                 </Index>
