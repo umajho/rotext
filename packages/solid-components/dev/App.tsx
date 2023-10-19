@@ -97,17 +97,28 @@ declare module "solid-js" {
 const App: Component = () => (
   <div class={styles.App}>
     <div class="grid grid-cols-2 bg-slate-950">
-      <Left />
-      <Right />
+      <div>
+        <Left />
+      </div>
+      <div>
+        <Right />
+      </div>
     </div>
   </div>
 );
 export default App;
 
 const Left: Component = () => {
-  let anchorEl!: HTMLDivElement;
+  let ownerEl!: HTMLDivElement,
+    anchorEl!: HTMLDivElement;
 
-  onMount(() => registerWidgetOwner(anchorEl));
+  onMount(() => {
+    const controller = registerWidgetOwnerEx(anchorEl);
+    const observer = new ResizeObserver(() => controller.nofityLayoutChange());
+    ownerEl.querySelectorAll(".resize-observee ").forEach((el) =>
+      observer.observe(el)
+    );
+  });
 
   const forgedResults: DicexpEvaluation[] = [
     { result: ["value", 42], repr: ["vp", 42] },
@@ -148,7 +159,7 @@ const Left: Component = () => {
   ];
 
   return (
-    <div class={`${WIDGET_OWNER_CLASS}`}>
+    <div ref={ownerEl} class={`${WIDGET_OWNER_CLASS}`}>
       <div ref={anchorEl} class="relative z-10" />
       <div class="flex flex-col min-h-screen">
         <div class="h-[33vh]">
@@ -160,24 +171,28 @@ const Left: Component = () => {
           </div>
         </div>
         <div class="grid grid-cols-2">
-          <div class="flex flex-col">
-            <ro-widget-dicexp code="d100" />
-            <Index each={forgedResults}>
-              {(result) => (
-                <ro-widget-dicexp code="d100" evaluation={result()} />
-              )}
-            </Index>
+          <div>
+            <div class="resize-observee flex flex-col">
+              <ro-widget-dicexp code="d100" />
+              <Index each={forgedResults}>
+                {(result) => (
+                  <ro-widget-dicexp code="d100" evaluation={result()} />
+                )}
+              </Index>
+            </div>
           </div>
-          <div class="flex flex-col">
-            <ro-widget-dicexp-no-runtime code="d100" />
-            <Index each={forgedResults}>
-              {(result) => (
-                <ro-widget-dicexp-no-runtime
-                  code="d100"
-                  evaluation={result()}
-                />
-              )}
-            </Index>
+          <div>
+            <div class="resize-observee flex flex-col">
+              <ro-widget-dicexp-no-runtime code="d100" />
+              <Index each={forgedResults}>
+                {(result) => (
+                  <ro-widget-dicexp-no-runtime
+                    code="d100"
+                    evaluation={result()}
+                  />
+                )}
+              </Index>
+            </div>
           </div>
         </div>
       </div>
@@ -188,7 +203,7 @@ const Left: Component = () => {
 const LeftInner: Component = () => {
   let anchorEl!: HTMLDivElement;
 
-  onMount(() => registerWidgetOwner(anchorEl));
+  onMount(() => registerWidgetOwnerEx(anchorEl));
 
   return (
     <div
@@ -207,7 +222,7 @@ const LeftInner: Component = () => {
 const Right: Component = () => {
   let anchorEl!: HTMLDivElement;
 
-  onMount(() => registerWidgetOwner(anchorEl));
+  onMount(() => registerWidgetOwnerEx(anchorEl));
 
   return (
     <div class={`${WIDGET_OWNER_CLASS} bg-stone-950`}>
@@ -220,7 +235,7 @@ const Right: Component = () => {
   );
 };
 
-function registerWidgetOwner(anchorEl: HTMLElement) {
+function registerWidgetOwnerEx(anchorEl: HTMLElement) {
   const ownerEl: HTMLElement = anchorEl.closest("." + WIDGET_OWNER_CLASS)!;
   const controller = registerRoWidgetOwner(
     ownerEl,
@@ -228,4 +243,6 @@ function registerWidgetOwner(anchorEl: HTMLElement) {
   );
   const o = new ResizeObserver(() => controller.nofityLayoutChange());
   o.observe(ownerEl);
+
+  return controller;
 }
