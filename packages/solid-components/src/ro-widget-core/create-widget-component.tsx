@@ -61,6 +61,11 @@ interface ElementSize {
   heightPx: number;
 }
 
+interface ElementPosition {
+  topPx: number;
+  leftPx: number;
+}
+
 export function createWidgetComponent(parts: {
   primeContentComponent: Component<PrimeContentComponent>;
   widgetContainerComponent: Component<WidgetContainerProperties>;
@@ -92,9 +97,8 @@ export function createWidgetComponent(parts: {
 
   const [widgetOwner, setWidgetOwner] = createSignal<WidgetOwner>();
 
-  const [widgetPosition, setWidgetPosition] = createSignal<
-    { topPx: number; leftPx: number }
-  >({ topPx: 0, leftPx: 0 });
+  const [widgetPosition, setWidgetPosition] = //
+    createSignal<ElementPosition | null>({ topPx: 0, leftPx: 0 });
 
   const [widgetSize, setWidgetSize] = createSignal<ElementSize | null>(null);
   const [wContainerSize, setWContainerSize] = //
@@ -206,9 +210,14 @@ export function createWidgetComponent(parts: {
               ref={wContainerEl}
               style={{
                 position: "absolute",
-                top: `${widgetPosition().topPx}px`,
-                left: `${widgetPosition().leftPx}px`,
-                "z-index": `-${widgetPosition().topPx | 0}`,
+                ...(((widgetPosition) =>
+                  widgetPosition
+                    ? {
+                      top: `${widgetPosition.topPx}px`,
+                      left: `${widgetPosition.leftPx}px`,
+                      "z-index": `-${widgetPosition.topPx | 0}`,
+                    }
+                    : { display: "none" })(widgetPosition())),
                 "background-color": backgroundColorCSSValue(),
                 ...(collapsed()
                   ? {
@@ -248,7 +257,13 @@ function calculateWidgetPosition(
     widgetAnchor: HTMLElement;
     closestContainer: HTMLElement;
   },
-) {
+): ElementPosition | null {
+  if (!els.prime.offsetParent) {
+    // 为 null 代表在设有 `display: none` 的元素的内部。
+    // see: https://stackoverflow.com/a/21696585
+    return null;
+  }
+
   const primeRect = els.prime.getBoundingClientRect();
   const anchorRect = els.widgetAnchor.getBoundingClientRect();
   const closestContainerRect = els.closestContainer.getBoundingClientRect();
