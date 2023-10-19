@@ -1,7 +1,7 @@
 import "./App.css";
 import styles from "./App.module.css";
 
-import { type Component, Index, onMount } from "solid-js";
+import { type Component, createSignal, Index, onMount } from "solid-js";
 
 import { registerCustomElementForStepsRepresentation } from "@dicexp/solid-components";
 
@@ -222,15 +222,30 @@ const LeftInner: Component = () => {
 const Right: Component = () => {
   let anchorEl!: HTMLDivElement;
 
+  const [shouldDisplay, setShouldDisplay] = createSignal(true);
+
   onMount(() => registerWidgetOwnerEx(anchorEl));
 
   return (
     <div class={`${WIDGET_OWNER_CLASS} bg-stone-950`}>
       <div ref={anchorEl} class="relative z-10" />
       <div class="h-[50vh]" />
-      <ro-widget-ref-link address="TP.foo" />
-      <ro-widget-dicexp code="d100" />
-      <ro-widget-dicexp code="d100" />
+      <label>
+        <input
+          type="checkbox"
+          checked={shouldDisplay()}
+          onClick={() => setShouldDisplay(!shouldDisplay())}
+        />显示
+      </label>
+      <div style={{ display: shouldDisplay() ? undefined : "none" }}>
+        <ro-widget-ref-link address="TP.foo" />
+        <ro-widget-dicexp code="d100" />
+        <ro-widget-dicexp code="d100" />
+        <ro-widget-dicexp
+          code="d100"
+          evaluation={{ result: ["value", 42], repr: ["vp", 42] }}
+        />
+      </div>
     </div>
   );
 };
