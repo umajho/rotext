@@ -94,25 +94,20 @@ declare module "solid-js" {
   }
 }
 
-const App: Component = () => {
-  let widgetAnchorLeftEl!: HTMLDivElement,
-    widgetAnchorRightEl!: HTMLDivElement,
-    widgetAnchorLeftInnerEl!: HTMLDivElement;
+const App: Component = () => (
+  <div class={styles.App}>
+    <div class="grid grid-cols-2 bg-slate-950">
+      <Left />
+      <Right />
+    </div>
+  </div>
+);
+export default App;
 
-  onMount(() => {
-    [widgetAnchorLeftEl, widgetAnchorRightEl, widgetAnchorLeftInnerEl].forEach(
-      (AnchorEl) => {
-        const ownerEl: HTMLElement = //
-          AnchorEl.closest("." + WIDGET_OWNER_CLASS)!;
-        const controller = registerRoWidgetOwner(
-          ownerEl,
-          { widgetAnchorElement: AnchorEl, level: 1 },
-        );
-        const o = new ResizeObserver(() => controller.nofityLayoutChange());
-        o.observe(ownerEl);
-      },
-    );
-  });
+const Left: Component = () => {
+  let anchorEl!: HTMLDivElement;
+
+  onMount(() => registerWidgetOwner(anchorEl));
 
   const forgedResults: DicexpEvaluation[] = [
     { result: ["value", 42], repr: ["vp", 42] },
@@ -153,61 +148,84 @@ const App: Component = () => {
   ];
 
   return (
-    <div class={styles.App}>
-      <div class="grid grid-cols-2 bg-slate-950">
-        <div class={`${WIDGET_OWNER_CLASS}`}>
-          <div ref={widgetAnchorLeftEl} class="relative z-10" />
-          <div class="flex flex-col min-h-screen">
-            <div class="h-[33vh]">
-              <ro-widget-dicexp code="d100" />
-            </div>
-            <div class="h-[33vh] p-4 overflow-y-scroll">
-              <div class="h-screen bg-slate-900">
-                <div
-                  class={`${WIDGET_OWNER_CLASS} bg-slate-800`}
-                >
-                  <div ref={widgetAnchorLeftInnerEl} class="relative z-10" />
-                  <ro-widget-dicexp code="d100" />
-                  <ro-widget-dicexp code="d100" />
-                  <div class="h-[50vh]" />
-                  <ro-widget-dicexp code="d100" />
-                  <ro-widget-dicexp code="d100" />
-                </div>
-              </div>
-            </div>
-            <div class="grid grid-cols-2">
-              <div class="flex flex-col">
-                <ro-widget-dicexp code="d100" />
-                <Index each={forgedResults}>
-                  {(result) => (
-                    <ro-widget-dicexp code="d100" evaluation={result()} />
-                  )}
-                </Index>
-              </div>
-              <div class="flex flex-col">
-                <ro-widget-dicexp-no-runtime code="d100" />
-                <Index each={forgedResults}>
-                  {(result) => (
-                    <ro-widget-dicexp-no-runtime
-                      code="d100"
-                      evaluation={result()}
-                    />
-                  )}
-                </Index>
-              </div>
-            </div>
+    <div class={`${WIDGET_OWNER_CLASS}`}>
+      <div ref={anchorEl} class="relative z-10" />
+      <div class="flex flex-col min-h-screen">
+        <div class="h-[33vh]">
+          <ro-widget-dicexp code="d100" />
+        </div>
+        <div class="h-[33vh] p-4 overflow-y-scroll">
+          <div class="h-screen bg-slate-900">
+            <LeftInner />
           </div>
         </div>
-        <div class={`${WIDGET_OWNER_CLASS} bg-stone-950`}>
-          <div ref={widgetAnchorRightEl} class="relative z-10" />
-          <div class="h-[50vh]" />
-          <ro-widget-ref-link address="TP.foo" />
-          <ro-widget-dicexp code="d100" />
-          <ro-widget-dicexp code="d100" />
+        <div class="grid grid-cols-2">
+          <div class="flex flex-col">
+            <ro-widget-dicexp code="d100" />
+            <Index each={forgedResults}>
+              {(result) => (
+                <ro-widget-dicexp code="d100" evaluation={result()} />
+              )}
+            </Index>
+          </div>
+          <div class="flex flex-col">
+            <ro-widget-dicexp-no-runtime code="d100" />
+            <Index each={forgedResults}>
+              {(result) => (
+                <ro-widget-dicexp-no-runtime
+                  code="d100"
+                  evaluation={result()}
+                />
+              )}
+            </Index>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-export default App;
+const LeftInner: Component = () => {
+  let anchorEl!: HTMLDivElement;
+
+  onMount(() => registerWidgetOwner(anchorEl));
+
+  return (
+    <div
+      class={`${WIDGET_OWNER_CLASS} bg-slate-800`}
+    >
+      <div ref={anchorEl} class="relative z-10" />
+      <ro-widget-dicexp code="d100" />
+      <ro-widget-dicexp code="d100" />
+      <div class="h-[50vh]" />
+      <ro-widget-dicexp code="d100" />
+      <ro-widget-dicexp code="d100" />
+    </div>
+  );
+};
+
+const Right: Component = () => {
+  let anchorEl!: HTMLDivElement;
+
+  onMount(() => registerWidgetOwner(anchorEl));
+
+  return (
+    <div class={`${WIDGET_OWNER_CLASS} bg-stone-950`}>
+      <div ref={anchorEl} class="relative z-10" />
+      <div class="h-[50vh]" />
+      <ro-widget-ref-link address="TP.foo" />
+      <ro-widget-dicexp code="d100" />
+      <ro-widget-dicexp code="d100" />
+    </div>
+  );
+};
+
+function registerWidgetOwner(anchorEl: HTMLElement) {
+  const ownerEl: HTMLElement = anchorEl.closest("." + WIDGET_OWNER_CLASS)!;
+  const controller = registerRoWidgetOwner(
+    ownerEl,
+    { widgetAnchorElement: anchorEl, level: 1 },
+  );
+  const o = new ResizeObserver(() => controller.nofityLayoutChange());
+  o.observe(ownerEl);
+}
