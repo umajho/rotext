@@ -1,5 +1,3 @@
-import styles from "./mod.module.scss";
-
 import { Component } from "solid-js";
 
 import { RoWidgetContainerProperties } from "../../ro-widget-core/mod";
@@ -12,8 +10,8 @@ export const WidgetContainer: Component<RoWidgetContainerProperties> = (
   return (
     <div
       ref={props.ref}
-      class={`${styles["widget-container"]} ${props.class ?? ""}`}
-      style={props.style}
+      class={props.class ?? ""}
+      style={{ border: "1px solid white", ...props.style }}
       onMouseEnter={props.onMouseEnter}
       onMouseLeave={props.onMouseLeave}
     >
