@@ -1,13 +1,10 @@
-import styles from "./support.module.scss";
+import styles from "./mod.module.scss";
 
 import { Component } from "solid-js";
 
-import { BsPinFill } from "solid-icons/bs";
+import { RoWidgetContainerProperties } from "../../ro-widget-core/mod";
 
-import {
-  RoWidgetContainerProperties,
-  RoWidgetDisplayMode,
-} from "../ro-widget-core/mod";
+export { default as PinButton } from "./PinButton";
 
 export const WidgetContainer: Component<RoWidgetContainerProperties> = (
   props,
@@ -22,23 +19,6 @@ export const WidgetContainer: Component<RoWidgetContainerProperties> = (
     >
       {props.children}
     </div>
-  );
-};
-
-export const PinButton: Component<{
-  displayMode: () => RoWidgetDisplayMode;
-  onTouchEnd: () => void;
-  onClick: () => void;
-}> = (props) => {
-  return (
-    <BsPinFill
-      class={[
-        styles["pin-button"],
-        props.displayMode() === "pinned" ? styles["pinned"] : "",
-      ].join(" ")}
-      onTouchEnd={props.onTouchEnd}
-      onClick={props.onClick}
-    />
   );
 };
 
