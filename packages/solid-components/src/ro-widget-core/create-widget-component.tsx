@@ -12,8 +12,6 @@ import {
 } from "solid-js";
 import { Portal } from "solid-js/web";
 
-import { HiSolidChevronDoubleDown } from "solid-icons/hi";
-
 import {
   closestContainer,
   ComputedColor,
@@ -24,6 +22,7 @@ import { getCurrentElement, noShadowDOM } from "solid-element";
 
 import { getWidgetOwner, WidgetOwner } from "./widget-owners-store";
 import { mixColor } from "./utils";
+import CollapseMaskLayer from "./CollapseMaskLayer";
 
 const LEAVING_DELAY_MS = 100;
 
@@ -457,45 +456,3 @@ function createSizeSyncer(
     }
   }));
 }
-
-const CollapseMaskLayer: Component<
-  {
-    containerHeightPx: () => number | undefined;
-    backgroundColor: () => ComputedColor;
-    onExpand: () => void;
-  }
-> = (
-  props,
-) => {
-  const [r, g, b] = props.backgroundColor();
-  const baseColorRGB = `${r}, ${g}, ${b}`;
-  const topColor = `rgba(${baseColorRGB}, 0)`;
-  const bottomColor = `rgb(${baseColorRGB})`;
-
-  return (
-    <div class={styles["widget-collapse-mask-layer"]}>
-      <div
-        class={styles["pointer-masker"]}
-        style={{ height: `${props.containerHeightPx()}px` }}
-      >
-        <div class={styles["space-taker"]} />
-        <div
-          class={styles["action-area-for-expansion"]}
-          onClick={props.onExpand}
-        >
-          <div class={styles["icon-area"]}>
-            <div class={styles["aligner"]}>
-              <HiSolidChevronDoubleDown />
-            </div>
-          </div>
-          <div
-            class={styles["mask-area"]}
-            style={{
-              background: `linear-gradient(${topColor}, ${bottomColor})`,
-            }}
-          />
-        </div>
-      </div>
-    </div>
-  );
-};
