@@ -21,6 +21,7 @@ import { getCurrentElement, noShadowDOM } from "solid-element";
 import { getWidgetOwner, WidgetOwner } from "./widget-owners-store";
 import { mixColor } from "./utils";
 import CollapseMaskLayer from "./CollapseMaskLayer";
+import WidgetContainer from "./WidgetContainer";
 
 const LEAVING_DELAY_MS = 100;
 
@@ -64,9 +65,8 @@ interface ElementPosition {
 }
 
 export function createWidgetComponent(parts: {
-  primeContentComponent: Component<PrimeContentComponent>;
-  widgetContainerComponent: Component<WidgetContainerProperties>;
-  widgetContentComponent: Component<WidgetContentProperties>;
+  PrimeContent: Component<PrimeContentComponent>;
+  WidgetContent: Component<WidgetContentProperties>;
 }, opts: {
   widgetOwnerClass: string;
   innerNoAutoOpenClass?: string;
@@ -78,6 +78,8 @@ export function createWidgetComponent(parts: {
 }): Component {
   opts.openable ??= () => true;
   opts.autoOpenShouldCollapse ??= true;
+
+  const { PrimeContent, WidgetContent } = parts;
 
   if (getCurrentElement()) {
     getCurrentElement().innerText = ""; // 清空 fallback
@@ -181,7 +183,7 @@ export function createWidgetComponent(parts: {
           onMouseEnter={opts.openable?.() ? enterHandler : undefined}
           onMouseLeave={opts.openable?.() ? leaveHandler : undefined}
         >
-          <parts.primeContentComponent
+          <PrimeContent
             cursor={opts.openable?.()
               ? (displayMode() === "pinned"
                 ? (collapsible()
@@ -203,7 +205,7 @@ export function createWidgetComponent(parts: {
         </Show>
         <Portal mount={widgetOwner()?.widgetAnchorElement}>
           <Show when={displayMode() !== "closed"}>
-            <parts.widgetContainerComponent
+            <WidgetContainer
               ref={wContainerEl}
               style={{
                 position: "absolute",
@@ -234,13 +236,13 @@ export function createWidgetComponent(parts: {
                 />
               </Show>
               <div ref={widgetEl}>
-                <parts.widgetContentComponent
+                <WidgetContent
                   displayMode={displayMode}
                   handlerForTouchEndOnPinIcon={pinningTogglerTouchEndHandler}
                   handlerForClickOnPinIcon={pinningToggleHandler}
                 />
               </div>
-            </parts.widgetContainerComponent>
+            </WidgetContainer>
           </Show>
         </Portal>
       </>

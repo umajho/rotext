@@ -25,7 +25,7 @@ import {
 
 import { createRoWidgetComponent } from "../../ro-widget-core/mod";
 
-import { HorizontalRule, PinButton, WidgetContainer } from "../support/mod";
+import { HorizontalRule, PinButton } from "../support/mod";
 import FaSolidDice from "./icons";
 import { createStepsRepresentationComponent } from "./steps-representation";
 import { createRoller, RuntimeLoadingStatus } from "./create-roller";
@@ -124,7 +124,7 @@ export function createDicexpComponent(
     }
 
     const component = createRoWidgetComponent({
-      primeContentComponent: (props) => {
+      PrimeContent: (props) => {
         return (
           <>
             <span
@@ -173,8 +173,7 @@ export function createDicexpComponent(
           </>
         );
       },
-      widgetContainerComponent: WidgetContainer,
-      widgetContentComponent: (props) => {
+      WidgetContent: (props) => {
         const [showsMoreInExtraInfo, setShowsMoreInExtraInfo] = //
           createSignal(false);
 

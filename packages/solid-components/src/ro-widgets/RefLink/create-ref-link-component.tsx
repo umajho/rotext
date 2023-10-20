@@ -17,7 +17,7 @@ import {
 
 import { createRoWidgetComponent } from "../../ro-widget-core/mod";
 
-import { HorizontalRule, PinButton, WidgetContainer } from "../support/mod";
+import { HorizontalRule, PinButton } from "../support/mod";
 
 export interface Properties {
   address: string;
@@ -46,7 +46,7 @@ export function createRefLinkComponent(
     const address = createMemo(() => parseAddress(outerProps.address));
 
     const component = createRoWidgetComponent({
-      primeContentComponent: (props) => {
+      PrimeContent: (props) => {
         return (
           <span
             style={{ cursor: props.cursor }}
@@ -57,8 +57,7 @@ export function createRefLinkComponent(
           </span>
         );
       },
-      widgetContainerComponent: WidgetContainer,
-      widgetContentComponent: (props) => {
+      WidgetContent: (props) => {
         let refContentEl!: HTMLDivElement;
 
         onMount(() => {
