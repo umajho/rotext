@@ -73,7 +73,7 @@
   "devDependencies": {
     "@dicexp/builtins": "^0.4.0",
     "@dicexp/evaluating-worker-manager": "^0.4.0",
-    "@dicexp/solid-components": "^0.2.1",
+    "@dicexp/solid-components": "^0.2.2",
     "@rotext/web-utils": "workspace:*",
     "autoprefixer": "^10.4.14",
     "concurrently": "^8.2.0",
