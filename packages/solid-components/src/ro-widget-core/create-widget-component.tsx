@@ -1,5 +1,3 @@
-import styles from "./styles.module.scss";
-
 import {
   Component,
   createEffect,
@@ -179,7 +177,7 @@ export function createWidgetComponent(parts: {
       <>
         <span
           ref={primeEl}
-          class={`widget-prime ${styles["widget-prime"]}`}
+          class="widget-prime"
           onMouseEnter={opts.openable?.() ? enterHandler : undefined}
           onMouseLeave={opts.openable?.() ? leaveHandler : undefined}
         >
