@@ -17,7 +17,7 @@ import {
 
 import { createRoWidgetComponent } from "../../ro-widget-core/mod";
 
-import { HorizontalRule, PinButton, WidgetContainer } from "../support";
+import { HorizontalRule, PinButton, WidgetContainer } from "../support/mod";
 
 export interface Properties {
   address: string;

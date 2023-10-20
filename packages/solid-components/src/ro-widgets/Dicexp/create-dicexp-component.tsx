@@ -25,7 +25,7 @@ import {
 
 import { createRoWidgetComponent } from "../../ro-widget-core/mod";
 
-import { HorizontalRule, PinButton, WidgetContainer } from "../support";
+import { HorizontalRule, PinButton, WidgetContainer } from "../support/mod";
 import FaSolidDice from "./icons";
 import { createStepsRepresentationComponent } from "./steps-representation";
 import { createRoller, RuntimeLoadingStatus } from "./create-roller";
