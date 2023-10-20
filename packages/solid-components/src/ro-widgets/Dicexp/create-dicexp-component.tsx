@@ -1,18 +1,8 @@
 import styles from "./DicexpPreview.module.scss";
 
-import {
-  Accessor,
-  Component,
-  createEffect,
-  createMemo,
-  createSignal,
-  Match,
-  on,
-  Show,
-  Switch,
-} from "solid-js";
+import { Component, createEffect, createSignal, on, Show } from "solid-js";
 
-import type { ExecutionAppendix, JSValue, Repr } from "dicexp";
+import type { JSValue, Repr } from "dicexp";
 import type {
   EvaluatingWorkerManager,
 } from "@dicexp/evaluating-worker-manager";
@@ -25,11 +15,14 @@ import {
 
 import { createRoWidgetComponent } from "../../ro-widget-core/mod";
 
-import { HorizontalRule, PinButton } from "../support/mod";
 import FaSolidDice from "./icons";
-import { createStepsRepresentationComponent } from "./steps-representation";
-import { createRoller, RuntimeLoadingStatus } from "./create-roller";
-import { summarizeValue } from "./value-summary";
+import { processProps } from "./props-for-create-dicexp-component";
+import {
+  ErrorAlert,
+  Loading,
+  StepsRepresentation,
+} from "./external-components";
+import { createWidgetContent } from "./create-widget-content";
 
 export interface DicexpEvaluation {
   /**
@@ -93,23 +86,21 @@ export interface CreateDicexpComponentOptions {
   widgetOwnerClass: string;
   innerNoAutoOpenClass?: string;
   evaluatorProvider?: DicexpEvaluatorProvider;
-  Loading: Component;
-  ErrorAlert: Component<{ error: Error; showsStack: boolean }>;
-  StepsRepresentation: ReturnType<typeof createStepsRepresentationComponent>;
+
+  Loading: Loading;
+  ErrorAlert: ErrorAlert;
+  StepsRepresentation: StepsRepresentation;
 }
 
 export function createDicexpComponent(
   opts: CreateDicexpComponentOptions,
 ): Component<Properties> {
-  const {
-    Loading,
-    ErrorAlert,
-    StepsRepresentation,
-  } = opts;
+  const { Loading, ErrorAlert, StepsRepresentation } = opts;
 
   return (outerProps) => {
     // XXX: 暂时不考虑 reactivity
-    const { rolling, resultDisplaying } = processProps(outerProps, opts);
+    const processedProperties = processProps(outerProps, opts);
+    const { rolling, resultDisplaying } = processedProperties;
 
     createEffect(
       on([() => outerProps.code], () => resultDisplaying?.clear?.()),
@@ -173,115 +164,13 @@ export function createDicexpComponent(
           </>
         );
       },
-      WidgetContent: (props) => {
-        const [showsMoreInExtraInfo, setShowsMoreInExtraInfo] = //
-          createSignal(false);
-
-        return (
-          <div class={styles["dicexp-widget-content"]}>
-            <div class={styles["header"]}>
-              <div class={styles["left-area"]}>
-                <PinButton
-                  displayMode={props.displayMode}
-                  onClick={props.handlerForClickOnPinIcon}
-                  onTouchEnd={props.handlerForTouchEndOnPinIcon}
-                />
-                <span>掷骰</span>
-              </div>
-            </div>
-            <HorizontalRule />
-            <div style={{ padding: "0.5rem 0.5rem 0 0.5rem" }}>
-              <div style={{ padding: "0 0.5rem 0 0.5rem" }}>
-                <Switch>
-                  <Match when={resultDisplaying?.summary()}>
-                    <Show when={resultDisplaying!.error()}>
-                      {(resultError) => (
-                        <ErrorAlert
-                          error={resultError()}
-                          showsStack={false}
-                        />
-                      )}
-                    </Show>
-                    <Show when={resultDisplaying!.repr()}>
-                      {(resultRepr) => (
-                        <>
-                          <div>
-                            <code class={styles["code"]}>
-                              {outerProps.code}
-                            </code>
-                            {" ➔"}
-                          </div>
-                          <StepsRepresentation repr={resultRepr()} />
-                        </>
-                      )}
-                    </Show>
-                  </Match>
-                  <Match when={rolling?.isRolling()}>
-                    <div class={styles["center-aligner"]}>
-                      <Loading />
-                    </div>
-                  </Match>
-                  <Match when={true}>
-                    输入变更…
-                  </Match>
-                </Switch>
-              </div>
-              <Show
-                when={resultDisplaying?.statistics() ||
-                  resultDisplaying?.environment()}
-                fallback={<div style={{ height: "0.5rem" }} />}
-              >
-                <div class={styles["extra-info"]}>
-                  <div>
-                    <Show
-                      when={resultDisplaying!.statistics()?.timeConsumption}
-                    >
-                      {(timeConsumption) =>
-                        (() => {
-                          const location = resultDisplaying!.location();
-                          switch (location) {
-                            case null:
-                              return "";
-                            case "local":
-                              return "本地";
-                            case "server":
-                              return "服务器";
-                            default:
-                              return "？";
-                          }
-                        })() +
-                        `耗时≈${timeConsumption().ms}ms`}
-                    </Show>
-                    <Show
-                      when={!showsMoreInExtraInfo() &&
-                        resultDisplaying!.environment()}
-                    >
-                      {" "}
-                      <span
-                        class={styles["more"]}
-                        onClick={() => setShowsMoreInExtraInfo(true)}
-                      >
-                        …
-                      </span>
-                    </Show>
-                  </div>
-                  <Show
-                    when={showsMoreInExtraInfo() &&
-                      resultDisplaying!.environment()}
-                  >
-                    {(environment) => (
-                      <>
-                        <div>{`求值器=${environment()[0]}`}</div>
-                        <div>{`运行时信息=${environment()[1]}`}</div>
-                      </>
-                    )}
-                  </Show>
-                </div>
-              </Show>
-            </div>
-          </div>
-        );
-      },
+      WidgetContent: createWidgetContent({
+        code: outerProps.code,
+        processedProperties,
+        Loading,
+        ErrorAlert,
+        StepsRepresentation,
+      }),
     }, {
       widgetOwnerClass: opts.widgetOwnerClass,
       innerNoAutoOpenClass: opts.innerNoAutoOpenClass,
@@ -293,131 +182,4 @@ export function createDicexpComponent(
 
     return <>{component}</>;
   };
-}
-
-function processProps(
-  outerProps: Properties,
-  opts: CreateDicexpComponentOptions,
-): {
-  rolling?: {
-    roll: (code: string) => Promise<void>;
-    rtmLoadingStatus: Accessor<RuntimeLoadingStatus>;
-    isRolling: Accessor<boolean>;
-  };
-  resultDisplaying?: {
-    summary: () => { text: string; textClass?: string } | null;
-    error: () => Error | null;
-    repr: () => Repr | null;
-    environment: () =>
-      | NonNullable<DicexpEvaluation["environment"]>
-      | null;
-    statistics: () => NonNullable<DicexpEvaluation["statistics"]> | null;
-    location: () => NonNullable<DicexpEvaluation["location"]> | null;
-
-    clear?: () => void;
-  };
-} {
-  if (opts.evaluatorProvider && !outerProps.evaluation) {
-    const roller = createRoller({
-      evaluatorProvider: opts.evaluatorProvider.default,
-    });
-
-    const appendix = createMemo((): ExecutionAppendix | null => {
-      const result = roller.result();
-      if (result?.[0] === "ok") {
-        return result[2];
-      } else if (result?.[0] === "error" && result[1] === "execute") {
-        return result[3];
-      }
-      return null;
-    });
-
-    return {
-      rolling: {
-        roll: roller.roll,
-        rtmLoadingStatus: roller.rtmLoadingStatus,
-        isRolling: roller.isRolling,
-      },
-      resultDisplaying: {
-        summary: () => {
-          const result = roller.result();
-          if (!result) return null;
-
-          if (result[0] !== "ok") {
-            return {
-              text: "错误！",
-              textClass: styles["text-color-error"]!,
-            };
-          }
-
-          const summary = summarizeValue(result[1]);
-          if (summary === "too_complex") {
-            return {
-              text: "暂不支持显示的复杂值。",
-              textClass: styles["text-color-warning"]!,
-            };
-          }
-          return { text: summary[1] };
-        },
-        error: () => {
-          const result = roller.result();
-          if (result?.[0] === "error" /* && result_[1] !== "execute" */) {
-            return result[2];
-          }
-          return null;
-        },
-        repr: () => appendix()?.representation ?? null,
-        environment: roller.environment,
-        statistics: () => appendix()?.statistics ?? null,
-        location: () => "local",
-
-        clear: roller.clear,
-      },
-    };
-  } else if (outerProps.evaluation) {
-    return {
-      resultDisplaying: {
-        summary: () => {
-          const resultSum = outerProps.evaluation!.result;
-          if (resultSum === "error" || resultSum[0] === "error") {
-            return {
-              text: "错误！",
-              textClass: styles["text-color-error"]!,
-            };
-          } else if (resultSum[0] === "value") {
-            const summary = summarizeValue(resultSum[1]);
-            if (summary === "too_complex") {
-              return ({
-                text: "暂不支持显示的复杂值。",
-                textClass: styles["text-color-warning"]!,
-              });
-            } else {
-              return ({ text: summary[1] });
-            }
-          } else {
-            resultSum[0] satisfies "value_summary";
-            return ({
-              text: resultSum[1],
-            });
-          }
-        },
-        error: () => {
-          const resultSum = outerProps.evaluation!.result;
-          if (Array.isArray(resultSum) && resultSum[0] === "error") {
-            // TODO: 应该让 ErrorAlert 本身支持 string
-            return typeof resultSum[1] === "string"
-              ? new Error(resultSum[1])
-              : resultSum[1];
-          }
-          return null;
-        },
-        repr: () => outerProps.evaluation?.repr ?? null,
-        environment: () => outerProps.evaluation?.environment ?? null,
-        statistics: () => outerProps.evaluation?.statistics ?? null,
-        location: () => outerProps.evaluation?.location ?? null,
-      },
-    };
-  }
-
-  return {};
 }
