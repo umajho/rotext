@@ -1,5 +1,3 @@
-import styles from "./DicexpPreview.module.scss";
-
 import { Component, createEffect, createSignal, on, Show } from "solid-js";
 
 import type { JSValue, Repr } from "dicexp";
@@ -9,11 +7,14 @@ import type {
 
 import {
   ComputedColor,
+  createStyleProviderFromCSSText,
   gray500,
   mouseDownNoDoubleClickToSelect,
+  StyleProvider,
 } from "@rotext/web-utils";
 
 import { createRoWidgetComponent } from "../../ro-widget-core/mod";
+import { ShadowRootAttacher } from "../../internal/mod";
 
 import FaSolidDice from "./icons";
 import { processProps } from "./props-for-create-dicexp-component";
@@ -26,6 +27,11 @@ import {
   createWidgetContent,
   styleProvider as styleProviderForWidgetContent,
 } from "./create-widget-content";
+
+import stylesForPrimeContentSupplements from "./PrimeContent.supplements.scss?inline";
+
+const styleProviderForPrimeContentSupplements = //
+  createStyleProviderFromCSSText(stylesForPrimeContentSupplements);
 
 export interface DicexpEvaluation {
   /**
@@ -85,7 +91,11 @@ export interface Properties {
 }
 
 export interface CreateDicexpComponentOptions {
+  styleProviders: {
+    forPrimeContent: StyleProvider;
+  };
   backgroundColor: ComputedColor;
+
   widgetOwnerClass: string;
   innerNoAutoOpenClass?: string;
   evaluatorProvider?: DicexpEvaluatorProvider;
@@ -120,51 +130,67 @@ export function createDicexpComponent(
     const component = createRoWidgetComponent({
       PrimeContent: (props) => {
         return (
-          <>
-            <span
-              class={`widget-prime-summary ${styles["dicexp-prime-content"]}`}
-              style={{ cursor: props.cursor }}
-              onClick={props.onToggleWidget}
-              onMouseDown={mouseDownNoDoubleClickToSelect}
-            >
-              <FaSolidDice
-                color="white"
-                class={rolling?.isRolling() ? styles["animate-spin-400ms"] : ""}
-              />
-              <span class="widget-prime-raw-text">
-                {`[=${outerProps.code}]`}
-              </span>
-            </span>
-            <Show when={rolling?.roll || resultDisplaying?.summary()}>
+          <ShadowRootAttacher
+            hostStyle={{ display: "inline-flex" }}
+            styleProviders={[
+              styleProviderForPrimeContentSupplements,
+              opts.styleProviders.forPrimeContent,
+            ]}
+          >
+            <span class="widget-prime-content">
               <span
-                class={`widget-prime-action`}
-                style={rolling
-                  ? { cursor: "pointer", "user-select": "none" }
-                  : {}}
-                onClick={() => rolling?.roll(outerProps.code)}
+                class="widget-prime-summary"
+                style={{
+                  display: "inline-flex",
+                  "place-items": "center",
+                  cursor: props.cursor,
+                }}
+                onClick={props.onToggleWidget}
+                onMouseDown={mouseDownNoDoubleClickToSelect}
               >
-                <Show when={rolling}>
-                  {(rolling) => (
-                    <span class={styles["text-color-loading"]}>
-                      {rolling().rtmLoadingStatus() === "long"
-                        ? "正在加载运行时…"
-                        : (rolling().isRolling!() ? "正在试投…" : "试投")}
-                    </span>
-                  )}
-                </Show>
-                <Show when={resultDisplaying?.summary()}>
-                  {(resultSummary) => (
-                    <>
-                      <span>➔</span>
-                      <span class={resultSummary().textClass}>
-                        {resultSummary().text}
-                      </span>
-                    </>
-                  )}
-                </Show>
+                <FaSolidDice
+                  color="white"
+                  class={rolling?.isRolling() ? "animate-spin-400ms" : ""}
+                />
+                <span class="widget-prime-raw-text">
+                  {`[=${outerProps.code}]`}
+                </span>
               </span>
-            </Show>
-          </>
+              <Show when={rolling?.roll || resultDisplaying?.summary()}>
+                <span
+                  class={`widget-prime-action`}
+                  style={rolling
+                    ? { cursor: "pointer", "user-select": "none" }
+                    : {}}
+                  onClick={() => rolling?.roll(outerProps.code)}
+                >
+                  <Show when={rolling}>
+                    {(rolling) => (
+                      <span class={"text-color-loading"}>
+                        {rolling().rtmLoadingStatus() === "long"
+                          ? "正在加载运行时…"
+                          : (rolling().isRolling!() ? "正在试投…" : "试投")}
+                      </span>
+                    )}
+                  </Show>
+                  <Show when={resultDisplaying?.summary()}>
+                    {(resultSummary) => (
+                      <>
+                        <span>➔</span>
+                        <span
+                          class={(
+                            (level) => level && `text-color-${level}`
+                          )(resultSummary().level)}
+                        >
+                          {resultSummary().text}
+                        </span>
+                      </>
+                    )}
+                  </Show>
+                </span>
+              </Show>
+            </span>
+          </ShadowRootAttacher>
         );
       },
       WidgetContent: createWidgetContent({

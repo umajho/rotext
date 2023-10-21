@@ -11,11 +11,11 @@ import {
 } from "@rotext/web-utils";
 
 import {
+  getDefaultDicexpStyleProviders,
   getDefaultRefLinkStyleProviders,
   registerCustomElementForRoWidgetDicexp,
   registerCustomElementForRoWidgetRefLink,
   registerRoWidgetOwner,
-  withDefaultDicexpStyle,
 } from "../internal";
 
 import {
@@ -43,7 +43,7 @@ registerCustomElementForRoWidgetRefLink("ro-widget-ref-link", {
 });
 registerCustomElementForStepsRepresentation("steps-representation");
 registerCustomElementForRoWidgetDicexp("ro-widget-dicexp", {
-  withStyle: withDefaultDicexpStyle,
+  styleProviders: getDefaultDicexpStyleProviders(),
   backgroundColor: BACKGROUND_COLOR,
   widgetOwnerClass: WIDGET_OWNER_CLASS,
   evaluatorProvider: {
@@ -73,7 +73,7 @@ registerCustomElementForRoWidgetDicexp("ro-widget-dicexp", {
   tagNameForStepsRepresentation: "steps-representation",
 });
 registerCustomElementForRoWidgetDicexp("ro-widget-dicexp-no-runtime", {
-  withStyle: withDefaultDicexpStyle,
+  styleProviders: getDefaultDicexpStyleProviders(),
   backgroundColor: BACKGROUND_COLOR,
   widgetOwnerClass: WIDGET_OWNER_CLASS,
   Loading: () => "loading…",
