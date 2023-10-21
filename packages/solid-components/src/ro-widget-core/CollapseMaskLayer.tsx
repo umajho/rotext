@@ -38,7 +38,7 @@ const CollapseMaskLayer: Component<
           <div class="action-area-for-expansion" onClick={props.onExpand}>
             <div class="icon-area">
               <div class="aligner">
-                <HiSolidChevronDoubleDown />
+                <HiSolidChevronDoubleDown color="white" />
               </div>
             </div>
             <div

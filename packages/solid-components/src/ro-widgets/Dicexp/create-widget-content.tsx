@@ -42,7 +42,7 @@ export function createWidgetContent(opts: {
             <span>掷骰</span>
           </div>
         </div>
-        <HorizontalRule />
+        <HorizontalRule color="white" />
         <div style={{ padding: "0.5rem 0.5rem 0 0.5rem" }}>
           <div style={{ padding: "0 0.5rem 0 0.5rem" }}>
             <Switch>
@@ -58,7 +58,7 @@ export function createWidgetContent(opts: {
                 <Show when={resultDisplaying!.repr()}>
                   {(resultRepr) => (
                     <>
-                      <div>
+                      <div class="code-line">
                         <code class="code">
                           {opts.code}
                         </code>

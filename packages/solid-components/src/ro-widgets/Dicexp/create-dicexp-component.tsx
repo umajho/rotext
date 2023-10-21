@@ -145,7 +145,7 @@ export function createDicexpComponent(
                   "place-items": "center",
                   cursor: props.cursor,
                 }}
-                onClick={props.onToggleWidget}
+                onClick={() => props.onToggleWidget?.()}
                 onMouseDown={mouseDownNoDoubleClickToSelect}
               >
                 <FaSolidDice

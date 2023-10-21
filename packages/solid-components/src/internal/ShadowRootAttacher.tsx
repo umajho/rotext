@@ -17,6 +17,7 @@ const ShadowRootAttacher: Component<{
   preventHostStyleInheritance?: boolean;
 
   children: JSX.Element;
+  onMount?: (opts: { host: HTMLElement }) => void;
 }> = (props) => {
   let hostEl!: HTMLDivElement;
 
@@ -32,7 +33,12 @@ const ShadowRootAttacher: Component<{
       }
     }
 
-    render(() => props.children, shadowRoot);
+    render(() => {
+      if (props.onMount) {
+        onMount(() => props.onMount!({ host: hostEl }));
+      }
+      return props.children;
+    }, shadowRoot);
   });
 
   return <div ref={hostEl} style={props.hostStyle} />;

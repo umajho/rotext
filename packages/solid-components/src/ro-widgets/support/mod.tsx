@@ -1,17 +1,18 @@
-import { Component } from "solid-js";
+import { Component, JSX } from "solid-js";
 
 export { default as PinButton } from "./PinButton";
 
-export const HorizontalRule: Component = () => (
-  <hr
-    style={{
-      width: "100%",
-      height: 0,
-      margin: 0,
-      color: "inherit",
-      "border-style": "solid",
-      "border-width": 0,
-      "border-top-width": "1px",
-    }}
-  />
-);
+export const HorizontalRule: Component<{ color: JSX.CSSProperties["color"] }> =
+  (props) => (
+    <hr
+      style={{
+        width: "100%",
+        height: 0,
+        margin: 0,
+        color: props.color,
+        "border-style": "solid",
+        "border-width": 0,
+        "border-top-width": "1px",
+      }}
+    />
+  );
