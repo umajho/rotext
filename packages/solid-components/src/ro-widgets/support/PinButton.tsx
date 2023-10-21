@@ -1,7 +1,7 @@
 import { Component, onMount } from "solid-js";
 
 import { BsPinFill } from "solid-icons/bs";
-import { attachStyle, createStyleProviderFromCSSText } from "@rotext/web-utils";
+import { adoptStyle, createStyleProviderFromCSSText } from "@rotext/web-utils";
 
 import { RoWidgetDisplayMode } from "../../ro-widget-core/mod";
 
@@ -19,7 +19,7 @@ const PinButton: Component<{
 
   onMount(() => {
     const shadowRoot = el.attachShadow({ mode: "open" });
-    attachStyle(shadowRoot, styleProvider);
+    adoptStyle(shadowRoot, styleProvider);
 
     render(() => (
       <BsPinFill

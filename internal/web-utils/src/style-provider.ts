@@ -30,7 +30,7 @@ function createStyleElementFromCSSText(text: string): HTMLStyleElement {
   return styleEl;
 }
 
-export function attachStyle(shadowRoot: ShadowRoot, p: StyleProvider) {
+export function adoptStyle(shadowRoot: ShadowRoot, p: StyleProvider) {
   if (typeof p === "function") {
     shadowRoot.appendChild(p());
   } else {
