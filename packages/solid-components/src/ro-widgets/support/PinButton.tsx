@@ -1,12 +1,13 @@
-import { Component, onMount } from "solid-js";
+import { Component } from "solid-js";
 
 import { BsPinFill } from "solid-icons/bs";
-import { adoptStyle, createStyleProviderFromCSSText } from "@rotext/web-utils";
+
+import { createStyleProviderFromCSSText } from "@rotext/web-utils";
 
 import { RoWidgetDisplayMode } from "../../ro-widget-core/mod";
+import { ShadowRootAttacher } from "../../internal/mod";
 
 import styles from "./PinButton.scss?inline";
-import { render } from "solid-js/web";
 
 const styleProvider = createStyleProviderFromCSSText(styles);
 
@@ -15,13 +16,11 @@ const PinButton: Component<{
   onTouchEnd: () => void;
   onClick: () => void;
 }> = (props) => {
-  let el!: HTMLDivElement;
-
-  onMount(() => {
-    const shadowRoot = el.attachShadow({ mode: "open" });
-    adoptStyle(shadowRoot, styleProvider);
-
-    render(() => (
+  return (
+    <ShadowRootAttacher
+      styleProviders={[styleProvider]}
+      hostStyle={{ display: "flex" }}
+    >
       <BsPinFill
         class={[
           "pin-button",
@@ -30,14 +29,7 @@ const PinButton: Component<{
         onTouchEnd={props.onTouchEnd}
         onClick={props.onClick}
       />
-    ), shadowRoot);
-  });
-
-  return (
-    <div
-      ref={el}
-      style={{ display: "flex" }}
-    />
+    </ShadowRootAttacher>
   );
 };
 
