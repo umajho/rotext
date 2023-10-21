@@ -5,7 +5,7 @@ import {
   RefAddress,
   RefContentRenderer,
 } from "@rotext/solid-components/internal";
-import { attachStyle, StyleProvider } from "@rotext/web-utils";
+import { adoptStyle, StyleProvider } from "@rotext/web-utils";
 import { styleProdiverForPreflight } from "../../../../utils/preflight";
 
 export function createDemoRefContentRenderer(
@@ -37,7 +37,7 @@ const ShadowRootWrapper: Component<
 
   onMount(() => {
     const shadowRoot = el.attachShadow({ mode: "open" });
-    props.styleProviders.forEach((p) => attachStyle(shadowRoot, p));
+    props.styleProviders.forEach((p) => adoptStyle(shadowRoot, p));
     render(() => <>{props.children}</>, shadowRoot);
   });
 

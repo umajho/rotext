@@ -12,7 +12,7 @@ import { Portal } from "solid-js/web";
 import { getCurrentElement, noShadowDOM } from "solid-element";
 
 import {
-  attachStyle,
+  adoptStyle,
   closestContainer,
   ComputedColor,
   computedColorToCSSValue,
@@ -177,7 +177,7 @@ export function createWidgetComponent(parts: {
 
   function handlePortalRef({ shadowRoot }: { shadowRoot: ShadowRoot }) {
     if (opts.widgetContentStyleProvider) {
-      attachStyle(shadowRoot, opts.widgetContentStyleProvider);
+      adoptStyle(shadowRoot, opts.widgetContentStyleProvider);
     }
   }
 

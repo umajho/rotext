@@ -4,7 +4,7 @@ import { render } from "solid-js/web";
 import { HiSolidChevronDoubleDown } from "solid-icons/hi";
 
 import {
-  attachStyle,
+  adoptStyle,
   ComputedColor,
   createStyleProviderFromCSSText,
 } from "@rotext/web-utils";
@@ -31,7 +31,7 @@ const CollapseMaskLayer: Component<
 
   onMount(() => {
     const shadowRoot = el.attachShadow({ mode: "open" });
-    attachStyle(shadowRoot, styleProvider);
+    adoptStyle(shadowRoot, styleProvider);
 
     render(() => (
       <div class="collapse-mask-layer">
