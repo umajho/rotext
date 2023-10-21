@@ -104,7 +104,7 @@ export function createRefLinkComponent(
               <div style={{ width: "3rem" }} />
               <div>{outerProps.address}</div>
             </div>
-            <HorizontalRule />
+            <HorizontalRule color="white" />
             <div ref={refContentEl} />
           </div>
         );

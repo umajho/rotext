@@ -5,7 +5,6 @@ import {
   createSignal,
   JSX,
   on,
-  onMount,
   Show,
 } from "solid-js";
 import { Portal } from "solid-js/web";
@@ -19,6 +18,8 @@ import {
   getSizeInPx,
   StyleProvider,
 } from "@rotext/web-utils";
+
+import { ShadowRootAttacher } from "../internal/mod";
 
 import { getWidgetOwner, WidgetOwner } from "./widget-owners-store";
 import { mixColor } from "./utils";
@@ -90,10 +91,12 @@ export function createWidgetComponent(parts: {
     noShadowDOM();
   }
 
-  let primeEl!: HTMLSpanElement;
-  let wContainerEl!: HTMLDivElement; // “w” -> “widget”
-  let widgetEl!: HTMLDivElement;
-  let widgetFixedAnchorEl: HTMLDivElement;
+  // 必定存在
+  let primeEl!: HTMLSpanElement,
+    widgetFixedAnchorEl: HTMLDivElement;
+  // 视情况存在
+  let wContainerEl: HTMLDivElement,
+    widgetEl: HTMLDivElement; // “w” -> “widget”
 
   const backgroundColorCSSValue = createMemo(() =>
     computedColorToCSSValue(opts.widgetBackgroundColor())
@@ -135,13 +138,13 @@ export function createWidgetComponent(parts: {
     collapsible,
   });
 
-  function handleMount() {
+  function handleMount(mntOpts: { host: HTMLElement }) {
     const widgetOwner_ = //
-      getWidgetOwner(primeEl.closest("." + opts.widgetOwnerClass)!)!;
+      getWidgetOwner(mntOpts.host.closest("." + opts.widgetOwnerClass)!)!;
     setWidgetOwner(widgetOwner_);
     opts.setWidgetOwner?.(widgetOwner_);
 
-    const closestContainerEl = closestContainer(primeEl)!;
+    const closestContainerEl = closestContainer(mntOpts.host)!;
     function calculateAndSetWidgetPosition() {
       setWidgetPosition(
         calculateWidgetPosition({
@@ -182,12 +185,12 @@ export function createWidgetComponent(parts: {
   }
 
   return () => {
-    onMount(() => {
-      handleMount();
-    });
-
     return (
-      <>
+      <ShadowRootAttacher
+        hostStyle={{ display: "inline" }}
+        preventHostStyleInheritance={true}
+        onMount={handleMount}
+      >
         <span
           ref={primeEl}
           class="widget-prime"
@@ -264,7 +267,7 @@ export function createWidgetComponent(parts: {
             </WidgetContainer>
           </Show>
         </Portal>
-      </>
+      </ShadowRootAttacher>
     );
   };
 }
