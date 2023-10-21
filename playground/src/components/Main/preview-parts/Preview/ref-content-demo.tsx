@@ -1,32 +1,63 @@
-import { Component, createSignal, JSX, Match, Switch } from "solid-js";
+import { Component, createSignal, JSX, Match, onMount, Switch } from "solid-js";
 import { render } from "solid-js/web";
 
 import {
   RefAddress,
   RefContentRenderer,
 } from "@rotext/solid-components/internal";
+import {
+  attachStyle,
+  createStyleProviderFromCSSText,
+  StyleProvider,
+} from "@rotext/web-utils";
+
+const preflight = (() => {
+  const preflightEl = document.getElementById("preflight") as HTMLStyleElement;
+  return createStyleProviderFromCSSText(preflightEl.innerText);
+})();
 
 export function createDemoRefContentRenderer(
-  opts: { proseClass: string },
+  opts: { proseClass: string; proseStyleProvider: StyleProvider },
 ): RefContentRenderer {
   return (el, addr, onChange, onCleanup) => {
     const dispose = render(() => {
       const [address, setAddress] = createSignal(addr);
       onChange((addr) => setAddress(addr));
       return (
-        <AddressDescription address={address()} proseClass={opts.proseClass} />
+        <ShadowRootWrapper
+          styleProviders={[preflight, opts.proseStyleProvider]}
+        >
+          <AddressDescription
+            address={address()}
+            proseClass={opts.proseClass}
+          />
+        </ShadowRootWrapper>
       );
     }, el);
     onCleanup(dispose);
   };
 }
 
+const ShadowRootWrapper: Component<
+  { styleProviders: StyleProvider[]; children: JSX.Element }
+> = (props) => {
+  let el!: HTMLDivElement;
+
+  onMount(() => {
+    const shadowRoot = el.attachShadow({ mode: "open" });
+    props.styleProviders.forEach((p) => attachStyle(shadowRoot, p));
+    render(() => <>{props.children}</>, shadowRoot);
+  });
+
+  return <div ref={el} />;
+};
+
 const AddressDescription: Component<{
   address: RefAddress;
   proseClass: string;
 }> = (props) => {
   return (
-    <div class={props.proseClass}>
+    <div class={props.proseClass} style={{ margin: "1rem" }}>
       <p>这里的内容会引用自：</p>
       <AddressDescriptionList address={props.address} />
     </div>

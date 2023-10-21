@@ -1,5 +1,3 @@
-import "./tuan-prose.scss";
-
 import {
   Component,
   createEffect,
@@ -32,6 +30,7 @@ import {
 } from "@rotext/solid-components/internal";
 
 import {
+  createStyleProviderFromCSSText,
   getComputedColor,
   getComputedCSSValueOfClass,
 } from "@rotext/web-utils";
@@ -61,6 +60,17 @@ import { registerCustomElementForStepsRepresentation } from "@dicexp/solid-compo
 import { createDemoRefContentRenderer } from "./ref-content-demo";
 import { evaluatorProvider } from "./evaluator-provider";
 
+import stylesForTuanProse from "./tuan-prose.scss?inline";
+
+const styleProviderForTuanProse = (() => {
+  const styleEl = document.createElement("style");
+  styleEl.id = "tuan-prose";
+  styleEl.appendChild(document.createTextNode(stylesForTuanProse));
+  document.head.appendChild(styleEl);
+
+  return createStyleProviderFromCSSText(stylesForTuanProse);
+})();
+
 const CONTENT_ROOT_CLASS = "previewer-content-root";
 const PROSE_CLASS = "tuan-prose";
 const WIDGET_OWNER_CLASS = "widget-owner";
@@ -75,7 +85,10 @@ registerCustomElementForRoWidgetRefLink("ref-link", {
   backgroundColor: BACKGROUND_COLOR,
   widgetOwnerClass: WIDGET_OWNER_CLASS,
   innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,
-  refContentRenderer: createDemoRefContentRenderer({ proseClass: PROSE_CLASS }),
+  refContentRenderer: createDemoRefContentRenderer({
+    proseClass: PROSE_CLASS,
+    proseStyleProvider: styleProviderForTuanProse,
+  }),
 });
 registerCustomElementForStepsRepresentation("steps-representation");
 registerCustomElementForRoWidgetDicexp("dicexp-preview", {

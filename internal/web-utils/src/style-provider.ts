@@ -21,17 +21,25 @@ export function createStyleProviderFromCSSText(text: string): StyleProvider {
     };
   } catch {}
 
-  return () => {
-    const styleEl = document.createElement("style");
-    styleEl.appendChild(document.createTextNode(text));
-    return styleEl;
-  };
+  return () => createStyleElementFromCSSText(text);
+}
+
+function createStyleElementFromCSSText(text: string): HTMLStyleElement {
+  const styleEl = document.createElement("style");
+  styleEl.appendChild(document.createTextNode(text));
+  return styleEl;
 }
 
 export function attachStyle(shadowRoot: ShadowRoot, p: StyleProvider) {
   if (typeof p === "function") {
     shadowRoot.appendChild(p());
   } else {
-    shadowRoot.adoptedStyleSheets.push(p);
+    if ("adoptedStyleSheets" in shadowRoot) {
+      shadowRoot.adoptedStyleSheets.push(p);
+    } else {
+      const cssText = [...p.cssRules].map((r) => r.cssText).join("\n");
+      const styleEl = createStyleElementFromCSSText(cssText);
+      (shadowRoot as ShadowRoot).appendChild(styleEl);
+    }
   }
 }

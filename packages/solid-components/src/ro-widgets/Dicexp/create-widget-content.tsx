@@ -1,6 +1,6 @@
-import styles from "./DicexpPreview.module.scss";
-
 import { Component, createSignal, Match, Show, Switch } from "solid-js";
+
+import { createStyleProviderFromCSSText } from "@rotext/web-utils";
 
 import { WidgetContentProperties } from "../../ro-widget-core/create-widget-component";
 
@@ -11,6 +11,10 @@ import {
   Loading,
   StepsRepresentation,
 } from "./external-components";
+
+import styles from "./WidgetContent.scss?inline";
+
+export const styleProvider = createStyleProviderFromCSSText(styles);
 
 export function createWidgetContent(opts: {
   code: string;
@@ -27,9 +31,9 @@ export function createWidgetContent(opts: {
       createSignal(false);
 
     return (
-      <div class={styles["dicexp-widget-content"]}>
-        <div class={styles["header"]}>
-          <div class={styles["left-area"]}>
+      <div class="widget-content">
+        <div class="header">
+          <div class="left-area">
             <PinButton
               displayMode={props.displayMode}
               onClick={props.handlerForClickOnPinIcon}
@@ -55,7 +59,7 @@ export function createWidgetContent(opts: {
                   {(resultRepr) => (
                     <>
                       <div>
-                        <code class={styles["code"]}>
+                        <code class="code">
                           {opts.code}
                         </code>
                         {" ➔"}
@@ -66,7 +70,7 @@ export function createWidgetContent(opts: {
                 </Show>
               </Match>
               <Match when={rolling?.isRolling()}>
-                <div class={styles["center-aligner"]}>
+                <div class="center-aligner">
                   <opts.Loading />
                 </div>
               </Match>
@@ -80,7 +84,7 @@ export function createWidgetContent(opts: {
               resultDisplaying?.environment()}
             fallback={<div style={{ height: "0.5rem" }} />}
           >
-            <div class={styles["extra-info"]}>
+            <div class="extra-info">
               <div>
                 <Show
                   when={resultDisplaying!.statistics()?.timeConsumption}
@@ -107,7 +111,7 @@ export function createWidgetContent(opts: {
                 >
                   {" "}
                   <span
-                    class={styles["more"]}
+                    class="more"
                     onClick={() => setShowsMoreInExtraInfo(true)}
                   >
                     …
