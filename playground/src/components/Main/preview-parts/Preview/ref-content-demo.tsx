@@ -1,11 +1,13 @@
-import { Component, createSignal, JSX, Match, onMount, Switch } from "solid-js";
+import { Component, createSignal, JSX, Match, Switch } from "solid-js";
 import { render } from "solid-js/web";
 
 import {
   RefAddress,
   RefContentRenderer,
+  ShadowRootAttacher,
 } from "@rotext/solid-components/internal";
-import { adoptStyle, StyleProvider } from "@rotext/web-utils";
+import { StyleProvider } from "@rotext/web-utils";
+
 import { styleProdiverForPreflight } from "../../../../utils/preflight";
 
 export function createDemoRefContentRenderer(
@@ -16,33 +18,19 @@ export function createDemoRefContentRenderer(
       const [address, setAddress] = createSignal(addr);
       onChange((addr) => setAddress(addr));
       return (
-        <ShadowRootWrapper
+        <ShadowRootAttacher
           styleProviders={[styleProdiverForPreflight, opts.proseStyleProvider]}
         >
           <AddressDescription
             address={address()}
             proseClass={opts.proseClass}
           />
-        </ShadowRootWrapper>
+        </ShadowRootAttacher>
       );
     }, el);
     onCleanup(dispose);
   };
 }
-
-const ShadowRootWrapper: Component<
-  { styleProviders: StyleProvider[]; children: JSX.Element }
-> = (props) => {
-  let el!: HTMLDivElement;
-
-  onMount(() => {
-    const shadowRoot = el.attachShadow({ mode: "open" });
-    props.styleProviders.forEach((p) => adoptStyle(shadowRoot, p));
-    render(() => <>{props.children}</>, shadowRoot);
-  });
-
-  return <div ref={el} />;
-};
 
 const AddressDescription: Component<{
   address: RefAddress;

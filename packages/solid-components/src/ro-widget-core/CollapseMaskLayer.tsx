@@ -1,13 +1,13 @@
-import { Component, onMount } from "solid-js";
-import { render } from "solid-js/web";
+import { Component } from "solid-js";
 
 import { HiSolidChevronDoubleDown } from "solid-icons/hi";
 
 import {
-  adoptStyle,
   ComputedColor,
   createStyleProviderFromCSSText,
 } from "@rotext/web-utils";
+
+import { ShadowRootAttacher } from "../internal/mod";
 
 import styles from "./CollapseMaskLayer.scss?inline";
 
@@ -22,18 +22,13 @@ const CollapseMaskLayer: Component<
 > = (
   props,
 ) => {
-  let el!: HTMLDivElement;
-
   const [r, g, b] = props.backgroundColor();
   const baseColorRGB = `${r}, ${g}, ${b}`;
   const topColor = `rgba(${baseColorRGB}, 0)`;
   const bottomColor = `rgb(${baseColorRGB})`;
 
-  onMount(() => {
-    const shadowRoot = el.attachShadow({ mode: "open" });
-    adoptStyle(shadowRoot, styleProvider);
-
-    render(() => (
+  return (
+    <ShadowRootAttacher styleProviders={[styleProvider]}>
       <div class="collapse-mask-layer">
         <div
           class="pointer-masker"
@@ -55,10 +50,8 @@ const CollapseMaskLayer: Component<
           </div>
         </div>
       </div>
-    ), shadowRoot);
-  });
-
-  return <div ref={el} />;
+    </ShadowRootAttacher>
+  );
 };
 
 export default CollapseMaskLayer;
