@@ -5,16 +5,8 @@ import {
   RefAddress,
   RefContentRenderer,
 } from "@rotext/solid-components/internal";
-import {
-  attachStyle,
-  createStyleProviderFromCSSText,
-  StyleProvider,
-} from "@rotext/web-utils";
-
-const preflight = (() => {
-  const preflightEl = document.getElementById("preflight") as HTMLStyleElement;
-  return createStyleProviderFromCSSText(preflightEl.innerText);
-})();
+import { attachStyle, StyleProvider } from "@rotext/web-utils";
+import { styleProdiverForPreflight } from "../../../../utils/preflight";
 
 export function createDemoRefContentRenderer(
   opts: { proseClass: string; proseStyleProvider: StyleProvider },
@@ -25,7 +17,7 @@ export function createDemoRefContentRenderer(
       onChange((addr) => setAddress(addr));
       return (
         <ShadowRootWrapper
-          styleProviders={[preflight, opts.proseStyleProvider]}
+          styleProviders={[styleProdiverForPreflight, opts.proseStyleProvider]}
         >
           <AddressDescription
             address={address()}
