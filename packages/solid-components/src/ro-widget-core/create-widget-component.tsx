@@ -9,14 +9,16 @@ import {
   Show,
 } from "solid-js";
 import { Portal } from "solid-js/web";
+import { getCurrentElement, noShadowDOM } from "solid-element";
 
 import {
+  attachStyle,
   closestContainer,
   ComputedColor,
   computedColorToCSSValue,
   getSizeInPx,
+  StyleProvider,
 } from "@rotext/web-utils";
-import { getCurrentElement, noShadowDOM } from "solid-element";
 
 import { getWidgetOwner, WidgetOwner } from "./widget-owners-store";
 import { mixColor } from "./utils";
@@ -73,6 +75,8 @@ export function createWidgetComponent(parts: {
   setWidgetOwner?: (v: WidgetOwner) => void;
   openable?: () => boolean;
   autoOpenShouldCollapse?: boolean;
+
+  widgetContentStyleProvider?: StyleProvider;
   widgetBackgroundColor: () => ComputedColor;
   maskTintColor: () => ComputedColor;
 }): Component {
@@ -170,6 +174,12 @@ export function createWidgetComponent(parts: {
     }
   }
 
+  function handlePortalRef({ shadowRoot }: { shadowRoot: ShadowRoot }) {
+    if (opts.widgetContentStyleProvider) {
+      attachStyle(shadowRoot, opts.widgetContentStyleProvider);
+    }
+  }
+
   return () => {
     onMount(() => {
       handleMount();
@@ -203,7 +213,11 @@ export function createWidgetComponent(parts: {
           >
           </div>
         </Show>
-        <Portal mount={widgetOwner()?.widgetAnchorElement}>
+        <Portal
+          ref={handlePortalRef}
+          mount={widgetOwner()?.widgetAnchorElement}
+          useShadow={true}
+        >
           <Show when={displayMode() !== "closed"}>
             <WidgetContainer
               ref={wContainerEl}

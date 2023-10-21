@@ -1,5 +1,3 @@
-import styles from "./RefLink.module.scss";
-
 import {
   Component,
   createEffect,
@@ -11,6 +9,7 @@ import {
 
 import {
   ComputedColor,
+  createStyleProviderFromCSSText,
   gray500,
   mouseDownNoDoubleClickToSelect,
 } from "@rotext/web-utils";
@@ -18,6 +17,12 @@ import {
 import { createRoWidgetComponent } from "../../ro-widget-core/mod";
 
 import { HorizontalRule, PinButton } from "../support/mod";
+
+import stylesForWidgetContent from "./WidgetContent.scss?inline";
+
+const styleProviderForWidgetContent = createStyleProviderFromCSSText(
+  stylesForWidgetContent,
+);
 
 export interface Properties {
   address: string;
@@ -78,8 +83,8 @@ export function createRefLinkComponent(
         });
 
         return (
-          <div class={styles["ref-link-widget-content"]}>
-            <div class={styles["header"]}>
+          <div class="ref-link-widget-content">
+            <div class="header">
               <PinButton
                 displayMode={props.displayMode}
                 onClick={props.handlerForClickOnPinIcon}
@@ -89,15 +94,15 @@ export function createRefLinkComponent(
               <div>{outerProps.address}</div>
             </div>
             <HorizontalRule />
-            <div style={{ padding: "1rem" }}>
-              <div ref={refContentEl} />
-            </div>
+            <div ref={refContentEl} />
           </div>
         );
       },
     }, {
       widgetOwnerClass: opts.widgetOwnerClass,
       innerNoAutoOpenClass: opts.innerNoAutoOpenClass,
+
+      widgetContentStyleProvider: styleProviderForWidgetContent,
       widgetBackgroundColor: () => opts.backgroundColor,
       maskTintColor: () => gray500,
     });

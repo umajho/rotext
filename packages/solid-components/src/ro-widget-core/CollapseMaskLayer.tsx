@@ -3,10 +3,13 @@ import { render } from "solid-js/web";
 
 import { HiSolidChevronDoubleDown } from "solid-icons/hi";
 
-import { ComputedColor } from "@rotext/web-utils";
+import {
+  attachStyle,
+  ComputedColor,
+  createStyleProviderFromCSSText,
+} from "@rotext/web-utils";
 
 import styles from "./CollapseMaskLayer.scss?inline";
-import { attachStyle, createStyleProviderFromCSSText } from "../support/styles";
 
 const styleProvider = createStyleProviderFromCSSText(styles);
 

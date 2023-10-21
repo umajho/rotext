@@ -1,12 +1,9 @@
 import { Component, onMount } from "solid-js";
 
 import { BsPinFill } from "solid-icons/bs";
+import { attachStyle, createStyleProviderFromCSSText } from "@rotext/web-utils";
 
 import { RoWidgetDisplayMode } from "../../ro-widget-core/mod";
-import {
-  attachStyle,
-  createStyleProviderFromCSSText,
-} from "../../support/styles";
 
 import styles from "./PinButton.scss?inline";
 import { render } from "solid-js/web";

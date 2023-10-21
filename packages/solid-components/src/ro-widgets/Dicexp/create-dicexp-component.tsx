@@ -22,7 +22,10 @@ import {
   Loading,
   StepsRepresentation,
 } from "./external-components";
-import { createWidgetContent } from "./create-widget-content";
+import {
+  createWidgetContent,
+  styleProvider as styleProviderForWidgetContent,
+} from "./create-widget-content";
 
 export interface DicexpEvaluation {
   /**
@@ -176,6 +179,8 @@ export function createDicexpComponent(
       innerNoAutoOpenClass: opts.innerNoAutoOpenClass,
       openable: everRolled,
       autoOpenShouldCollapse: false,
+
+      widgetContentStyleProvider: styleProviderForWidgetContent,
       widgetBackgroundColor: () => opts.backgroundColor,
       maskTintColor: () => gray500,
     });
