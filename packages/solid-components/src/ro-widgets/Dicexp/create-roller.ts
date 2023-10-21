@@ -66,7 +66,6 @@ export function createRoller(opts: {
     environment,
     roll,
     clear: () => {
-      console.log("c");
       setResult(null);
       setEnvironment(null);
     },
