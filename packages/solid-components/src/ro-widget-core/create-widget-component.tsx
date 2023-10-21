@@ -93,6 +93,7 @@ export function createWidgetComponent(parts: {
   let primeEl!: HTMLSpanElement;
   let wContainerEl!: HTMLDivElement; // “w” -> “widget”
   let widgetEl!: HTMLDivElement;
+  let widgetFixedAnchorEl: HTMLDivElement;
 
   const backgroundColorCSSValue = createMemo(() =>
     computedColorToCSSValue(opts.widgetBackgroundColor())
@@ -204,33 +205,37 @@ export function createWidgetComponent(parts: {
             onToggleWidget={opts.openable?.() ? primeClickHandler : undefined}
           />
         </span>
-        <Show when={displayMode() === "pinned"}>
-          <div
-            style={{
-              width: `${wContainerSize()?.widthPx}px`,
-              height: `${wContainerSize()?.heightPx}px`,
-            }}
-          >
-          </div>
-        </Show>
+
+        <div
+          ref={widgetFixedAnchorEl}
+          style={{ display: displayMode() === "pinned" ? undefined : "none" }}
+        />
         <Portal
           ref={handlePortalRef}
-          mount={widgetOwner()?.widgetAnchorElement}
+          mount={displayMode() === "pinned"
+            ? widgetFixedAnchorEl
+            : widgetOwner()?.widgetAnchorElement}
           useShadow={true}
         >
           <Show when={displayMode() !== "closed"}>
             <WidgetContainer
               ref={wContainerEl}
               style={{
-                position: "absolute",
-                ...(((widgetPosition) =>
-                  widgetPosition
-                    ? {
-                      top: `${widgetPosition.topPx}px`,
-                      left: `${widgetPosition.leftPx}px`,
-                      "z-index": `-${widgetPosition.topPx | 0}`,
-                    }
-                    : { display: "none" })(widgetPosition())),
+                ...(displayMode() === "pinned"
+                  ? {
+                    width: "fit-content",
+                  }
+                  : {
+                    position: "absolute",
+                    ...(((widgetPosition) =>
+                      widgetPosition
+                        ? {
+                          top: `${widgetPosition.topPx}px`,
+                          left: `${widgetPosition.leftPx}px`,
+                          "z-index": `-${widgetPosition.topPx | 0}`,
+                        }
+                        : { display: "none" })(widgetPosition())),
+                  }),
                 "background-color": backgroundColorCSSValue(),
                 ...(collapsed()
                   ? {
