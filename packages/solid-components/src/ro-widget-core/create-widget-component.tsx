@@ -91,7 +91,7 @@ export function createWidgetComponent(parts: {
     noShadowDOM();
   }
 
-  // 必定存在
+  // 在执行 handleMount 时必定存在
   let primeEl!: HTMLSpanElement,
     widgetFixedAnchorEl: HTMLDivElement;
   // 视情况存在
@@ -176,6 +176,20 @@ export function createWidgetComponent(parts: {
     ) {
       autoOpen(!!opts.autoOpenShouldCollapse);
     }
+
+    if (opts.openable) {
+      // 套入 ShadowRootAttacher 后，“直接在 JSX 上视情况切换事件处理器与 undefined” 的
+      // 方案对 Dicexp 失效了（但对 RefLink 还有效）。这里通过手动添加/去处来 workaround。
+      createEffect(on([opts.openable], ([openable]) => {
+        if (openable) {
+          primeEl.addEventListener("mouseenter", enterHandler);
+          primeEl.addEventListener("mouseleave", leaveHandler);
+        } else {
+          primeEl.removeEventListener("mouseenter", enterHandler);
+          primeEl.removeEventListener("mouseleave", leaveHandler);
+        }
+      }));
+    }
   }
 
   function handlePortalRef({ shadowRoot }: { shadowRoot: ShadowRoot }) {
@@ -191,12 +205,7 @@ export function createWidgetComponent(parts: {
         preventHostStyleInheritance={true}
         onMount={handleMount}
       >
-        <span
-          ref={primeEl}
-          class="widget-prime"
-          onMouseEnter={opts.openable?.() ? enterHandler : undefined}
-          onMouseLeave={opts.openable?.() ? leaveHandler : undefined}
-        >
+        <span ref={primeEl} class="widget-prime">
           <PrimeContent
             cursor={opts.openable?.()
               ? (displayMode() === "pinned"
