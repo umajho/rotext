@@ -24,9 +24,9 @@ import { parse } from "@rotext/parsing";
 import { toSnabbdomChildren } from "@rotext/to-html";
 
 import {
+  getDefaultRefLinkStyleProviders,
   registerRoWidgetOwner,
   withDefaultDicexpStyle,
-  withDefaultRefLinkStyle,
 } from "@rotext/solid-components/internal";
 
 import {
@@ -81,7 +81,7 @@ const BACKGROUND_COLOR = getComputedColor(
 )!;
 
 registerCustomElementForRoWidgetRefLink("ref-link", {
-  withStyle: withDefaultRefLinkStyle,
+  styleProviders: getDefaultRefLinkStyleProviders(),
   backgroundColor: BACKGROUND_COLOR,
   widgetOwnerClass: WIDGET_OWNER_CLASS,
   innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,

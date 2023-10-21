@@ -11,11 +11,11 @@ import {
 } from "@rotext/web-utils";
 
 import {
+  getDefaultRefLinkStyleProviders,
   registerCustomElementForRoWidgetDicexp,
   registerCustomElementForRoWidgetRefLink,
   registerRoWidgetOwner,
   withDefaultDicexpStyle,
-  withDefaultRefLinkStyle,
 } from "../internal";
 
 import {
@@ -33,7 +33,7 @@ const BACKGROUND_COLOR = getComputedColor(
 )!;
 
 registerCustomElementForRoWidgetRefLink("ro-widget-ref-link", {
-  withStyle: withDefaultRefLinkStyle,
+  styleProviders: getDefaultRefLinkStyleProviders(),
   backgroundColor: BACKGROUND_COLOR,
   widgetOwnerClass: WIDGET_OWNER_CLASS,
   refContentRenderer: (el, addr, onAddressChange) => {
