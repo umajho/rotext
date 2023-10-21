@@ -1,6 +1,6 @@
 $futaba-green: #789922;
 
-ref-link-tag>.widget-prime {
+:host {
   @apply font-mono;
   color: $futaba-green;
 }

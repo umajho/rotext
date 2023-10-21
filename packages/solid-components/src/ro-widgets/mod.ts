@@ -7,9 +7,9 @@ export {
 } from "./Dicexp/mod";
 
 export {
+  getDefaultStyleProviders as getDefaultRefLinkStyleProviders,
   type Properties as RoWidgetRefLinkProperties,
   type RefAddress,
   type RefContentRenderer,
   registerCustomElement as registerCustomElementForRoWidgetRefLink,
-  withDefaultStyle as withDefaultRefLinkStyle,
 } from "./RefLink/mod";

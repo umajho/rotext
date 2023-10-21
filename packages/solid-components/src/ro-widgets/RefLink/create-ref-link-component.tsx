@@ -12,9 +12,11 @@ import {
   createStyleProviderFromCSSText,
   gray500,
   mouseDownNoDoubleClickToSelect,
+  StyleProvider,
 } from "@rotext/web-utils";
 
 import { createRoWidgetComponent } from "../../ro-widget-core/mod";
+import { ShadowRootAttacher } from "../../internal/mod";
 
 import { HorizontalRule, PinButton } from "../support/mod";
 
@@ -36,7 +38,11 @@ export type RefContentRenderer = (
 ) => void;
 
 export interface CreateRefLinkComponentOptions {
+  styleProviders: {
+    forPrimeContent: StyleProvider;
+  };
   backgroundColor: ComputedColor;
+
   widgetOwnerClass: string;
   innerNoAutoOpenClass?: string;
   refContentRenderer: RefContentRenderer;
@@ -53,13 +59,18 @@ export function createRefLinkComponent(
     const component = createRoWidgetComponent({
       PrimeContent: (props) => {
         return (
-          <span
-            style={{ cursor: props.cursor }}
-            onClick={props.onToggleWidget}
-            onMouseDown={mouseDownNoDoubleClickToSelect}
+          <ShadowRootAttacher
+            styleProviders={[opts.styleProviders.forPrimeContent]}
+            hostStyle={{ display: "inline" }}
           >
-            {`>>${outerProps.address}`}
-          </span>
+            <span
+              style={{ cursor: props.cursor }}
+              onClick={props.onToggleWidget}
+              onMouseDown={mouseDownNoDoubleClickToSelect}
+            >
+              {`>>${outerProps.address}`}
+            </span>
+          </ShadowRootAttacher>
         );
       },
       WidgetContent: (props) => {
