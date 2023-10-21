@@ -24,9 +24,9 @@ import { parse } from "@rotext/parsing";
 import { toSnabbdomChildren } from "@rotext/to-html";
 
 import {
+  getDefaultDicexpStyleProviders,
   getDefaultRefLinkStyleProviders,
   registerRoWidgetOwner,
-  withDefaultDicexpStyle,
 } from "@rotext/solid-components/internal";
 
 import {
@@ -92,7 +92,7 @@ registerCustomElementForRoWidgetRefLink("ref-link", {
 });
 registerCustomElementForStepsRepresentation("steps-representation");
 registerCustomElementForRoWidgetDicexp("dicexp-preview", {
-  withStyle: withDefaultDicexpStyle,
+  styleProviders: getDefaultDicexpStyleProviders(),
   backgroundColor: BACKGROUND_COLOR,
   widgetOwnerClass: WIDGET_OWNER_CLASS,
   innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,

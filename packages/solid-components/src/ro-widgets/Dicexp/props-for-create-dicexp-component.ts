@@ -1,5 +1,3 @@
-import styles from "./DicexpPreview.module.scss";
-
 import { Accessor, createMemo } from "solid-js";
 
 import type { ExecutionAppendix, Repr } from "dicexp";
@@ -19,7 +17,7 @@ export interface ProcessedProperties {
     isRolling: Accessor<boolean>;
   };
   resultDisplaying?: {
-    summary: () => { text: string; textClass?: string } | null;
+    summary: () => { text: string; level?: "error" | "warning" } | null;
     error: () => Error | null;
     repr: () => Repr | null;
     environment: () =>
@@ -63,18 +61,12 @@ export function processProps(
           if (!result) return null;
 
           if (result[0] !== "ok") {
-            return {
-              text: "错误！",
-              textClass: styles["text-color-error"]!,
-            };
+            return { text: "错误！", textClass: "error" };
           }
 
           const summary = summarizeValue(result[1]);
           if (summary === "too_complex") {
-            return {
-              text: "暂不支持显示的复杂值。",
-              textClass: styles["text-color-warning"]!,
-            };
+            return { text: "暂不支持显示的复杂值。", textClass: "warning" };
           }
           return { text: summary[1] };
         },
@@ -99,17 +91,11 @@ export function processProps(
         summary: () => {
           const resultSum = outerProps.evaluation!.result;
           if (resultSum === "error" || resultSum[0] === "error") {
-            return {
-              text: "错误！",
-              textClass: styles["text-color-error"]!,
-            };
+            return { text: "错误！", textClass: "error" };
           } else if (resultSum[0] === "value") {
             const summary = summarizeValue(resultSum[1]);
             if (summary === "too_complex") {
-              return ({
-                text: "暂不支持显示的复杂值。",
-                textClass: styles["text-color-warning"]!,
-              });
+              return ({ text: "暂不支持显示的复杂值。", textClass: "warning" });
             } else {
               return ({ text: summary[1] });
             }
