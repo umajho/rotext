@@ -61,12 +61,12 @@ export function processProps(
           if (!result) return null;
 
           if (result[0] !== "ok") {
-            return { text: "错误！", textClass: "error" };
+            return { text: "错误！", level: "error" };
           }
 
           const summary = summarizeValue(result[1]);
           if (summary === "too_complex") {
-            return { text: "暂不支持显示的复杂值。", textClass: "warning" };
+            return { text: "暂不支持显示的复杂值。", level: "warning" };
           }
           return { text: summary[1] };
         },
@@ -91,11 +91,11 @@ export function processProps(
         summary: () => {
           const resultSum = outerProps.evaluation!.result;
           if (resultSum === "error" || resultSum[0] === "error") {
-            return { text: "错误！", textClass: "error" };
+            return { text: "错误！", level: "error" };
           } else if (resultSum[0] === "value") {
             const summary = summarizeValue(resultSum[1]);
             if (summary === "too_complex") {
-              return ({ text: "暂不支持显示的复杂值。", textClass: "warning" });
+              return ({ text: "暂不支持显示的复杂值。", level: "warning" });
             } else {
               return ({ text: summary[1] });
             }
