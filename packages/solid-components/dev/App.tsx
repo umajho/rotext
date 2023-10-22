@@ -38,6 +38,7 @@ registerCustomElementForRoWidgetRefLink("ro-widget-ref-link", {
   widgetOwnerClass: WIDGET_OWNER_CLASS,
   refContentRenderer: (el, addr, onAddressChange) => {
     el.innerText = JSON.stringify(addr);
+    el.style.color = "white";
     onAddressChange(() => el.innerText = JSON.stringify(addr));
   },
 });
