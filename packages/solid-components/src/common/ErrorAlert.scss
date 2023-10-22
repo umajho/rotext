@@ -1,0 +1,13 @@
+.error-alert {
+  @apply px-6 py-4 rounded-2xl max-h-32;
+  @apply shadow-lg overflow-scroll;
+  @apply bg-red-400 text-red-950;
+
+  .container {
+    @apply text-xs;
+
+    .message-area {
+      @apply whitespace-pre;
+    }
+  }
+}
