@@ -11,6 +11,7 @@ import {
 } from "@rotext/web-utils";
 
 import {
+  DicexpEvaluation,
   getDefaultDicexpStyleProviders,
   getDefaultRefLinkStyleProviders,
   registerCustomElementForRoWidgetDicexp,
@@ -24,7 +25,6 @@ import {
 } from "@dicexp/evaluating-worker-manager";
 import dicexpImportURL from "dicexp/essence/for-worker?url";
 import scopesImportURL from "@dicexp/builtins/essence/standard-scopes?url";
-import { DicexpEvaluation } from "src/ro-widgets/Dicexp/create-dicexp-component";
 
 const WIDGET_OWNER_CLASS = "widget-owner";
 
@@ -70,7 +70,7 @@ registerCustomElementForRoWidgetDicexp("ro-widget-dicexp", {
     },
   },
   Loading: () => "loading…",
-  ErrorAlert: () => "error!",
+  ErrorAlert: (props) => <div>{JSON.stringify(props)}</div>,
   tagNameForStepsRepresentation: "steps-representation",
 });
 registerCustomElementForRoWidgetDicexp("ro-widget-dicexp-no-runtime", {
@@ -78,7 +78,7 @@ registerCustomElementForRoWidgetDicexp("ro-widget-dicexp-no-runtime", {
   backgroundColor: BACKGROUND_COLOR,
   widgetOwnerClass: WIDGET_OWNER_CLASS,
   Loading: () => "loading…",
-  ErrorAlert: () => "error!",
+  ErrorAlert: (props) => <div>{JSON.stringify(props)}</div>,
   tagNameForStepsRepresentation: "steps-representation",
 });
 
@@ -155,8 +155,8 @@ const Left: Component = () => {
     },
     { result: ["value_summary", "四十二"], repr: ["vp", 42] },
     { result: "error", repr: ["e", "error"] },
-    { result: ["error", "?"], repr: ["e", "?"] },
-    { result: ["error", new Error("?")], repr: ["e", "?"] },
+    { result: ["error", "execute", "?"], repr: ["e", "?"] },
+    { result: ["error", "parse", "?"] },
   ];
 
   return (

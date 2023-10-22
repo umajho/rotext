@@ -4,7 +4,7 @@ import type {
   EvaluatingWorkerManager,
   EvaluationResultForWorker,
 } from "@dicexp/evaluating-worker-manager";
-import { DicexpEvaluation } from "./create-dicexp-component";
+import { DicexpEvaluation } from "./evaluation";
 
 export type RuntimeLoadingStatus = "short" | "long" | null;
 

@@ -8,22 +8,23 @@ import styles from "./ErrorAlert.scss?inline";
 
 const styleProvider = createStyleProviderFromCSSText(styles);
 
-const ErrorAlert: Component<{
-  message?: string;
-  stack?: string;
-}> = (props) => {
+const ErrorAlert: Component<
+  & { kindText?: string }
+  & ({ message: string; stack?: string } | { message: undefined })
+> = (props) => {
   return (
     <ShadowRootAttacher styleProviders={[styleProvider]}>
       <div class="error-alert">
-        <div class="container">
+        <div class="heading">{props.kindText}错误</div>
+        <Show when={"message" in props}>
           <code class="message-area">
-            {props.message}
-            <Show when={props.stack}>
+            {(props as any).message}
+            <Show when={"stack" in props}>
               <hr />
-              {props.stack}
+              {(props as any).stack}
             </Show>
           </code>
-        </div>
+        </Show>
       </div>
     </ShadowRootAttacher>
   );
