@@ -19,9 +19,9 @@ import { ShadowRootAttacher } from "../../internal/mod";
 import FaSolidDice from "./icons";
 import { processProps } from "./props-for-create-dicexp-component";
 import {
-  ErrorAlert,
-  Loading,
-  StepsRepresentation,
+  ErrorAlertComponent,
+  LoadingComponent,
+  StepsRepresentationComponent,
 } from "./external-components";
 import {
   createWidgetContent,
@@ -100,9 +100,9 @@ export interface CreateDicexpComponentOptions {
   innerNoAutoOpenClass?: string;
   evaluatorProvider?: DicexpEvaluatorProvider;
 
-  Loading: Loading;
-  ErrorAlert: ErrorAlert;
-  StepsRepresentation: StepsRepresentation;
+  Loading: LoadingComponent;
+  ErrorAlert: ErrorAlertComponent;
+  StepsRepresentation: StepsRepresentationComponent;
 }
 
 export function createDicexpComponent(
