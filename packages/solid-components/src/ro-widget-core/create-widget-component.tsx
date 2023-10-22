@@ -107,16 +107,8 @@ export function createWidgetComponent(parts: {
   const [widgetPosition, setWidgetPosition] = //
     createSignal<ElementPosition | null>({ topPx: 0, leftPx: 0 });
 
-  const [widgetSize, setWidgetSize] = createSignal<ElementSize | null>(null);
-  const [wContainerSize, setWContainerSize] = //
-    createSignal<ElementSize | null>(null);
-
-  const collapsible = () =>
-    opts.openable?.()
-      ? (widgetSize()
-        ? (widgetSize()?.heightPx ?? 0) > COLLAPSE_HEIGHT_PX
-        : null)
-      : null;
+  const [canCollapse, setCanCollapse] = createSignal(false);
+  const [collapseHeightPx, setCollapseHeightPx] = createSignal(0);
 
   const maskBaseColor = createMemo((): ComputedColor =>
     mixColor(opts.widgetBackgroundColor(), 2 / 3, opts.maskTintColor(), 1 / 3)
@@ -135,7 +127,7 @@ export function createWidgetComponent(parts: {
   } = createDisplayModeFSM({
     initialDisplayMode: "closed",
     openable: opts.openable,
-    collapsible,
+    collapsible: canCollapse,
   });
 
   function handleMount(mntOpts: { host: HTMLElement }) {
@@ -157,17 +149,28 @@ export function createWidgetComponent(parts: {
     widgetOwner_.onLayoutChange(calculateAndSetWidgetPosition); // TODO: debounce
     calculateAndSetWidgetPosition();
 
-    createSizeSyncer({
-      size: widgetSize,
-      setSize: setWidgetSize,
-      removed: () => displayMode() === "closed",
-    }, () => widgetEl);
+    // 这里是确认 openable 这个 “决定能否打开的函数” 在不在
+    if (opts.openable) {
+      // 挂件内容的大小，目前只有在需要折叠时才需要侦测（判断是否能折叠）；
+      // 挂件容器的大小，目前只有在折叠时才需要侦测（确定遮盖的高度）。
 
-    createSizeSyncer({
-      size: wContainerSize,
-      setSize: setWContainerSize,
-      removed: () => displayMode() === "closed",
-    }, () => wContainerEl);
+      const { size: widgetSize } = createSizeSyncer(
+        () => widgetEl,
+        { removed: () => displayMode() !== "pinned" },
+      );
+      createEffect(on(
+        [widgetSize],
+        ([size]) => setCanCollapse((size?.heightPx ?? 0) > COLLAPSE_HEIGHT_PX),
+      ));
+      const { size: widgetContainerSize } = createSizeSyncer(
+        () => wContainerEl,
+        { removed: () => (displayMode() !== "pinned") || !collapsed() },
+      );
+      createEffect(on(
+        [widgetContainerSize],
+        ([size]) => setCollapseHeightPx(size?.heightPx ?? 0),
+      ));
+    }
 
     if (
       widgetOwner_.level === 1 &&
@@ -177,6 +180,7 @@ export function createWidgetComponent(parts: {
       autoOpen(!!opts.autoOpenShouldCollapse);
     }
 
+    // 这里是确认 openable 这个 “决定能否打开的函数” 在不在
     if (opts.openable) {
       // 套入 ShadowRootAttacher 后，“直接在 JSX 上视情况切换事件处理器与 undefined” 的
       // 方案对 Dicexp 失效了（但对 RefLink 还有效）。这里通过手动添加/去处来 workaround。
@@ -209,7 +213,7 @@ export function createWidgetComponent(parts: {
           <PrimeContent
             cursor={opts.openable?.()
               ? (displayMode() === "pinned"
-                ? (collapsible()
+                ? (canCollapse()
                   ? (collapsed() ? "zoom-in" : "zoom-out")
                   : undefined)
                 : "zoom-in")
@@ -260,7 +264,7 @@ export function createWidgetComponent(parts: {
             >
               <Show when={collapsed()}>
                 <CollapseMaskLayer
-                  containerHeightPx={() => wContainerSize()?.heightPx}
+                  containerHeightPx={collapseHeightPx}
                   backgroundColor={maskBaseColor}
                   onExpand={expand}
                 />
@@ -451,38 +455,38 @@ function createDisplayModeFSM(
 }
 
 function createSizeSyncer(
-  props: {
-    size: () => ElementSize | null;
-    setSize: (v: ElementSize | null) => void;
-    removed: () => boolean;
-  },
   el: () => HTMLElement,
+  opts: { removed: () => boolean },
 ) {
+  const [size, setSize] = createSignal<ElementSize | null>(null);
+
   function syncSize(el: HTMLElement) {
     const rect = el.getBoundingClientRect();
-    const oldSize = props.size();
+    const oldSize = size();
     if (
       oldSize && oldSize.widthPx === rect.width &&
       oldSize.heightPx === rect.height
     ) {
       return;
     }
-    props.setSize({
+    setSize({
       widthPx: rect.width,
       heightPx: rect.height,
     });
   }
   let resizeObserverForWidget: ResizeObserver | null = null;
-  createEffect(on([props.removed], () => {
-    if (!props.removed()) {
+  createEffect(on([opts.removed], () => {
+    if (!opts.removed()) {
       const el_ = el();
 
       syncSize(el_);
       resizeObserverForWidget = new ResizeObserver(() => syncSize(el_));
       resizeObserverForWidget.observe(el_);
     } else {
-      props.setSize(null);
+      setSize(null);
       resizeObserverForWidget?.disconnect();
     }
   }));
+
+  return { size };
 }
