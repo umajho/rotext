@@ -194,7 +194,7 @@ export function createDicexpComponent(
         );
       },
       WidgetContent: createWidgetContent({
-        code: outerProps.code,
+        code: () => outerProps.code,
         processedProperties,
         Loading,
         ErrorAlert,
