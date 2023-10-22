@@ -1,0 +1,14 @@
+.error-alert {
+  @apply px-6 py-3 rounded-2xl max-h-32;
+  @apply shadow-lg overflow-scroll;
+  @apply bg-red-400 text-red-950;
+
+  .heading {
+    @apply font-bold;
+  }
+
+  .message-area {
+    @apply text-xs whitespace-pre;
+
+  }
+}

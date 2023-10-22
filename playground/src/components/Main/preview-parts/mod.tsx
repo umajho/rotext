@@ -1,6 +1,6 @@
 import { createSignal, JSX, lazy, Show, Suspense } from "solid-js";
 
-import { Alert, Badge, BadgeBar, Loading, Tab, Tabs } from "../../ui";
+import { Alert, Badge, BadgeBar, Loading, Tab, Tabs } from "../../ui/mod";
 
 import { EditorStore } from "../../../hooks/editor-store";
 

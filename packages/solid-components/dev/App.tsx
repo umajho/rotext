@@ -11,11 +11,14 @@ import {
 } from "@rotext/web-utils";
 
 import {
+  DicexpEvaluation,
+  ElementLayoutChangeObserver,
+  getDefaultDicexpStyleProviders,
+  getDefaultRefLinkStyleProviders,
+  MultiObserver,
   registerCustomElementForRoWidgetDicexp,
   registerCustomElementForRoWidgetRefLink,
   registerRoWidgetOwner,
-  withDefaultDicexpStyle,
-  withDefaultRefLinkStyle,
 } from "../internal";
 
 import {
@@ -24,7 +27,6 @@ import {
 } from "@dicexp/evaluating-worker-manager";
 import dicexpImportURL from "dicexp/essence/for-worker?url";
 import scopesImportURL from "@dicexp/builtins/essence/standard-scopes?url";
-import { DicexpEvaluation } from "src/ro-widgets/Dicexp/create-dicexp-component";
 
 const WIDGET_OWNER_CLASS = "widget-owner";
 
@@ -33,17 +35,18 @@ const BACKGROUND_COLOR = getComputedColor(
 )!;
 
 registerCustomElementForRoWidgetRefLink("ro-widget-ref-link", {
-  withStyle: withDefaultRefLinkStyle,
+  styleProviders: getDefaultRefLinkStyleProviders(),
   backgroundColor: BACKGROUND_COLOR,
   widgetOwnerClass: WIDGET_OWNER_CLASS,
   refContentRenderer: (el, addr, onAddressChange) => {
     el.innerText = JSON.stringify(addr);
+    el.style.color = "white";
     onAddressChange(() => el.innerText = JSON.stringify(addr));
   },
 });
 registerCustomElementForStepsRepresentation("steps-representation");
 registerCustomElementForRoWidgetDicexp("ro-widget-dicexp", {
-  withStyle: withDefaultDicexpStyle,
+  styleProviders: getDefaultDicexpStyleProviders(),
   backgroundColor: BACKGROUND_COLOR,
   widgetOwnerClass: WIDGET_OWNER_CLASS,
   evaluatorProvider: {
@@ -69,15 +72,15 @@ registerCustomElementForRoWidgetDicexp("ro-widget-dicexp", {
     },
   },
   Loading: () => "loading…",
-  ErrorAlert: () => "error!",
+  ErrorAlert: (props) => <div>{JSON.stringify(props)}</div>,
   tagNameForStepsRepresentation: "steps-representation",
 });
 registerCustomElementForRoWidgetDicexp("ro-widget-dicexp-no-runtime", {
-  withStyle: withDefaultDicexpStyle,
+  styleProviders: getDefaultDicexpStyleProviders(),
   backgroundColor: BACKGROUND_COLOR,
   widgetOwnerClass: WIDGET_OWNER_CLASS,
   Loading: () => "loading…",
-  ErrorAlert: () => "error!",
+  ErrorAlert: (props) => <div>{JSON.stringify(props)}</div>,
   tagNameForStepsRepresentation: "steps-representation",
 });
 
@@ -113,11 +116,12 @@ const Left: Component = () => {
     anchorEl!: HTMLDivElement;
 
   onMount(() => {
-    const controller = registerWidgetOwnerEx(anchorEl);
-    const observer = new ResizeObserver(() => controller.nofityLayoutChange());
-    ownerEl.querySelectorAll(".resize-observee ").forEach((el) =>
-      observer.observe(el)
-    );
+    registerWidgetOwnerEx(anchorEl, {
+      extraObservers: [...ownerEl.querySelectorAll(".resize-observee ")]
+        .map((el) =>
+          new ElementLayoutChangeObserver(el as HTMLElement, { resize: true })
+        ),
+    });
   });
 
   const forgedResults: DicexpEvaluation[] = [
@@ -154,8 +158,8 @@ const Left: Component = () => {
     },
     { result: ["value_summary", "四十二"], repr: ["vp", 42] },
     { result: "error", repr: ["e", "error"] },
-    { result: ["error", "?"], repr: ["e", "?"] },
-    { result: ["error", new Error("?")], repr: ["e", "?"] },
+    { result: ["error", "execute", "?"], repr: ["e", "?"] },
+    { result: ["error", "parse", "?"] },
   ];
 
   return (
@@ -250,14 +254,19 @@ const Right: Component = () => {
   );
 };
 
-function registerWidgetOwnerEx(anchorEl: HTMLElement) {
+function registerWidgetOwnerEx(anchorEl: HTMLElement, opts?: {
+  extraObservers?: {
+    subscribe: (cb: () => void) => void;
+    unsubscribe: (cb: () => void) => void;
+  }[];
+}) {
   const ownerEl: HTMLElement = anchorEl.closest("." + WIDGET_OWNER_CLASS)!;
-  const controller = registerRoWidgetOwner(
-    ownerEl,
-    { widgetAnchorElement: anchorEl, level: 1 },
-  );
-  const o = new ResizeObserver(() => controller.nofityLayoutChange());
-  o.observe(ownerEl);
-
-  return controller;
+  const observer = new ElementLayoutChangeObserver(ownerEl, { resize: true });
+  registerRoWidgetOwner(ownerEl, {
+    widgetAnchorElement: anchorEl,
+    level: 1,
+    layoutChangeObserver: opts?.extraObservers?.length
+      ? new MultiObserver([observer, ...opts.extraObservers])
+      : observer,
+  });
 }

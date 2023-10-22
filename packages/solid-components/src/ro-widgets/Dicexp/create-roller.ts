@@ -4,7 +4,7 @@ import type {
   EvaluatingWorkerManager,
   EvaluationResultForWorker,
 } from "@dicexp/evaluating-worker-manager";
-import { DicexpEvaluation } from "./create-dicexp-component";
+import { DicexpEvaluation } from "./evaluation";
 
 export type RuntimeLoadingStatus = "short" | "long" | null;
 
@@ -24,6 +24,7 @@ export function createRoller(opts: {
     if (isRolling()) return;
     setIsRolling(true);
     setResult(null);
+    setEnvironment(null);
 
     setRtmLoadingStatus("short");
     const cID = //
@@ -66,7 +67,6 @@ export function createRoller(opts: {
     environment,
     roll,
     clear: () => {
-      console.log("c");
       setResult(null);
       setEnvironment(null);
     },

@@ -1,5 +1,3 @@
-import styles from "./styles.module.scss";
-
 import {
   Component,
   createEffect,
@@ -7,23 +5,26 @@ import {
   createSignal,
   JSX,
   on,
-  onMount,
   Show,
 } from "solid-js";
 import { Portal } from "solid-js/web";
-
-import { HiSolidChevronDoubleDown } from "solid-icons/hi";
+import { getCurrentElement, noShadowDOM } from "solid-element";
 
 import {
+  adoptStyle,
   closestContainer,
   ComputedColor,
   computedColorToCSSValue,
   getSizeInPx,
+  StyleProvider,
 } from "@rotext/web-utils";
-import { getCurrentElement, noShadowDOM } from "solid-element";
+
+import { ShadowRootAttacher } from "../internal/mod";
 
 import { getWidgetOwner, WidgetOwner } from "./widget-owners-store";
 import { mixColor } from "./utils";
+import CollapseMaskLayer from "./CollapseMaskLayer";
+import WidgetContainer from "./WidgetContainer";
 
 const LEAVING_DELAY_MS = 100;
 
@@ -67,29 +68,35 @@ interface ElementPosition {
 }
 
 export function createWidgetComponent(parts: {
-  primeContentComponent: Component<PrimeContentComponent>;
-  widgetContainerComponent: Component<WidgetContainerProperties>;
-  widgetContentComponent: Component<WidgetContentProperties>;
+  PrimeContent: Component<PrimeContentComponent>;
+  WidgetContent: Component<WidgetContentProperties>;
 }, opts: {
   widgetOwnerClass: string;
   innerNoAutoOpenClass?: string;
   setWidgetOwner?: (v: WidgetOwner) => void;
   openable?: () => boolean;
   autoOpenShouldCollapse?: boolean;
+
+  widgetContentStyleProvider?: StyleProvider;
   widgetBackgroundColor: () => ComputedColor;
   maskTintColor: () => ComputedColor;
 }): Component {
   opts.openable ??= () => true;
   opts.autoOpenShouldCollapse ??= true;
 
+  const { PrimeContent, WidgetContent } = parts;
+
   if (getCurrentElement()) {
     getCurrentElement().innerText = ""; // 清空 fallback
     noShadowDOM();
   }
 
-  let primeEl!: HTMLSpanElement;
-  let wContainerEl!: HTMLDivElement; // “w” -> “widget”
-  let widgetEl!: HTMLDivElement;
+  // 在执行 handleMount 时必定存在
+  let primeEl!: HTMLSpanElement,
+    widgetFixedAnchorEl: HTMLDivElement;
+  // 视情况存在
+  let wContainerEl: HTMLDivElement,
+    widgetEl: HTMLDivElement; // “w” -> “widget”
 
   const backgroundColorCSSValue = createMemo(() =>
     computedColorToCSSValue(opts.widgetBackgroundColor())
@@ -100,16 +107,8 @@ export function createWidgetComponent(parts: {
   const [widgetPosition, setWidgetPosition] = //
     createSignal<ElementPosition | null>({ topPx: 0, leftPx: 0 });
 
-  const [widgetSize, setWidgetSize] = createSignal<ElementSize | null>(null);
-  const [wContainerSize, setWContainerSize] = //
-    createSignal<ElementSize | null>(null);
-
-  const collapsible = () =>
-    opts.openable?.()
-      ? (widgetSize()
-        ? (widgetSize()?.heightPx ?? 0) > COLLAPSE_HEIGHT_PX
-        : null)
-      : null;
+  const [canCollapse, setCanCollapse] = createSignal(false);
+  const [collapseHeightPx, setCollapseHeightPx] = createSignal(0);
 
   const maskBaseColor = createMemo((): ComputedColor =>
     mixColor(opts.widgetBackgroundColor(), 2 / 3, opts.maskTintColor(), 1 / 3)
@@ -128,17 +127,17 @@ export function createWidgetComponent(parts: {
   } = createDisplayModeFSM({
     initialDisplayMode: "closed",
     openable: opts.openable,
-    collapsible,
+    collapsible: canCollapse,
   });
 
-  function handleMount() {
+  function handleMount(mntOpts: { host: HTMLElement }) {
     const widgetOwner_ = //
-      getWidgetOwner(primeEl.closest("." + opts.widgetOwnerClass)!)!;
+      getWidgetOwner(mntOpts.host.closest("." + opts.widgetOwnerClass)!)!;
     setWidgetOwner(widgetOwner_);
     opts.setWidgetOwner?.(widgetOwner_);
 
     const closestContainerEl = closestContainer(primeEl)!;
-    function calculateAndSetWidgetPosition() {
+    const calculateAndSetWidgetPosition = () => {
       setWidgetPosition(
         calculateWidgetPosition({
           prime: primeEl,
@@ -146,21 +145,42 @@ export function createWidgetComponent(parts: {
           closestContainer: closestContainerEl,
         }),
       );
+    };
+    createEffect(on(
+      [() => displayMode() === "floating"],
+      ([isFloating]) => {
+        widgetOwner_.layoutChangeObserver
+          [isFloating ? "subscribe" : "unsubscribe"](
+            calculateAndSetWidgetPosition,
+          );
+        if (isFloating) {
+          calculateAndSetWidgetPosition();
+        }
+      },
+    ));
+
+    // 这里是确认 openable 这个 “决定能否打开的函数” 在不在
+    if (opts.openable) {
+      // 挂件内容的大小，目前只有在需要折叠时才需要侦测（判断是否能折叠）；
+      // 挂件容器的大小，目前只有在折叠时才需要侦测（确定遮盖的高度）。
+
+      const { size: widgetSize } = createSizeSyncer(
+        () => widgetEl,
+        { removed: () => displayMode() !== "pinned" },
+      );
+      createEffect(on(
+        [widgetSize],
+        ([size]) => setCanCollapse((size?.heightPx ?? 0) > COLLAPSE_HEIGHT_PX),
+      ));
+      const { size: widgetContainerSize } = createSizeSyncer(
+        () => wContainerEl,
+        { removed: () => (displayMode() !== "pinned") || !collapsed() },
+      );
+      createEffect(on(
+        [widgetContainerSize],
+        ([size]) => setCollapseHeightPx(size?.heightPx ?? 0),
+      ));
     }
-    widgetOwner_.onLayoutChange(calculateAndSetWidgetPosition); // TODO: debounce
-    calculateAndSetWidgetPosition();
-
-    createSizeSyncer({
-      size: widgetSize,
-      setSize: setWidgetSize,
-      removed: () => displayMode() === "closed",
-    }, () => widgetEl);
-
-    createSizeSyncer({
-      size: wContainerSize,
-      setSize: setWContainerSize,
-      removed: () => displayMode() === "closed",
-    }, () => wContainerEl);
 
     if (
       widgetOwner_.level === 1 &&
@@ -169,25 +189,41 @@ export function createWidgetComponent(parts: {
     ) {
       autoOpen(!!opts.autoOpenShouldCollapse);
     }
+
+    // 这里是确认 openable 这个 “决定能否打开的函数” 在不在
+    if (opts.openable) {
+      // 套入 ShadowRootAttacher 后，“直接在 JSX 上视情况切换事件处理器与 undefined” 的
+      // 方案对 Dicexp 失效了（但对 RefLink 还有效）。这里通过手动添加/去处来 workaround。
+      createEffect(on([opts.openable], ([openable]) => {
+        if (openable) {
+          primeEl.addEventListener("mouseenter", enterHandler);
+          primeEl.addEventListener("mouseleave", leaveHandler);
+        } else {
+          primeEl.removeEventListener("mouseenter", enterHandler);
+          primeEl.removeEventListener("mouseleave", leaveHandler);
+        }
+      }));
+    }
+  }
+
+  function handlePortalRef({ shadowRoot }: { shadowRoot: ShadowRoot }) {
+    if (opts.widgetContentStyleProvider) {
+      adoptStyle(shadowRoot, opts.widgetContentStyleProvider);
+    }
   }
 
   return () => {
-    onMount(() => {
-      handleMount();
-    });
-
     return (
-      <>
-        <span
-          ref={primeEl}
-          class={`widget-prime ${styles["widget-prime"]}`}
-          onMouseEnter={opts.openable?.() ? enterHandler : undefined}
-          onMouseLeave={opts.openable?.() ? leaveHandler : undefined}
-        >
-          <parts.primeContentComponent
+      <ShadowRootAttacher
+        hostStyle={{ display: "inline" }}
+        preventHostStyleInheritance={true}
+        onMount={handleMount}
+      >
+        <span ref={primeEl} class="widget-prime">
+          <PrimeContent
             cursor={opts.openable?.()
               ? (displayMode() === "pinned"
-                ? (collapsible()
+                ? (canCollapse()
                   ? (collapsed() ? "zoom-in" : "zoom-out")
                   : undefined)
                 : "zoom-in")
@@ -195,29 +231,36 @@ export function createWidgetComponent(parts: {
             onToggleWidget={opts.openable?.() ? primeClickHandler : undefined}
           />
         </span>
-        <Show when={displayMode() === "pinned"}>
-          <div
-            style={{
-              width: `${wContainerSize()?.widthPx}px`,
-              height: `${wContainerSize()?.heightPx}px`,
-            }}
-          >
-          </div>
-        </Show>
-        <Portal mount={widgetOwner()?.widgetAnchorElement}>
+
+        <div
+          ref={widgetFixedAnchorEl}
+          style={{ display: displayMode() === "pinned" ? undefined : "none" }}
+        />
+        <Portal
+          ref={handlePortalRef}
+          mount={displayMode() === "pinned"
+            ? widgetFixedAnchorEl
+            : widgetOwner()?.widgetAnchorElement}
+          useShadow={true}
+        >
           <Show when={displayMode() !== "closed"}>
-            <parts.widgetContainerComponent
+            <WidgetContainer
               ref={wContainerEl}
               style={{
-                position: "absolute",
-                ...(((widgetPosition) =>
-                  widgetPosition
-                    ? {
-                      top: `${widgetPosition.topPx}px`,
-                      left: `${widgetPosition.leftPx}px`,
-                      "z-index": `-${widgetPosition.topPx | 0}`,
-                    }
-                    : { display: "none" })(widgetPosition())),
+                ...(displayMode() === "pinned"
+                  ? {
+                    width: "fit-content",
+                  }
+                  : {
+                    position: "absolute",
+                    ...(((widgetPosition) =>
+                      widgetPosition
+                        ? {
+                          top: `${widgetPosition.topPx}px`,
+                          left: `${widgetPosition.leftPx}px`,
+                        }
+                        : { display: "none" })(widgetPosition())),
+                  }),
                 "background-color": backgroundColorCSSValue(),
                 ...(collapsed()
                   ? {
@@ -231,22 +274,22 @@ export function createWidgetComponent(parts: {
             >
               <Show when={collapsed()}>
                 <CollapseMaskLayer
-                  containerHeightPx={() => wContainerSize()?.heightPx}
+                  containerHeightPx={collapseHeightPx}
                   backgroundColor={maskBaseColor}
                   onExpand={expand}
                 />
               </Show>
               <div ref={widgetEl}>
-                <parts.widgetContentComponent
+                <WidgetContent
                   displayMode={displayMode}
                   handlerForTouchEndOnPinIcon={pinningTogglerTouchEndHandler}
                   handlerForClickOnPinIcon={pinningToggleHandler}
                 />
               </div>
-            </parts.widgetContainerComponent>
+            </WidgetContainer>
           </Show>
         </Portal>
-      </>
+      </ShadowRootAttacher>
     );
   };
 }
@@ -422,80 +465,38 @@ function createDisplayModeFSM(
 }
 
 function createSizeSyncer(
-  props: {
-    size: () => ElementSize | null;
-    setSize: (v: ElementSize | null) => void;
-    removed: () => boolean;
-  },
   el: () => HTMLElement,
+  opts: { removed: () => boolean },
 ) {
+  const [size, setSize] = createSignal<ElementSize | null>(null);
+
   function syncSize(el: HTMLElement) {
     const rect = el.getBoundingClientRect();
-    const oldSize = props.size();
+    const oldSize = size();
     if (
       oldSize && oldSize.widthPx === rect.width &&
       oldSize.heightPx === rect.height
     ) {
       return;
     }
-    props.setSize({
+    setSize({
       widthPx: rect.width,
       heightPx: rect.height,
     });
   }
   let resizeObserverForWidget: ResizeObserver | null = null;
-  createEffect(on([props.removed], () => {
-    if (!props.removed()) {
+  createEffect(on([opts.removed], () => {
+    if (!opts.removed()) {
       const el_ = el();
 
       syncSize(el_);
       resizeObserverForWidget = new ResizeObserver(() => syncSize(el_));
       resizeObserverForWidget.observe(el_);
     } else {
-      props.setSize(null);
+      setSize(null);
       resizeObserverForWidget?.disconnect();
     }
   }));
+
+  return { size };
 }
-
-const CollapseMaskLayer: Component<
-  {
-    containerHeightPx: () => number | undefined;
-    backgroundColor: () => ComputedColor;
-    onExpand: () => void;
-  }
-> = (
-  props,
-) => {
-  const [r, g, b] = props.backgroundColor();
-  const baseColorRGB = `${r}, ${g}, ${b}`;
-  const topColor = `rgba(${baseColorRGB}, 0)`;
-  const bottomColor = `rgb(${baseColorRGB})`;
-
-  return (
-    <div class={styles["widget-collapse-mask-layer"]}>
-      <div
-        class={styles["pointer-masker"]}
-        style={{ height: `${props.containerHeightPx()}px` }}
-      >
-        <div class={styles["space-taker"]} />
-        <div
-          class={styles["action-area-for-expansion"]}
-          onClick={props.onExpand}
-        >
-          <div class={styles["icon-area"]}>
-            <div class={styles["aligner"]}>
-              <HiSolidChevronDoubleDown />
-            </div>
-          </div>
-          <div
-            class={styles["mask-area"]}
-            style={{
-              background: `linear-gradient(${topColor}, ${bottomColor})`,
-            }}
-          />
-        </div>
-      </div>
-    </div>
-  );
-};

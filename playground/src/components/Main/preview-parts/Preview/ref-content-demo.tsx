@@ -4,17 +4,28 @@ import { render } from "solid-js/web";
 import {
   RefAddress,
   RefContentRenderer,
+  ShadowRootAttacher,
 } from "@rotext/solid-components/internal";
+import { StyleProvider } from "@rotext/web-utils";
+
+import { styleProdiverForPreflight } from "../../../../utils/preflight";
 
 export function createDemoRefContentRenderer(
-  opts: { proseClass: string },
+  opts: { proseClass: string; proseStyleProvider: StyleProvider },
 ): RefContentRenderer {
   return (el, addr, onChange, onCleanup) => {
     const dispose = render(() => {
       const [address, setAddress] = createSignal(addr);
       onChange((addr) => setAddress(addr));
       return (
-        <AddressDescription address={address()} proseClass={opts.proseClass} />
+        <ShadowRootAttacher
+          styleProviders={[styleProdiverForPreflight, opts.proseStyleProvider]}
+        >
+          <AddressDescription
+            address={address()}
+            proseClass={opts.proseClass}
+          />
+        </ShadowRootAttacher>
       );
     }, el);
     onCleanup(dispose);
@@ -26,7 +37,7 @@ const AddressDescription: Component<{
   proseClass: string;
 }> = (props) => {
   return (
-    <div class={props.proseClass}>
+    <div class={props.proseClass} style={{ margin: "1rem" }}>
       <p>这里的内容会引用自：</p>
       <AddressDescriptionList address={props.address} />
     </div>

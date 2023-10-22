@@ -11,7 +11,13 @@ import {
   Switch,
 } from "solid-js";
 
-import { Button, DropdownItem, Loading, Tabs, TabWithDropdown } from "../../ui";
+import {
+  Button,
+  DropdownItem,
+  Loading,
+  Tabs,
+  TabWithDropdown,
+} from "../../ui/mod";
 
 import { EditorStore } from "../../../hooks/editor-store";
 

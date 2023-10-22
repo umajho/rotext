@@ -1,26 +1,34 @@
 import { Component } from "solid-js";
 import { customElement } from "solid-element";
 
-import { ComputedColor } from "@rotext/web-utils";
+import {
+  ComputedColor,
+  createStyleProviderFromCSSText,
+} from "@rotext/web-utils";
 
 import { createStepsRepresentationComponent } from "./steps-representation";
 import {
   createDicexpComponent,
+  CreateDicexpComponentOptions,
   type DicexpEvaluatorProvider,
 } from "./create-dicexp-component";
 
-import defaultStyle from "./default.scss?inline";
+import defaultStylesForPrimeContent from "./PrimeContent.default.scss?inline";
+import { ErrorAlertComponent } from "./external-components";
+
+const defaultStyleProviderForPrimeContent = //
+  createStyleProviderFromCSSText(defaultStylesForPrimeContent);
 
 export function registerCustomElement(
   tag: string,
   opts: {
-    withStyle: (tagName: string) => string;
+    styleProviders: CreateDicexpComponentOptions["styleProviders"];
     backgroundColor: ComputedColor;
     widgetOwnerClass: string;
     innerNoAutoOpenClass?: string;
     evaluatorProvider?: DicexpEvaluatorProvider;
     Loading: Component;
-    ErrorAlert: Component<{ error: Error; showsStack: boolean }>;
+    ErrorAlert: ErrorAlertComponent;
     tagNameForStepsRepresentation: string;
   },
 ) {
@@ -31,12 +39,11 @@ export function registerCustomElement(
     ),
   });
 
-  document.head.appendChild(document.createElement("style"))
-    .appendChild(document.createTextNode(opts.withStyle(tag)));
-
   customElement(tag, { code: "", evaluation: null }, DicexpComponent);
 }
 
-export function withDefaultStyle(tagName: string) {
-  return defaultStyle.replace(/dicexp-tag/g, tagName);
+export function getDefaultStyleProviders() {
+  return {
+    forPrimeContent: defaultStyleProviderForPrimeContent,
+  };
 }
