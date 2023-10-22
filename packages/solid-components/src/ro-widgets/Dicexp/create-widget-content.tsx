@@ -7,9 +7,9 @@ import { WidgetContentProperties } from "../../ro-widget-core/create-widget-comp
 import { HorizontalRule, PinButton } from "../support/mod";
 import { ProcessedProperties } from "./props-for-create-dicexp-component";
 import {
-  ErrorAlert,
-  Loading,
-  StepsRepresentation,
+  ErrorAlertComponent,
+  LoadingComponent,
+  StepsRepresentationComponent,
 } from "./external-components";
 
 import styles from "./WidgetContent.scss?inline";
@@ -20,9 +20,9 @@ export function createWidgetContent(opts: {
   code: () => string;
   processedProperties: ProcessedProperties;
 
-  Loading: Loading;
-  ErrorAlert: ErrorAlert;
-  StepsRepresentation: StepsRepresentation;
+  Loading: LoadingComponent;
+  ErrorAlert: ErrorAlertComponent;
+  StepsRepresentation: StepsRepresentationComponent;
 }): Component<WidgetContentProperties> {
   return (props) => {
     const { rolling, resultDisplaying } = opts.processedProperties;
