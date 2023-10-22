@@ -36,7 +36,7 @@ import {
   getComputedCSSValueOfClass,
 } from "@rotext/web-utils";
 
-import { Loading } from "../../../ui";
+import { Loading } from "../../../ui/mod";
 
 import { debounceEventHandler } from "../../../../utils/mod";
 
