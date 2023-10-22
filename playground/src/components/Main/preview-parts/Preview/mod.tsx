@@ -24,6 +24,7 @@ import { parse } from "@rotext/parsing";
 import { toSnabbdomChildren } from "@rotext/to-html";
 
 import {
+  ErrorAlert,
   getDefaultDicexpStyleProviders,
   getDefaultRefLinkStyleProviders,
   registerRoWidgetOwner,
@@ -35,7 +36,6 @@ import {
   getComputedCSSValueOfClass,
 } from "@rotext/web-utils";
 
-import { ErrorAlert } from "./ui";
 import { Loading } from "../../../ui";
 
 import { debounceEventHandler } from "../../../../utils/mod";
