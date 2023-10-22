@@ -1,10 +1,11 @@
 export {
+  getDefaultStyleProviders,
   registerCustomElement,
-  withDefaultStyle,
 } from "./register-custom-element";
 
 export type {
-  DicexpEvaluation,
   DicexpEvaluatorProvider,
   Properties,
 } from "./create-dicexp-component";
+
+export type { DicexpEvaluation } from "./evaluation";

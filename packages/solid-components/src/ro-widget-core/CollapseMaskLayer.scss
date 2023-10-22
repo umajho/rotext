@@ -1,8 +1,4 @@
-.widget-prime {
-  @apply inline-block;
-}
-
-.widget-collapse-mask-layer {
+.collapse-mask-layer {
   @apply relative;
 
   .pointer-masker {

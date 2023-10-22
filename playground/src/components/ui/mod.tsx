@@ -9,6 +9,8 @@ import {
 } from "solid-js";
 import { HiOutlineXCircle, HiSolidChevronDown } from "solid-icons/hi";
 
+export { default as Loading } from "./Loading";
+
 export const Card: Component<
   { children: JSX.Element; class?: string; bodyClass?: string }
 > = (
@@ -132,10 +134,6 @@ export const Alert: Component<
       </div>
     </div>
   );
-};
-
-export const Loading: Component = () => {
-  return <span class="loading loading-spinner loading-lg"></span>;
 };
 
 export const Dropdown: Component<

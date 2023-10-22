@@ -1,5 +1,3 @@
-import "./tuan-prose.scss";
-
 import {
   Component,
   createEffect,
@@ -26,18 +24,19 @@ import { parse } from "@rotext/parsing";
 import { toSnabbdomChildren } from "@rotext/to-html";
 
 import {
+  ErrorAlert,
+  getDefaultDicexpStyleProviders,
+  getDefaultRefLinkStyleProviders,
   registerRoWidgetOwner,
-  withDefaultDicexpStyle,
-  withDefaultRefLinkStyle,
 } from "@rotext/solid-components/internal";
 
 import {
+  createStyleProviderFromCSSText,
   getComputedColor,
   getComputedCSSValueOfClass,
 } from "@rotext/web-utils";
 
-import { ErrorAlert } from "./ui";
-import { Loading } from "../../../ui";
+import { Loading } from "../../../ui/mod";
 
 import { debounceEventHandler } from "../../../../utils/mod";
 
@@ -61,6 +60,17 @@ import { registerCustomElementForStepsRepresentation } from "@dicexp/solid-compo
 import { createDemoRefContentRenderer } from "./ref-content-demo";
 import { evaluatorProvider } from "./evaluator-provider";
 
+import stylesForTuanProse from "./tuan-prose.scss?inline";
+
+const styleProviderForTuanProse = (() => {
+  const styleEl = document.createElement("style");
+  styleEl.id = "tuan-prose";
+  styleEl.appendChild(document.createTextNode(stylesForTuanProse));
+  document.head.appendChild(styleEl);
+
+  return createStyleProviderFromCSSText(stylesForTuanProse);
+})();
+
 const CONTENT_ROOT_CLASS = "previewer-content-root";
 const PROSE_CLASS = "tuan-prose";
 const WIDGET_OWNER_CLASS = "widget-owner";
@@ -71,15 +81,18 @@ const BACKGROUND_COLOR = getComputedColor(
 )!;
 
 registerCustomElementForRoWidgetRefLink("ref-link", {
-  withStyle: withDefaultRefLinkStyle,
+  styleProviders: getDefaultRefLinkStyleProviders(),
   backgroundColor: BACKGROUND_COLOR,
   widgetOwnerClass: WIDGET_OWNER_CLASS,
   innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,
-  refContentRenderer: createDemoRefContentRenderer({ proseClass: PROSE_CLASS }),
+  refContentRenderer: createDemoRefContentRenderer({
+    proseClass: PROSE_CLASS,
+    proseStyleProvider: styleProviderForTuanProse,
+  }),
 });
 registerCustomElementForStepsRepresentation("steps-representation");
 registerCustomElementForRoWidgetDicexp("dicexp-preview", {
-  withStyle: withDefaultDicexpStyle,
+  styleProviders: getDefaultDicexpStyleProviders(),
   backgroundColor: BACKGROUND_COLOR,
   widgetOwnerClass: WIDGET_OWNER_CLASS,
   innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,
@@ -146,14 +159,23 @@ const Preview: Component<
     });
 
     //==== 注册进全局存储 ====
-    // NOTE: 目前 scrollContainerEl 就是 previewer 的元素
-    const widgetOwnerController = registerRoWidgetOwner(scrollContainerEl, {
-      widgetAnchorElement: widgetAnchorEl,
-      level: 1,
-    });
-    createEffect(
-      on([lookupList], () => widgetOwnerController.nofityLayoutChange()),
-    );
+    {
+      const cbs = new Set<() => void>();
+      const layoutChangeObserver = {
+        subscribe: (cb: () => void) => cbs.add(cb),
+        unsubscribe: (cb: () => void) => cbs.delete(cb),
+      };
+
+      // NOTE: 目前 scrollContainerEl 就是 previewer 的元素
+      registerRoWidgetOwner(scrollContainerEl, {
+        widgetAnchorElement: widgetAnchorEl,
+        level: 1,
+        layoutChangeObserver,
+      });
+      createEffect(
+        on([lookupList], () => [...cbs].forEach((cb) => cb())),
+      );
+    }
   });
 
   //==== 组件 ====
@@ -168,7 +190,7 @@ const Preview: Component<
       onScroll={(ev) => scrollHandler()!(ev)}
     >
       <Show when={err()}>
-        {(err) => <ErrorAlert error={err()} showsStack={true} />}
+        {(err) => <ErrorAlert message={err().message} stack={err().stack} />}
       </Show>
 
       {/* highlight anchor */}

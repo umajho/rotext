@@ -1,5 +1,3 @@
-import styles from "./RefLink.module.scss";
-
 import {
   Component,
   createEffect,
@@ -11,13 +9,22 @@ import {
 
 import {
   ComputedColor,
+  createStyleProviderFromCSSText,
   gray500,
   mouseDownNoDoubleClickToSelect,
+  StyleProvider,
 } from "@rotext/web-utils";
 
 import { createRoWidgetComponent } from "../../ro-widget-core/mod";
+import { ShadowRootAttacher } from "../../internal/mod";
 
-import { HorizontalRule, PinButton, WidgetContainer } from "../support";
+import { HorizontalRule, PinButton } from "../support/mod";
+
+import stylesForWidgetContent from "./WidgetContent.scss?inline";
+
+const styleProviderForWidgetContent = createStyleProviderFromCSSText(
+  stylesForWidgetContent,
+);
 
 export interface Properties {
   address: string;
@@ -31,7 +38,11 @@ export type RefContentRenderer = (
 ) => void;
 
 export interface CreateRefLinkComponentOptions {
+  styleProviders: {
+    forPrimeContent: StyleProvider;
+  };
   backgroundColor: ComputedColor;
+
   widgetOwnerClass: string;
   innerNoAutoOpenClass?: string;
   refContentRenderer: RefContentRenderer;
@@ -46,19 +57,23 @@ export function createRefLinkComponent(
     const address = createMemo(() => parseAddress(outerProps.address));
 
     const component = createRoWidgetComponent({
-      primeContentComponent: (props) => {
+      PrimeContent: (props) => {
         return (
-          <span
-            style={{ cursor: props.cursor }}
-            onClick={props.onToggleWidget}
-            onMouseDown={mouseDownNoDoubleClickToSelect}
+          <ShadowRootAttacher
+            styleProviders={[opts.styleProviders.forPrimeContent]}
+            hostStyle={{ display: "inline" }}
           >
-            {`>>${outerProps.address}`}
-          </span>
+            <span
+              style={{ cursor: props.cursor }}
+              onClick={props.onToggleWidget}
+              onMouseDown={mouseDownNoDoubleClickToSelect}
+            >
+              {`>>${outerProps.address}`}
+            </span>
+          </ShadowRootAttacher>
         );
       },
-      widgetContainerComponent: WidgetContainer,
-      widgetContentComponent: (props) => {
+      WidgetContent: (props) => {
         let refContentEl!: HTMLDivElement;
 
         onMount(() => {
@@ -79,8 +94,8 @@ export function createRefLinkComponent(
         });
 
         return (
-          <div class={styles["ref-link-widget-content"]}>
-            <div class={styles["header"]}>
+          <div class="ref-link-widget-content">
+            <div class="header">
               <PinButton
                 displayMode={props.displayMode}
                 onClick={props.handlerForClickOnPinIcon}
@@ -89,16 +104,16 @@ export function createRefLinkComponent(
               <div style={{ width: "3rem" }} />
               <div>{outerProps.address}</div>
             </div>
-            <HorizontalRule />
-            <div style={{ padding: "1rem" }}>
-              <div ref={refContentEl} />
-            </div>
+            <HorizontalRule color="white" />
+            <div ref={refContentEl} />
           </div>
         );
       },
     }, {
       widgetOwnerClass: opts.widgetOwnerClass,
       innerNoAutoOpenClass: opts.innerNoAutoOpenClass,
+
+      widgetContentStyleProvider: styleProviderForWidgetContent,
       widgetBackgroundColor: () => opts.backgroundColor,
       maskTintColor: () => gray500,
     });
