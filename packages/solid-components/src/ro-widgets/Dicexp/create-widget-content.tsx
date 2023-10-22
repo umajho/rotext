@@ -17,7 +17,7 @@ import styles from "./WidgetContent.scss?inline";
 export const styleProvider = createStyleProviderFromCSSText(styles);
 
 export function createWidgetContent(opts: {
-  code: string;
+  code: () => string;
   processedProperties: ProcessedProperties;
 
   Loading: Loading;
@@ -61,7 +61,7 @@ export function createWidgetContent(opts: {
                     <>
                       <div class="code-line">
                         <code class="code">
-                          {opts.code}
+                          {opts.code()}
                         </code>
                         {" ➔"}
                       </div>
