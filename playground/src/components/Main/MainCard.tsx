@@ -4,7 +4,7 @@ import * as examples from "@rotext/example-documentations";
 
 import { SUPPORTS_DVH } from "@rotext/web-utils";
 
-import { Card } from "../ui";
+import { Card } from "../ui/mod";
 
 import { createEditorStore } from "../../hooks/editor-store";
 
