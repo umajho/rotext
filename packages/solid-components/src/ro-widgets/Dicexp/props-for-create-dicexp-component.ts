@@ -6,9 +6,9 @@ import { createRoller, RuntimeLoadingStatus } from "./create-roller";
 import { summarizeValue } from "./value-summary";
 import {
   CreateDicexpComponentOptions,
-  DicexpEvaluation,
   Properties,
 } from "./create-dicexp-component";
+import { DicexpEvaluation, ErrorKind } from "./evaluation";
 
 export interface ProcessedProperties {
   rolling?: {
@@ -18,7 +18,7 @@ export interface ProcessedProperties {
   };
   resultDisplaying?: {
     summary: () => { text: string; level?: "error" | "warning" } | null;
-    error: () => Error | null;
+    error: () => { kind?: ErrorKind; message?: string } | null;
     repr: () => Repr | null;
     environment: () =>
       | NonNullable<DicexpEvaluation["environment"]>
@@ -72,8 +72,8 @@ export function processProps(
         },
         error: () => {
           const result = roller.result();
-          if (result?.[0] === "error" /* && result_[1] !== "execute" */) {
-            return result[2];
+          if (result?.[0] === "error") {
+            return { kind: result[1], message: result[2].message };
           }
           return null;
         },
@@ -106,11 +106,10 @@ export function processProps(
         },
         error: () => {
           const resultSum = outerProps.evaluation!.result;
+          if (resultSum === "error") return {};
           if (Array.isArray(resultSum) && resultSum[0] === "error") {
             // TODO: 应该让 ErrorAlert 本身支持 string
-            return typeof resultSum[1] === "string"
-              ? new Error(resultSum[1])
-              : resultSum[1];
+            return { kind: resultSum[1], message: resultSum[2] };
           }
           return null;
         },
