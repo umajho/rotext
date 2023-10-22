@@ -181,7 +181,7 @@ const Preview: Component<
       onScroll={(ev) => scrollHandler()!(ev)}
     >
       <Show when={err()}>
-        {(err) => <ErrorAlert error={err()} showsStack={true} />}
+        {(err) => <ErrorAlert message={err().message} stack={err().stack} />}
       </Show>
 
       {/* highlight anchor */}
