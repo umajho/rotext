@@ -24,6 +24,7 @@ export function createRoller(opts: {
     if (isRolling()) return;
     setIsRolling(true);
     setResult(null);
+    setEnvironment(null);
 
     setRtmLoadingStatus("short");
     const cID = //
