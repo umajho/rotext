@@ -52,8 +52,7 @@ export function createWidgetContent(opts: {
                     ( // 如果不用 IIFE，resultError() 在变成 null 时仍然会触发
                       // opts.ErrorAlert 的更新，导致后者内部收到 null 作为 error
                       // 的属性值。
-                      (e) =>
-                        e && <opts.ErrorAlert error={e} showsStack={false} />
+                      (e) => e && <opts.ErrorAlert message={e.message} />
                     )(resultError())}
                 </Show>
                 <Show when={resultDisplaying!.repr()}>

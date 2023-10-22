@@ -14,6 +14,7 @@ import {
 } from "./create-dicexp-component";
 
 import defaultStylesForPrimeContent from "./PrimeContent.default.scss?inline";
+import { ErrorAlertComponent } from "./external-components";
 
 const defaultStyleProviderForPrimeContent = //
   createStyleProviderFromCSSText(defaultStylesForPrimeContent);
@@ -27,7 +28,7 @@ export function registerCustomElement(
     innerNoAutoOpenClass?: string;
     evaluatorProvider?: DicexpEvaluatorProvider;
     Loading: Component;
-    ErrorAlert: Component<{ error: Error; showsStack: boolean }>;
+    ErrorAlert: ErrorAlertComponent;
     tagNameForStepsRepresentation: string;
   },
 ) {
