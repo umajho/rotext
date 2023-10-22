@@ -4,11 +4,14 @@ export interface WidgetOwner {
    * 所属层级，`1` 为最顶层。
    */
   level: number;
-  onLayoutChange: (listener: () => void) => void;
+  layoutChangeObserver: LayoutChangeObserver;
 }
 
-export interface WidgetOwnerController {
-  nofityLayoutChange: () => void;
+export interface WidgetOwnerController {}
+
+export interface LayoutChangeObserver {
+  subscribe(cb: () => void): void;
+  unsubscribe(cb: () => void): void;
 }
 
 const previewerElToWidgetOwnerMap = new WeakMap<HTMLElement, WidgetOwner>();
@@ -16,24 +19,17 @@ const previewerElToWidgetOwnerMap = new WeakMap<HTMLElement, WidgetOwner>();
 export interface RegisterWidgetOwnerOptions {
   widgetAnchorElement: HTMLElement;
   level: number;
+  layoutChangeObserver: LayoutChangeObserver;
 }
 
 export function registerWidgetOwner(
   ownerEl: HTMLElement,
   opts: RegisterWidgetOwnerOptions,
 ): WidgetOwnerController {
-  const layoutChangeListeners: (() => void)[] = [];
-
-  const owner: WidgetOwner = {
-    widgetAnchorElement: opts.widgetAnchorElement,
-    level: opts.level,
-    onLayoutChange: (l) => layoutChangeListeners.push(l),
-  };
+  const owner: WidgetOwner = Object.freeze({ ...opts });
   previewerElToWidgetOwnerMap.set(ownerEl, owner);
 
-  const controller: WidgetOwnerController = {
-    nofityLayoutChange: () => layoutChangeListeners.forEach((l) => l()),
-  };
+  const controller: WidgetOwnerController = {};
 
   return controller;
 }

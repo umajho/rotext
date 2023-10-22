@@ -137,7 +137,7 @@ export function createWidgetComponent(parts: {
     opts.setWidgetOwner?.(widgetOwner_);
 
     const closestContainerEl = closestContainer(primeEl)!;
-    function calculateAndSetWidgetPosition() {
+    const calculateAndSetWidgetPosition = () => {
       setWidgetPosition(
         calculateWidgetPosition({
           prime: primeEl,
@@ -145,9 +145,19 @@ export function createWidgetComponent(parts: {
           closestContainer: closestContainerEl,
         }),
       );
-    }
-    widgetOwner_.onLayoutChange(calculateAndSetWidgetPosition); // TODO: debounce
-    calculateAndSetWidgetPosition();
+    };
+    createEffect(on(
+      [() => displayMode() === "floating"],
+      ([isFloating]) => {
+        widgetOwner_.layoutChangeObserver
+          [isFloating ? "subscribe" : "unsubscribe"](
+            calculateAndSetWidgetPosition,
+          );
+        if (isFloating) {
+          calculateAndSetWidgetPosition();
+        }
+      },
+    ));
 
     // 这里是确认 openable 这个 “决定能否打开的函数” 在不在
     if (opts.openable) {

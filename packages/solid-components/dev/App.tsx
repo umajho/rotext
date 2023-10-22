@@ -12,8 +12,10 @@ import {
 
 import {
   DicexpEvaluation,
+  ElementLayoutChangeObserver,
   getDefaultDicexpStyleProviders,
   getDefaultRefLinkStyleProviders,
+  MultiObserver,
   registerCustomElementForRoWidgetDicexp,
   registerCustomElementForRoWidgetRefLink,
   registerRoWidgetOwner,
@@ -114,11 +116,12 @@ const Left: Component = () => {
     anchorEl!: HTMLDivElement;
 
   onMount(() => {
-    const controller = registerWidgetOwnerEx(anchorEl);
-    const observer = new ResizeObserver(() => controller.nofityLayoutChange());
-    ownerEl.querySelectorAll(".resize-observee ").forEach((el) =>
-      observer.observe(el)
-    );
+    registerWidgetOwnerEx(anchorEl, {
+      extraObservers: [...ownerEl.querySelectorAll(".resize-observee ")]
+        .map((el) =>
+          new ElementLayoutChangeObserver(el as HTMLElement, { resize: true })
+        ),
+    });
   });
 
   const forgedResults: DicexpEvaluation[] = [
@@ -251,14 +254,19 @@ const Right: Component = () => {
   );
 };
 
-function registerWidgetOwnerEx(anchorEl: HTMLElement) {
+function registerWidgetOwnerEx(anchorEl: HTMLElement, opts?: {
+  extraObservers?: {
+    subscribe: (cb: () => void) => void;
+    unsubscribe: (cb: () => void) => void;
+  }[];
+}) {
   const ownerEl: HTMLElement = anchorEl.closest("." + WIDGET_OWNER_CLASS)!;
-  const controller = registerRoWidgetOwner(
-    ownerEl,
-    { widgetAnchorElement: anchorEl, level: 1 },
-  );
-  const o = new ResizeObserver(() => controller.nofityLayoutChange());
-  o.observe(ownerEl);
-
-  return controller;
+  const observer = new ElementLayoutChangeObserver(ownerEl, { resize: true });
+  registerRoWidgetOwner(ownerEl, {
+    widgetAnchorElement: anchorEl,
+    level: 1,
+    layoutChangeObserver: opts?.extraObservers?.length
+      ? new MultiObserver([observer, ...opts.extraObservers])
+      : observer,
+  });
 }
