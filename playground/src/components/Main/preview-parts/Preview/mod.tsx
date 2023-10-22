@@ -159,14 +159,23 @@ const Preview: Component<
     });
 
     //==== 注册进全局存储 ====
-    // NOTE: 目前 scrollContainerEl 就是 previewer 的元素
-    const widgetOwnerController = registerRoWidgetOwner(scrollContainerEl, {
-      widgetAnchorElement: widgetAnchorEl,
-      level: 1,
-    });
-    createEffect(
-      on([lookupList], () => widgetOwnerController.nofityLayoutChange()),
-    );
+    {
+      const cbs = new Set<() => void>();
+      const layoutChangeObserver = {
+        subscribe: (cb: () => void) => cbs.add(cb),
+        unsubscribe: (cb: () => void) => cbs.delete(cb),
+      };
+
+      // NOTE: 目前 scrollContainerEl 就是 previewer 的元素
+      registerRoWidgetOwner(scrollContainerEl, {
+        widgetAnchorElement: widgetAnchorEl,
+        level: 1,
+        layoutChangeObserver,
+      });
+      createEffect(
+        on([lookupList], () => [...cbs].forEach((cb) => cb())),
+      );
+    }
   });
 
   //==== 组件 ====
