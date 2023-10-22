@@ -144,7 +144,7 @@ export function createWidgetComponent(parts: {
     setWidgetOwner(widgetOwner_);
     opts.setWidgetOwner?.(widgetOwner_);
 
-    const closestContainerEl = closestContainer(mntOpts.host)!;
+    const closestContainerEl = closestContainer(primeEl)!;
     function calculateAndSetWidgetPosition() {
       setWidgetPosition(
         calculateWidgetPosition({
@@ -244,7 +244,6 @@ export function createWidgetComponent(parts: {
                         ? {
                           top: `${widgetPosition.topPx}px`,
                           left: `${widgetPosition.leftPx}px`,
-                          "z-index": `-${widgetPosition.topPx | 0}`,
                         }
                         : { display: "none" })(widgetPosition())),
                   }),

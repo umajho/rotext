@@ -19,7 +19,7 @@ export interface RegisterWidgetOwnerOptions {
 }
 
 export function registerWidgetOwner(
-  previewerEl: HTMLElement,
+  ownerEl: HTMLElement,
   opts: RegisterWidgetOwnerOptions,
 ): WidgetOwnerController {
   const layoutChangeListeners: (() => void)[] = [];
@@ -29,7 +29,7 @@ export function registerWidgetOwner(
     level: opts.level,
     onLayoutChange: (l) => layoutChangeListeners.push(l),
   };
-  previewerElToWidgetOwnerMap.set(previewerEl, owner);
+  previewerElToWidgetOwnerMap.set(ownerEl, owner);
 
   const controller: WidgetOwnerController = {
     nofityLayoutChange: () => layoutChangeListeners.forEach((l) => l()),
