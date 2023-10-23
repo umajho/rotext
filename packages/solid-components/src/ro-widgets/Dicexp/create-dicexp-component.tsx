@@ -87,7 +87,7 @@ export function createDicexpComponent(
       PrimeContent: (props) => {
         return (
           <ShadowRootAttacher
-            hostStyle={{ display: "inline-flex" }}
+            hostStyle={{ display: "inline-flex", width: "100%" }}
             styleProviders={[
               styleProviderForPrimeContentSupplements,
               opts.styleProviders.forPrimeContent,
