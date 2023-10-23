@@ -6,11 +6,7 @@ settings:
 
 importers:
 
-  .:
-    dependencies:
-      '@rolludejo/web-internal':
-        specifier: ^0.1.0
-        version: 0.1.0(solid-js@1.8.1)
+  .: {}
 
   internal/example-documentations: {}
 
@@ -56,6 +52,9 @@ importers:
 
   packages/solid-components:
     dependencies:
+      '@rolludejo/web-internal':
+        specifier: ^0.1.0
+        version: 0.1.0(solid-js@1.8.1)
       solid-element:
         specifier: ^1.8.0
         version: 1.8.0(solid-js@1.8.1)
@@ -147,6 +146,9 @@ importers:
       '@dicexp/solid-components':
         specifier: ^0.2.2
         version: 0.2.2(solid-element@1.8.0)(solid-js@1.8.1)
+      '@rolludejo/web-internal':
+        specifier: ^0.1.0
+        version: 0.1.0(solid-js@1.8.1)
       '@rotext/example-documentations':
         specifier: workspace:*
         version: link:../internal/example-documentations
