@@ -12,14 +12,16 @@ import { getCurrentElement, noShadowDOM } from "solid-element";
 
 import {
   adoptStyle,
+  ShadowRootAttacher,
+  StyleProvider,
+} from "@rolludejo/web-internal";
+
+import {
   closestContainer,
   ComputedColor,
   computedColorToCSSValue,
   getSizeInPx,
-  StyleProvider,
 } from "@rotext/web-utils";
-
-import { ShadowRootAttacher } from "../internal/mod";
 
 import { getWidgetOwner, WidgetOwner } from "./widget-owners-store";
 import { mixColor } from "./utils";

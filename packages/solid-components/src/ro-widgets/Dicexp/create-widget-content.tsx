@@ -1,6 +1,6 @@
 import { Component, createSignal, Match, Show, Switch } from "solid-js";
 
-import { createStyleProviderFromCSSText } from "@rotext/web-utils";
+import { createStyleProviderFromCSSText } from "@rolludejo/web-internal";
 
 import { WidgetContentProperties } from "../../ro-widget-core/create-widget-component";
 

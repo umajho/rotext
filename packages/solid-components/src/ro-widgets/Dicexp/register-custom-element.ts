@@ -1,10 +1,9 @@
 import { Component } from "solid-js";
 import { customElement } from "solid-element";
 
-import {
-  ComputedColor,
-  createStyleProviderFromCSSText,
-} from "@rotext/web-utils";
+import { createStyleProviderFromCSSText } from "@rolludejo/web-internal";
+
+import { ComputedColor } from "@rotext/web-utils";
 
 import { createStepsRepresentationComponent } from "./steps-representation";
 import {

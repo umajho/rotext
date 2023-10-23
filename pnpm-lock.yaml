@@ -6,7 +6,11 @@ settings:
 
 importers:
 
-  .: {}
+  .:
+    dependencies:
+      '@rolludejo/web-internal':
+        specifier: ^0.1.0
+        version: 0.1.0(solid-js@1.8.1)
 
   internal/example-documentations: {}
 
@@ -1121,6 +1125,15 @@ packages:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.15.0
     dev: true
+
+  /@rolludejo/web-internal@0.1.0(solid-js@1.8.1):
+    resolution: {integrity: sha512-RcCCv9UAb+gJmO2HRh1XbGpLRhhlQzG5BIVGYF2fTzGAIUC/dLU0FfGLQB4YSqoB0yoIk9FT/HuC8K6cBJk+dA==}
+    engines: {node: '>=18', pnpm: '>=8.6.0'}
+    peerDependencies:
+      solid-js: ^1.8.1
+    dependencies:
+      solid-js: 1.8.1
+    dev: false
 
   /@sinclair/typebox@0.27.8:
     resolution: {integrity: sha512-+Fj43pSMwJs4KRrH/938Uf+uAELIgVBmQzg/q1YG10djyfA3TnrU8N8XzqCh/okZdszqBQTZf96idMfE5lnwTA==}

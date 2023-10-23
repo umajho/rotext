@@ -1,6 +1,6 @@
 import { customElement } from "solid-element";
 
-import { createStyleProviderFromCSSText } from "@rotext/web-utils";
+import { createStyleProviderFromCSSText } from "@rolludejo/web-internal";
 
 import {
   createRefLinkComponent,

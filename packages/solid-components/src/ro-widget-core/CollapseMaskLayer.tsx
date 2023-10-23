@@ -3,11 +3,11 @@ import { Component } from "solid-js";
 import { HiSolidChevronDoubleDown } from "solid-icons/hi";
 
 import {
-  ComputedColor,
   createStyleProviderFromCSSText,
-} from "@rotext/web-utils";
+  ShadowRootAttacher,
+} from "@rolludejo/web-internal";
 
-import { ShadowRootAttacher } from "../internal/mod";
+import { ComputedColor } from "@rotext/web-utils";
 
 import styles from "./CollapseMaskLayer.scss?inline";
 

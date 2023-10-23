@@ -2,10 +2,12 @@ import { Component } from "solid-js";
 
 import { BsPinFill } from "solid-icons/bs";
 
-import { createStyleProviderFromCSSText } from "@rotext/web-utils";
+import {
+  createStyleProviderFromCSSText,
+  ShadowRootAttacher,
+} from "@rolludejo/web-internal";
 
 import { RoWidgetDisplayMode } from "../../ro-widget-core/mod";
-import { ShadowRootAttacher } from "../../internal/mod";
 
 import styles from "./PinButton.scss?inline";
 

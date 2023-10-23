@@ -1,12 +1,12 @@
 import { Component, createSignal, JSX, Match, Switch } from "solid-js";
 import { render } from "solid-js/web";
 
+import { ShadowRootAttacher, StyleProvider } from "@rolludejo/web-internal";
+
 import {
   RefAddress,
   RefContentRenderer,
-  ShadowRootAttacher,
 } from "@rotext/solid-components/internal";
-import { StyleProvider } from "@rotext/web-utils";
 
 import { styleProdiverForPreflight } from "../../../../utils/preflight";
 
