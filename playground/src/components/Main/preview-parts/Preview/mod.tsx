@@ -20,6 +20,8 @@ import {
   VNode,
 } from "snabbdom";
 
+import { createStyleProviderFromCSSText } from "@rolludejo/web-internal";
+
 import { parse } from "@rotext/parsing";
 import { toSnabbdomChildren } from "@rotext/to-html";
 
@@ -31,7 +33,6 @@ import {
 } from "@rotext/solid-components/internal";
 
 import {
-  createStyleProviderFromCSSText,
   getComputedColor,
   getComputedCSSValueOfClass,
 } from "@rotext/web-utils";

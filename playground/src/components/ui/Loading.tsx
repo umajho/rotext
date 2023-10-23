@@ -1,7 +1,9 @@
 import { Component } from "solid-js";
 
-import { createStyleProviderFromCSSText } from "@rotext/web-utils";
-import { ShadowRootAttacher } from "@rotext/solid-components/internal";
+import {
+  createStyleProviderFromCSSText,
+  ShadowRootAttacher,
+} from "@rolludejo/web-internal";
 
 import styles from "./Loading.scss?inline";
 

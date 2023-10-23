@@ -1,19 +1,22 @@
 import { Component, createEffect, createSignal, on, Show } from "solid-js";
 
+import {
+  createStyleProviderFromCSSText,
+  ShadowRootAttacher,
+  StyleProvider,
+} from "@rolludejo/web-internal";
+
 import type {
   EvaluatingWorkerManager,
 } from "@dicexp/evaluating-worker-manager";
 
 import {
   ComputedColor,
-  createStyleProviderFromCSSText,
   gray500,
   mouseDownNoDoubleClickToSelect,
-  StyleProvider,
 } from "@rotext/web-utils";
 
 import { createRoWidgetComponent } from "../../ro-widget-core/mod";
-import { ShadowRootAttacher } from "../../internal/mod";
 
 import FaSolidDice from "./icons";
 import { processProps } from "./props-for-create-dicexp-component";

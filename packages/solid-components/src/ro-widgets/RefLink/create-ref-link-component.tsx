@@ -8,15 +8,18 @@ import {
 } from "solid-js";
 
 import {
-  ComputedColor,
   createStyleProviderFromCSSText,
+  ShadowRootAttacher,
+  StyleProvider,
+} from "@rolludejo/web-internal";
+
+import {
+  ComputedColor,
   gray500,
   mouseDownNoDoubleClickToSelect,
-  StyleProvider,
 } from "@rotext/web-utils";
 
 import { createRoWidgetComponent } from "../../ro-widget-core/mod";
-import { ShadowRootAttacher } from "../../internal/mod";
 
 import { HorizontalRule, PinButton } from "../support/mod";
 

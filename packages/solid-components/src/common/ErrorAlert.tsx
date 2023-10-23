@@ -1,8 +1,9 @@
 import { Component, Show } from "solid-js";
 
-import { createStyleProviderFromCSSText } from "@rotext/web-utils";
-
-import { ShadowRootAttacher } from "../internal/mod";
+import {
+  createStyleProviderFromCSSText,
+  ShadowRootAttacher,
+} from "@rolludejo/web-internal";
 
 import styles from "./ErrorAlert.scss?inline";
 
