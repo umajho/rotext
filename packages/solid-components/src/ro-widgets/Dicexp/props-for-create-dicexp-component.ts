@@ -66,7 +66,7 @@ export function processProps(
 
           const summary = summarizeValue(result[1]);
           if (summary === "too_complex") {
-            return { text: "暂不支持显示的复杂值。", level: "warning" };
+            return { text: "暂不支持显示的复杂值", level: "warning" };
           }
           return { text: summary[1] };
         },
@@ -95,7 +95,7 @@ export function processProps(
           } else if (resultSum[0] === "value") {
             const summary = summarizeValue(resultSum[1]);
             if (summary === "too_complex") {
-              return ({ text: "暂不支持显示的复杂值。", level: "warning" });
+              return ({ text: "暂不支持显示的复杂值", level: "warning" });
             } else {
               return ({ text: summary[1] });
             }
