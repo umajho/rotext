@@ -43,7 +43,7 @@ export function processProps(
       const result = roller.result();
       if (result?.[0] === "ok") {
         return result[2];
-      } else if (result?.[0] === "error" && result[1] === "execute") {
+      } else if (result?.[0] === "error" && result[1] === "runtime") {
         return result[3];
       }
       return null;
