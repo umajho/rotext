@@ -40,14 +40,14 @@ export interface DicexpEvaluation {
   location?: "local" | "server";
 }
 
-export type ErrorKind = "parse" | "execute" | "worker_client" | "other";
+export type ErrorKind = "parse" | "runtime" | "worker_client" | "other";
 
 export function errorKindToText(k: ErrorKind): string {
   switch (k) {
     case "parse":
       return "解析";
-    case "execute":
-      return "执行";
+    case "runtime":
+      return "运行时";
     case "worker_client":
       return "worker 客户端";
     case "other":

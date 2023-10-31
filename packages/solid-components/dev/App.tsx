@@ -158,7 +158,7 @@ const Left: Component = () => {
     },
     { result: ["value_summary", "四十二"], repr: ["vp", 42] },
     { result: "error", repr: ["e", "error"] },
-    { result: ["error", "execute", "?"], repr: ["e", "?"] },
+    { result: ["error", "runtime", "?"], repr: ["e", "?"] },
     { result: ["error", "parse", "?"] },
   ];
 
