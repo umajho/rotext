@@ -108,15 +108,9 @@ importers:
         specifier: ^1.0.11
         version: 1.0.11(solid-js@1.8.1)
     devDependencies:
-      '@dicexp/builtins':
-        specifier: ^0.4.0
-        version: 0.4.0
       '@dicexp/evaluating-worker-manager':
         specifier: ^0.4.0
         version: 0.4.0
-      '@dicexp/solid-components':
-        specifier: ^0.2.2
-        version: 0.2.2(solid-element@1.8.0)(solid-js@1.8.1)
       '@rotext/web-utils':
         specifier: workspace:*
         version: link:../../internal/web-utils
@@ -689,6 +683,7 @@ packages:
 
   /@dicexp/builtins@0.4.0:
     resolution: {integrity: sha512-k/xpcsYRUH6dXeuVws9ABZITOOG3Ly98DqnhnEhi9bI9odw4EXBTDIr+g537+FCAZ3yHlq0QlD7y3rdZeWJb2w==}
+    dev: false
 
   /@dicexp/evaluating-worker-manager@0.4.0:
     resolution: {integrity: sha512-nrBD5Aycg7FfSqod32qUOjVI1sXSZ+XJWmf7dmRvxtNtOtuHagknoRXmZvfucbV/nEodpBBxrqBzu5kOhOCm3A==}
@@ -702,6 +697,7 @@ packages:
     dependencies:
       solid-element: 1.8.0(solid-js@1.8.1)
       solid-js: 1.8.1
+    dev: false
 
   /@esbuild/android-arm64@0.17.19:
     resolution: {integrity: sha512-KBMWvEZooR7+kzY0BtbTQn0OAYY7CsiydT63pVEaPtVYF0hXbUaOyZog37DKxK7NF3XacBJOpYT4adIJh+avxA==}
@@ -1771,6 +1767,7 @@ packages:
 
   /component-register@0.8.3:
     resolution: {integrity: sha512-/0u8ov0WPWi2FL78rgB9aFOcfY8pJT4jP/l9NTOukGNLVQ6hk35sEJE1RkEnNQU3yk48Qr7HlDQjRQKEVfgeWg==}
+    dev: false
 
   /concat-map@0.0.1:
     resolution: {integrity: sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg==}
@@ -3099,6 +3096,7 @@ packages:
     dependencies:
       component-register: 0.8.3
       solid-js: 1.8.1
+    dev: false
 
   /solid-icons@1.0.11(solid-js@1.8.1):
     resolution: {integrity: sha512-shEL5Otrl73LPZukpanJKi6ISnQhpIvhqqAb8haKyCGrixHOYC6yGfNkSE7jpkKSikZ0rGtSMRiFETRrec2Uzw==}
