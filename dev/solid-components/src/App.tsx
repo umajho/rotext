@@ -19,7 +19,7 @@ import {
   registerCustomElementForRoWidgetDicexp,
   registerCustomElementForRoWidgetRefLink,
   registerRoWidgetOwner,
-} from "../internal";
+} from "@rotext/solid-components/internal";
 
 import {
   createWorkerByImportURLs,
