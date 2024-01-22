@@ -1,5 +1,5 @@
 import { render } from "solid-js/web";
-import "./styles.css";
+import "../src/styles.css";
 
 import App from "./App";
 
