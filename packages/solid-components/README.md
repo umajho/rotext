@@ -1,4 +1,4 @@
-# @dicexp/solid-components
+# @rotext/solid-components
 
 最初 fork 自 [dicexp](https://github.com/umajho/dicexp)
 [此次 commit](https://github.com/umajho/dicexp/commit/3a4eb123ff3fb57897f13118ae103eeb4666e1ba)
