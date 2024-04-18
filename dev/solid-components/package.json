@@ -6,12 +6,12 @@
   "sideEffects": false,
   "type": "module",
   "dependencies": {
-    "@dicexp/builtins": "^0.4.0",
-    "@dicexp/evaluating-worker-manager": "^0.4.0",
-    "@dicexp/solid-components": "^0.2.2",
+    "@dicexp/naive-evaluator": "^0.5.0",
+    "@dicexp/naive-evaluator-builtins": "^0.5.0",
+    "@dicexp/naive-evaluator-in-worker": "^0.5.0",
+    "@dicexp/solid-components": "^0.3.0",
     "@rotext/solid-components": "workspace:*",
     "@rotext/web-utils": "workspace:*",
-    "dicexp": "^0.4.1",
     "solid-js": "^1.8.1"
   },
   "devDependencies": {

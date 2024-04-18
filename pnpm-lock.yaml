@@ -10,24 +10,24 @@ importers:
 
   dev/solid-components:
     dependencies:
-      '@dicexp/builtins':
-        specifier: ^0.4.0
-        version: 0.4.0
-      '@dicexp/evaluating-worker-manager':
-        specifier: ^0.4.0
-        version: 0.4.0
+      '@dicexp/naive-evaluator':
+        specifier: ^0.5.0
+        version: 0.5.0(@lezer/highlight@1.1.6)(@lezer/lr@1.4.0)
+      '@dicexp/naive-evaluator-builtins':
+        specifier: ^0.5.0
+        version: 0.5.0
+      '@dicexp/naive-evaluator-in-worker':
+        specifier: ^0.5.0
+        version: 0.5.0
       '@dicexp/solid-components':
-        specifier: ^0.2.2
-        version: 0.2.2(solid-element@1.8.0)(solid-js@1.8.1)
+        specifier: ^0.3.0
+        version: 0.3.0(solid-element@1.8.0)(solid-icons@1.1.0)(solid-js@1.8.1)
       '@rotext/solid-components':
         specifier: workspace:*
         version: link:../../packages/solid-components
       '@rotext/web-utils':
         specifier: workspace:*
         version: link:../../internal/web-utils
-      dicexp:
-        specifier: ^0.4.1
-        version: 0.4.1(@lezer/highlight@1.1.6)(@lezer/lr@1.3.7)(esm-seedrandom@3.0.5)
       solid-js:
         specifier: ^1.8.1
         version: 1.8.1
@@ -108,9 +108,15 @@ importers:
         specifier: ^1.0.11
         version: 1.0.11(solid-js@1.8.1)
     devDependencies:
-      '@dicexp/evaluating-worker-manager':
-        specifier: ^0.4.0
-        version: 0.4.0
+      '@dicexp/interface':
+        specifier: ^0.5.0
+        version: 0.5.0
+      '@dicexp/naive-evaluator':
+        specifier: ^0.5.0
+        version: 0.5.0(@lezer/highlight@1.1.6)(@lezer/lr@1.4.0)
+      '@dicexp/naive-evaluator-in-worker':
+        specifier: ^0.5.0
+        version: 0.5.0
       '@rotext/web-utils':
         specifier: workspace:*
         version: link:../../internal/web-utils
@@ -120,9 +126,6 @@ importers:
       concurrently:
         specifier: ^8.2.0
         version: 8.2.0
-      dicexp:
-        specifier: ^0.4.1
-        version: 0.4.1(@lezer/highlight@1.1.6)(@lezer/lr@1.3.7)(esm-seedrandom@3.0.5)
       esbuild:
         specifier: ^0.18.20
         version: 0.18.20
@@ -177,12 +180,15 @@ importers:
       '@codemirror/theme-one-dark':
         specifier: ^6.1.2
         version: 6.1.2
-      '@dicexp/builtins':
-        specifier: ^0.4.0
-        version: 0.4.0
-      '@dicexp/evaluating-worker-manager':
-        specifier: ^0.4.0
-        version: 0.4.0
+      '@dicexp/naive-evaluator':
+        specifier: ^0.5.0
+        version: 0.5.0(@lezer/highlight@1.1.6)(@lezer/lr@1.4.0)
+      '@dicexp/naive-evaluator-builtins':
+        specifier: ^0.5.0
+        version: 0.5.0
+      '@dicexp/naive-evaluator-in-worker':
+        specifier: ^0.5.0
+        version: 0.5.0
       '@dicexp/solid-components':
         specifier: ^0.2.2
         version: 0.2.2(solid-element@1.8.0)(solid-js@1.8.1)
@@ -207,9 +213,6 @@ importers:
       codemirror:
         specifier: ^6.0.1
         version: 6.0.1(@lezer/common@1.0.3)
-      dicexp:
-        specifier: ^0.4.1
-        version: 0.4.1(@lezer/highlight@1.1.6)(@lezer/lr@1.3.7)(esm-seedrandom@3.0.5)
       snabbdom:
         specifier: ^3.5.1
         version: 3.5.1
@@ -681,12 +684,25 @@ packages:
       w3c-keyname: 2.2.8
     dev: false
 
-  /@dicexp/builtins@0.4.0:
-    resolution: {integrity: sha512-k/xpcsYRUH6dXeuVws9ABZITOOG3Ly98DqnhnEhi9bI9odw4EXBTDIr+g537+FCAZ3yHlq0QlD7y3rdZeWJb2w==}
+  /@dicexp/interface@0.5.0:
+    resolution: {integrity: sha512-Vi12s/Vh0Z5clxQ7mKR76I6IPw9P70D+Ix6HMrmQFK7GMi9ghUmAv9g7R0YZXpKjsuVYcgIOFCgRD5CKz9UXUw==}
+    dev: true
+
+  /@dicexp/naive-evaluator-builtins@0.5.0:
+    resolution: {integrity: sha512-Vuq+r99VAAW1sl9VE6KSfcSIeiymFDTeiLcrfymT0yafv+IydG3P2Gqp/F5tFSHsn6yOJkilhNNS8VLYtqt7+w==}
     dev: false
 
-  /@dicexp/evaluating-worker-manager@0.4.0:
-    resolution: {integrity: sha512-nrBD5Aycg7FfSqod32qUOjVI1sXSZ+XJWmf7dmRvxtNtOtuHagknoRXmZvfucbV/nEodpBBxrqBzu5kOhOCm3A==}
+  /@dicexp/naive-evaluator-in-worker@0.5.0:
+    resolution: {integrity: sha512-NIY955bPpQBGg+VSY9zXvYp5oG2weh6zb6rAD5bCYn7CACG3s6AGR0WjIcPGk9D/qNLQiUz8nkgU5iKKR2kj5w==}
+
+  /@dicexp/naive-evaluator@0.5.0(@lezer/highlight@1.1.6)(@lezer/lr@1.4.0):
+    resolution: {integrity: sha512-lN1YDDWOKuxWPaBOXIpJwrbe3MGVGrmSCNj/ipdzlhKlcAau/Q72sbRJlQGrpo3tByBDJLpMjxG2y8siJBwS9g==}
+    peerDependencies:
+      '@lezer/highlight': ^1.1.6
+      '@lezer/lr': ^1.3.13
+    dependencies:
+      '@lezer/highlight': 1.1.6
+      '@lezer/lr': 1.4.0
 
   /@dicexp/solid-components@0.2.2(solid-element@1.8.0)(solid-js@1.8.1):
     resolution: {integrity: sha512-Z14CcgFWx5TYdCv0HY8CtNJtRfF3K1okRxljPWeu4Eo4tEPbq+LijUaYfBDdYPxd0M+BKXvm40nQXAT95b8OoQ==}
@@ -696,6 +712,19 @@ packages:
       solid-js: ^1.8.3
     dependencies:
       solid-element: 1.8.0(solid-js@1.8.1)
+      solid-js: 1.8.1
+    dev: false
+
+  /@dicexp/solid-components@0.3.0(solid-element@1.8.0)(solid-icons@1.1.0)(solid-js@1.8.1):
+    resolution: {integrity: sha512-3B062qrAcfbTAmxGCBx3KA0k00JvA39XqOM1eCO0ADvPu/rx+Y/pLLasGu314gEw+C7HF4cT6QYXgAb2RizBlA==}
+    engines: {node: '>=18', pnpm: '>=8.6.0'}
+    peerDependencies:
+      solid-element: ^1.8.0
+      solid-icons: ^1.0.12
+      solid-js: ^1.8.3
+    dependencies:
+      solid-element: 1.8.0(solid-js@1.8.1)
+      solid-icons: 1.1.0(solid-js@1.8.1)
       solid-js: 1.8.1
     dev: false
 
@@ -1146,6 +1175,12 @@ packages:
 
   /@lezer/lr@1.3.7:
     resolution: {integrity: sha512-ssHKb3p0MxhJXT2i7UBmgAY1BIM3Uq/D772Qutu3EVmxWIyNMU12nQ0rL3Fhu+MiFtiTzyTmd3xGwEf3ON5PSA==}
+    dependencies:
+      '@lezer/common': 1.0.3
+    dev: false
+
+  /@lezer/lr@1.4.0:
+    resolution: {integrity: sha512-Wst46p51km8gH0ZUmeNrtpRYmdlRHUpN1DQd3GFAyKANi8WVz8c2jHYTf1CVScFaCjQw1iO3ZZdqGDxQPRErTg==}
     dependencies:
       '@lezer/common': 1.0.3
 
@@ -1888,17 +1923,6 @@ packages:
     engines: {node: '>=0.4.0'}
     dev: true
 
-  /dicexp@0.4.1(@lezer/highlight@1.1.6)(@lezer/lr@1.3.7)(esm-seedrandom@3.0.5):
-    resolution: {integrity: sha512-0PVIAZao6sAalR28sdYbqC9yVaG9KF8nUBbxBkWiye69J6NkGT1Qus3/1dXDwMrJLk71iEOqIL+7zfJ9b9E7Jg==}
-    peerDependencies:
-      '@lezer/highlight': ^1.1.6
-      '@lezer/lr': ^1.3.7
-      esm-seedrandom: ^3.0.5
-    dependencies:
-      '@lezer/highlight': 1.1.6
-      '@lezer/lr': 1.3.7
-      esm-seedrandom: 3.0.5
-
   /didyoumean@1.2.2:
     resolution: {integrity: sha512-gxtyfqMg7GKyhQmb056K7M3xszy/myH8w+B4RT+QXBQsvAOdc3XymqDDPHx1BgPgsdAA5SIifona89YtRATDzw==}
     dev: true
@@ -2032,9 +2056,6 @@ packages:
     resolution: {integrity: sha512-vbRorB5FUQWvla16U8R/qgaFIya2qGzwDrNmCZuYKrbdSUMG6I1ZCGQRefkRVhuOkIGVne7BQ35DSfo1qvJqFg==}
     engines: {node: '>=0.8.0'}
     dev: true
-
-  /esm-seedrandom@3.0.5:
-    resolution: {integrity: sha512-pMAq0mFIr5JQ3Ihbng7EBLMJ+llMbaDKkiG44pqbSXS0NIZWtEANpOpxb5s6Q8Q2R562P26qMHPv8YtP/NHh9g==}
 
   /execa@5.1.1:
     resolution: {integrity: sha512-8uSpZZocAZRBAPIEINJj3Lo9HyGitllczc27Eh5YYojjMFMn8yHMDMaUHE2Jqfq05D/wucwI4JGURyXt1vchyg==}
@@ -3101,6 +3122,14 @@ packages:
   /solid-icons@1.0.11(solid-js@1.8.1):
     resolution: {integrity: sha512-shEL5Otrl73LPZukpanJKi6ISnQhpIvhqqAb8haKyCGrixHOYC6yGfNkSE7jpkKSikZ0rGtSMRiFETRrec2Uzw==}
     engines: {node: '>= 16'}
+    peerDependencies:
+      solid-js: '*'
+    dependencies:
+      solid-js: 1.8.1
+    dev: false
+
+  /solid-icons@1.1.0(solid-js@1.8.1):
+    resolution: {integrity: sha512-IesTfr/F1ElVwH2E1110s2RPXH4pujKfSs+koT8rwuTAdleO5s26lNSpqJV7D1+QHooJj18mcOiz2PIKs0ic+A==}
     peerDependencies:
       solid-js: '*'
     dependencies:

@@ -2,19 +2,20 @@ import { createSignal } from "solid-js";
 
 import type {
   EvaluatingWorkerManager,
-  EvaluationResultForWorker,
-} from "@dicexp/evaluating-worker-manager";
+} from "@dicexp/naive-evaluator-in-worker";
+import type { EvaluationResult } from "@dicexp/interface";
+
 import { DicexpEvaluation } from "./evaluation";
 
 export type RuntimeLoadingStatus = "short" | "long" | null;
 
 export function createRoller(opts: {
-  evaluatorProvider: () => Promise<EvaluatingWorkerManager<any>>;
+  evaluatorProvider: () => Promise<EvaluatingWorkerManager>;
 }) {
   const [rtmLoadingStatus, setRtmLoadingStatus] = //
       createSignal<RuntimeLoadingStatus>(null),
     [isRolling, setIsRolling] = createSignal(false),
-    [result, setResult] = createSignal<EvaluationResultForWorker | null>(null),
+    [result, setResult] = createSignal<EvaluationResult | null>(null),
     [environment, setEnvironment] = //
       createSignal<NonNullable<DicexpEvaluation["environment"]> | null>(
         null,
@@ -29,7 +30,7 @@ export function createRoller(opts: {
     setRtmLoadingStatus("short");
     const cID = //
       setTimeout(() => rtmLoadingStatus() && setRtmLoadingStatus("long"), 100);
-    let evaluator: EvaluatingWorkerManager<any> | undefined;
+    let evaluator: EvaluatingWorkerManager | undefined;
     try {
       evaluator = await opts.evaluatorProvider();
     } catch (e) {
@@ -46,11 +47,8 @@ export function createRoller(opts: {
     }
 
     const seed = crypto.getRandomValues(new Uint32Array(1))[0]!;
-    const result = await evaluator.evaluate(code, {
-      execute: {
-        topLevelScopeName: "standard",
-        seed,
-      },
+    const result = await evaluator.evaluateRemote(code, {
+      execution: { seed },
     });
 
     evaluator.destroy();

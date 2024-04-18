@@ -1,4 +1,4 @@
-import { JSValue, Repr } from "dicexp";
+import { JSValue, Repr } from "@dicexp/interface";
 
 export interface DicexpEvaluation {
   /**

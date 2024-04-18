@@ -1,6 +1,6 @@
 import { Accessor, createMemo } from "solid-js";
 
-import type { ExecutionAppendix, Repr } from "dicexp";
+import type { ExecutionAppendix, Repr } from "@dicexp/interface";
 
 import { createRoller, RuntimeLoadingStatus } from "./create-roller";
 import { summarizeValue } from "./value-summary";
