@@ -1,7 +1,7 @@
 import { Component } from "solid-js";
 import { Dynamic } from "solid-js/web";
 
-import type { Repr } from "dicexp";
+import type { Repr } from "@dicexp/interface";
 
 export function createStepsRepresentationComponent(
   tagNameForStepsRepresentation: string,

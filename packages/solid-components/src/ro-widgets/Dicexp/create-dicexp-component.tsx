@@ -6,9 +6,7 @@ import {
   StyleProvider,
 } from "@rolludejo/web-internal";
 
-import type {
-  EvaluatingWorkerManager,
-} from "@dicexp/evaluating-worker-manager";
+import type { EvaluatingWorkerManager } from "@dicexp/naive-evaluator-in-worker";
 
 import {
   ComputedColor,
@@ -37,11 +35,11 @@ const styleProviderForPrimeContentSupplements = //
   createStyleProviderFromCSSText(stylesForPrimeContentSupplements);
 
 export interface DicexpEvaluatorProvider {
-  default: () => Promise<EvaluatingWorkerManager<any>>;
+  default: () => Promise<EvaluatingWorkerManager>;
   // specified?: (
   //   evaluator: SolutionSpecifier,
   //   topLevelScope: SolutionSpecifier,
-  // ) => Promise<EvaluatingWorkerManager<any>>;
+  // ) => Promise<EvaluatingWorkerManager>;
 }
 
 export interface Properties {

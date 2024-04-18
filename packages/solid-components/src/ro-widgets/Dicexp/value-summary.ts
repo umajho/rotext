@@ -1,4 +1,4 @@
-import type { JSValue } from "dicexp";
+import type { JSValue } from "@dicexp/interface";
 
 const MAX_LIST_SUMMARY_TEXT_LENGTH = 16;
 

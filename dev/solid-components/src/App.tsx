@@ -24,9 +24,9 @@ import {
 import {
   createWorkerByImportURLs,
   EvaluatingWorkerManager,
-} from "@dicexp/evaluating-worker-manager";
-import dicexpImportURL from "dicexp/essence/for-worker?url";
-import scopesImportURL from "@dicexp/builtins/essence/standard-scopes?url";
+} from "@dicexp/naive-evaluator-in-worker";
+import dicexpImportURL from "@dicexp/naive-evaluator/essence/for-worker?url";
+import builtinScopeImportURL from "@dicexp/naive-evaluator-builtins/essence/builtin-scope?url";
 
 const WIDGET_OWNER_CLASS = "widget-owner";
 
@@ -54,7 +54,7 @@ registerCustomElementForRoWidgetDicexp("ro-widget-dicexp", {
       const createWorker = () =>
         createWorkerByImportURLs(
           (new URL(dicexpImportURL, window.location.href)).href,
-          (new URL(scopesImportURL, window.location.href)).href,
+          (new URL(builtinScopeImportURL, window.location.href)).href,
         );
       return new Promise(
         (resolve) => {
@@ -65,6 +65,11 @@ registerCustomElementForRoWidgetDicexp("ro-widget-dicexp", {
               if (resolved || !ready) return;
               resolve(workerManager);
               resolved = true;
+            },
+            {
+              newEvaluatorOptions: {
+                randomSourceMaker: "xorshift7",
+              },
             },
           );
         },
@@ -157,8 +162,8 @@ const Left: Component = () => {
       location: "server",
     },
     { result: ["value_summary", "四十二"], repr: ["vp", 42] },
-    { result: "error", repr: ["e", "error"] },
-    { result: ["error", "runtime", "?"], repr: ["e", "?"] },
+    { result: "error", repr: ["e", "error", undefined] },
+    { result: ["error", "runtime", "?"], repr: ["e", "?", undefined] },
     { result: ["error", "parse", "?"] },
   ];
 
