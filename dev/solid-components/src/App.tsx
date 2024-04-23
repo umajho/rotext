@@ -21,12 +21,9 @@ import {
   registerRoWidgetOwner,
 } from "@rotext/solid-components/internal";
 
-import {
-  createWorkerByImportURLs,
-  EvaluatingWorkerManager,
-} from "@dicexp/naive-evaluator-in-worker";
-import dicexpImportURL from "@dicexp/naive-evaluator/essence/for-worker?url";
-import builtinScopeImportURL from "@dicexp/naive-evaluator-builtins/essence/builtin-scope?url";
+import { EvaluatingWorkerManager } from "@dicexp/naive-evaluator-in-worker";
+
+import DicexpEvaluatorWorker from "./dicexp-naive-evaluator.worker?worker";
 
 const WIDGET_OWNER_CLASS = "widget-owner";
 
@@ -51,11 +48,7 @@ registerCustomElementForRoWidgetDicexp("ro-widget-dicexp", {
   widgetOwnerClass: WIDGET_OWNER_CLASS,
   evaluatorProvider: {
     default: () => {
-      const createWorker = () =>
-        createWorkerByImportURLs(
-          (new URL(dicexpImportURL, window.location.href)).href,
-          (new URL(builtinScopeImportURL, window.location.href)).href,
-        );
+      const createWorker = () => new DicexpEvaluatorWorker();
       return new Promise(
         (resolve) => {
           let resolved = false;

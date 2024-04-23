@@ -1,15 +1,8 @@
-import {
-  createWorkerByImportURLs,
-  EvaluatingWorkerManager,
-} from "@dicexp/naive-evaluator-in-worker";
-import dicexpImportURL from "@dicexp/naive-evaluator/essence/for-worker?url";
-import builtinScopeImportURL from "@dicexp/naive-evaluator-builtins/essence/builtin-scope?url";
+import { EvaluatingWorkerManager } from "@dicexp/naive-evaluator-in-worker";
 
-const createWorker = () =>
-  createWorkerByImportURLs(
-    (new URL(dicexpImportURL, window.location.href)).href,
-    (new URL(builtinScopeImportURL, window.location.href)).href,
-  );
+import DicexpEvaluatorWorker from "./dicexp-naive-evaluator.worker?worker";
+
+const createWorker = () => new DicexpEvaluatorWorker();
 
 export const evaluatorProvider = {
   default: () =>
