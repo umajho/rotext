@@ -190,8 +190,8 @@ importers:
         specifier: ^0.5.0
         version: 0.5.0
       '@dicexp/solid-components':
-        specifier: ^0.2.2
-        version: 0.2.2(solid-element@1.8.0)(solid-js@1.8.1)
+        specifier: ^0.3.0
+        version: 0.3.0(solid-element@1.8.0)(solid-icons@1.0.11)(solid-js@1.8.1)
       '@rolludejo/web-internal':
         specifier: ^0.1.0
         version: 0.1.0(solid-js@1.8.1)
@@ -704,14 +704,16 @@ packages:
       '@lezer/highlight': 1.1.6
       '@lezer/lr': 1.4.0
 
-  /@dicexp/solid-components@0.2.2(solid-element@1.8.0)(solid-js@1.8.1):
-    resolution: {integrity: sha512-Z14CcgFWx5TYdCv0HY8CtNJtRfF3K1okRxljPWeu4Eo4tEPbq+LijUaYfBDdYPxd0M+BKXvm40nQXAT95b8OoQ==}
+  /@dicexp/solid-components@0.3.0(solid-element@1.8.0)(solid-icons@1.0.11)(solid-js@1.8.1):
+    resolution: {integrity: sha512-3B062qrAcfbTAmxGCBx3KA0k00JvA39XqOM1eCO0ADvPu/rx+Y/pLLasGu314gEw+C7HF4cT6QYXgAb2RizBlA==}
     engines: {node: '>=18', pnpm: '>=8.6.0'}
     peerDependencies:
       solid-element: ^1.8.0
+      solid-icons: ^1.0.12
       solid-js: ^1.8.3
     dependencies:
       solid-element: 1.8.0(solid-js@1.8.1)
+      solid-icons: 1.0.11(solid-js@1.8.1)
       solid-js: 1.8.1
     dev: false
 
