@@ -1,7 +1,5 @@
 import { Component } from "solid-js";
 
-import * as examples from "@rotext/example-documentations";
-
 import { SUPPORTS_DVH } from "@rotext/web-utils";
 
 import { Card } from "../ui/mod";
@@ -18,8 +16,10 @@ const SIZE_OPTS = {
     : `h-[calc(50vh-6rem)] sm:h-[calc(50vh-8rem)] lg:h-[calc(100vh-16rem)]`,
 };
 
+const DOC_INTRODUCTION = await (await fetch("docs/rotext入门.rotext")).text();
+
 const MainCard: Component = () => {
-  const store = createEditorStore(examples.introduction);
+  const store = createEditorStore(DOC_INTRODUCTION);
 
   const { EditorTopBar, Editor } = createEditorParts(store, SIZE_OPTS);
   const { PreviewTopBar, Preview } = createPreviewParts(store, SIZE_OPTS);
