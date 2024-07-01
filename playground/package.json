@@ -30,7 +30,6 @@
     "@dicexp/naive-evaluator-in-worker": "^0.5.0",
     "@dicexp/solid-components": "^0.3.0",
     "@rolludejo/web-internal": "^0.1.0",
-    "@rotext/example-documentations": "workspace:*",
     "@rotext/parsing": "workspace:*",
     "@rotext/to-html": "workspace:*",
     "@rotext/solid-components": "workspace:*",
