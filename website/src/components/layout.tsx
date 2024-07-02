@@ -65,7 +65,7 @@ const NavBar: Component = () => {
           </span>
         </a>
       </div>
-      <div class="flex-none">
+      <div>
         <ul class="menu menu-horizontal px-1">
           <li>
             <a
