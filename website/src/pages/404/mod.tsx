@@ -7,9 +7,8 @@ export default (() => {
   const navigate = useNavigate();
 
   return (
-    <div class="flex justify-center flex-col items-center">
+    <div class="flex h-full justify-center flex-col items-center gap-8">
       <h1 class="text-5xl font-bold">页面不存在</h1>
-      <div class="h-6" />
       <Button type="primary" onClick={() => navigate("/", { replace: true })}>
         返回首页
       </Button>
