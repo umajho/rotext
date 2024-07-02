@@ -17,7 +17,7 @@ import {
   Loading,
   Tabs,
   TabWithDropdown,
-} from "../../ui/mod";
+} from "../../../components/ui/mod";
 
 import { EditorStore } from "../../../hooks/editor-store";
 

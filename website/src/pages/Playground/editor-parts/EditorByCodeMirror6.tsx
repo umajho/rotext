@@ -9,7 +9,7 @@ import {
 import { Portal } from "solid-js/web";
 import { EditorView } from "codemirror";
 
-import { createCodeMirrorEditor } from "../../code-mirror-editor";
+import { createCodeMirrorEditor } from "../../../components/code-mirror-editor";
 import { debounceEventHandler } from "../../../utils/mod";
 import { ActiveLines, EditorStore, TopLine } from "../../../hooks/editor-store";
 import { createAutoResetCounter } from "../../../hooks/auto-reset-counter";
