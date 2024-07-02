@@ -2,7 +2,7 @@ import { Component } from "solid-js";
 
 import MainCard from "./MainCard";
 
-const Main: Component = () => {
+export default (() => {
   return (
     <div
       class={`
@@ -12,5 +12,4 @@ const Main: Component = () => {
       <MainCard />
     </div>
   );
-};
-export default Main;
+}) satisfies Component;
