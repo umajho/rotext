@@ -8,7 +8,7 @@ import {
   RefContentRenderer,
 } from "@rotext/solid-components/internal";
 
-import { styleProdiverForPreflight } from "../../../../utils/preflight";
+import { styleProviderForPreflight } from "../../../../utils/preflight";
 
 export function createDemoRefContentRenderer(
   opts: { proseClass: string; proseStyleProvider: StyleProvider },
@@ -19,7 +19,7 @@ export function createDemoRefContentRenderer(
       onChange((addr) => setAddress(addr));
       return (
         <ShadowRootAttacher
-          styleProviders={[styleProdiverForPreflight, opts.proseStyleProvider]}
+          styleProviders={[styleProviderForPreflight, opts.proseStyleProvider]}
         >
           <AddressDescription
             address={address()}
