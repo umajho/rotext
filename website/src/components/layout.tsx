@@ -11,7 +11,7 @@ import { Dropdown, DropdownItem, Loading } from "./ui/mod";
 import preflight from "../preflight.css?inline";
 
 export const Root: Component<RouteSectionProps> = (props) => {
-  const minH = SUPPORTS_DVH ? "min-h-[100dvh]" : "min-h-screen";
+  const height = SUPPORTS_DVH ? "h-[100dvh]" : "h-screen";
 
   return (
     <>
@@ -19,15 +19,14 @@ export const Root: Component<RouteSectionProps> = (props) => {
         {/* XXX: 不能放到 index.tsx 里，否则 vite dev 服务器会无限循环。 */}
         <style id="preflight">{preflight}</style>
       </Portal>
-      <div class={`app-container ${minH} bg-base-300`}>
+      <div class={`flex flex-col ${height} bg-base-300`}>
         <nav class="sticky top-0 z-10 w-full py-2 sm:p-2">
           <NavBar />
         </nav>
-        <div class="h-4 md:h-8" />
-        <main>
+        <main class="h-full">
           <Suspense
             fallback={
-              <div class="flex justify-center">
+              <div class="flex h-full justify-center items-center">
                 <Loading />
               </div>
             }

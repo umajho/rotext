@@ -10,7 +10,7 @@ import { createPreviewParts } from "./preview-parts/mod";
 import { createEditorParts } from "./editor-parts/mod";
 
 const SIZE_OPTS = {
-  widthClass: "w-full sm:w-[80vw] lg:max-w-[35rem] lg:w-[45vw]",
+  widthClass: "w-full lg:max-w-[35rem]",
   heightClass: SUPPORTS_DVH
     ? `h-[calc(50dvh-6rem)] sm:h-[calc(50dvh-8rem)] lg:h-[calc(100dvh-16rem)]`
     : `h-[calc(50vh-6rem)] sm:h-[calc(50vh-8rem)] lg:h-[calc(100vh-16rem)]`,
