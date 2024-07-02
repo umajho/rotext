@@ -1,5 +1,5 @@
 parsing *args:
   just -f internal/parsing/justfile {{args}}
 
-playground *args:
-  just -f playground/justfile {{args}}
+website *args:
+  just -f website/justfile {{args}}
