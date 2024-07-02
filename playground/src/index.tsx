@@ -1,9 +1,11 @@
 /* @refresh reload */
 import "./index.css";
 
+import { HashRouter, Route } from "@solidjs/router";
 import { render } from "solid-js/web";
 
-import App from "./App";
+import { Root } from "./components/layout";
+import { lazy } from "solid-js";
 
 const root = document.getElementById("root");
 
@@ -13,4 +15,8 @@ if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
   );
 }
 
-render(() => <App />, root!);
+render(() => (
+  <HashRouter root={Root}>
+    <Route path="/" component={lazy(() => import("./App"))} />
+  </HashRouter>
+), root!);

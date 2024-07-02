@@ -1,8 +1,46 @@
-import { Component } from "solid-js";
-import { Dropdown, DropdownItem } from "./ui/mod";
+import { Component, Suspense } from "solid-js";
+import { RouteSectionProps } from "@solidjs/router";
+import { Portal } from "solid-js/web";
+
 import { HiSolidArrowTopRightOnSquare } from "solid-icons/hi";
 
-export const NavBar: Component = () => {
+import { SUPPORTS_DVH } from "@rotext/web-utils";
+
+import { Dropdown, DropdownItem, Loading } from "./ui/mod";
+
+import preflight from "../preflight.css?inline";
+
+export const Root: Component<RouteSectionProps> = (props) => {
+  const minH = SUPPORTS_DVH ? "min-h-[100dvh]" : "min-h-screen";
+
+  return (
+    <>
+      <Portal>
+        {/* XXX: 不能放到 index.tsx 里，否则 vite dev 服务器会无限循环。 */}
+        <style id="preflight">{preflight}</style>
+      </Portal>
+      <div class={`app-container ${minH} bg-base-300`}>
+        <nav class="sticky top-0 z-10 w-full py-2 sm:p-2">
+          <NavBar />
+        </nav>
+        <div class="h-4 md:h-8" />
+        <main>
+          <Suspense
+            fallback={
+              <div class="flex justify-center">
+                <Loading />
+              </div>
+            }
+          >
+            {props.children}
+          </Suspense>
+        </main>
+      </div>
+    </>
+  );
+};
+
+const NavBar: Component = () => {
   return (
     <div class="navbar bg-base-100 shadow-xl rounded-box">
       <div class="flex-1 flex items-center">

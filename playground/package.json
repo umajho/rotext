@@ -34,6 +34,7 @@
     "@rotext/solid-components": "workspace:*",
     "@rotext/to-html": "workspace:*",
     "@rotext/web-utils": "workspace:*",
+    "@solidjs/router": "^0.13.6",
     "codemirror": "^6.0.1",
     "snabbdom": "^3.5.1",
     "solid-element": "^1.8.0",
