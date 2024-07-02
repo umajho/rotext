@@ -4,15 +4,13 @@ import MainCard from "./MainCard";
 
 const Main: Component = () => {
   return (
-    <main>
-      <div
-        class={`
+    <div
+      class={`
         flex justify-center flex-col items-center
       `}
-      >
-        <MainCard />
-      </div>
-    </main>
+    >
+      <MainCard />
+    </div>
   );
 };
 export default Main;
