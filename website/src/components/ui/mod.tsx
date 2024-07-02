@@ -214,7 +214,7 @@ export const DropdownItem: Component<{ children: JSX.Element }> = (props) => {
 export const Button: Component<
   {
     children?: JSX.Element;
-    type?: "ghost" | "primary";
+    type?: "neutral" | "primary" | "ghost";
     size?: "sm" | "xs";
     hasOutline?: boolean;
     active?: boolean;
@@ -226,6 +226,7 @@ export const Button: Component<
     [
       (props.type ? `btn-${props.type}` : "") satisfies
         | ""
+        | "btn-neutral"
         | "btn-primary"
         | "btn-ghost",
       (props.size ? `btn-${props.size}` : "") satisfies
