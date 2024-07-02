@@ -1,6 +1,6 @@
 # 取自 dicexp 的同名文件，经修改
 
-name: 部署 Playground 至 Pages
+name: 部署 Website 至 Pages
 
 on:
   push:
@@ -37,15 +37,15 @@ jobs:
       - name: Install dependencies
         run: |
           pnpm i
-      - name: Build playground
+      - name: Build website
         run: |
-          cd playground
+          cd website
           just prepare
           pnpm exec vite build --base="/${{ github.event.repository.name }}/"
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
-          path: ./playground/dist
+          path: ./website/dist
 
   deploy:
     environment:
