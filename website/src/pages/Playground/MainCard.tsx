@@ -16,8 +16,11 @@ const SIZE_OPTS = {
     : `h-[calc(50vh-6rem)] sm:h-[calc(50vh-8rem)] xl:h-[calc(100vh-16rem)]`,
 };
 
-const DOC_INTRODUCTION = await (await fetch("static/docs/rotext入门.rotext"))
-  .text();
+const DOC_INTRODUCTION =
+  await (await fetch(
+    import.meta.env.BASE_URL + "static/docs/rotext入门.rotext",
+  ))
+    .text();
 
 const MainCard: Component = () => {
   const store = createEditorStore(DOC_INTRODUCTION);
