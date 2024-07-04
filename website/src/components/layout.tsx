@@ -161,7 +161,7 @@ const NavMenu: Component<{
           onClick={(ev) => {
             if (isActive(ev)) return;
             props.onClickMenuItem();
-            navigate("/playground", { replace: true });
+            navigate("/playground");
           }}
         >
           实验场
