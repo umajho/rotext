@@ -1,13 +1,24 @@
 import {
   Component,
+  createContext,
   createEffect,
+  createMemo,
+  createResource,
   createSignal,
+  For,
+  Match,
   on,
   Show,
   Suspense,
+  Switch,
+  useContext,
 } from "solid-js";
-import { RouteSectionProps, useMatch, useNavigate } from "@solidjs/router";
-import { Portal } from "solid-js/web";
+import {
+  RouteSectionProps,
+  useLocation,
+  useMatch,
+  useNavigate,
+} from "@solidjs/router";
 import { createBreakpoints } from "@solid-primitives/media";
 
 import { HiSolidArrowTopRightOnSquare, HiSolidBars3 } from "solid-icons/hi";
@@ -16,7 +27,11 @@ import { SUPPORTS_DVH } from "@rotext/web-utils";
 
 import { Button, Dropdown, DropdownItem, Loading } from "./ui/mod";
 
-import preflight from "../preflight.css?inline";
+import { Navigation } from "../types/navigation";
+import { syntaxReferenceIndex } from "../data-sources/syntax-reference";
+import { getSyntaxReferencePathOfHeading } from "../utils/syntax-reference";
+
+import "../styles/preflight";
 
 const navMenuBreakpoints = createBreakpoints({
   "asSidebar": "768px",
@@ -45,10 +60,6 @@ export const Root: Component<RouteSectionProps> = (props) => {
 
   return (
     <>
-      <Portal>
-        {/* XXX: 不能放到 index.tsx 里，否则 vite dev 服务器会无限循环。 */}
-        <style id="preflight">{preflight}</style>
-      </Portal>
       <Show when={isDrawerOpen()}>
         <div
           class={`absolute top-0 z-10 w-full ${height} bg-black opacity-50 cursor-pointer`}
@@ -62,22 +73,23 @@ export const Root: Component<RouteSectionProps> = (props) => {
             setShouldShowNavMenu={setShouldShowNavMenu}
           />
         </nav>
-        <div class="flex h-full">
-          <Show when={shouldShowNavMenu()}>
-            <nav
-              class={`relative justify-center ${
-                isDrawerOpen() ? "w-0" : "w-64"
-              }`}
-            >
-              <div class="absolute z-20 max-h-full h-fit w-60 m-2 overflow-y-scroll bg-base-100 rounded-box">
-                <NavMenu
-                  onClickMenuItem={() => !navMenuBreakpoints.asSidebar &&
-                    setShouldShowNavMenu(false)}
-                />
-              </div>
-            </nav>
-          </Show>
-          <main class="flex-1">
+        <div class="flex-1 flex overflow-y-hidden">
+          <nav
+            class={[
+              "relative justify-center",
+              isDrawerOpen() ? "w-0" : "w-[19rem]",
+              ...(shouldShowNavMenu() ? [] : ["hidden"]),
+            ].join(" ")}
+          >
+            <div class="absolute z-20 max-h-full h-fit w-72 mx-2 overflow-y-scroll bg-base-100 rounded-box">
+              <NavMenu
+                onClickMenuItem={() =>
+                  !navMenuBreakpoints.asSidebar &&
+                  setShouldShowNavMenu(false)}
+              />
+            </div>
+          </nav>
+          <main class="flex-1 overflow-x-hidden">
             <Suspense
               fallback={
                 <div class="flex h-full justify-center items-center">
@@ -146,11 +158,23 @@ const NavBar: Component<{
   );
 };
 
+const SyntaxReferenceIndexContext = //
+  createContext<{ [heading: string]: string }>();
+
 const NavMenu: Component<{
   onClickMenuItem: () => boolean | void;
 }> = (props) => {
   const navigate = useNavigate();
   const matchPlayground = useMatch(() => "/playground");
+
+  const [syntaxReferenceNavigation] = createResource(async () => {
+    const resp = await fetch(
+      "static/generated/syntax-reference/navigation.json",
+    );
+    return resp.json() as Promise<Navigation>;
+  });
+  const isSyntaxReferenceReady = () =>
+    (!!syntaxReferenceNavigation()) && (!!syntaxReferenceIndex());
 
   return (
     <ul class="menu w-full">
@@ -167,6 +191,31 @@ const NavMenu: Component<{
           实验场
         </a>
       </li>
+      <li>
+        <details open>
+          <summary>语法参考</summary>
+          <Show
+            when={isSyntaxReferenceReady()}
+            fallback={
+              <ul>
+                <li class="disabled">
+                  <div class="flex justify-center disabled">
+                    <Loading />
+                  </div>
+                </li>
+              </ul>
+            }
+          >
+            <SyntaxReferenceIndexContext.Provider
+              value={syntaxReferenceIndex()}
+            >
+              <NavMenuList
+                navigationList={syntaxReferenceNavigation()!.children ?? []}
+              />
+            </SyntaxReferenceIndexContext.Provider>
+          </Show>
+        </details>
+      </li>
     </ul>
   );
 };
@@ -174,3 +223,79 @@ const NavMenu: Component<{
 function isActive(ev: { currentTarget: HTMLElement }): boolean {
   return ev.currentTarget.classList.contains("active");
 }
+
+const NavMenuList: Component<{
+  navigationList: Navigation[];
+}> = (props) => {
+  return (
+    <ul>
+      <For each={props.navigationList}>
+        {(item) => <NavMenuListItem navigation={item} />}
+      </For>
+    </ul>
+  );
+};
+
+const NavMenuListItem: Component<{
+  navigation: Navigation;
+}> = (props) => {
+  return (
+    <li>
+      <Switch>
+        <Match when={props.navigation.children}>
+          {(children) => (
+            <NavMenuListItemInnerBranch
+              name={props.navigation.name}
+              children={children()}
+            />
+          )}
+        </Match>
+        <Match when={true}>
+          <NavMenuListItemInnerLeaf
+            navigation={props.navigation}
+          />
+        </Match>
+      </Switch>
+    </li>
+  );
+};
+
+const NavMenuListItemInnerBranch: Component<{
+  name: string;
+  children: Navigation[];
+}> = (props) => {
+  return (
+    <details open>
+      <summary>{props.name}</summary>
+      <NavMenuList
+        navigationList={props.children}
+      />
+    </details>
+  );
+};
+
+const NavMenuListItemInnerLeaf: Component<{
+  navigation: Navigation;
+}> = (props) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const index = useContext(SyntaxReferenceIndexContext)!;
+
+  const heading = () => props.navigation.realName ?? props.navigation.name;
+  const path = createMemo(() =>
+    getSyntaxReferencePathOfHeading(heading(), { index })
+  );
+
+  const match = () =>
+    `${decodeURIComponent(location.pathname)}` === path().path;
+
+  return (
+    <a
+      class={`${match() ? "active" : ""}`}
+      onClick={() => navigate(path().pathWithAnchor)}
+    >
+      {props.navigation.name}
+    </a>
+  );
+};

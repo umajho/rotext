@@ -2,6 +2,10 @@ set fallback
 
 prepare:
 	just parsing build
+	just build-doc-syntax-reference
+
+build-doc-syntax-reference:
+	SYNTAX_REFERENCE_PATH=../docs/语法参考 pnpm exec vite-node scripts/build-doc-syntax-reference.ts
 
 dev: prepare
 	pnpm run dev

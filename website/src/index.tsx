@@ -24,6 +24,10 @@ render(() => (
       path="/playground"
       component={lazy(() => import("./pages/Playground/mod"))}
     />
+    <Route
+      path="/syntax-reference/*pageName"
+      component={lazy(() => import("./pages/SyntaxReference/mod"))}
+    />
 
     <Route path="*" component={NotFoundPage} />
   </HashRouter>

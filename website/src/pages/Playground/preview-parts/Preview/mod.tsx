@@ -20,8 +20,6 @@ import {
   VNode,
 } from "snabbdom";
 
-import { createStyleProviderFromCSSText } from "@rolludejo/web-internal";
-
 import { parse } from "@rotext/parsing";
 import { toSnabbdomChildren } from "@rotext/to-html";
 
@@ -61,16 +59,7 @@ import { registerCustomElementForStepsRepresentation } from "@dicexp/solid-compo
 import { createDemoRefContentRenderer } from "./ref-content-demo";
 import { evaluatorProvider } from "./evaluator-provider";
 
-import stylesForTuanProse from "./tuan-prose.scss?inline";
-
-const styleProviderForTuanProse = (() => {
-  const styleEl = document.createElement("style");
-  styleEl.id = "tuan-prose";
-  styleEl.appendChild(document.createTextNode(stylesForTuanProse));
-  document.head.appendChild(styleEl);
-
-  return createStyleProviderFromCSSText(stylesForTuanProse);
-})();
+import { styleProvider as styleProviderForTuanProse } from "../../../../styles/tuan-prose";
 
 const CONTENT_ROOT_CLASS = "previewer-content-root";
 const PROSE_CLASS = "tuan-prose";

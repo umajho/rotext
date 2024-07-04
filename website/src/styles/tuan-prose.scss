@@ -147,6 +147,10 @@
     }
   }
 
+  pre {
+    @apply whitespace-pre-wrap
+  }
+
   table {
     @apply mb-4 w-full;
 
@@ -197,7 +201,7 @@
 
   ruby {}
 
-  code {
+  :not(pre)>code {
     // 下列颜色出自 https://github.com/chriskempson/tomorrow-theme
     /*!
       LICENSE
@@ -223,6 +227,7 @@
 
   a {
     // see: https://stackoverflow.com/a/63883723 
-    @apply underline text-blue-600 hover:text-blue-800 visited:text-purple-600
+    @apply underline text-blue-600 hover:text-blue-800 visited:text-purple-600;
+    @apply cursor-pointer;
   }
 }
