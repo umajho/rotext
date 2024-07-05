@@ -94,16 +94,16 @@ importers:
   packages/solid-components:
     dependencies:
       '@rolludejo/web-internal':
-        specifier: ^0.1.0
-        version: 0.1.0(solid-js@1.8.18)
+        specifier: ^0.1.1
+        version: 0.1.1(solid-js@1.8.18)
       solid-element:
-        specifier: ^1.8.0
-        version: 1.8.0(solid-js@1.8.18)
+        specifier: ^1.8.1
+        version: 1.8.1(solid-js@1.8.18)
       solid-icons:
         specifier: ^1.0.11
         version: 1.0.11(solid-js@1.8.18)
       solid-js:
-        specifier: ^1.8.1
+        specifier: ^1.8.18
         version: 1.8.18
     devDependencies:
       '@dicexp/interface':
@@ -1495,6 +1495,15 @@ packages:
       solid-js: 1.8.18
     dev: false
 
+  /@rolludejo/web-internal@0.1.1(solid-js@1.8.18):
+    resolution: {integrity: sha512-Wh8Nji94CRPmoNV2wROuxyOYfWZolRya9DzoGeTXGP7YlRwA1feGqFtJeBTgscxZc7NJkkA0QrQJ0jaoBtXRfA==}
+    engines: {node: '>=18', pnpm: '>=8.6.0'}
+    peerDependencies:
+      solid-js: ^1.8.18
+    dependencies:
+      solid-js: 1.8.18
+    dev: false
+
   /@rollup/rollup-android-arm-eabi@4.18.0:
     resolution: {integrity: sha512-Tya6xypR10giZV1XzxmH5wr25VcZSncG0pZIjfePT0OVBvqNEurzValetGNarVrGiq66EBVAFn15iYX4w6FKgQ==}
     cpu: [arm]
@@ -2281,10 +2290,6 @@ packages:
     resolution: {integrity: sha512-NOKm8xhkzAjzFx8B2v5OAHT+u5pRQc2UCa2Vq9jYL/31o2wi9mxBA7LIFs3sV5VSC49z6pEhfbMULvShKj26WA==}
     engines: {node: '>= 6'}
     dev: true
-
-  /component-register@0.8.3:
-    resolution: {integrity: sha512-/0u8ov0WPWi2FL78rgB9aFOcfY8pJT4jP/l9NTOukGNLVQ6hk35sEJE1RkEnNQU3yk48Qr7HlDQjRQKEVfgeWg==}
-    dev: false
 
   /component-register@0.8.5:
     resolution: {integrity: sha512-LNs+ZD2f+pyYkB0VBSVcfIS5CcH1imBSdNlJw5YHfRckIDIL7eAj5twMp9rQLmoCOtwsk610HSy22VeTyQ/4sQ==}
@@ -3695,15 +3700,6 @@ packages:
     transitivePeerDependencies:
       - supports-color
     dev: true
-
-  /solid-element@1.8.0(solid-js@1.8.18):
-    resolution: {integrity: sha512-DG8HBCej5kNExUiFbVG8OFZojMGcLF8keXdGLEcHXBYtJ7zhm+a8HJnl5lfmBlTYGRk4ApgoBvlwH1ibg7quaQ==}
-    peerDependencies:
-      solid-js: ^1.8.0
-    dependencies:
-      component-register: 0.8.3
-      solid-js: 1.8.18
-    dev: false
 
   /solid-element@1.8.1(solid-js@1.8.1):
     resolution: {integrity: sha512-YYVVKQSZC2Le/rvkNoQzMq1WWUe5+guW4t+b8N9P65oMagJYz6FbmVOHKw/49xcry+seCxYUlNGHx6BDcFOgyg==}
