@@ -16,7 +16,7 @@
 <div><p>内容</p></div>
 ```
 
-```
+```example
 {! .foo}{{#Div: 内容。}}
 ···
 <div class="foo"><p>内容。</p></div>
