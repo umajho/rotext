@@ -32,6 +32,7 @@ import { syntaxReferenceIndex } from "../data-sources/syntax-reference";
 import { getSyntaxReferencePathOfHeading } from "../utils/syntax-reference";
 
 import "../styles/preflight";
+import "../styles/tailwind";
 
 const navMenuBreakpoints = createBreakpoints({
   "asSidebar": "768px",

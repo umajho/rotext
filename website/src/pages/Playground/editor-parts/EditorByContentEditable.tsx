@@ -1,4 +1,4 @@
-import "./one-dark.scss";
+import "../../../styles/one-dark";
 
 import {
   Component,

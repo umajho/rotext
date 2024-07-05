@@ -7,6 +7,8 @@ import {
 } from "marked"; // TODO!!: 最终去除此依赖。
 import { h } from "snabbdom";
 import toHTML from "snabbdom-to-html"; // TODO!!: 最终去除此依赖。
+import { HtmlValidate } from "html-validate";
+import pretty from "pretty";
 
 const extInternalLink: TokenizerAndRendererExtension = {
   name: "internalLink",
@@ -36,6 +38,11 @@ const extInternalLink: TokenizerAndRendererExtension = {
   },
 };
 
+const allowedArguments = new Set(["group"]);
+const allowedContents = new Set(["input", "expected", "empty"]);
+const allowedArgumentsForFixture = new Set(["group", "name"]);
+const allowedContentFixture = new Set(["input"]);
+
 const renderer: RendererObject = {
   heading({ tokens, depth }) {
     const text = this.parser.parseInline(tokens);
@@ -50,18 +57,32 @@ const renderer: RendererObject = {
   code({ lang, text }) {
     if (!lang || !/^example(-fixture)?($|\s)/.test(lang)) return false;
 
+    const isFixture = lang.startsWith("example-fixture");
+
     const args = parseExampleLangArguments(lang);
     const content = parseExampleContent(text);
 
-    {
-      const argSet = new Set(Object.keys(args));
-      if (Object.keys(content).some((c) => argSet.has(c))) {
-        throw new Error(`lang arguments and content cannot have common key`);
+    if (isFixture) {
+      assertKeysIn(args, {
+        set: allowedArgumentsForFixture,
+        what: "example fixture argument",
+      });
+      assertKeysIn(content, {
+        set: allowedContentFixture,
+        what: "example fixture content",
+      });
+    } else {
+      assertKeysIn(args, { set: allowedArguments, what: "example argument" });
+      assertKeysIn(content, { set: allowedContents, what: "example content" });
+      if ("expected" in content) {
+        const contentExpected = content["expected"] as string;
+        assertHTMLValid(contentExpected);
+        content["expected"] = pretty(contentExpected, { ocd: true });
       }
     }
 
     return toHTML(
-      h("x-rotext-example", {
+      h(isFixture ? "x-rotext-example-fixture" : "x-rotext-example", {
         attrs: {
           ...args,
           ...content,
@@ -70,6 +91,41 @@ const renderer: RendererObject = {
     );
   },
 };
+
+function assertKeysIn(input: { [key: string]: any }, opts: {
+  set: Set<string>;
+  what: string;
+}) {
+  for (const key of Object.keys(input)) {
+    if (!opts.set.has(key)) {
+      throw new Error(
+        `${opts.what} key “${key}” not in ${JSON.stringify([...opts.set])}`,
+      );
+    }
+  }
+}
+
+function assertHTMLValid(input: string) {
+  const v = new HtmlValidate({
+    rules: {
+      "prefer-tbody": "off",
+    },
+  });
+  const report = v.validateStringSync(input);
+
+  const results = report.results.filter((r) => {
+    r.messages = r.messages.filter((m) => {
+      if (m.message === "<details> element must have <summary> as content") {
+        return false;
+      }
+      return true;
+    });
+    return !!r.messages.length;
+  });
+  if (!results.length) return;
+
+  throw new Error(`invalid HTML: ${JSON.stringify(report.results)}`);
+}
 
 function parseExampleLangArguments(lang: string) {
   const args = lang.split(/\s+/).filter((arg) => !!arg.trim()).slice(1);

@@ -18,7 +18,7 @@ import {
 } from "../../data-sources/syntax-reference";
 import { getSyntaxReferencePathOfHeading } from "../../utils/syntax-reference";
 
-import { registerCustomElement as registerCustomElementForRotextPreview } from "./RotextPreview/mod";
+import { registerCustomElement as registerCustomElementForRotextPreview } from "./RotextExample/mod";
 
 registerCustomElementForRotextPreview("x-rotext-example");
 

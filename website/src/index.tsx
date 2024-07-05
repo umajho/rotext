@@ -1,6 +1,3 @@
-/* @refresh reload */
-import "./index.css";
-
 import { HashRouter, Navigate, Route } from "@solidjs/router";
 import { render } from "solid-js/web";
 
