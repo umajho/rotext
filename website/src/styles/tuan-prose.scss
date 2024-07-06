@@ -184,26 +184,6 @@
     text-decoration: line-through;
   }
 
-  x-scratch-off {
-    @apply cursor-pointer select-none;
-    @apply bg-white bg-opacity-100 transition-[background-color] duration-[400ms];
-
-    &.by-click:not(.revealed),
-    &:not(.by-click):not(:hover) {
-      @apply text-transparent;
-
-      * {
-        visibility: hidden;
-      }
-    }
-
-    &.revealed,
-    &:not(.by-click):hover {
-      @apply text-inherit bg-opacity-10 cursor-[inherit];
-      user-select: inherit;
-    }
-  }
-
   ruby {}
 
   :not(pre)>code {

@@ -55,6 +55,11 @@ export function elementToSnabbdom(
       //   break;
       case "spoiler":
         sel = opts.customElementTagNameMap["scratch-off"];
+        children = h(
+          "span",
+          { attrs: { "slot": "content" } },
+          slotToChildren(el.slot, opts),
+        );
         break;
       case "code":
         sel = "code";
