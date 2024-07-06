@@ -10,12 +10,12 @@ import {
 } from "solid-js";
 
 import {
+  attributesModule,
   Classes,
   classModule,
   h,
   init,
   Module,
-  propsModule,
   styleModule,
   VNode,
 } from "snabbdom";
@@ -203,7 +203,7 @@ function createRendering(
     els.outputContainer.appendChild(outputEl);
 
     patch = init(
-      [classModule, styleModule, propsModule, locationModule],
+      [classModule, styleModule, attributesModule, locationModule],
       undefined,
       { experimental: { fragments: true } },
     );

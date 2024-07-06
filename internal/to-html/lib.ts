@@ -39,7 +39,7 @@ export function elementToSnabbdom(
   if ("slot" in el) {
     let sel: string;
     let classes: Record<string, boolean> | undefined;
-    let props: Record<string, string> | undefined;
+    let attrs: Record<string, string> | undefined;
     switch (el.type) {
       // case "em":
       // case "u":
@@ -67,7 +67,7 @@ export function elementToSnabbdom(
           { class: { "widget-prime": true } },
           `>>${el.slot}`,
         );
-        props = { address: el.slot };
+        attrs = { address: el.slot };
         break;
       case "P":
         sel = el.type;
@@ -81,8 +81,8 @@ export function elementToSnabbdom(
     }
 
     children ??= slotToChildren(el.slot, opts);
-    const data = (classes || location || props)
-      ? { class: classes, location, props }
+    const data = (classes || location || attrs)
+      ? { class: classes, location, attrs }
       : null;
 
     return h(sel, data, children);
@@ -101,7 +101,7 @@ export function elementToSnabbdom(
     case "hyperlink":
       if ("props" in el && "auto" in el.props && el.props.auto) {
         return h("a", {
-          props: {
+          attrs: {
             href: el.slots.href,
             target: "_blank",
             rel: "noopener noreferrer",
@@ -112,7 +112,7 @@ export function elementToSnabbdom(
         throw new Error("unreachable");
       }
     case "dicexp": {
-      const props = {
+      const attrs = {
         code: el.slots.code,
         ...(el.slots.assignTo ? { "assign-to": el.slots.assignTo } : {}),
       };
@@ -128,7 +128,7 @@ export function elementToSnabbdom(
       // TODO: 根据附加数据决定标签名（`…-preview` vs `…-result`？）
       return h(
         opts.customElementTagNameMap["dicexp-preview"],
-        { props },
+        { attrs },
         children,
       );
     }
