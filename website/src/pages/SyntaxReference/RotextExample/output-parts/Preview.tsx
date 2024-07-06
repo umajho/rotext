@@ -4,9 +4,11 @@ import { registerRoWidgetOwner } from "@rotext/solid-components/internal";
 
 import {
   PROSE_CLASS,
+  registerCustomElementsOnce,
   WIDGET_OWNER_CLASS,
 } from "../../../../utils/custom-elements-registration/mod";
 
+registerCustomElementsOnce();
 
 export const Preview: Component<{ html: string }> = (props) => {
   let containerEl!: HTMLDivElement;
