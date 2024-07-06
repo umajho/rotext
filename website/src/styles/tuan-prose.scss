@@ -97,11 +97,16 @@
   }
 
   blockquote {
-    @apply border-l-[6px] py-1 px-4 my-4 bg-black bg-opacity-25 font-normal;
+    @apply border-l-[6px] py-1 px-4 mb-4 bg-black bg-opacity-25 font-normal;
     border-left-color: $futaba-green;
     // color: $futaba-green;
     background-color: rgba($futaba-green, .05);
+
+    &:not(:first-child) {
+      @apply mt-4;
+    }
   }
+
 
   ul,
   ol {
