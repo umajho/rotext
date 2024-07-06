@@ -34,7 +34,7 @@ let hasRegistered = false;
 export function registerCustomElementsOnce() {
   if (hasRegistered) return;
 
-  registerCustomElementForRoWidgetRefLink("ref-link", {
+  registerCustomElementForRoWidgetRefLink("x-ref-link", {
     styleProviders: getDefaultRefLinkStyleProviders(),
     backgroundColor: BACKGROUND_COLOR,
     widgetOwnerClass: WIDGET_OWNER_CLASS,
@@ -45,7 +45,7 @@ export function registerCustomElementsOnce() {
     }),
   });
   registerCustomElementForStepsRepresentation("steps-representation");
-  registerCustomElementForRoWidgetDicexp("dicexp-preview", {
+  registerCustomElementForRoWidgetDicexp("x-dicexp-preview", {
     styleProviders: getDefaultDicexpStyleProviders(),
     backgroundColor: BACKGROUND_COLOR,
     widgetOwnerClass: WIDGET_OWNER_CLASS,
@@ -55,7 +55,7 @@ export function registerCustomElementsOnce() {
     Loading,
     tagNameForStepsRepresentation: "steps-representation",
   });
-  registerCustomElementForScratchOff("scratch-off", {
+  registerCustomElementForScratchOff("x-scratch-off", {
     innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,
   });
 }

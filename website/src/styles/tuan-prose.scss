@@ -184,7 +184,7 @@
     text-decoration: line-through;
   }
 
-  scratch-off {
+  x-scratch-off {
     @apply cursor-pointer select-none;
     @apply bg-white bg-opacity-100 transition-[background-color] duration-[400ms];
 

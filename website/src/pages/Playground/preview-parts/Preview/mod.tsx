@@ -140,7 +140,7 @@ const Preview: Component<
       {/* highlight anchor */}
       <div class="relative">{highlightElement()}</div>
 
-      <div class="preview-widget-anchor relative z-10" ref={widgetAnchorEl} />
+      <div class="relative z-10" ref={widgetAnchorEl} />
 
       <div
         class={"" +
@@ -220,9 +220,9 @@ function createRendering(
       });
       const vChildren = toSnabbdomChildren(doc, {
         customElementTagNameMap: {
-          "scratch-off": "scratch-off",
-          "ref-link": "ref-link",
-          "dicexp-preview": "dicexp-preview",
+          "scratch-off": "x-scratch-off",
+          "ref-link": "x-ref-link",
+          "dicexp-preview": "x-dicexp-preview",
         },
       });
       props.setParsingTimeText(
