@@ -8,7 +8,7 @@ import {
   RefContentRenderer,
 } from "@rotext/solid-components/internal";
 
-import { styleProvider as styleProviderForPreflight } from "../../../../styles/preflight";
+import { styleProvider as styleProviderForPreflight } from "../../styles/preflight";
 
 export function createDemoRefContentRenderer(
   opts: { proseClass: string; proseStyleProvider: StyleProvider },

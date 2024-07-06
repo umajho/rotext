@@ -25,19 +25,15 @@ import { toSnabbdomChildren } from "@rotext/to-html";
 
 import {
   ErrorAlert,
-  getDefaultDicexpStyleProviders,
-  getDefaultRefLinkStyleProviders,
   registerRoWidgetOwner,
 } from "@rotext/solid-components/internal";
 
-import {
-  getComputedColor,
-  getComputedCSSValueOfClass,
-} from "@rotext/web-utils";
-
-import { Loading } from "../../../../components/ui/mod";
-
 import { debounceEventHandler } from "../../../../utils/mod";
+import {
+  PROSE_CLASS,
+  registerCustomElementsOnce,
+  WIDGET_OWNER_CLASS,
+} from "../../../../utils/custom-elements-registration/mod";
 
 import {
   ActiveLines,
@@ -49,51 +45,9 @@ import { LookupList, LookupListRaw } from "./internal-types";
 import * as ScrollUtils from "./scroll-utils";
 import { createAutoResetCounter } from "../../../../hooks/auto-reset-counter";
 
-import { registerCustomElement as registerCustomElementForScratchOff } from "./ScratchOff";
-import {
-  registerCustomElementForRoWidgetDicexp,
-  registerCustomElementForRoWidgetRefLink,
-} from "@rotext/solid-components/internal";
-import { registerCustomElementForStepsRepresentation } from "@dicexp/solid-components";
-
-import { createDemoRefContentRenderer } from "./ref-content-demo";
-import { evaluatorProvider } from "./evaluator-provider";
-
-import { styleProvider as styleProviderForTuanProse } from "../../../../styles/tuan-prose";
+registerCustomElementsOnce();
 
 const CONTENT_ROOT_CLASS = "previewer-content-root";
-const PROSE_CLASS = "tuan-prose";
-const WIDGET_OWNER_CLASS = "widget-owner";
-const INNER_NO_AUTO_OPEN_CLASS = "inner-no-auto-open";
-
-const BACKGROUND_COLOR = getComputedColor(
-  getComputedCSSValueOfClass("background-color", "tuan-background"),
-)!;
-
-registerCustomElementForRoWidgetRefLink("ref-link", {
-  styleProviders: getDefaultRefLinkStyleProviders(),
-  backgroundColor: BACKGROUND_COLOR,
-  widgetOwnerClass: WIDGET_OWNER_CLASS,
-  innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,
-  refContentRenderer: createDemoRefContentRenderer({
-    proseClass: PROSE_CLASS,
-    proseStyleProvider: styleProviderForTuanProse,
-  }),
-});
-registerCustomElementForStepsRepresentation("steps-representation");
-registerCustomElementForRoWidgetDicexp("dicexp-preview", {
-  styleProviders: getDefaultDicexpStyleProviders(),
-  backgroundColor: BACKGROUND_COLOR,
-  widgetOwnerClass: WIDGET_OWNER_CLASS,
-  innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,
-  evaluatorProvider,
-  ErrorAlert,
-  Loading,
-  tagNameForStepsRepresentation: "steps-representation",
-});
-registerCustomElementForScratchOff("scratch-off", {
-  innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,
-});
 
 const Preview: Component<
   {
