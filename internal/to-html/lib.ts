@@ -4,9 +4,23 @@ import { LocationRange } from "peggy";
 
 type LocMap = WeakMap<any, LocationRange>;
 
-export function toSnabbdomChildren(doc: Document): VNodeChildren {
+export interface CustomElementTagNameMap {
+  "scratch-off": string;
+  "ref-link": string;
+  "dicexp-preview": string;
+}
+
+export function toSnabbdomChildren(
+  doc: Document,
+  opts: {
+    customElementTagNameMap: CustomElementTagNameMap;
+  },
+): VNodeChildren {
   const locMap = doc.metadata?.locMap as LocMap | undefined;
-  return slotToChildren(doc.slot, locMap);
+  return slotToChildren(doc.slot, {
+    locMap,
+    customElementTagNameMap: opts.customElementTagNameMap,
+  });
 }
 /**
  * XXX: 应由调用者保障传入的元素符合规范（定义的类型）
@@ -14,10 +28,13 @@ export function toSnabbdomChildren(doc: Document): VNodeChildren {
  */
 export function elementToSnabbdom(
   el: Element,
-  locMap: LocMap | undefined,
+  opts: {
+    locMap: LocMap | undefined;
+    customElementTagNameMap: CustomElementTagNameMap;
+  },
 ): VNode {
   let children: VNodeChildren | undefined;
-  const location = getLocationData(locMap, el);
+  const location = getLocationData(opts.locMap, el);
 
   if ("slot" in el) {
     let sel: string;
@@ -37,13 +54,13 @@ export function elementToSnabbdom(
       //   classes = { "em-dotted": true };
       //   break;
       case "spoiler":
-        sel = "scratch-off";
+        sel = opts.customElementTagNameMap["scratch-off"];
         break;
       case "code":
         sel = "code";
         break;
       case "ref-link":
-        sel = "ref-link";
+        sel = opts.customElementTagNameMap["ref-link"];
         // fallback
         children = h(
           "span",
@@ -63,7 +80,7 @@ export function elementToSnabbdom(
         break;
     }
 
-    children ??= slotToChildren(el.slot, locMap);
+    children ??= slotToChildren(el.slot, opts);
     const data = (classes || location || props)
       ? { class: classes, location, props }
       : null;
@@ -76,9 +93,9 @@ export function elementToSnabbdom(
       return h("br", location ? { location } : null);
     case "ruby":
       return h("ruby", location ? { location } : null, [
-        h("rb", slotToChildren(el.slots.base, locMap)),
+        h("rb", slotToChildren(el.slots.base, opts)),
         h("rp", String(el.props.p[0])),
-        h("rt", slotToChildren(el.slots.text, locMap)),
+        h("rt", slotToChildren(el.slots.text, opts)),
         h("rp", String(el.props.p[1])),
       ]);
     case "hyperlink":
@@ -109,7 +126,11 @@ export function elementToSnabbdom(
           "]",
       );
       // TODO: 根据附加数据决定标签名（`…-preview` vs `…-result`？）
-      return h("dicexp-preview", { props }, children);
+      return h(
+        opts.customElementTagNameMap["dicexp-preview"],
+        { props },
+        children,
+      );
     }
     case "THEMATIC-BREAK":
       return h("hr", location ? { location } : null);
@@ -119,11 +140,11 @@ export function elementToSnabbdom(
         el.type === "OL" ? "ol" : "ul",
         location ? { location } : null,
         el.items.map((item) => {
-          const itemLocation = getLocationData(locMap, item);
+          const itemLocation = getLocationData(opts.locMap, item);
           return h(
             "li",
             itemLocation ? { location: itemLocation } : null,
-            slotToChildren(item.slot, locMap),
+            slotToChildren(item.slot, opts),
           );
         }),
       );
@@ -132,8 +153,8 @@ export function elementToSnabbdom(
         "dl",
         location ? { location } : null,
         el.items.map((item) => {
-          const itemLocation = getLocationData(locMap, item);
-          const children = slotToChildren(item.slot, locMap);
+          const itemLocation = getLocationData(opts.locMap, item);
+          const children = slotToChildren(item.slot, opts);
           return h(
             item.type === "DL:T" ? "dt" : "dd",
             itemLocation ? { location: itemLocation } : null,
@@ -147,18 +168,19 @@ export function elementToSnabbdom(
       );
       let i = 0;
       if (el.slots?.caption) {
-        children[i] = h("caption", slotToChildren(el.slots.caption, locMap));
+        children[i] = //
+          h("caption", slotToChildren(el.slots.caption, opts));
         i++;
       }
       for (const row of el.cells) {
-        const rowLocation = getLocationData(locMap, row);
+        const rowLocation = getLocationData(opts.locMap, row);
 
         children[i] = h(
           "tr",
           rowLocation ? { location: rowLocation } : null,
           row.map((cell) => {
-            const cellLocation = getLocationData(locMap, cell);
-            const children = slotToChildren(cell.slot, locMap);
+            const cellLocation = getLocationData(opts.locMap, cell);
+            const children = slotToChildren(cell.slot, opts);
             return h(
               cell.type === "TABLE:H" ? "th" : "td",
               cellLocation ? { location: cellLocation } : null,
@@ -178,13 +200,16 @@ export function elementToSnabbdom(
 
 function slotToChildren(
   slot: MixedSlot | RawTextSlot,
-  locMap: LocMap | undefined,
+  opts: {
+    locMap: LocMap | undefined;
+    customElementTagNameMap: CustomElementTagNameMap;
+  },
 ): VNodeChildren {
   if (typeof slot === "string") return slot;
   if (slot.length === 1 && typeof slot[0] === "string") return slot[0];
 
   return slot.map((node) =>
-    typeof node === "string" ? node : elementToSnabbdom(node, locMap)
+    typeof node === "string" ? node : elementToSnabbdom(node, opts)
   );
 }
 

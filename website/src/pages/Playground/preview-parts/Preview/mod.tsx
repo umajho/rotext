@@ -264,7 +264,13 @@ function createRendering(
         softBreakAs: "br",
         recordsLocation: true,
       });
-      const vChildren = toSnabbdomChildren(doc);
+      const vChildren = toSnabbdomChildren(doc, {
+        customElementTagNameMap: {
+          "scratch-off": "scratch-off",
+          "ref-link": "ref-link",
+          "dicexp-preview": "dicexp-preview",
+        },
+      });
       props.setParsingTimeText(
         `${+(performance.now() - parsingStart).toFixed(3)}ms`,
       );
