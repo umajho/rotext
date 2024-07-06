@@ -1,7 +1,5 @@
 import { Component, onMount } from "solid-js";
 
-import { ShadowRootAttacher } from "@rolludejo/web-internal";
-
 import { registerRoWidgetOwner } from "@rotext/solid-components/internal";
 
 import {
@@ -9,8 +7,6 @@ import {
   WIDGET_OWNER_CLASS,
 } from "../../../../utils/custom-elements-registration/mod";
 
-import { styleProvider as styleProviderForPreflight } from "../../../../styles/preflight";
-import { styleProvider as styleProviderForTailwind } from "../../../../styles/tailwind";
 
 export const Preview: Component<{ html: string }> = (props) => {
   let containerEl!: HTMLDivElement;
