@@ -13,7 +13,7 @@
 ```example
 {{#Div: 内容。}}
 ···
-<div><p>内容</p></div>
+<div><p>内容。</p></div>
 ```
 
 ```example
