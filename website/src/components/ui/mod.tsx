@@ -56,8 +56,7 @@ export const Tab: Component<
 ) => {
   const classes = () =>
     [
-      props.isActive ? "tab-active" : "",
-      props.onClick ? "" : "cursor-auto",
+      props.isActive ? "tab-active cursor-default" : "cursor-pointer",
     ].join(" ");
 
   return (
