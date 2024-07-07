@@ -16,7 +16,6 @@ export function registerCustomElement(tag: string) {
   customElement(tag, { input: "", expected: null }, RotextExample);
 }
 
-// TODO!!: 改成 widget 那样挂在 widget anchor 上。
 export const RotextExample: Component<
   { input: string; expected: string | null }
 > = (props) => {
