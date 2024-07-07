@@ -1,4 +1,11 @@
-import { Component, onMount } from "solid-js";
+import {
+  Component,
+  createEffect,
+  createSignal,
+  on,
+  onMount,
+  Show,
+} from "solid-js";
 
 import { registerRoWidgetOwner } from "@rotext/solid-components/internal";
 
@@ -10,7 +17,7 @@ import {
 
 registerCustomElementsOnce();
 
-export const Preview: Component<{ html: string }> = (props) => {
+export const Preview: Component<{ content: ["html", string] }> = (props) => {
   let containerEl!: HTMLDivElement;
   let widgetAnchorEl!: HTMLDivElement;
   let outputWrapperEl!: HTMLDivElement;
@@ -26,9 +33,15 @@ export const Preview: Component<{ html: string }> = (props) => {
       level: 1,
       layoutChangeObserver,
     });
-
-    outputWrapperEl.innerHTML = props.html;
   });
+
+  const [isOutputEmpty, setIsOutputEmpty] = createSignal(false);
+  createEffect(on([() => props.content], ([content]) => {
+    if (content[0] === "html") {
+      outputWrapperEl.innerHTML = content[1];
+      setIsOutputEmpty(!content[1]);
+    }
+  }));
 
   return (
     <div
@@ -50,6 +63,13 @@ export const Preview: Component<{ html: string }> = (props) => {
       >
         <div ref={outputWrapperEl} />
       </div>
+      <Show when={isOutputEmpty()}>
+        <div class="w-full flex justify-center">
+          <div class="text-gray-400">
+            （输出为空…）
+          </div>
+        </div>
+      </Show>
     </div>
   );
 };

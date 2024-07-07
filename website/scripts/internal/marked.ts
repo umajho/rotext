@@ -81,6 +81,16 @@ const renderer: RendererObject = {
       }
     }
 
+    if (!isFixture) {
+      if (content["empty"] && content["expected"]) {
+        throw new Error("stated that expected output is empty, but it is not");
+      } else if (!content["empty"] && !content["expected"]) {
+        throw new Error(
+          "didn't state that expected output is empty, but it is",
+        );
+      }
+    }
+
     return toHTML(
       h(isFixture ? "x-rotext-example-fixture" : "x-rotext-example", {
         attrs: {

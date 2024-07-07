@@ -36,7 +36,7 @@ export function createOutputParts(
     OutputPane: (
       <Switch>
         <Match when={currentTab() === "preview"}>
-          <Preview html={store.originalExpected} />
+          <Preview content={["html", store.originalExpected]} />
         </Match>
         <Match when={currentTab() === "source"}>
           <div class="bg-black w-full h-full overflow-y-scroll">
