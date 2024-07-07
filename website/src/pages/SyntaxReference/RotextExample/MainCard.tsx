@@ -41,7 +41,7 @@ export const MainCard: Component<{
               {OutputPane}
             </div>
           </div>
-          TODO!!!: empty, group, example-fixture (name), (preview).
+          TODO!!!: group, example-fixture (name).
         </Card>
       </div>
     </>
