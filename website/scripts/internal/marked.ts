@@ -113,15 +113,14 @@ function assertHTMLValid(input: string) {
   });
   const report = v.validateStringSync(input);
 
-  const results = report.results.filter((r) => {
-    r.messages = r.messages.filter((m) => {
-      if (m.message === "<details> element must have <summary> as content") {
-        return false;
-      }
-      return true;
-    });
-    return !!r.messages.length;
-  });
+  const results = report.results;
+  // .filter((r) => {
+  //   r.messages = r.messages.filter((m) => {
+  //     // …
+  //     return true;
+  //   });
+  //   return !!r.messages.length;
+  // });
   if (!results.length) return;
 
   throw new Error(`invalid HTML: ${JSON.stringify(report.results)}`);

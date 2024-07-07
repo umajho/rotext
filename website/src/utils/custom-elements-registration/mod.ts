@@ -16,6 +16,7 @@ import { styleProvider as styleProviderForTuanProse } from "../../styles/tuan-pr
 
 import { Loading } from "../../components/ui/mod";
 import { registerCustomElement as registerCustomElementForScratchOff } from "../../components/custom-elements/ScratchOff";
+import { registerCustomElement as registerCustomElementForCollapse } from "../../components/custom-elements/Collapse";
 
 import { createDemoRefContentRenderer } from "./ref-content-demo";
 import { evaluatorProvider } from "./evaluator-provider";
@@ -58,4 +59,5 @@ export function registerCustomElementsOnce() {
   registerCustomElementForScratchOff("x-scratch-off", {
     innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,
   });
+  registerCustomElementForCollapse("x-collapse");
 }
