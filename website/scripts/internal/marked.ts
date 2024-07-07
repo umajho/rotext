@@ -38,9 +38,9 @@ const extInternalLink: TokenizerAndRendererExtension = {
   },
 };
 
-const allowedArguments = new Set(["group"]);
+const allowedArguments = new Set(["use-fixtures"]);
 const allowedContents = new Set(["input", "expected", "empty"]);
-const allowedArgumentsForFixture = new Set(["group", "name"]);
+const allowedArgumentsForFixture = new Set(["name"]);
 const allowedContentFixture = new Set(["input"]);
 
 const renderer: RendererObject = {

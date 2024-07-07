@@ -3,6 +3,8 @@ import { createSignal } from "solid-js";
 export function createRotextExampleStore(opts: {
   originalInput: string;
   originalExpected: string;
+  fixtureNames: string[] | null;
+  fixtures: { [fixtureName: string]: string } | null;
 }) {
   const [input, setInput] = createSignal(opts.originalInput);
 
@@ -21,6 +23,12 @@ export function createRotextExampleStore(opts: {
     },
     reset() {
       setInput(opts.originalInput);
+    },
+    get fixtureNames() {
+      return opts.fixtureNames;
+    },
+    get fixtures() {
+      return opts.fixtures;
     },
   };
 }

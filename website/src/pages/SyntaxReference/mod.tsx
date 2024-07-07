@@ -5,6 +5,7 @@ import {
   createResource,
   createSignal,
   on,
+  onCleanup,
   Show,
 } from "solid-js";
 import { useLocation, useNavigate, useParams } from "@solidjs/router";
@@ -20,15 +21,38 @@ import { getSyntaxReferencePathOfHeading } from "../../utils/syntax-reference";
 
 import { registerCustomElement as registerCustomElementForRotextPreview } from "./RotextExample/mod";
 
-registerCustomElementForRotextPreview("x-rotext-example");
+// XXX: 一个标签页里只会有一个页面，所以把它作为全局变量也没有问题。
+let contentContainerEl!: HTMLDivElement;
+
+function getFixtures(
+  fixtureNames: Set<string>,
+): { [fixtureName: string]: string } {
+  const els = contentContainerEl.querySelectorAll("x-rotext-example-fixture");
+  const qualifiedEls = [...els]
+    .filter((el) => fixtureNames.has(el.getAttribute("name")!));
+
+  return Object.fromEntries(
+    qualifiedEls.map((
+      el,
+    ) => [el.getAttribute("name")!, el.getAttribute("input")!]),
+  );
+}
+
+registerCustomElementForRotextPreview("x-rotext-example", { getFixtures });
 
 export default (() => {
+  if (contentContainerEl) {
+    throw new Error("");
+  }
+  onCleanup(() => {
+    // @ts-ignore
+    contentContainerEl = undefined;
+  });
+
   const params = useParams();
   const pageName = createMemo(() => decodeURIComponent(params.pageName!));
   const navigate = useNavigate();
   const location = useLocation();
-
-  let contentContainerEl!: HTMLDivElement;
 
   const [isIndexLoaded, setIsIndexLoaded] = createSignal(false);
 
