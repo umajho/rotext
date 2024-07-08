@@ -2,7 +2,7 @@ import { createSignal } from "solid-js";
 
 export function createRotextExampleStore(opts: {
   originalInput: string;
-  originalExpected: string;
+  originalExpectedOutput: string;
   fixtureNames: string[] | null;
   fixtures: { [fixtureName: string]: string } | null;
 }) {
@@ -18,8 +18,8 @@ export function createRotextExampleStore(opts: {
     get isInputOriginal() {
       return input() === opts.originalInput;
     },
-    get originalExpected() {
-      return opts.originalExpected;
+    get originalExpectedOutput() {
+      return opts.originalExpectedOutput;
     },
     reset() {
       setInput(opts.originalInput);

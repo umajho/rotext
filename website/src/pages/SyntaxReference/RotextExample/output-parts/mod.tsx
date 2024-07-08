@@ -1,5 +1,7 @@
 import { createEffect, createSignal, JSX, Match, on, Switch } from "solid-js";
 
+import { fragment } from "snabbdom";
+
 import { toSnabbdomChildren } from "@rotext/to-html";
 
 import { TAG_NAME_MAP } from "../../../../utils/custom-elements-registration/mod";
@@ -17,29 +19,43 @@ export function createOutputParts(
     createSignal<"preview" | "source">("preview");
 
   const [previewContent, setPreviewContent] = //
-    createSignal<PreviewContent>(["html", store.originalExpected]);
+    createSignal<PreviewContent>(["html", store.originalExpectedOutput]);
+  const [previewContentSource, setPreviewContentSource] = //
+    createSignal<string>(store.originalExpectedOutput);
 
-  let parsingPackage: typeof import("@rotext/parsing") | null = null;
-  const [isLoadingParsingPackage, setIsLoadingParsingPackage] = //
+  let extraPackages: {
+    rotextParsing: typeof import("@rotext/parsing");
+    pretty: typeof import("pretty");
+    snabbdomToHTML: typeof import("snabbdom-to-html");
+  } | null = null;
+  const [isLoadingExtraPackages, setIsLoadingExtraPackages] = //
     createSignal(false);
 
   createEffect(on([() => store.isInputOriginal], async ([isInputOriginal]) => {
     if (isInputOriginal) {
-      setPreviewContent(["html", store.originalExpected]);
+      setPreviewContent(["html", store.originalExpectedOutput]);
+      setPreviewContentSource(store.originalExpectedOutput);
       return;
     }
-    if (!parsingPackage) {
-      if (isLoadingParsingPackage()) return;
+    if (!extraPackages) {
+      if (isLoadingExtraPackages()) return;
 
-      setIsLoadingParsingPackage(true);
-      parsingPackage = await import("@rotext/parsing");
-      setIsLoadingParsingPackage(false);
+      setIsLoadingExtraPackages(true);
+      extraPackages = {
+        rotextParsing: await import("@rotext/parsing"),
+        pretty: (await import("pretty")).default,
+        snabbdomToHTML: (await import("snabbdom-to-html")).default,
+      };
+      setIsLoadingExtraPackages(false);
     }
 
-    const doc = parsingPackage.parse(store.input);
+    const doc = extraPackages.rotextParsing.parse(store.input);
     const vChildren = toSnabbdomChildren(doc, {
       customElementTagNameMap: TAG_NAME_MAP,
     });
+    const html = extraPackages.snabbdomToHTML(fragment(vChildren))
+      .slice("<div>".length, -("</div>".length));
+    setPreviewContentSource(extraPackages.pretty(html));
     setPreviewContent(["v-node-children", vChildren]);
     return;
   }));
@@ -67,7 +83,7 @@ export function createOutputParts(
     ),
     OutputPane: (
       <Switch>
-        <Match when={isLoadingParsingPackage()}>
+        <Match when={isLoadingExtraPackages()}>
           <div class="flex w-full h-full justify-center items-center">
             <Loading />
           </div>
@@ -78,7 +94,7 @@ export function createOutputParts(
         <Match when={currentTab() === "source"}>
           <div class="bg-black w-full h-full overflow-y-scroll">
             <pre class="px-4 py-2">
-            <code>{store.originalExpected}</code>
+            <code>{previewContentSource()}</code>
             </pre>
           </div>
         </Match>

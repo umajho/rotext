@@ -6,7 +6,7 @@ import {
   type TokenizerAndRendererExtension,
 } from "marked"; // TODO!!: 最终去除此依赖。
 import { h } from "snabbdom";
-import toHTML from "snabbdom-to-html"; // TODO!!: 最终去除此依赖。
+import toHTML from "snabbdom-to-html";
 import { HtmlValidate } from "html-validate";
 import pretty from "pretty";
 

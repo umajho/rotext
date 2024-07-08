@@ -39,7 +39,7 @@ function createRotextExampleComponent(opts: {
 
     const store = createRotextExampleStore({
       originalInput: props.input,
-      originalExpected: props.expected ?? "",
+      originalExpectedOutput: props.expected ?? "",
       fixtureNames,
       fixtures,
     });
