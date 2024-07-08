@@ -217,6 +217,7 @@ export const Button: Component<
     size?: "sm" | "xs";
     hasOutline?: boolean;
     active?: boolean;
+    disabled?: boolean;
     class?: string;
     onClick?: () => void;
   }
@@ -234,6 +235,7 @@ export const Button: Component<
         | "btn-xs",
       props.hasOutline ? "btn-outline" : "",
       props.active ? "btn-active" : "",
+      props.disabled ? "btn-disabled" : "",
       props.class ?? "",
     ].join(" ");
 

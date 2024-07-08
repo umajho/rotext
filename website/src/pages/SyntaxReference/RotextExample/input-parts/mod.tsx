@@ -17,7 +17,13 @@ export function createInputParts(
               <div class="text-xs text-gray-300 font-bold">
                 输入变更
               </div>
-              <Button size="xs" onClick={() => store.reset()}>复原</Button>
+              <Button
+                size="xs"
+                onClick={() => store.reset()}
+                disabled={store.isLoadingForCurrentOutput}
+              >
+                复原
+              </Button>
             </div>
           </Show>
         </div>
