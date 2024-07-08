@@ -75,7 +75,7 @@ export function elementToSnabbdom(
         attrs = { address: el.slot };
         break;
       case "P":
-        sel = el.type;
+        sel = "p";
         break;
       case "QUOTE":
         sel = "blockquote";
