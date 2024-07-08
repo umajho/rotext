@@ -75,7 +75,7 @@ const Preview: Component<
     });
 
     //==== 文档渲染 ====
-    createRendering({
+    setUpRendering({
       text: () => props.store.text,
       setLookupListRaw,
       setParsingTimeText: (v) => props.setParsingTimeText(v),
@@ -97,7 +97,7 @@ const Preview: Component<
     setScrollHandler(() => debounceEventHandler(handleScroll));
 
     //==== 活动行对应元素高亮 ====
-    createHighlight({
+    setUpHighlight({
       activeLines: () => props.store.activeLines,
       lookupList: lookupList,
       setHighlightElement,
@@ -181,7 +181,7 @@ function createLookupList(
 /**
  * 用于处理文档渲染。
  */
-function createRendering(
+function setUpRendering(
   props: {
     text: () => string;
     setLookupListRaw: (v: LookupListRaw) => void;
@@ -381,7 +381,7 @@ function createScrollSyncing(
   return { handleScroll };
 }
 
-function createHighlight(
+function setUpHighlight(
   props: {
     activeLines: () => ActiveLines | null;
     lookupList: () => LookupList;
