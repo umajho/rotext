@@ -32,6 +32,7 @@ import { debounceEventHandler } from "../../../../utils/mod";
 import {
   PROSE_CLASS,
   registerCustomElementsOnce,
+  TAG_NAME_MAP,
   WIDGET_OWNER_CLASS,
 } from "../../../../utils/custom-elements-registration/mod";
 
@@ -219,11 +220,7 @@ function createRendering(
         recordsLocation: true,
       });
       const vChildren = toSnabbdomChildren(doc, {
-        customElementTagNameMap: {
-          "scratch-off": "x-scratch-off",
-          "ref-link": "x-ref-link",
-          "dicexp-preview": "x-dicexp-preview",
-        },
+        customElementTagNameMap: TAG_NAME_MAP,
       });
       props.setParsingTimeText(
         `${+(performance.now() - parsingStart).toFixed(3)}ms`,

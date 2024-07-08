@@ -21,6 +21,13 @@ import { registerCustomElement as registerCustomElementForCollapse } from "../..
 import { createDemoRefContentRenderer } from "./ref-content-demo";
 import { evaluatorProvider } from "./evaluator-provider";
 
+export const TAG_NAME_MAP = {
+  "scratch-off": "x-scratch-off",
+  "ref-link": "x-ref-link",
+  "dicexp-preview": "x-dicexp-preview",
+  "collapse": "x-collapse",
+};
+
 export const WIDGET_OWNER_CLASS = "widget-owner";
 export const PROSE_CLASS = "tuan-prose";
 
@@ -35,7 +42,7 @@ let hasRegistered = false;
 export function registerCustomElementsOnce() {
   if (hasRegistered) return;
 
-  registerCustomElementForRoWidgetRefLink("x-ref-link", {
+  registerCustomElementForRoWidgetRefLink(TAG_NAME_MAP["ref-link"], {
     styleProviders: getDefaultRefLinkStyleProviders(),
     backgroundColor: BACKGROUND_COLOR,
     widgetOwnerClass: WIDGET_OWNER_CLASS,
@@ -46,7 +53,7 @@ export function registerCustomElementsOnce() {
     }),
   });
   registerCustomElementForStepsRepresentation("steps-representation");
-  registerCustomElementForRoWidgetDicexp("x-dicexp-preview", {
+  registerCustomElementForRoWidgetDicexp(TAG_NAME_MAP["dicexp-preview"], {
     styleProviders: getDefaultDicexpStyleProviders(),
     backgroundColor: BACKGROUND_COLOR,
     widgetOwnerClass: WIDGET_OWNER_CLASS,
@@ -56,8 +63,8 @@ export function registerCustomElementsOnce() {
     Loading,
     tagNameForStepsRepresentation: "steps-representation",
   });
-  registerCustomElementForScratchOff("x-scratch-off", {
+  registerCustomElementForScratchOff(TAG_NAME_MAP["scratch-off"], {
     innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,
   });
-  registerCustomElementForCollapse("x-collapse");
+  registerCustomElementForCollapse(TAG_NAME_MAP["collapse"]);
 }
