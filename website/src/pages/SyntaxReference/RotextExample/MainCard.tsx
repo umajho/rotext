@@ -25,7 +25,7 @@ export const MainCard: Component<{
       <div class="px-4 py-6">
         <Card
           class="bg-indigo-800"
-          bodyClass="max-sm:px-1 max-sm:py-1 px-4 py-0"
+          bodyClass="max-sm:px-1 px-4 py-0"
         >
           <div>
             <div class="grid grid-cols-1 xl:grid-cols-2">

@@ -146,10 +146,10 @@ export default (() => {
   }
 
   return (
-    <div class="flex max-h-full h-fit justify-center p-8">
+    <div class="flex max-h-full h-fit justify-center p-2 sm:p-4 lg:p-6 2xl:p-8">
       <Card
         class="w-full"
-        bodyClass="max-sm:px-1 max-sm:py-1 !pt-0"
+        bodyClass="max-sm:px-1 !pt-0"
       >
         <div class="h-full">
           <Show when={isReady()}>

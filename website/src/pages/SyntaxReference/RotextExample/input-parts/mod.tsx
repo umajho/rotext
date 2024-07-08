@@ -9,7 +9,7 @@ export function createInputParts(
 ): { InputTopBar: JSX.Element; InputPane: JSX.Element } {
   return {
     InputTopBar: (
-      <div class="flex h-full px-2 items-center">
+      <div class="flex h-full min-h-[2rem] px-2 items-center">
         <div class="flex-1" />
         <div class="flex items-center">
           <Show when={!store.isInputUnmodified}>
