@@ -1,10 +1,4 @@
-import { createEffect, createSignal, JSX, Match, on, Switch } from "solid-js";
-
-import { fragment } from "snabbdom";
-
-import { toSnabbdomChildren } from "@rotext/to-html";
-
-import { TAG_NAME_MAP } from "../../../../utils/custom-elements-registration/mod";
+import { createSignal, JSX, Match, Switch } from "solid-js";
 
 import { Loading, Tab, Tabs } from "../../../../components/ui/mod";
 
@@ -18,47 +12,17 @@ export function createOutputParts(
   const [currentTab, setCurrentTab] = //
     createSignal<"preview" | "source">("preview");
 
-  const [previewContent, setPreviewContent] = //
-    createSignal<PreviewContent>(["html", store.originalExpectedOutput]);
-  const [previewContentSource, setPreviewContentSource] = //
-    createSignal<string>(store.originalExpectedOutput);
-
-  let extraPackages: {
-    rotextParsing: typeof import("@rotext/parsing");
-    pretty: typeof import("pretty");
-    snabbdomToHTML: typeof import("snabbdom-to-html");
-  } | null = null;
-  const [isLoadingExtraPackages, setIsLoadingExtraPackages] = //
-    createSignal(false);
-
-  createEffect(on([() => store.isInputOriginal], async ([isInputOriginal]) => {
-    if (isInputOriginal) {
-      setPreviewContent(["html", store.originalExpectedOutput]);
-      setPreviewContentSource(store.originalExpectedOutput);
-      return;
+  const previewContentSource = () => store.currentOutput[1];
+  const previewContent = (): PreviewContent => {
+    switch (store.currentOutput[0]) {
+      case "for-unmodified":
+        return ["html", previewContentSource()];
+      case "for-modified":
+        return ["v-node-children", store.currentOutput[2]];
+      default:
+        throw new Error("unreachable");
     }
-    if (!extraPackages) {
-      if (isLoadingExtraPackages()) return;
-
-      setIsLoadingExtraPackages(true);
-      extraPackages = {
-        rotextParsing: await import("@rotext/parsing"),
-        pretty: (await import("pretty")).default,
-        snabbdomToHTML: (await import("snabbdom-to-html")).default,
-      };
-      setIsLoadingExtraPackages(false);
-    }
-
-    const doc = extraPackages.rotextParsing.parse(store.input);
-    const vChildren = toSnabbdomChildren(doc, {
-      customElementTagNameMap: TAG_NAME_MAP,
-    });
-    const html = extraPackages.snabbdomToHTML(fragment(vChildren))
-      .slice("<div>".length, -("</div>".length));
-    setPreviewContentSource(extraPackages.pretty(html));
-    setPreviewContent(["v-node-children", vChildren]);
-    return;
-  }));
+  };
 
   return {
     OutputTopBar: (
@@ -83,7 +47,7 @@ export function createOutputParts(
     ),
     OutputPane: (
       <Switch>
-        <Match when={isLoadingExtraPackages()}>
+        <Match when={store.isLoadingForCurrentOutput}>
           <div class="flex w-full h-full justify-center items-center">
             <Loading />
           </div>

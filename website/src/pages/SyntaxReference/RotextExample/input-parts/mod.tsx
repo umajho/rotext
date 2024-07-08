@@ -12,7 +12,7 @@ export function createInputParts(
       <div class="flex h-full px-2 items-center">
         <div class="flex-1" />
         <div class="flex items-center">
-          <Show when={!store.isInputOriginal}>
+          <Show when={!store.isInputUnmodified}>
             <div class="flex gap-2 items-center">
               <div class="text-xs text-gray-300 font-bold">
                 输入变更
