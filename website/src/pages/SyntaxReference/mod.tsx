@@ -151,7 +151,7 @@ export default (() => {
         class="w-full"
         bodyClass="max-sm:px-1 max-sm:py-1 !pt-0"
       >
-        <div>
+        <div class="h-full">
           <Show when={isReady()}>
             <div class="flex w-full justify-center">
               <Loading />
