@@ -1,5 +1,5 @@
 import { Component } from "solid-js";
-import { customElement, noShadowDOM } from "solid-element";
+import { customElement, getCurrentElement, noShadowDOM } from "solid-element";
 
 import { ShadowRootAttacher } from "@rolludejo/web-internal";
 
@@ -8,7 +8,7 @@ import { styleProvider as styleProviderForTailwind } from "../../../styles/tailw
 import { styleProvider as styleProviderForOneDark } from "../../../styles/one-dark";
 import { styleProvider as styleProviderForTuanProse } from "../../../styles/tuan-prose";
 
-import { createRotextExampleStore } from "./store";
+import { createRotextExampleStore } from "./create-store";
 
 import { MainCard } from "./MainCard";
 
@@ -43,6 +43,13 @@ function createRotextExampleComponent(opts: {
       fixtureNames,
       fixtures,
     });
+
+    getCurrentElement().verifyOutputOfOriginalInput = (
+      report: (matches: boolean) => void,
+    ) => {
+      store.onOutputOfOriginalInputVerified(report);
+      store.verifyOutputOfOriginalInput();
+    };
 
     return (
       <ShadowRootAttacher

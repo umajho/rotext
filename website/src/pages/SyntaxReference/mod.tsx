@@ -10,7 +10,7 @@ import {
 } from "solid-js";
 import { useLocation, useNavigate, useParams } from "@solidjs/router";
 
-import { Card, Loading } from "../../components/ui/mod";
+import { Button, Card, Loading } from "../../components/ui/mod";
 
 import "../../styles/tuan-prose";
 import {
@@ -110,22 +110,92 @@ export default (() => {
 
   const isReady = () => pageHTMLRaw.loading && isIndexLoaded();
 
+  const [verificationStatistics, setVerificationStatistics] = createSignal<
+    { total: number; matches: number; mismatches: number } | null
+  >(null);
+  const verificationStatisticsUnverified = createMemo(() => {
+    const statistics = verificationStatistics();
+    if (!statistics) return null;
+    const unverified = statistics.total - statistics.matches -
+      statistics.mismatches;
+    return unverified || null;
+  });
+  createEffect(on([pageHTMLRaw], () => setVerificationStatistics(null)));
+  function verifyAllOutputsOfOriginalInputs() {
+    const rotextExampleEls = [
+      ...contentContainerEl.querySelectorAll("x-rotext-example"),
+    ];
+
+    setVerificationStatistics({
+      total: rotextExampleEls.length,
+      matches: 0,
+      mismatches: 0,
+    });
+
+    for (const el of rotextExampleEls) {
+      (el as any).verifyOutputOfOriginalInput((matches: boolean) => {
+        const newStatistics = { ...verificationStatistics()! };
+        if (matches) {
+          newStatistics.matches++;
+        } else {
+          newStatistics.mismatches++;
+        }
+        setVerificationStatistics(newStatistics);
+      });
+    }
+  }
+
   return (
     <div class="flex max-h-full h-fit justify-center p-8">
       <Card
         class="w-full"
-        bodyClass="max-sm:px-1 max-sm:py-1"
+        bodyClass="max-sm:px-1 max-sm:py-1 !pt-0"
       >
-        <Show when={isReady()}>
-          <div class="flex w-full justify-center">
-            <Loading />
+        <div>
+          <Show when={isReady()}>
+            <div class="flex w-full justify-center">
+              <Loading />
+            </div>
+          </Show>
+          <div class="flex h-fit items-center px-2">
+            <div class="flex-1" />
+            <div>
+              <Show
+                when={verificationStatistics()}
+                fallback={
+                  <Button
+                    size="xs"
+                    onClick={verifyAllOutputsOfOriginalInputs}
+                  >
+                    验证本页全部示例输出
+                  </Button>
+                }
+              >
+                {(statistics) => (
+                  <>
+                    本页示例输出验证结果：匹配{" "}
+                    <span class="text-green-500">{statistics().matches}
+                    </span>，不匹配{" "}
+                    <span class="text-red-500">{statistics().mismatches}</span>
+                    <Show when={verificationStatisticsUnverified()}>
+                      {(unverified) => (
+                        <>
+                          ，尚未验证{" "}
+                          <span class="text-gray-500">{unverified()}</span>
+                        </>
+                      )}
+                    </Show>。
+                  </>
+                )}
+              </Show>
+            </div>
           </div>
-        </Show>
-        <div class="max-h-full h-fit overflow-y-scroll overflow-x-hidden">
-          <div
-            ref={contentContainerEl}
-            class="p-4 tuan-background tuan-prose break-all"
-          />
+          <div class="max-h-full h-fit overflow-y-scroll overflow-x-hidden">
+            <div
+              ref={contentContainerEl}
+              class="p-4 tuan-background tuan-prose break-all"
+            />
+          </div>
         </div>
       </Card>
     </div>

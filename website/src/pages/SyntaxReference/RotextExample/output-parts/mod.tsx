@@ -2,7 +2,7 @@ import { Component, createSignal, JSX, Match, Show, Switch } from "solid-js";
 
 import { Button, Loading, Tab, Tabs } from "../../../../components/ui/mod";
 
-import { RotextExampleStore } from "../store";
+import { RotextExampleStore } from "../create-store";
 
 import { Preview, PreviewContent } from "./Preview";
 

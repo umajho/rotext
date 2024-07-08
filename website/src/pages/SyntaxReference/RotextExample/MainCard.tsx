@@ -2,7 +2,7 @@ import { Component, For, Show } from "solid-js";
 
 import { Card } from "../../../components/ui/mod";
 
-import { RotextExampleStore } from "./store";
+import { RotextExampleStore } from "./create-store";
 
 import { createInputParts } from "./input-parts/mod";
 import { createOutputParts } from "./output-parts/mod";

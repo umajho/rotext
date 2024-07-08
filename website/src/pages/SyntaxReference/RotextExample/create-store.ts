@@ -1,4 +1,4 @@
-import { createEffect, createSignal, on } from "solid-js";
+import { createEffect, createMemo, createSignal, on } from "solid-js";
 
 import { fragment, VNodeChildren } from "snabbdom";
 
@@ -74,6 +74,42 @@ export function createRotextExampleStore(opts: {
     }
   }, { defer: true }));
 
+  const expectedOutputMatchesActual = createMemo(() => {
+    const actual = actualOutputForOriginalInput();
+    if (actual === null) return null;
+    return actual === opts.expectedOutputHTMLForOriginalInput;
+  });
+  const [
+    onOutputOfOriginalInputVerifiedCallback,
+    setOnOutputOfOriginalInputVerifiedCallback,
+  ] = createSignal<
+    | ["unregistered"]
+    | ["registered", ((matches: boolean) => void)]
+  >(["unregistered"]);
+  let hasOutputOfOriginalInputVerifiedCallbackBeenCalled = false;
+  createEffect(
+    on(
+      [expectedOutputMatchesActual, onOutputOfOriginalInputVerifiedCallback],
+      ([matches, cb]) => {
+        if (matches === null) return;
+        if (hasOutputOfOriginalInputVerifiedCallbackBeenCalled) {
+          throw new Error("unreachable: callback has already been called");
+        }
+        switch (cb[0]) {
+          case "unregistered":
+            return;
+          case "registered": {
+            cb[1](matches);
+            hasOutputOfOriginalInputVerifiedCallbackBeenCalled = true;
+            break;
+          }
+          default:
+            throw new Error("unreachable");
+        }
+      },
+    ),
+  );
+
   return {
     get input() {
       return input();
@@ -98,9 +134,7 @@ export function createRotextExampleStore(opts: {
       return actualOutputForOriginalInput();
     },
     get expectedOutputMatchesActual() {
-      const actual = actualOutputForOriginalInput();
-      if (actual === null) return null;
-      return actual === opts.expectedOutputHTMLForOriginalInput;
+      return expectedOutputMatchesActual();
     },
     /**
      * XXX: 只要有了实际输出就能验证，因此这个函数做的就是解析出实际输出。
@@ -134,6 +168,23 @@ export function createRotextExampleStore(opts: {
     },
     isVerifyingOutputOfOriginalInput() {
       return isVerifyingOutputOfOriginalInput();
+    },
+    /**
+     * 在原始输入的输出被验证后，调用 cb。如果调用本函数时已经完成验证，会直接调
+     * 用 cb。cb 只会被调用一次。
+     */
+    onOutputOfOriginalInputVerified(cb: (matches: boolean) => void) {
+      const cbInStore = onOutputOfOriginalInputVerifiedCallback();
+      if (cbInStore[0] === "registered") {
+        throw new Error(
+          "unreachable: cannot set callback: callback has already been registered",
+        );
+      } else if (hasOutputOfOriginalInputVerifiedCallbackBeenCalled) {
+        throw new Error(
+          "unreachable: cannot set callback: callback has already been called",
+        );
+      }
+      setOnOutputOfOriginalInputVerifiedCallback(["registered", cb]);
     },
 
     reset() {

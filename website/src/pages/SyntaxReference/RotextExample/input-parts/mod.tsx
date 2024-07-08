@@ -2,7 +2,7 @@ import { JSX, Show } from "solid-js";
 
 import { Button } from "../../../../components/ui/mod";
 
-import { RotextExampleStore } from "../store";
+import { RotextExampleStore } from "../create-store";
 
 export function createInputParts(
   store: RotextExampleStore,
