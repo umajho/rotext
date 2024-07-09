@@ -135,7 +135,7 @@ const OutputPaneSourceTab: Component<{
   return (
     <div class="bg-black w-full h-full overflow-y-scroll">
       <pre class="px-4 py-2">
-  <code>{props.previewContentSource}</code>
+        <code>{props.previewContentSource}</code>
       </pre>
     </div>
   );
