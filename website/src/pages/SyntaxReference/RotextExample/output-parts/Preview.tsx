@@ -18,7 +18,10 @@ import {
   VNodeChildren,
 } from "snabbdom";
 
-import { registerRoWidgetOwner } from "@rotext/solid-components/internal";
+import {
+  ElementLayoutChangeObserver,
+  registerRoWidgetOwner,
+} from "@rotext/solid-components/internal";
 
 import {
   PROSE_CLASS,
@@ -42,15 +45,13 @@ export const Preview: Component<{
   const [isOutputEmpty, setIsOutputEmpty] = createSignal(false);
   onMount(() => {
     //==== 注册进全局存储 ====
-    const cbs = new Set<() => void>();
-    const layoutChangeObserver = {
-      subscribe: (cb: () => void) => cbs.add(cb),
-      unsubscribe: (cb: () => void) => cbs.delete(cb),
-    };
     registerRoWidgetOwner(containerEl, {
       widgetAnchorElement: widgetAnchorEl,
       level: 1,
-      layoutChangeObserver,
+      layoutChangeObserver: new ElementLayoutChangeObserver(
+        outputWrapperEl,
+        { resize: true },
+      ),
     });
 
     //==== 文档渲染 ====
