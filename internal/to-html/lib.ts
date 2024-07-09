@@ -66,12 +66,6 @@ export function elementToSnabbdom(
         break;
       case "ref-link":
         sel = opts.customElementTagNameMap["ref-link"];
-        // fallback
-        children = h(
-          "span",
-          { class: { "widget-prime": true } },
-          `>>${el.slot}`,
-        );
         attrs = { address: el.slot };
         break;
       case "P":
@@ -121,15 +115,6 @@ export function elementToSnabbdom(
         code: el.slots.code,
         ...(el.slots.assignTo ? { "assign-to": el.slots.assignTo } : {}),
       };
-      // fallback
-      const children: VNodeChildren = h(
-        "span",
-        { class: { "widget-prime": true } },
-        "[" +
-          `${el.slots.assignTo ? `@${el.slots.assignTo}` : ""}` +
-          `=${el.slots.code}` +
-          "]",
-      );
       // TODO: 根据附加数据决定标签名（`…-preview` vs `…-result`？）
       return h(
         opts.customElementTagNameMap["dicexp-preview"],
