@@ -1,4 +1,12 @@
-import { Component, createSignal, JSX, Match, Show, Switch } from "solid-js";
+import {
+  Component,
+  createMemo,
+  createSignal,
+  JSX,
+  Match,
+  Show,
+  Switch,
+} from "solid-js";
 
 import { Button, Loading, Tab, Tabs } from "../../../../components/ui/mod";
 
@@ -26,6 +34,11 @@ export function createOutputParts(
     }
   };
 
+  const shouldShowOutputMismatchInfos = createMemo(() => {
+    return store.isInputUnmodified &&
+      store.expectedOutputMatchesActual === false;
+  });
+
   return {
     OutputTopBar: (
       <div class="flex h-full px-2 items-center">
@@ -35,7 +48,7 @@ export function createOutputParts(
               isActive={currentTab() === "preview"}
               onClick={() => setCurrentTab("preview")}
             >
-              <Show when={store.expectedOutputMatchesActual === false}>
+              <Show when={shouldShowOutputMismatchInfos()}>
                 <span class="text-blue-500">期待</span>
               </Show>预览
             </Tab>
@@ -43,11 +56,11 @@ export function createOutputParts(
               isActive={currentTab() === "source"}
               onClick={() => setCurrentTab("source")}
             >
-              <Show when={store.expectedOutputMatchesActual === false}>
+              <Show when={shouldShowOutputMismatchInfos()}>
                 <span class="text-blue-500">期待</span>
               </Show>源码
             </Tab>
-            <Show when={store.expectedOutputMatchesActual === false}>
+            <Show when={shouldShowOutputMismatchInfos()}>
               <Tab
                 isActive={currentTab() === "actual-preview"}
                 onClick={() => setCurrentTab("actual-preview")}
