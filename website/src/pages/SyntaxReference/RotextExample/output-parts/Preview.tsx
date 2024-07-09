@@ -71,7 +71,7 @@ export const Preview: Component<{
       ].join(" ")}
       ref={containerEl}
     >
-      <div ref={widgetAnchorEl} />
+      <div class="relative z-10" ref={widgetAnchorEl} />
       <div
         class={[
           "relative",
