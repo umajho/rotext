@@ -18,7 +18,7 @@ if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
 }
 
 render(() => (
-  <HashRouter root={Root}>
+  <HashRouter root={Root} explicitLinks={true}>
     <Route path="/" component={() => <Navigate href={"/playground"} />} />
     <Route
       path="/playground"
