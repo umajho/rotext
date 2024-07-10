@@ -1,0 +1,10 @@
+[package]
+name = "rotext"
+version.workspace = true
+license.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "The official and de facto Rotext parser."
+
+[dependencies]

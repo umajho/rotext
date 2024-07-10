@@ -1,0 +1,6 @@
+set fallback
+
+build-rotext: build-rotext-wasm-bindings
+
+build-rotext-wasm-bindings:
+	cd rotext_wasm_bindings && wasm-pack build --target web

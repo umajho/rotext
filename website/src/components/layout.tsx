@@ -182,6 +182,15 @@ const NavMenu: Component<{
       <p class="menu-title">导航</p>
       <li>
         <a
+          onClick={() => {
+            props.onClickMenuItem(), navigate("/rotext-wasm-dev");
+          }}
+        >
+          Rotext WASM Dev
+        </a>
+      </li>
+      <li>
+        <a
           class={`${matchPlayground() ? "active" : ""}`}
           onClick={(ev) => {
             if (isActive(ev)) return;

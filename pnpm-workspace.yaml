@@ -3,3 +3,4 @@ packages:
   - packages/*
   - website
   - dev/*
+  - rust/rotext_wasm_bindings/pkg

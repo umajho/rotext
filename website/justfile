@@ -2,6 +2,7 @@ set fallback
 
 prepare:
 	just parsing build
+	just build-rotext
 	just build-doc-syntax-reference
 
 build-doc-syntax-reference:

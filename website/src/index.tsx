@@ -18,6 +18,10 @@ render(() => (
   <HashRouter root={Root} explicitLinks={true}>
     <Route path="/" component={() => <Navigate href={"/playground"} />} />
     <Route
+      path="/rotext-wasm-dev"
+      component={lazy(() => import("./pages/RotextWASMDev/mod"))}
+    />
+    <Route
       path="/playground"
       component={lazy(() => import("./pages/Playground/mod"))}
     />

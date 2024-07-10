@@ -3,3 +3,10 @@ parsing *args:
 
 website *args:
   just -f website/justfile {{args}}
+
+rust *args:
+  just -f rust/justfile {{args}}
+
+build-rotext:
+  just rust build-rotext-wasm-bindings
+  cd packages/wasm-bindings-adapter && pnpm run build
