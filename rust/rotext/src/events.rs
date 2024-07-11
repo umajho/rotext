@@ -3,8 +3,8 @@
 pub enum EventType {
     Undetermined = 1,
 
-    Comment = 10001,
-    VerbatimEscaping = 10002,
+    VerbatimEscaping = 10001,
+    Comment = 10002,
 }
 
 #[cfg(test)]
@@ -26,12 +26,6 @@ pub enum Event {
     /// <+> → {--+} → [-- ] 有待下个阶段决定。自闭合。
     Undetermined { start: usize, length: usize } = EventType::Undetermined as u32,
 
-    /// <+> → {-- } → [   ] 注释。自闭合。
-    Comment {
-        content_start: usize,
-        content_length: usize,
-        is_closed_forcedly: bool,
-    } = EventType::Comment as u32,
     /// <+> → {- ~} → [-- ] 逐字文本转义。自闭合。
     ///
     /// NOTE: 内容包含开头和结尾各可能存在的一个空格。这些空格在渲染时才删去。
@@ -40,6 +34,12 @@ pub enum Event {
         content_length: usize,
         is_closed_forcedly: bool,
     } = EventType::VerbatimEscaping as u32,
+    /// <+> → {-- } → [   ] 注释。自闭合。
+    Comment {
+        content_start: usize,
+        content_length: usize,
+        is_closed_forcedly: bool,
+    } = EventType::Comment as u32,
 }
 
 impl Event {
