@@ -215,13 +215,17 @@ function setUpRendering(
     props.setErr(null);
     try {
       const parsingStart = performance.now();
+      console.time("rotext JS");
       const doc = parse(props.text(), {
         softBreakAs: "br",
         recordsLocation: true,
       });
+      console.timeLog("rotext JS", "parsed by peggy");
       const vChildren = toSnabbdomChildren(doc, {
         customElementTagNameMap: TAG_NAME_MAP,
       });
+      console.timeLog("rotext JS", "transformed to Snabbdom VDOM");
+      console.timeEnd("rotext JS");
       props.setParsingTimeText(
         `${+(performance.now() - parsingStart).toFixed(3)}ms`,
       );

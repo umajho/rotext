@@ -15,7 +15,12 @@ export default (() => {
   const [result, setResult] = createSignal("Loading…");
 
   createEffect(
-    on([input], ([input]) => setResult(`${rotextAdapter.dev(input)}`)),
+    on([input], ([input]) => {
+      console.time("rotext RS (dev)");
+      const result = rotextAdapter.dev(input);
+      console.timeEnd("rotext RS (dev)");
+      setResult(`${result}`);
+    }),
   );
 
   return (
