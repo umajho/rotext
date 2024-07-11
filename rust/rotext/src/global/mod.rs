@@ -1,4 +1,6 @@
-use crate::events::Event;
+mod events;
+
+pub use events::Event;
 
 pub struct Parser<'a> {
     input: &'a [u8],
