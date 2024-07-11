@@ -15,7 +15,7 @@ export default (() => {
   const [result, setResult] = createSignal("Loading…");
 
   createEffect(
-    on([input], ([input]) => setResult(`${rotextAdapter.parse(input)}`)),
+    on([input], ([input]) => setResult(`${rotextAdapter.dev(input)}`)),
   );
 
   return (
@@ -26,7 +26,7 @@ export default (() => {
         onInput={(ev) => setInput(ev.currentTarget.value)}
       >
       </textarea>
-      {result()}
+      <pre>{result()}</pre>
     </Card>
   );
 }) satisfies Component;
