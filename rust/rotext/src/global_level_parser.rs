@@ -344,7 +344,94 @@ fn count_continuous_backticks(input: &[u8], start_index: usize, max: Option<usiz
     count
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-// }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::rstest;
+
+    use std::{collections::HashSet, time};
+
+    use crate::events::EventType;
+
+    type EventCase = (
+        EventType,
+        Option<&'static str>,
+        Option<HashSet<&'static str>>,
+    );
+
+    #[rstest]
+    // ## 无特殊语法
+    #[case("", vec![])]
+    #[case("Hello, world!", vec![(
+        EventType::Undetermined, Some("Hello, world!"), None)])]
+    // ## 注释
+    #[case("<% … %>", vec![
+        (EventType::Comment, Some(" … "), None)])]
+    #[case("<% A %><% B %>", vec![
+        (EventType::Comment, Some(" A "), None),
+        (EventType::Comment, Some(" B "), None)])]
+    #[case("Left<%%>Right", vec![
+        (EventType::Undetermined, Some("Left"), None),
+        (EventType::Comment, Some(""), None),
+        (EventType::Undetermined, Some("Right"), None)])]
+    #[case("Foo<%Bar", vec![
+        (EventType::Undetermined, Some("Foo"), None),
+        (EventType::Comment, Some("Bar"), Some(HashSet::from(["F"])))])]
+    #[case("Foo<%Bar<%Baz%>Qux", vec![
+        (EventType::Undetermined, Some("Foo"), None),
+        (EventType::Comment, Some("Bar<%Baz%>Qux"), Some(HashSet::from(["F"])))])]
+    #[case("Foo%>Bar", vec![
+        (EventType::Undetermined, Some("Foo%>Bar"), None)])]
+    #[case("Foo<%Bar%>Baz%>Qux", vec![
+        (EventType::Undetermined, Some("Foo"), None),
+        (EventType::Comment, Some("Bar"), None),
+        (EventType::Undetermined, Some("Baz%>Qux"), None)])]
+    #[case("0 <% 1 <% 2 %> 1 %> 0", vec![
+        (EventType::Undetermined, Some("0 "), None),
+        (EventType::Comment, Some(" 1 <% 2 %> 1 "), None),
+        (EventType::Undetermined, Some(" 0"), None)])]
+    // ## 逐字文本转义
+    #[case("<` … `>", vec![
+        (EventType::VerbatimEscaping, Some(" … "), None)])]
+    #[case("<`` `> ``>", vec![
+        (EventType::VerbatimEscaping, Some(" `> "), None)])]
+    #[case("<` A `><` B `>", vec![
+        (EventType::VerbatimEscaping, Some(" A "), None),
+        (EventType::VerbatimEscaping, Some(" B "), None)])]
+    #[case("Left<` … `>Right", vec![
+        (EventType::Undetermined, Some("Left"), None),
+        (EventType::VerbatimEscaping, Some(" … "), None),
+        (EventType::Undetermined, Some("Right"), None)])]
+    #[case("<` `> `>", vec![
+        (EventType::VerbatimEscaping, Some(" "), None),
+        (EventType::Undetermined, Some(" `>"), None)])]
+    #[case("<` <` `>", vec![
+        (EventType::VerbatimEscaping, Some(" <` "), None)])]
+    #[case("Foo<`Bar", vec![
+        (EventType::Undetermined, Some("Foo"), None),
+        (EventType::VerbatimEscaping, Some("Bar"), Some(HashSet::from(["F"])))])]
+    // ### 注释中的逐字文本转义
+    #[case("0 <% 1 <`<%`> 2 %> 1 %> 0", vec![
+        (EventType::Undetermined, Some("0 "), None),
+        (EventType::Comment, Some(" 1 <`<%`> 2 "), None),
+        (EventType::Undetermined, Some(" 1 %> 0"), None)])]
+    #[case("0 <% 1 <% 2 <`%>`> 1 %> 0", vec![
+        (EventType::Undetermined, Some("0 "), None),
+        (EventType::Comment, Some(" 1 <% 2 <`%>`> 1 %> 0"), Some(HashSet::from(["F"])))])]
+    #[timeout(time::Duration::from_secs(1))]
+    fn it_works(#[case] input: &str, #[case] expected: Vec<EventCase>) {
+        let parser = GlobalLevelParser::new(input.as_bytes(), 0);
+        let actual: Vec<_> = parser
+            .map(|ev| -> EventCase {
+                (
+                    EventType::from(ev.discriminant()),
+                    ev.content(input.as_bytes())
+                        .map(|s| -> &'static str { s.leak() }),
+                    ev.assertion_flags(),
+                )
+            })
+            .collect();
+
+        assert_eq!(expected, actual);
+    }
+}
