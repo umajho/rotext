@@ -5,11 +5,11 @@ prepare:
 	just build-rotext
 	just build-doc-syntax-reference
 
-build-doc-syntax-reference:
-	SYNTAX_REFERENCE_PATH=../docs/语法参考 pnpm exec vite-node scripts/build-doc-syntax-reference.ts
-
 dev: prepare
 	pnpm run dev
 
-build: prepare
+build: prepare build-doc-syntax-reference
 	pnpm run build
+
+build-doc-syntax-reference:
+	pnpm run build:doc-syntax-reference
