@@ -1,6 +1,6 @@
 use crate::events::Event;
 
-pub struct GlobalLevelParser<'a> {
+pub struct Parser<'a> {
     input: &'a [u8],
     cursor: usize,
     state: State,
@@ -13,9 +13,9 @@ enum State {
     InComment,
 }
 
-impl<'a> GlobalLevelParser<'a> {
-    pub fn new(input: &'a [u8], cursor: usize) -> GlobalLevelParser<'a> {
-        GlobalLevelParser {
+impl<'a> Parser<'a> {
+    pub fn new(input: &'a [u8], cursor: usize) -> Parser<'a> {
+        Parser {
             input,
             cursor,
             state: State::Normal,
@@ -281,7 +281,7 @@ impl<'a> GlobalLevelParser<'a> {
     }
 }
 
-impl<'a> Iterator for GlobalLevelParser<'a> {
+impl<'a> Iterator for Parser<'a> {
     type Item = Event;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -420,7 +420,7 @@ mod tests {
         (EventType::Comment, Some(" 1 <% 2 <`%>`> 1 %> 0"), Some(HashSet::from(["F"])))])]
     #[timeout(time::Duration::from_secs(1))]
     fn it_works(#[case] input: &str, #[case] expected: Vec<EventCase>) {
-        let parser = GlobalLevelParser::new(input.as_bytes(), 0);
+        let parser = Parser::new(input.as_bytes(), 0);
         let actual: Vec<_> = parser
             .map(|ev| -> EventCase {
                 (

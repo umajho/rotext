@@ -1,14 +1,12 @@
 mod events;
-mod global_level_parser;
-
-use global_level_parser::GlobalLevelParser;
+mod global;
 
 pub fn parse(input: &[u8]) -> usize {
     input.len()
 }
 
 pub fn dev(input: &[u8]) -> String {
-    let parser = GlobalLevelParser::new(input, 0);
+    let parser = global::Parser::new(input, 0);
 
     let mut output = "".to_string();
 
