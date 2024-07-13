@@ -364,8 +364,8 @@ mod tests {
     #[rstest]
     // ## 无特殊语法
     #[case("", vec![])]
-    #[case("Hello, world!", vec![(
-        EventType::Undetermined, Some("Hello, world!"), None)])]
+    #[case("Hello, world!", vec![
+        (EventType::Undetermined, Some("Hello, world!"), None)])]
     // ## 逐字文本转义
     #[case("<` … `>", vec![
         (EventType::VerbatimEscaping, Some(" … "), None)])]
