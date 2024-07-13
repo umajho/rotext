@@ -58,6 +58,11 @@ impl<'a> Parser<'a> {
                         None
                     };
                 }
+                Some(b'\r') => {
+                    let ret = self.produce_undetermined(offset);
+                    self.cursor += "\r".len();
+                    break ret;
+                }
                 Some(b'<') => match self.input.get(index + 1) {
                     Some(b'`') => {
                         // 在一般情况下遇到 “<`”，完成扫描并开启逐字文本转义。
@@ -366,6 +371,11 @@ mod tests {
     #[case("", vec![])]
     #[case("Hello, world!", vec![
         (EventType::Undetermined, Some("Hello, world!"), None)])]
+    // ### 无视 CR
+    #[case("\r", vec![])]
+    #[case("Left\rRight", vec![
+        (EventType::Undetermined, Some("Left"), None),
+        (EventType::Undetermined, Some("Right"), None)])]
     // ## 逐字文本转义
     #[case("<` … `>", vec![
         (EventType::VerbatimEscaping, Some(" … "), None)])]
