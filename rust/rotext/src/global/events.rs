@@ -29,6 +29,7 @@ impl Event {
         unsafe { *<*const _>::from(self).cast::<u32>() }
     }
 
+    #[cfg(test)]
     pub fn content(&self, input: &[u8]) -> Option<String> {
         let slice = match *self {
             Event::Undetermined { start, length } => &input[start..start + length],

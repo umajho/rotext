@@ -2,9 +2,18 @@
 #[repr(u32)]
 pub enum EventType {
     Undetermined = 1,
+    LineFeed = 2,
+
+    Exit = 1001,
 
     VerbatimEscaping = 10001,
     Comment = 10002,
+
+    EnterParagraph = 20001,
+    /// XXX: 数字是临时的。
+    ThematicBreak = 20098,
+    /// XXX: 数字是临时的。
+    CodeBlock = 20099,
 }
 
 #[cfg(test)]
