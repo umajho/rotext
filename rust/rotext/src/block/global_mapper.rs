@@ -30,7 +30,7 @@ pub enum Mapped {
     BlankLine {
         spaces: usize,
     },
-    // 一行开始的指定数量的空格。
+    /// 一行开始的指定数量的空格。
     SpacesAtLineBeginning(usize),
     /// 逐字文本转义。
     VerbatimEscaping {
