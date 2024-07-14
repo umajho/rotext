@@ -18,6 +18,8 @@ pub enum EventType {
     EnterCodeBlockMeta = 29012,
     /// XXX: 数字是临时的。
     EnterCodeBlockContent = 29013,
+
+    Text = 30001,
 }
 
 #[cfg(test)]

@@ -70,7 +70,7 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
                     self.mapper.next();
                     continue;
                 }
-                global_mapper::Mapped::VerbatimEscaping { .. } => {
+                global_mapper::Mapped::Text(_) => {
                     self.mapper.next();
                     self.state = State::InInline;
                     self.stack.push(StackEntry::InParagraph);
@@ -203,10 +203,10 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
                     self.mapper.next();
                     continue;
                 }
-                global_mapper::Mapped::VerbatimEscaping { content } => match local_state {
+                global_mapper::Mapped::Text(content) => match local_state {
                     LocalState::Initial => {
                         self.cursor.apply(mapped);
-                        let ret = Some(Event::VerbatimEscaping { content: *content });
+                        let ret = Some(Event::Text(*content));
                         self.mapper.next();
                         return ret;
                     }

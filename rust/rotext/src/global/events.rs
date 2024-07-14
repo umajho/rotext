@@ -9,7 +9,8 @@ pub enum Event {
 
     /// 逐字文本转义。
     ///
-    /// NOTE: 内容包含开头和结尾各可能存在的一个空格。这些空格在渲染时才删去。
+    /// NOTE: 内容包含开头和结尾各可能存在的一个空格，省略上述空格的处理是在块级
+    /// 阶段将 VerbatimEscaping 变换为 Text 时进行。
     VerbatimEscaping {
         content: Range,
         is_closed_forcedly: bool,

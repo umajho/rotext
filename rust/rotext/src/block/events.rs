@@ -11,11 +11,6 @@ pub enum Event {
     // 退出一层 “进入…”。
     Exit = EventType::Exit as u32,
 
-    /// 逐字文本转义。参见 [crate::global::Event::VerbatimEscaping]。
-    VerbatimEscaping {
-        content: Range,
-    } = EventType::VerbatimEscaping as u32,
-
     /// 进入段落。
     EnterParagraph = EventType::EnterParagraph as u32,
     /// 分割线
@@ -24,6 +19,8 @@ pub enum Event {
     EnterCodeBlock = EventType::EnterCodeBlock as u32,
     EnterCodeBlockMeta = EventType::EnterCodeBlockMeta as u32,
     EnterCodeBlockContent = EventType::EnterCodeBlockContent as u32,
+
+    Text(Range) = EventType::Text as u32,
 }
 
 impl Event {
@@ -37,7 +34,7 @@ impl Event {
             Event::Undetermined(content) => content.content(input),
             Event::LineFeed => return None,
             Event::Exit => return None,
-            Event::VerbatimEscaping { content, .. } => content.content(input),
+            Event::Text(content) => content.content(input),
             Event::EnterParagraph => return None,
             Event::ThematicBreak => return None,
             Event::EnterCodeBlock => return None,

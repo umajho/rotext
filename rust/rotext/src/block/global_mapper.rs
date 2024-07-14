@@ -27,15 +27,11 @@ pub enum Mapped {
     /// LF 换行。
     LineFeed,
     /// 空行。在处理上包括后面的换行符。
-    BlankLine {
-        spaces: usize,
-    },
+    BlankLine { spaces: usize },
     /// 一行开始的指定数量的空格。
     SpacesAtLineBeginning(usize),
-    /// 逐字文本转义。
-    VerbatimEscaping {
-        content: Range,
-    },
+    /// 文本。
+    Text(Range),
 }
 
 impl<'a, I: 'a + Iterator<Item = global::Event>> GlobalEventStreamMapper<'a, I> {
@@ -125,14 +121,31 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> GlobalEventStreamMapper<'a, I> 
                     content,
                     is_closed_forcedly: _,
                 } => {
-                    let mapped = Mapped::VerbatimEscaping { content };
+                    let (mut start, mut length) = (content.start(), content.length());
+                    if length > 0 && self.input[start] == b' ' {
+                        start += 1;
+                        length -= 1;
+                    }
+                    if length > 0 && self.input[start + length - 1] == b' ' {
+                        length -= 1;
+                    }
+
+                    let (mut to_yield_first, mut to_yield_then): (Option<Mapped>, Option<Mapped>) =
+                        (None, None);
                     if let Some(spaces) = self.spaces_at_line_beginning.take() {
                         if spaces > 0 {
-                            self.deferred = Some(mapped);
-                            return Some(Mapped::SpacesAtLineBeginning(spaces));
+                            to_yield_first = Some(Mapped::SpacesAtLineBeginning(spaces));
                         }
                     }
-                    return Some(mapped);
+                    if length > 0 {
+                        to_yield_then = Some(Mapped::Text(Range::new(start, length)));
+                    }
+                    if to_yield_first.is_some() {
+                        self.deferred = to_yield_then;
+                        return to_yield_first;
+                    } else if to_yield_then.is_some() {
+                        return to_yield_then;
+                    }
                 }
                 global::Event::Comment { .. } => {}
             }
@@ -190,14 +203,23 @@ mod tests {
     #[case("  <%…%>\n", vec![
         Mapped::BlankLine { spaces: 2 }])]
     #[case("  <` `>\n", vec![
-        Mapped::SpacesAtLineBeginning(2), Mapped::VerbatimEscaping { content: Range::new(4, 1) },
-        Mapped::LineFeed])]
-    // ## 逐字文本转义
+        Mapped::SpacesAtLineBeginning(2), Mapped::LineFeed])]
+    // ## 逐字文本转义转为文本
+    #[case("<`a`>", vec![
+        Mapped::Text(Range::new(2, 1))])]
+    #[case("<` a `>", vec![
+        Mapped::Text(Range::new(3, 1))])]
+    #[case("<`  a  `>", vec![
+        Mapped::Text(Range::new(3, 3))])]
+    #[case("<` `>", vec![])]
+    #[case("<`  `>", vec![])]
+    #[case("<`   `>", vec![
+        Mapped::Text(Range::new(3, 1))])]
     #[case("a<`` ` ``>bc", vec![
-        Mapped::CharAt(0), Mapped::VerbatimEscaping { content: Range::new(4, 3)},
+        Mapped::CharAt(0), Mapped::Text(Range::new(5, 1)),
         Mapped::CharAt(10), Mapped::NextChar])]
     #[case("a<` b", vec![
-        Mapped::CharAt(0), Mapped::VerbatimEscaping { content: Range::new(3, 2) }])]
+        Mapped::CharAt(0), Mapped::Text(Range::new(4, 1))])]
     // ## 注释
     #[case("ab<% … %>c", vec![
         Mapped::CharAt(0), Mapped::NextChar, Mapped::CharAt(11)])]
