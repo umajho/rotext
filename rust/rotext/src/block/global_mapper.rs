@@ -122,30 +122,24 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> GlobalEventStreamMapper<'a, I> 
                     is_closed_forcedly: _,
                 } => {
                     let (mut start, mut length) = (content.start(), content.length());
-                    if length > 0 && self.input[start] == b' ' {
-                        start += 1;
-                        length -= 1;
-                    }
-                    if length > 0 && self.input[start + length - 1] == b' ' {
-                        length -= 1;
-                    }
-
-                    let (mut to_yield_first, mut to_yield_then): (Option<Mapped>, Option<Mapped>) =
-                        (None, None);
-                    if let Some(spaces) = self.spaces_at_line_beginning.take() {
-                        if spaces > 0 {
-                            to_yield_first = Some(Mapped::SpacesAtLineBeginning(spaces));
+                    if length >= 2 {
+                        if self.input[start] == b' ' {
+                            start += 1;
+                            length -= 1;
+                        }
+                        if self.input[start + length - 1] == b' ' {
+                            length -= 1;
                         }
                     }
-                    if length > 0 {
-                        to_yield_then = Some(Mapped::Text(Range::new(start, length)));
+
+                    let mapped_text = Some(Mapped::Text(Range::new(start, length)));
+                    if let Some(spaces) = self.spaces_at_line_beginning.take() {
+                        if spaces > 0 {
+                            self.deferred = mapped_text;
+                            return Some(Mapped::SpacesAtLineBeginning(spaces));
+                        }
                     }
-                    if to_yield_first.is_some() {
-                        self.deferred = to_yield_then;
-                        return to_yield_first;
-                    } else if to_yield_then.is_some() {
-                        return to_yield_then;
-                    }
+                    return mapped_text;
                 }
                 global::Event::Comment { .. } => {}
             }
@@ -203,7 +197,8 @@ mod tests {
     #[case("  <%…%>\n", vec![
         Mapped::BlankLine { spaces: 2 }])]
     #[case("  <` `>\n", vec![
-        Mapped::SpacesAtLineBeginning(2), Mapped::LineFeed])]
+        Mapped::SpacesAtLineBeginning(2), Mapped::Text(Range::new(4, 1)),
+        Mapped::LineFeed])]
     // ## 逐字文本转义转为文本
     #[case("<`a`>", vec![
         Mapped::Text(Range::new(2, 1))])]
@@ -211,8 +206,10 @@ mod tests {
         Mapped::Text(Range::new(3, 1))])]
     #[case("<`  a  `>", vec![
         Mapped::Text(Range::new(3, 3))])]
-    #[case("<` `>", vec![])]
-    #[case("<`  `>", vec![])]
+    #[case("<` `>", vec![
+        Mapped::Text(Range::new(2, 1))])]
+    #[case("<`  `>", vec![
+        Mapped::Text(Range::new(3, 0))])]
     #[case("<`   `>", vec![
         Mapped::Text(Range::new(3, 1))])]
     #[case("a<`` ` ``>bc", vec![
