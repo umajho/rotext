@@ -1,4 +1,4 @@
-use crate::events::EventType;
+use crate::{common::Range, events::EventType};
 
 #[derive(Debug, PartialEq, Eq)]
 #[repr(u32)]
@@ -18,34 +18,12 @@ pub enum Event {
 
     /// 进入段落。
     EnterParagraph = EventType::EnterParagraph as u32,
+    /// 分割线
     ThematicBreak = EventType::ThematicBreak as u32,
     /// 代码块。
-    CodeBlock {
-        meta: Option<Ranges>,
-        content: Ranges,
-    } = EventType::CodeBlock as u32,
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct Range {
-    pub start: usize,
-    pub length: usize,
-}
-
-impl Range {
-    pub fn content(&self, input: &[u8]) -> String {
-        let slice = &input[self.start..self.start + self.length];
-        String::from_utf8(slice.to_vec()).unwrap()
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-struct Ranges(Vec<Range>);
-
-impl Ranges {
-    pub fn content(&self, input: &[u8]) -> String {
-        todo!()
-    }
+    EnterCodeBlock = EventType::EnterCodeBlock as u32,
+    EnterCodeBlockMeta = EventType::EnterCodeBlockMeta as u32,
+    EnterCodeBlockContent = EventType::EnterCodeBlockContent as u32,
 }
 
 impl Event {
@@ -56,14 +34,15 @@ impl Event {
 
     pub fn content(&self, input: &[u8]) -> Option<String> {
         let result = match self {
-            Event::Undetermined(range) => range.content(input),
+            Event::Undetermined(content) => content.content(input),
             Event::LineFeed => return None,
             Event::Exit => return None,
             Event::VerbatimEscaping { content, .. } => content.content(input),
             Event::EnterParagraph => return None,
             Event::ThematicBreak => return None,
-            // TODO!!: meta 也要能获取到。
-            Event::CodeBlock { meta: _, content } => content.content(input),
+            Event::EnterCodeBlock => return None,
+            Event::EnterCodeBlockMeta => return None,
+            Event::EnterCodeBlockContent => return None,
         };
 
         Some(result)

@@ -1,4 +1,4 @@
-use crate::global;
+use crate::{common::Range, global};
 
 /// 用于将产出 [global::Event] 的流转化为便于 [Parser] 处理的流。
 pub struct GlobalEventStreamMapper<'a, I: 'a + Iterator<Item = global::Event>> {
@@ -12,8 +12,7 @@ pub struct GlobalEventStreamMapper<'a, I: 'a + Iterator<Item = global::Event>> {
 
 #[derive(Debug)]
 struct RemainUndetermined {
-    start: usize,
-    length: usize,
+    content: Range,
 
     next_offset: usize,
     is_to_start: bool,
@@ -35,8 +34,7 @@ pub enum Mapped {
     SpacesAtLineBeginning(usize),
     /// 逐字文本转义。
     VerbatimEscaping {
-        content_start: usize,
-        content_length: usize,
+        content: Range,
     },
 }
 
@@ -60,13 +58,13 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> GlobalEventStreamMapper<'a, I> 
             if let Some(ref mut remain) = self.remain {
                 // 先清掉剩余的。
 
-                if remain.next_offset == remain.length {
+                if remain.next_offset == remain.content.length() {
                     // 已经没有剩余的了。
                     self.remain = None;
                     continue;
                 }
 
-                let index = remain.start + remain.next_offset;
+                let index = remain.content.start() + remain.next_offset;
                 let char = self.input[index];
 
                 if let Some(ref mut spaces) = self.spaces_at_line_beginning {
@@ -116,23 +114,18 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> GlobalEventStreamMapper<'a, I> 
             };
 
             match next {
-                global::Event::Undetermined { start, length } => {
+                global::Event::Undetermined(content) => {
                     self.remain = Some(RemainUndetermined {
-                        start,
-                        length,
+                        content,
                         is_to_start: true,
                         next_offset: 0,
                     });
                 }
                 global::Event::VerbatimEscaping {
-                    content_start,
-                    content_length,
+                    content,
                     is_closed_forcedly: _,
                 } => {
-                    let mapped = Mapped::VerbatimEscaping {
-                        content_start,
-                        content_length,
-                    };
+                    let mapped = Mapped::VerbatimEscaping { content };
                     if let Some(spaces) = self.spaces_at_line_beginning.take() {
                         if spaces > 0 {
                             self.deferred = Some(mapped);
@@ -197,14 +190,14 @@ mod tests {
     #[case("  <%…%>\n", vec![
         Mapped::BlankLine { spaces: 2 }])]
     #[case("  <` `>\n", vec![
-        Mapped::SpacesAtLineBeginning(2), Mapped::VerbatimEscaping { content_start: 4, content_length: 1 },
+        Mapped::SpacesAtLineBeginning(2), Mapped::VerbatimEscaping { content: Range::new(4, 1) },
         Mapped::LineFeed])]
     // ## 逐字文本转义
     #[case("a<`` ` ``>bc", vec![
-        Mapped::CharAt(0), Mapped::VerbatimEscaping { content_start: 4, content_length: 3 },
+        Mapped::CharAt(0), Mapped::VerbatimEscaping { content: Range::new(4, 3)},
         Mapped::CharAt(10), Mapped::NextChar])]
     #[case("a<` b", vec![
-        Mapped::CharAt(0), Mapped::VerbatimEscaping { content_start: 3, content_length: 2 }])]
+        Mapped::CharAt(0), Mapped::VerbatimEscaping { content: Range::new(3, 2) }])]
     // ## 注释
     #[case("ab<% … %>c", vec![
         Mapped::CharAt(0), Mapped::NextChar, Mapped::CharAt(11)])]

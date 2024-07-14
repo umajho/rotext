@@ -2,10 +2,9 @@ mod events;
 mod global_mapper;
 mod utils;
 
-use crate::global;
 pub use events::Event;
 
-use events::Range;
+use crate::{common::Range, global};
 use global_mapper::GlobalEventStreamMapper;
 use utils::{InputCursor, Peekable3};
 
@@ -204,18 +203,10 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
                     self.mapper.next();
                     continue;
                 }
-                global_mapper::Mapped::VerbatimEscaping {
-                    content_start,
-                    content_length,
-                } => match local_state {
+                global_mapper::Mapped::VerbatimEscaping { content } => match local_state {
                     LocalState::Initial => {
                         self.cursor.apply(mapped);
-                        let ret = Some(Event::VerbatimEscaping {
-                            content: Range {
-                                start: *content_start,
-                                length: *content_length,
-                            },
-                        });
+                        let ret = Some(Event::VerbatimEscaping { content: *content });
                         self.mapper.next();
                         return ret;
                     }
@@ -230,7 +221,7 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
         match local_state {
             LocalState::Initial => None,
             LocalState::Normal { start, length } => {
-                Some(Event::Undetermined(Range { start, length }))
+                Some(Event::Undetermined(Range::new(start, length)))
             }
             LocalState::IsAfterLineFeed => Some(Event::LineFeed),
         }

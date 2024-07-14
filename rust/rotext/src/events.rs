@@ -11,9 +11,13 @@ pub enum EventType {
 
     EnterParagraph = 20001,
     /// XXX: 数字是临时的。
-    ThematicBreak = 20098,
+    ThematicBreak = 29001,
     /// XXX: 数字是临时的。
-    CodeBlock = 20099,
+    EnterCodeBlock = 29011,
+    /// XXX: 数字是临时的。
+    EnterCodeBlockMeta = 29012,
+    /// XXX: 数字是临时的。
+    EnterCodeBlockContent = 29013,
 }
 
 #[cfg(test)]

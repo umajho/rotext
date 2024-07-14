@@ -2,6 +2,8 @@ mod events;
 
 pub use events::Event;
 
+use crate::common::Range;
+
 pub struct Parser<'a> {
     input: &'a [u8],
     cursor: usize,
@@ -242,10 +244,7 @@ impl<'a> Parser<'a> {
             return None;
         }
 
-        let ret = Event::Undetermined {
-            start: self.cursor,
-            length,
-        };
+        let ret = Event::Undetermined(Range::new(self.cursor, length));
         self.cursor += length;
         Some(ret)
     }
@@ -256,10 +255,8 @@ impl<'a> Parser<'a> {
         content_length: usize,
         is_closed_normally: bool,
     ) -> Option<Event> {
-        let content_start = self.cursor;
         let ret = Event::VerbatimEscaping {
-            content_start,
-            content_length,
+            content: Range::new(self.cursor, content_length),
             is_closed_forcedly: !is_closed_normally,
         };
         self.cursor += content_length;
@@ -274,10 +271,8 @@ impl<'a> Parser<'a> {
         content_length: usize,
         is_closed_normally: bool,
     ) -> Option<Event> {
-        let content_start = self.cursor;
         let ret = Event::Comment {
-            content_start,
-            content_length,
+            content: Range::new(self.cursor, content_length),
             is_closed_forcedly: !is_closed_normally,
         };
         self.cursor += content_length;
