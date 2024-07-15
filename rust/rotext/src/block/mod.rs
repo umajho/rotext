@@ -163,6 +163,14 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
                     }
                 }
                 global_mapper::Mapped::NextChar => match local_state {
+                    LocalState::Initial => {
+                        self.cursor.apply(peeked);
+                        self.mapper.next();
+                        local_state = LocalState::Normal {
+                            start: self.cursor.value().unwrap(),
+                            length: 1,
+                        }
+                    }
                     LocalState::Normal { ref mut length, .. } => {
                         self.cursor.apply(peeked);
                         self.mapper.next();
