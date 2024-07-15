@@ -143,16 +143,16 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
         let mut local_state = LocalState::Initial;
 
         loop {
-            let Some(mapped) = self.mapper.peek_1() else {
+            let Some(peeked) = self.mapper.peek_1() else {
                 break;
             };
 
             // log::debug!("{:?} {:?}", self.cursor.value(), mapped);
 
-            match mapped {
+            match peeked {
                 &global_mapper::Mapped::CharAt(cursor_new) => {
                     if matches!(local_state, LocalState::Initial) {
-                        self.cursor.apply(mapped);
+                        self.cursor.apply(peeked);
                         self.mapper.next();
                         local_state = LocalState::Normal {
                             start: cursor_new,
@@ -164,7 +164,7 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
                 }
                 global_mapper::Mapped::NextChar => match local_state {
                     LocalState::Normal { ref mut length, .. } => {
-                        self.cursor.apply(mapped);
+                        self.cursor.apply(peeked);
                         self.mapper.next();
                         *length += 1;
                     }
@@ -172,7 +172,7 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
                 },
                 global_mapper::Mapped::LineFeed => match local_state {
                     LocalState::Initial => {
-                        self.cursor.apply(mapped);
+                        self.cursor.apply(peeked);
                         self.mapper.next();
                         local_state = LocalState::IsAfterLineFeed;
                     }
@@ -183,7 +183,7 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
                 },
                 global_mapper::Mapped::BlankLine { .. } => match local_state {
                     LocalState::Initial => {
-                        self.cursor.apply(mapped);
+                        self.cursor.apply(peeked);
                         self.mapper.next();
                         return Some(Event::LineFeed);
                     }
@@ -191,7 +191,7 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
                         break;
                     }
                     LocalState::IsAfterLineFeed => {
-                        self.cursor.apply(mapped);
+                        self.cursor.apply(peeked);
                         self.mapper.next();
                         self.stack.pop();
                         self.state = State::BetweenBlocks;
@@ -199,13 +199,13 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
                     }
                 },
                 global_mapper::Mapped::SpacesAtLineBeginning(_) => {
-                    self.cursor.apply(mapped);
+                    self.cursor.apply(peeked);
                     self.mapper.next();
                     continue;
                 }
                 global_mapper::Mapped::Text(content) => match local_state {
                     LocalState::Initial => {
-                        self.cursor.apply(mapped);
+                        self.cursor.apply(peeked);
                         let ret = Some(Event::Text(*content));
                         self.mapper.next();
                         return ret;
