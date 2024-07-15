@@ -1,7 +1,7 @@
 use super::global_mapper;
 
 #[derive(Clone, Copy)]
-pub struct InputCursor(pub Option<usize>);
+pub struct InputCursor(Option<usize>);
 
 impl InputCursor {
     pub fn new() -> InputCursor {
