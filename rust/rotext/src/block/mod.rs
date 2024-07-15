@@ -1,10 +1,12 @@
 mod events;
 mod global_mapper;
+mod sub_parsers;
 mod utils;
 
 pub use events::Event;
+use sub_parsers::inline::scan_inline_or_exit;
 
-use crate::{common::Range, global};
+use crate::global;
 use global_mapper::GlobalEventStreamMapper;
 use utils::{InputCursor, Peekable3};
 
@@ -47,7 +49,7 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
             let event = match self.state {
                 State::CleaningUp => self.stack.pop().map(|_| Event::Exit),
                 State::BetweenBlocks => self.scan_enter_or_exit_or_leaf(),
-                State::InInline => self.scan_inline_stuff_or_exit(),
+                State::InInline => self.scan_inline_or_exit(),
             };
             if event.is_some() {
                 return event;
@@ -132,105 +134,14 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
         todo!()
     }
 
-    fn scan_inline_stuff_or_exit(&mut self) -> Option<Event> {
-        enum LocalState {
-            Initial,
-            Normal { start: usize, length: usize },
-            IsAfterLineFeed,
-        }
-
-        let mut local_state = LocalState::Initial;
-
-        loop {
-            let Some(peeked) = self.mapper.peek_1() else {
-                break;
-            };
-
-            // log::debug!("{:?} {:?}", self.cursor.value(), mapped);
-
-            match peeked {
-                &global_mapper::Mapped::CharAt(cursor_new) => {
-                    if matches!(local_state, LocalState::Initial) {
-                        self.cursor.apply(peeked);
-                        self.mapper.next();
-                        local_state = LocalState::Normal {
-                            start: cursor_new,
-                            length: 1,
-                        }
-                    } else {
-                        break;
-                    }
-                }
-                global_mapper::Mapped::NextChar => match local_state {
-                    LocalState::Initial => {
-                        self.cursor.apply(peeked);
-                        self.mapper.next();
-                        local_state = LocalState::Normal {
-                            start: self.cursor.value().unwrap(),
-                            length: 1,
-                        }
-                    }
-                    LocalState::Normal { ref mut length, .. } => {
-                        self.cursor.apply(peeked);
-                        self.mapper.next();
-                        *length += 1;
-                    }
-                    _ => unreachable!(),
-                },
-                global_mapper::Mapped::LineFeed => match local_state {
-                    LocalState::Initial => {
-                        self.cursor.apply(peeked);
-                        self.mapper.next();
-                        local_state = LocalState::IsAfterLineFeed;
-                    }
-                    LocalState::Normal { .. } => {
-                        break;
-                    }
-                    _ => unreachable!(),
-                },
-                global_mapper::Mapped::BlankLine { .. } => match local_state {
-                    LocalState::Initial => {
-                        self.cursor.apply(peeked);
-                        self.mapper.next();
-                        return Some(Event::LineFeed);
-                    }
-                    LocalState::Normal { .. } => {
-                        break;
-                    }
-                    LocalState::IsAfterLineFeed => {
-                        self.cursor.apply(peeked);
-                        self.mapper.next();
-                        self.stack.pop();
-                        self.state = State::BetweenBlocks;
-                        return Some(Event::Exit);
-                    }
-                },
-                global_mapper::Mapped::SpacesAtLineBeginning(_) => {
-                    self.cursor.apply(peeked);
-                    self.mapper.next();
-                    continue;
-                }
-                global_mapper::Mapped::Text(content) => match local_state {
-                    LocalState::Initial => {
-                        self.cursor.apply(peeked);
-                        let ret = Some(Event::Text(*content));
-                        self.mapper.next();
-                        return ret;
-                    }
-                    LocalState::Normal { .. } => {
-                        break;
-                    }
-                    _ => unreachable!(),
-                },
+    fn scan_inline_or_exit(&mut self) -> Option<Event> {
+        match scan_inline_or_exit(self.input, &mut self.cursor, &mut self.mapper) {
+            sub_parsers::inline::Result::ToYield(ev) => Some(ev),
+            sub_parsers::inline::Result::Done => {
+                self.stack.pop();
+                self.state = State::BetweenBlocks;
+                Some(Event::Exit)
             }
-        }
-
-        match local_state {
-            LocalState::Initial => None,
-            LocalState::Normal { start, length } => {
-                Some(Event::Undetermined(Range::new(start, length)))
-            }
-            LocalState::IsAfterLineFeed => Some(Event::LineFeed),
         }
     }
 

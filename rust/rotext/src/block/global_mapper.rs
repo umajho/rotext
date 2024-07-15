@@ -217,6 +217,11 @@ mod tests {
         Mapped::CharAt(10), Mapped::NextChar])]
     #[case("a<` b", vec![
         Mapped::CharAt(0), Mapped::Text(Range::new(4, 1))])]
+    #[case("a\n<`b`>", vec![
+        Mapped::CharAt(0), Mapped::LineFeed, Mapped::Text(Range::new(4, 1))])]
+    #[case("a\n <`b`>", vec![
+        Mapped::CharAt(0), Mapped::LineFeed, Mapped::SpacesAtLineBeginning(1),
+        Mapped::Text(Range::new(5, 1))])]
     // ## 注释
     #[case("ab<% … %>c", vec![
         Mapped::CharAt(0), Mapped::NextChar, Mapped::CharAt(11)])]

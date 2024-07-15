@@ -20,6 +20,11 @@ impl Range {
         self.length
     }
 
+    #[inline(always)]
+    pub fn set_length(&mut self, value: usize) {
+        self.length = value;
+    }
+
     pub fn content(&self, input: &[u8]) -> String {
         let slice = &input[self.start..self.start + self.length];
         String::from_utf8(slice.to_vec()).unwrap()
