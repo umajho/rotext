@@ -71,7 +71,6 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
                     continue;
                 }
                 global_mapper::Mapped::Text(_) => {
-                    self.mapper.next();
                     self.state = State::InInline;
                     self.stack.push(StackEntry::InParagraph);
                     return Some(Event::EnterParagraph);
