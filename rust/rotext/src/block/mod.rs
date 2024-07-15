@@ -15,17 +15,9 @@ pub struct Parser<'a, I: 'a + Iterator<Item = global::Event>> {
     mapper: Peekable3<GlobalEventStreamMapper<'a, I>>,
 
     cursor: utils::InputCursor,
-    state: State,
+    /// 如果位 true，代表没有后续输入了，要清理栈中余留的内容。
+    is_cleaning_up: bool,
     stack: Vec<StackEntry>,
-}
-
-enum State {
-    /// 没有后续输入了，要清理栈中余留的内容。
-    CleaningUp,
-    /// 在块与块之间，期待新的块的开始或其所在父级块（或文档）的结束。
-    BetweenBlocks,
-    /// 在行内内容之中，期待其所在父级块（或文档）的结束。
-    InInline,
 }
 
 enum StackEntry {
@@ -39,24 +31,29 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
             mapper: Peekable3::new(GlobalEventStreamMapper::new(input, global_stream)),
 
             cursor: utils::InputCursor::new(),
-            state: State::BetweenBlocks,
+            is_cleaning_up: false,
             stack: vec![],
         }
     }
 
     pub fn next(&mut self) -> Option<Event> {
         loop {
-            let event = match self.state {
-                State::CleaningUp => self.stack.pop().map(|_| Event::Exit),
-                State::BetweenBlocks => self.scan_enter_or_exit_or_leaf(),
-                State::InInline => self.scan_inline_or_exit(),
+            if self.is_cleaning_up {
+                // 若栈中还有内容，出栈并返回 `Some(Event::Exit)`；若栈已空，返回
+                // `None`。
+                return self.stack.pop().map(|_| Event::Exit);
+            }
+
+            let event = match self.stack.last() {
+                Some(StackEntry::InParagraph) => self.scan_inline_or_exit(),
+                None => self.scan_enter_or_exit_or_leaf(),
             };
             if event.is_some() {
                 return event;
             } else if self.stack.is_empty() {
                 return None;
             } else {
-                self.state = State::CleaningUp;
+                self.is_cleaning_up = true
             }
         }
     }
@@ -73,7 +70,6 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
                     continue;
                 }
                 global_mapper::Mapped::Text(_) => {
-                    self.state = State::InInline;
                     self.stack.push(StackEntry::InParagraph);
                     return Some(Event::EnterParagraph);
                 }
@@ -99,7 +95,6 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
                 Some(self.scan_rest_code_block())
             }
             _ => {
-                self.state = State::InInline;
                 self.stack.push(StackEntry::InParagraph);
                 Some(Event::EnterParagraph)
             }
@@ -139,7 +134,6 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
             sub_parsers::inline::Result::ToYield(ev) => Some(ev),
             sub_parsers::inline::Result::Done => {
                 self.stack.pop();
-                self.state = State::BetweenBlocks;
                 Some(Event::Exit)
             }
         }
