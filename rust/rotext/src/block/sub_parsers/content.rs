@@ -19,28 +19,25 @@ enum InternalResult {
     Done,
 }
 
-pub struct Parser<'a, I: 'a + Iterator<Item = global::Event>> {
-    context: Box<Context<'a, I>>,
-}
+pub struct Parser;
 
-impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
-    pub fn new(context: Box<Context<'a, I>>) -> Self {
-        Self { context }
-    }
-
-    pub fn drop(self) -> Box<Context<'a, I>> {
-        self.context
+impl Parser {
+    pub fn new() -> Self {
+        Self
     }
 
     #[inline(always)]
-    fn next(&mut self) -> Option<Event> {
+    pub fn next<'a, I: 'a + Iterator<Item = global::Event>>(
+        &mut self,
+        ctx: &mut Context<'a, I>,
+    ) -> Option<Event> {
         let mut state = StepState::Initial;
 
         loop {
             let internal_result = match state {
-                StepState::Initial => self.process_in_initial_state(),
-                StepState::Normal(ref mut content) => self.process_in_normal_state(content),
-                StepState::IsAfterLineFeed => self.process_in_is_after_line_feed_state(),
+                StepState::Initial => self.process_in_initial_state(ctx),
+                StepState::Normal(ref mut content) => self.process_in_normal_state(ctx, content),
+                StepState::IsAfterLineFeed => self.process_in_is_after_line_feed_state(ctx),
             };
 
             match internal_result {
@@ -55,8 +52,11 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
     }
 
     #[inline(always)]
-    fn process_in_initial_state(&mut self) -> InternalResult {
-        let Some(peeked) = self.context.mapper.peek_1() else {
+    fn process_in_initial_state<'a, I: 'a + Iterator<Item = global::Event>>(
+        &mut self,
+        ctx: &mut Context<'a, I>,
+    ) -> InternalResult {
+        let Some(peeked) = ctx.mapper.peek_1() else {
             return InternalResult::Done;
         };
 
@@ -64,29 +64,33 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
             global_mapper::Mapped::CharAt(_) | global_mapper::Mapped::NextChar => {
                 // NOTE: 初始状态也可能遇到 `NextChar`，比如在一个并非结束与换行的块
                 // 级元素（最简单的，如分割线）后面存在文本时。
-                consume_peeked!(self.context, peeked);
-                let content = Range::new(self.context.cursor.value().unwrap(), 1);
+                consume_peeked!(ctx, peeked);
+                let content = Range::new(ctx.cursor.value().unwrap(), 1);
                 InternalResult::ToChangeState(StepState::Normal(content))
             }
             global_mapper::Mapped::LineFeed => {
-                consume_peeked!(self.context, peeked);
+                consume_peeked!(ctx, peeked);
                 InternalResult::ToChangeState(StepState::IsAfterLineFeed)
             }
             global_mapper::Mapped::BlankAtLineBeginning(_) => {
-                consume_peeked!(self.context, peeked);
+                consume_peeked!(ctx, peeked);
                 InternalResult::ToSkip
             }
             global_mapper::Mapped::Text(content) => {
                 let content = *content;
-                consume_peeked!(self.context, peeked);
+                consume_peeked!(ctx, peeked);
                 InternalResult::ToYield(Event::Text(content))
             }
         }
     }
 
     #[inline(always)]
-    fn process_in_normal_state(&mut self, state_content: &mut Range) -> InternalResult {
-        let Some(peeked) = self.context.mapper.peek_1() else {
+    fn process_in_normal_state<'a, I: 'a + Iterator<Item = global::Event>>(
+        &mut self,
+        ctx: &mut Context<'a, I>,
+        state_content: &mut Range,
+    ) -> InternalResult {
+        let Some(peeked) = ctx.mapper.peek_1() else {
             return InternalResult::ToYield(Event::Undetermined(*state_content));
         };
 
@@ -97,20 +101,23 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
                 InternalResult::ToYield(Event::Undetermined(*state_content))
             }
             global_mapper::Mapped::NextChar => {
-                consume_peeked!(self.context, peeked);
+                consume_peeked!(ctx, peeked);
                 state_content.set_length(state_content.length() + 1);
                 InternalResult::ToSkip
             }
             global_mapper::Mapped::BlankAtLineBeginning(_) => {
-                consume_peeked!(self.context, peeked);
+                consume_peeked!(ctx, peeked);
                 InternalResult::ToSkip
             }
         }
     }
 
     #[inline(always)]
-    fn process_in_is_after_line_feed_state(&mut self) -> InternalResult {
-        let Some(peeked) = self.context.mapper.peek_1() else {
+    fn process_in_is_after_line_feed_state<'a, I: 'a + Iterator<Item = global::Event>>(
+        &mut self,
+        ctx: &mut Context<'a, I>,
+    ) -> InternalResult {
+        let Some(peeked) = ctx.mapper.peek_1() else {
             return InternalResult::ToYield(Event::LineFeed);
         };
 
@@ -118,22 +125,14 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
             global_mapper::Mapped::CharAt(_) => InternalResult::ToYield(Event::LineFeed),
             global_mapper::Mapped::NextChar => unreachable!(),
             global_mapper::Mapped::LineFeed => {
-                consume_peeked!(self.context, peeked);
+                consume_peeked!(ctx, peeked);
                 InternalResult::Done
             }
             global_mapper::Mapped::BlankAtLineBeginning(_) => {
-                consume_peeked!(self.context, peeked);
+                consume_peeked!(ctx, peeked);
                 InternalResult::ToSkip
             }
             global_mapper::Mapped::Text(_) => InternalResult::ToYield(Event::LineFeed),
         }
-    }
-}
-
-impl<'a, I: 'a + Iterator<Item = global::Event>> Iterator for Parser<'a, I> {
-    type Item = Event;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.next()
     }
 }

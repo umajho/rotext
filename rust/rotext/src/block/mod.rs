@@ -12,6 +12,8 @@ use global_mapper::GlobalEventStreamMapper;
 use utils::Peekable3;
 
 pub struct Parser<'a, I: 'a + Iterator<Item = global::Event>> {
+    context: Context<'a, I>,
+
     /// 如果位 true，代表没有后续输入了，要清理栈中余留的内容。
     is_cleaning_up: bool,
     state: State<'a, I>,
@@ -19,7 +21,7 @@ pub struct Parser<'a, I: 'a + Iterator<Item = global::Event>> {
 }
 
 enum State<'a, I: 'a + Iterator<Item = global::Event>> {
-    InRoot(Box<Context<'a, I>>),
+    InRoot,
     InSubParser(Box<dyn sub_parsers::SubParser<'a, I> + 'a>),
 
     Invalid,
@@ -29,15 +31,17 @@ enum StackEntry {}
 
 impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
     pub fn new(input: &'a [u8], global_stream: I) -> Parser<'a, I> {
-        let ctx = Context {
+        let context = Context {
             input,
             mapper: Peekable3::new(GlobalEventStreamMapper::new(input, global_stream)),
             cursor: utils::InputCursor::new(),
         };
 
         Parser {
+            context,
+
             is_cleaning_up: false,
-            state: State::InRoot(Box::new(ctx)),
+            state: State::InRoot,
             stack: vec![],
         }
     }
@@ -54,8 +58,8 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
 
             let state = std::mem::replace(&mut self.state, State::Invalid);
             (to_break, self.state) = match state {
-                State::InRoot(ctx) => match parse_root(ctx) {
-                    RootParseResult::ToYield(ctx, ev) => (Some(ev), State::InRoot(ctx)),
+                State::InRoot => match parse_root(&mut self.context) {
+                    RootParseResult::ToYield(ev) => (Some(ev), State::InRoot),
                     RootParseResult::ToEnter(sub_parser) => (None, State::InSubParser(sub_parser)),
                     RootParseResult::Done => {
                         self.is_cleaning_up = true;
@@ -63,9 +67,9 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
                     }
                 },
                 State::InSubParser(mut sub_parser) => {
-                    let ev = sub_parser.next();
+                    let ev = sub_parser.next(&mut self.context);
                     if ev.is_none() {
-                        (None, State::InRoot(sub_parser.take_context()))
+                        (None, State::InRoot)
                     } else {
                         (ev, State::InSubParser(sub_parser))
                     }
@@ -89,13 +93,13 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Iterator for Parser<'a, I> {
 }
 
 enum RootParseResult<'a, I: 'a + Iterator<Item = global::Event>> {
-    ToYield(Box<Context<'a, I>>, Event),
+    ToYield(Event),
     ToEnter(Box<dyn sub_parsers::SubParser<'a, I> + 'a>),
     Done,
 }
 
 fn parse_root<'a, I: 'a + Iterator<Item = global::Event>>(
-    mut ctx: Box<Context<'a, I>>,
+    ctx: &mut Context<'a, I>,
 ) -> RootParseResult<'a, I> {
     loop {
         let Some(peeked) = ctx.mapper.peek_1() else {
@@ -108,9 +112,7 @@ fn parse_root<'a, I: 'a + Iterator<Item = global::Event>>(
                 continue;
             }
             global_mapper::Mapped::Text(_) => {
-                return RootParseResult::ToEnter(Box::new(sub_parsers::paragraph::Parser::new(
-                    ctx,
-                )));
+                return RootParseResult::ToEnter(Box::new(sub_parsers::paragraph::Parser::new()));
             }
             global_mapper::Mapped::CharAt(_) | global_mapper::Mapped::NextChar => {
                 if !ctx.take_from_mapper_and_apply_to_cursor_if_applied_cursor_satisfies(
@@ -127,13 +129,13 @@ fn parse_root<'a, I: 'a + Iterator<Item = global::Event>>(
         [Some(b'-'), Some(b'-'), Some(b'-')] => {
             ctx.must_take_from_mapper_and_apply_to_cursor(3);
             ctx.drop_from_mapper_while_char(b'-');
-            RootParseResult::ToYield(ctx, Event::ThematicBreak)
+            RootParseResult::ToYield(Event::ThematicBreak)
         }
         [Some(b'`'), Some(b'`'), Some(b'`')] => {
             ctx.must_take_from_mapper_and_apply_to_cursor(3);
             todo!()
         }
-        _ => RootParseResult::ToEnter(Box::new(sub_parsers::paragraph::Parser::new(ctx))),
+        _ => RootParseResult::ToEnter(Box::new(sub_parsers::paragraph::Parser::new())),
     }
 }
 
