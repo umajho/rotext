@@ -7,7 +7,7 @@ pub struct GlobalEventStreamMapper<'a, I: 'a + Iterator<Item = global::Event>> {
 
     deferred: Option<Mapped>,
     remain: Option<RemainUndetermined>,
-    spaces_at_line_beginning: Option<usize>,
+    blank_at_line_beginning: Option<Range>,
 }
 
 #[derive(Debug)]
@@ -26,10 +26,8 @@ pub enum Mapped {
     NextChar,
     /// LF 换行。
     LineFeed,
-    /// 空行。在处理上包括后面的换行符。
-    BlankLine { spaces: usize },
-    /// 一行开始的指定数量的空格。
-    SpacesAtLineBeginning(usize),
+    /// 空白。
+    BlankAtLineBeginning(Range),
     /// 文本。
     Text(Range),
 }
@@ -41,7 +39,7 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> GlobalEventStreamMapper<'a, I> 
             stream,
             deferred: None,
             remain: None,
-            spaces_at_line_beginning: Some(0),
+            blank_at_line_beginning: Some(Range::new(0, 0)),
         }
     }
 
@@ -63,21 +61,16 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> GlobalEventStreamMapper<'a, I> 
                 let index = remain.content.start() + remain.next_offset;
                 let char = self.input[index];
 
-                if let Some(ref mut spaces) = self.spaces_at_line_beginning {
+                if let Some(ref mut range) = self.blank_at_line_beginning {
                     if char == b' ' {
                         remain.next_offset += 1;
-                        *spaces += 1;
+                        range.set_length(range.length() + 1);
                         continue;
-                    } else if char == b'\n' {
-                        let spaces = *spaces;
-                        remain.next_offset += 1;
-                        self.spaces_at_line_beginning = Some(0);
-                        return Some(Mapped::BlankLine { spaces });
                     } else {
-                        let spaces = *spaces;
-                        self.spaces_at_line_beginning = None;
-                        if spaces > 0 {
-                            return Some(Mapped::SpacesAtLineBeginning(spaces));
+                        let range = *range;
+                        self.blank_at_line_beginning = None;
+                        if range.length() > 0 {
+                            return Some(Mapped::BlankAtLineBeginning(range));
                         }
                     }
                 }
@@ -86,9 +79,10 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> GlobalEventStreamMapper<'a, I> 
                     // 单独对待 LF，接下来剩余的字符算新开始。
                     //
                     // NOTE: CR 已经在全局阶段被无视了。
+
+                    self.blank_at_line_beginning = Some(Range::new(index + 1, 0));
                     remain.next_offset += 1;
                     remain.is_to_start = true;
-                    self.spaces_at_line_beginning = Some(0);
                     return Some(Mapped::LineFeed);
                 } else if remain.is_to_start {
                     remain.next_offset += 1;
@@ -101,9 +95,9 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> GlobalEventStreamMapper<'a, I> 
             }
 
             let Some(next) = self.stream.next() else {
-                if let Some(spaces) = self.spaces_at_line_beginning.take() {
-                    if spaces > 0 {
-                        return Some(Mapped::SpacesAtLineBeginning(spaces));
+                if let Some(range) = self.blank_at_line_beginning.take() {
+                    if range.length() > 0 {
+                        return Some(Mapped::BlankAtLineBeginning(range));
                     }
                 }
                 return None;
@@ -133,10 +127,10 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> GlobalEventStreamMapper<'a, I> 
                     }
 
                     let mapped_text = Some(Mapped::Text(Range::new(start, length)));
-                    if let Some(spaces) = self.spaces_at_line_beginning.take() {
-                        if spaces > 0 {
+                    if let Some(range) = self.blank_at_line_beginning.take() {
+                        if range.length() > 0 {
                             self.deferred = mapped_text;
-                            return Some(Mapped::SpacesAtLineBeginning(spaces));
+                            return Some(Mapped::BlankAtLineBeginning(range));
                         }
                     }
                     return mapped_text;
@@ -166,7 +160,7 @@ mod tests {
     // ## 无特殊语法
     #[case("", vec![])]
     #[case("  ", vec![
-        Mapped::SpacesAtLineBeginning(2)])]
+        Mapped::BlankAtLineBeginning(Range::new(0, 2))])]
     #[case("a", vec![
         Mapped::CharAt(0)])]
     #[case("ab", vec![
@@ -176,29 +170,33 @@ mod tests {
         Mapped::CharAt(0), Mapped::LineFeed, Mapped::CharAt(2), Mapped::NextChar])]
     // ### 空行
     #[case("\n", vec![
-        Mapped::BlankLine { spaces: 0 }])]
+        Mapped::LineFeed ])]
     #[case("<%…%>\n", vec![
-        Mapped::BlankLine { spaces: 0 }])]
+        Mapped::LineFeed])]
     #[case("\r\n", vec![
-        Mapped::BlankLine { spaces: 0 }])]
+        Mapped::LineFeed])]
     #[case("\n\n", vec![
-        Mapped::BlankLine { spaces: 0 }, Mapped::BlankLine { spaces: 0 }])]
+        Mapped::LineFeed, Mapped::LineFeed])]
     #[case("\r\n\r\n", vec![
-        Mapped::BlankLine { spaces: 0 }, Mapped::BlankLine { spaces: 0 }])]
+        Mapped::LineFeed, Mapped::LineFeed])]
     #[case("a\n", vec![
         Mapped::CharAt(0), Mapped::LineFeed])]
     #[case("a\n\n", vec![
-        Mapped::CharAt(0), Mapped::LineFeed, Mapped::BlankLine { spaces: 0 }])]
+        Mapped::CharAt(0), Mapped::LineFeed, Mapped::LineFeed])]
     #[case("a\r\n\r\n", vec![
-        Mapped::CharAt(0), Mapped::LineFeed, Mapped::BlankLine { spaces: 0 }])]
+        Mapped::CharAt(0), Mapped::LineFeed, Mapped::LineFeed])]
     // #### 有空格的空行
     #[case("  \n", vec![
-        Mapped::BlankLine { spaces: 2 }])]
-    #[case("  <%…%>\n", vec![
-        Mapped::BlankLine { spaces: 2 }])]
-    #[case("  <` `>\n", vec![
-        Mapped::SpacesAtLineBeginning(2), Mapped::Text(Range::new(4, 1)),
+        Mapped::BlankAtLineBeginning(Range::new(0, 2)), Mapped::LineFeed])]
+    #[case("a\n  \n", vec![
+        Mapped::CharAt(0), Mapped::LineFeed,
+        Mapped::BlankAtLineBeginning(Range::new(2, 2)),
         Mapped::LineFeed])]
+    #[case("  <%…%>\n", vec![
+        Mapped::BlankAtLineBeginning(Range::new(0, 2)), Mapped::LineFeed])]
+    #[case("  <` `>\n", vec![
+        Mapped::BlankAtLineBeginning(Range::new(0, 2)),
+        Mapped::Text(Range::new(4, 1)), Mapped::LineFeed])]
     // ## 逐字文本转义转为文本
     #[case("<`a`>", vec![
         Mapped::Text(Range::new(2, 1))])]
@@ -220,7 +218,8 @@ mod tests {
     #[case("a\n<`b`>", vec![
         Mapped::CharAt(0), Mapped::LineFeed, Mapped::Text(Range::new(4, 1))])]
     #[case("a\n <`b`>", vec![
-        Mapped::CharAt(0), Mapped::LineFeed, Mapped::SpacesAtLineBeginning(1),
+        Mapped::CharAt(0), Mapped::LineFeed,
+        Mapped::BlankAtLineBeginning(Range::new(2, 1)),
         Mapped::Text(Range::new(5, 1))])]
     // ## 注释
     #[case("ab<% … %>c", vec![

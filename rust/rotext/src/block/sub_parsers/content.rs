@@ -72,11 +72,7 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
                 consume_peeked!(self.context, peeked);
                 InternalResult::ToChangeState(StepState::IsAfterLineFeed)
             }
-            global_mapper::Mapped::BlankLine { .. } => {
-                consume_peeked!(self.context, peeked);
-                InternalResult::ToYield(Event::LineFeed)
-            }
-            global_mapper::Mapped::SpacesAtLineBeginning(_) => {
+            global_mapper::Mapped::BlankAtLineBeginning(_) => {
                 consume_peeked!(self.context, peeked);
                 InternalResult::ToSkip
             }
@@ -97,7 +93,6 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
         match peeked {
             global_mapper::Mapped::CharAt(_)
             | global_mapper::Mapped::LineFeed
-            | global_mapper::Mapped::BlankLine { .. }
             | global_mapper::Mapped::Text(_) => {
                 InternalResult::ToYield(Event::Undetermined(*state_content))
             }
@@ -106,7 +101,7 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
                 state_content.set_length(state_content.length() + 1);
                 InternalResult::ToSkip
             }
-            global_mapper::Mapped::SpacesAtLineBeginning(_) => {
+            global_mapper::Mapped::BlankAtLineBeginning(_) => {
                 consume_peeked!(self.context, peeked);
                 InternalResult::ToSkip
             }
@@ -121,12 +116,12 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
 
         match peeked {
             global_mapper::Mapped::CharAt(_) => InternalResult::ToYield(Event::LineFeed),
-            global_mapper::Mapped::NextChar | global_mapper::Mapped::LineFeed => unreachable!(),
-            global_mapper::Mapped::BlankLine { .. } => {
+            global_mapper::Mapped::NextChar => unreachable!(),
+            global_mapper::Mapped::LineFeed => {
                 consume_peeked!(self.context, peeked);
                 InternalResult::Done
             }
-            global_mapper::Mapped::SpacesAtLineBeginning(_) => {
+            global_mapper::Mapped::BlankAtLineBeginning(_) => {
                 consume_peeked!(self.context, peeked);
                 InternalResult::ToSkip
             }

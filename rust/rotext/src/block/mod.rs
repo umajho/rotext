@@ -103,9 +103,7 @@ fn parse_root<'a, I: 'a + Iterator<Item = global::Event>>(
         };
 
         match peeked {
-            global_mapper::Mapped::LineFeed
-            | global_mapper::Mapped::BlankLine { .. }
-            | global_mapper::Mapped::SpacesAtLineBeginning(_) => {
+            global_mapper::Mapped::LineFeed | global_mapper::Mapped::BlankAtLineBeginning(_) => {
                 ctx.mapper.next();
                 continue;
             }
