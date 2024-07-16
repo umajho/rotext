@@ -1,37 +1,43 @@
+mod context;
 mod events;
 mod global_mapper;
 mod sub_parsers;
 mod utils;
 
+use context::Context;
 pub use events::Event;
-use sub_parsers::inline::scan_inline_or_exit;
 
 use crate::global;
 use global_mapper::GlobalEventStreamMapper;
-use utils::{InputCursor, Peekable3};
+use utils::Peekable3;
 
 pub struct Parser<'a, I: 'a + Iterator<Item = global::Event>> {
-    input: &'a [u8],
-    mapper: Peekable3<GlobalEventStreamMapper<'a, I>>,
-
-    cursor: utils::InputCursor,
     /// 如果位 true，代表没有后续输入了，要清理栈中余留的内容。
     is_cleaning_up: bool,
+    state: State<'a, I>,
     stack: Vec<StackEntry>,
 }
 
-enum StackEntry {
-    InParagraph,
+enum State<'a, I: 'a + Iterator<Item = global::Event>> {
+    InRoot(Box<Context<'a, I>>),
+    InSubParser(Box<dyn sub_parsers::SubParser<'a, I> + 'a>),
+
+    Invalid,
 }
+
+enum StackEntry {}
 
 impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
     pub fn new(input: &'a [u8], global_stream: I) -> Parser<'a, I> {
-        Parser {
+        let ctx = Context {
             input,
             mapper: Peekable3::new(GlobalEventStreamMapper::new(input, global_stream)),
-
             cursor: utils::InputCursor::new(),
+        };
+
+        Parser {
             is_cleaning_up: false,
+            state: State::InRoot(Box::new(ctx)),
             stack: vec![],
         }
     }
@@ -44,123 +50,32 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
                 return self.stack.pop().map(|_| Event::Exit);
             }
 
-            let event = match self.stack.last() {
-                Some(StackEntry::InParagraph) => self.scan_inline_or_exit(),
-                None => self.scan_enter_or_exit_or_leaf(),
-            };
-            if event.is_some() {
-                return event;
-            } else if self.stack.is_empty() {
-                return None;
-            } else {
-                self.is_cleaning_up = true
-            }
-        }
-    }
+            let to_break: Option<Event>;
 
-    fn scan_enter_or_exit_or_leaf(&mut self) -> Option<Event> {
-        loop {
-            let peeked = self.mapper.peek_1()?;
-
-            match peeked {
-                global_mapper::Mapped::LineFeed
-                | global_mapper::Mapped::BlankLine { .. }
-                | global_mapper::Mapped::SpacesAtLineBeginning(_) => {
-                    self.mapper.next();
-                    continue;
-                }
-                global_mapper::Mapped::Text(_) => {
-                    self.stack.push(StackEntry::InParagraph);
-                    return Some(Event::EnterParagraph);
-                }
-                global_mapper::Mapped::CharAt(_) | global_mapper::Mapped::NextChar => {
-                    if !self.take_from_mapper_and_apply_to_cursor_if_applied_cursor_satisfies(
-                        |applied_cursor| applied_cursor.at(self.input).is_some_and(is_space_char),
-                    ) {
-                        // peeked 所对应的字符不是空白字符。
-                        break;
+            let state = std::mem::replace(&mut self.state, State::Invalid);
+            (to_break, self.state) = match state {
+                State::InRoot(ctx) => match parse_root(ctx) {
+                    RootParseResult::ToYield(ctx, ev) => (Some(ev), State::InRoot(ctx)),
+                    RootParseResult::ToEnter(sub_parser) => (None, State::InSubParser(sub_parser)),
+                    RootParseResult::Done => {
+                        self.is_cleaning_up = true;
+                        (None, State::Invalid)
+                    }
+                },
+                State::InSubParser(mut sub_parser) => {
+                    let ev = sub_parser.next();
+                    if ev.is_none() {
+                        (None, State::InRoot(sub_parser.take_context()))
+                    } else {
+                        (ev, State::InSubParser(sub_parser))
                     }
                 }
+                State::Invalid => unreachable!(),
+            };
+
+            if to_break.is_some() {
+                break to_break;
             }
-        }
-
-        let peeked = peek_next_three_chars(self.input, self.cursor, &mut self.mapper);
-        match peeked[..] {
-            [b'-', b'-', b'-'] => {
-                self.must_take_from_mapper_and_apply_to_cursor(3);
-                Some(self.scan_rest_thematic_break())
-            }
-            [b'`', b'`', b'`'] => {
-                self.must_take_from_mapper_and_apply_to_cursor(3);
-                Some(self.scan_rest_code_block())
-            }
-            _ => {
-                self.stack.push(StackEntry::InParagraph);
-                Some(Event::EnterParagraph)
-            }
-        }
-    }
-
-    fn scan_rest_thematic_break(&mut self) -> Event {
-        loop {
-            if !self.take_from_mapper_and_apply_to_cursor_if_applied_cursor_satisfies(
-                |applied_cursor| {
-                    applied_cursor
-                        .at(self.input)
-                        .is_some_and(|char| char == b'-')
-                },
-            ) {
-                break;
-            }
-        }
-
-        Event::ThematicBreak
-    }
-
-    fn scan_rest_code_block(&mut self) -> Event {
-        todo!()
-    }
-
-    fn scan_code_block_meta() {
-        todo!()
-    }
-
-    fn scan_code_block_content() {
-        todo!()
-    }
-
-    fn scan_inline_or_exit(&mut self) -> Option<Event> {
-        match scan_inline_or_exit(self.input, &mut self.cursor, &mut self.mapper) {
-            sub_parsers::inline::Result::ToYield(ev) => Some(ev),
-            sub_parsers::inline::Result::Done => {
-                self.stack.pop();
-                Some(Event::Exit)
-            }
-        }
-    }
-
-    fn take_from_mapper_and_apply_to_cursor_if_applied_cursor_satisfies<
-        F: FnOnce(&InputCursor) -> bool,
-    >(
-        &mut self,
-        condition: F,
-    ) -> bool {
-        let Some(peeked) = self.mapper.peek_1() else {
-            return false;
-        };
-        let applied = self.cursor.applying(peeked);
-        if condition(&applied) {
-            self.cursor = applied;
-            self.mapper.next();
-            true
-        } else {
-            false
-        }
-    }
-
-    fn must_take_from_mapper_and_apply_to_cursor(&mut self, n: usize) {
-        for _ in 0..n {
-            self.cursor.apply(&self.mapper.next().unwrap());
         }
     }
 }
@@ -173,42 +88,53 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Iterator for Parser<'a, I> {
     }
 }
 
-/// 窥视 `iter` 接下来至多 3 个 `u8` 字符。
-fn peek_next_three_chars<I: Iterator<Item = global_mapper::Mapped>>(
-    input: &[u8],
-    mut cursor: InputCursor,
-    iter: &mut Peekable3<I>,
-) -> Vec<u8> {
-    let mut result: Vec<u8> = Vec::with_capacity(3);
+enum RootParseResult<'a, I: 'a + Iterator<Item = global::Event>> {
+    ToYield(Box<Context<'a, I>>, Event),
+    ToEnter(Box<dyn sub_parsers::SubParser<'a, I> + 'a>),
+    Done,
+}
 
-    let Some(first) = iter.peek_1() else {
-        return result;
-    };
-    cursor.apply(first);
-    if cursor.value().is_none() {
-        return result;
+fn parse_root<'a, I: 'a + Iterator<Item = global::Event>>(
+    mut ctx: Box<Context<'a, I>>,
+) -> RootParseResult<'a, I> {
+    loop {
+        let Some(peeked) = ctx.mapper.peek_1() else {
+            return RootParseResult::Done;
+        };
+
+        match peeked {
+            global_mapper::Mapped::LineFeed
+            | global_mapper::Mapped::BlankLine { .. }
+            | global_mapper::Mapped::SpacesAtLineBeginning(_) => {
+                ctx.mapper.next();
+                continue;
+            }
+            global_mapper::Mapped::Text(_) => {
+                return RootParseResult::ToEnter(Box::new(sub_parsers::inline::Parser::new(ctx)));
+            }
+            global_mapper::Mapped::CharAt(_) | global_mapper::Mapped::NextChar => {
+                if !ctx.take_from_mapper_and_apply_to_cursor_if_applied_cursor_satisfies(
+                    |applied_cursor| applied_cursor.at(ctx.input).is_some_and(is_space_char),
+                ) {
+                    // peeked 所对应的字符不是空白字符。
+                    break;
+                }
+            }
+        }
     }
-    result.push(cursor.at(input).unwrap());
 
-    let Some(second) = iter.peek_2() else {
-        return result;
-    };
-    cursor.apply(second);
-    if cursor.value().is_none() {
-        return result;
+    match ctx.peek_next_three_chars() {
+        [Some(b'-'), Some(b'-'), Some(b'-')] => {
+            ctx.must_take_from_mapper_and_apply_to_cursor(3);
+            ctx.drop_from_mapper_while_char(b'-');
+            RootParseResult::ToYield(ctx, Event::ThematicBreak)
+        }
+        [Some(b'`'), Some(b'`'), Some(b'`')] => {
+            ctx.must_take_from_mapper_and_apply_to_cursor(3);
+            todo!()
+        }
+        _ => RootParseResult::ToEnter(Box::new(sub_parsers::inline::Parser::new(ctx))),
     }
-    result.push(cursor.at(input).unwrap());
-
-    let Some(third) = iter.peek_3() else {
-        return result;
-    };
-    cursor.apply(third);
-    if cursor.value().is_none() {
-        return result;
-    }
-    result.push(cursor.at(input).unwrap());
-
-    result
 }
 
 fn is_space_char(char: u8) -> bool {

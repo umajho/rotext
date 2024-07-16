@@ -1,7 +1,7 @@
 macro_rules! consume_peeked {
-    ($cursor:ident, $mapper:ident, $peeked:ident) => {
-        $cursor.apply($peeked);
-        $mapper.next();
+    ($context:expr, $peeked:expr) => {
+        $context.cursor.apply($peeked);
+        $context.mapper.next();
     };
 }
 
