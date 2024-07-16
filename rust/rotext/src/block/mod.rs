@@ -14,7 +14,7 @@ use utils::Peekable3;
 pub struct Parser<'a, I: 'a + Iterator<Item = global::Event>> {
     context: Context<'a, I>,
 
-    /// 如果位 true，代表没有后续输入了，要清理栈中余留的内容。
+    /// 如果为 true，代表没有后续输入了，要清理栈中余留的内容。
     is_cleaning_up: bool,
     state: State<'a, I>,
     stack: Vec<StackEntry>,
