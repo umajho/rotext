@@ -1,7 +1,7 @@
 use super::{context::Context, Event};
 use crate::global;
 
-pub mod inline;
+pub mod paragraph;
 
 mod content;
 mod utils;

@@ -108,7 +108,9 @@ fn parse_root<'a, I: 'a + Iterator<Item = global::Event>>(
                 continue;
             }
             global_mapper::Mapped::Text(_) => {
-                return RootParseResult::ToEnter(Box::new(sub_parsers::inline::Parser::new(ctx)));
+                return RootParseResult::ToEnter(Box::new(sub_parsers::paragraph::Parser::new(
+                    ctx,
+                )));
             }
             global_mapper::Mapped::CharAt(_) | global_mapper::Mapped::NextChar => {
                 if !ctx.take_from_mapper_and_apply_to_cursor_if_applied_cursor_satisfies(
@@ -131,7 +133,7 @@ fn parse_root<'a, I: 'a + Iterator<Item = global::Event>>(
             ctx.must_take_from_mapper_and_apply_to_cursor(3);
             todo!()
         }
-        _ => RootParseResult::ToEnter(Box::new(sub_parsers::inline::Parser::new(ctx))),
+        _ => RootParseResult::ToEnter(Box::new(sub_parsers::paragraph::Parser::new(ctx))),
     }
 }
 
