@@ -6,7 +6,7 @@ pub struct GlobalEventStreamMapper<'a, I: 'a + Iterator<Item = global::Event>> {
     stream: I,
 
     deferred: Option<Deferred>,
-    remain: Option<RemainUndetermined>,
+    remain: Option<RemainUnparsed>,
     blank_at_line_beginning: Option<Range>,
 }
 
@@ -16,7 +16,7 @@ enum Deferred {
 }
 
 #[derive(Debug)]
-struct RemainUndetermined {
+struct RemainUnparsed {
     content: Range,
 
     next_offset: usize,
@@ -106,8 +106,8 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> GlobalEventStreamMapper<'a, I> 
                 }
             };
 
-            if let Some(global::Event::Undetermined(content)) = next {
-                self.remain = Some(RemainUndetermined {
+            if let Some(global::Event::Unparsed(content)) = next {
+                self.remain = Some(RemainUnparsed {
                     content,
                     next_offset: 0,
                 });
@@ -122,7 +122,7 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> GlobalEventStreamMapper<'a, I> 
             }
 
             match next? {
-                global::Event::Undetermined(_) => unreachable!(),
+                global::Event::Unparsed(_) => unreachable!(),
                 global::Event::VerbatimEscaping {
                     content,
                     is_closed_forcedly: _,

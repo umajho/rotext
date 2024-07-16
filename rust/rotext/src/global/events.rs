@@ -4,8 +4,8 @@ use crate::{common::Range, events::EventType};
 #[derive(Debug, PartialEq, Eq)]
 #[repr(u32)]
 pub enum Event {
-    /// 有待下个阶段决定。
-    Undetermined(Range) = EventType::Undetermined as u32,
+    /// 留给下个阶段解析。
+    Unparsed(Range) = EventType::Unparsed as u32,
 
     /// 逐字文本转义。
     ///
@@ -33,7 +33,7 @@ impl Event {
     #[cfg(test)]
     pub fn content<'a>(&self, input: &'a [u8]) -> Option<&'a str> {
         let result = match *self {
-            Event::Undetermined(content) => content.content(input),
+            Event::Unparsed(content) => content.content(input),
             Event::VerbatimEscaping {
                 content,
                 is_closed_forcedly: _,
@@ -49,7 +49,7 @@ impl Event {
         let mut flags = std::collections::HashSet::new();
 
         match *self {
-            Event::Undetermined(_) | Event::CarriageReturn { .. } | Event::LineFeed { .. } => {}
+            Event::Unparsed(_) | Event::CarriageReturn { .. } | Event::LineFeed { .. } => {}
             Event::VerbatimEscaping {
                 content: _,
                 is_closed_forcedly,

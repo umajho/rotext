@@ -158,61 +158,61 @@ mod tests {
     // ## 段落
     #[case(vec!["a", " a", "\na"], vec![
         (EventType::EnterParagraph, None),
-        (EventType::Undetermined, Some("a")),
+        (EventType::Unparsed, Some("a")),
         (EventType::Exit, None)])]
     #[case(vec!["a "], vec![
         (EventType::EnterParagraph, None),
-        (EventType::Undetermined, Some("a ")),
+        (EventType::Unparsed, Some("a ")),
         (EventType::Exit, None)])]
     #[case(vec!["a\nb", "a\n b"], vec![
         (EventType::EnterParagraph, None),
-        (EventType::Undetermined, Some("a")),
+        (EventType::Unparsed, Some("a")),
         (EventType::LineFeed, None),
-        (EventType::Undetermined, Some("b")),
+        (EventType::Unparsed, Some("b")),
         (EventType::Exit, None)])]
     #[case(vec!["a\n\nb", "a\n\n b"], vec![
         (EventType::EnterParagraph, None),
-        (EventType::Undetermined, Some("a")),
+        (EventType::Unparsed, Some("a")),
         (EventType::Exit, None),
         (EventType::EnterParagraph, None),
-        (EventType::Undetermined, Some("b")),
+        (EventType::Unparsed, Some("b")),
         (EventType::Exit, None)])]
     // ### 段落与全局阶段语法的互动
     #[case(vec!["a<`c`>"], vec![
         (EventType::EnterParagraph, None),
-        (EventType::Undetermined, Some("a")),
+        (EventType::Unparsed, Some("a")),
         (EventType::Text, Some("c")),
         (EventType::Exit, None)])]
     #[case(vec!["<`c`>b"], vec![
         (EventType::EnterParagraph, None),
         (EventType::Text, Some("c")),
-        (EventType::Undetermined, Some("b")),
+        (EventType::Unparsed, Some("b")),
         (EventType::Exit, None)])]
     #[case(vec!["a<`c`>b"], vec![
         (EventType::EnterParagraph, None),
-        (EventType::Undetermined, Some("a")),
+        (EventType::Unparsed, Some("a")),
         (EventType::Text, Some("c")),
-        (EventType::Undetermined, Some("b")),
+        (EventType::Unparsed, Some("b")),
         (EventType::Exit, None)])]
     #[case(vec!["a\n<`c`>", "a\n <`c`>"], vec![
         (EventType::EnterParagraph, None),
-        (EventType::Undetermined, Some("a")),
+        (EventType::Unparsed, Some("a")),
         (EventType::LineFeed, None),
         (EventType::Text, Some("c")),
         (EventType::Exit, None)])]
     // ### “继续段落” 的优先级 “高于开启其他块级语法” 的优先级
     #[case(vec!["a\n---"], vec![ // 分割线
         (EventType::EnterParagraph, None),
-        (EventType::Undetermined, Some("a")),
+        (EventType::Unparsed, Some("a")),
         (EventType::LineFeed, None),
-        (EventType::Undetermined, Some("---")),
+        (EventType::Unparsed, Some("---")),
         (EventType::Exit, None)])]
     // ## 分割线
     #[case(vec!["---", "----"], vec![
         (EventType::ThematicBreak, None)])]
     #[case(vec!["--"], vec![
         (EventType::EnterParagraph, None),
-        (EventType::Undetermined, Some("--")),
+        (EventType::Unparsed, Some("--")),
         (EventType::Exit, None)])]
     #[case(vec!["---\n---", "--- ---"], vec![
         (EventType::ThematicBreak, None),
@@ -220,7 +220,7 @@ mod tests {
     #[case(vec!["---\na", "---a", "--- a"], vec![
         (EventType::ThematicBreak, None),
         (EventType::EnterParagraph, None),
-        (EventType::Undetermined, Some("a")),
+        (EventType::Unparsed, Some("a")),
         (EventType::Exit, None)])]
     // ### 分割线与全局阶段语法的互动
     #[case(vec!["---\n<`a`>", "---<`a`>", "--- <`a`>"], vec![

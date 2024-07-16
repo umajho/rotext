@@ -3,8 +3,8 @@ use crate::{common::Range, events::EventType};
 #[derive(Debug, PartialEq, Eq)]
 #[repr(u32)]
 pub enum Event {
-    /// 有待下个阶段决定。参见 [crate::global::Event::Undetermined]。
-    Undetermined(Range) = EventType::Undetermined as u32,
+    /// 留给下个阶段解析。参见 [crate::global::Event::Unparsed]。
+    Unparsed(Range) = EventType::Unparsed as u32,
     /// LF 换行。只在行内内容中产生。
     LineFeed = EventType::LineFeed as u32,
 
@@ -31,7 +31,7 @@ impl Event {
 
     pub fn content<'a>(&self, input: &'a [u8]) -> Option<&'a str> {
         let result = match self {
-            Event::Undetermined(content) => content.content(input),
+            Event::Unparsed(content) => content.content(input),
             Event::LineFeed => return None,
             Event::Exit => return None,
             Event::Text(content) => content.content(input),

@@ -1,7 +1,7 @@
 #[derive(Debug, PartialEq, Eq)]
 #[repr(u32)]
 pub enum EventType {
-    Undetermined = 1,
+    Unparsed = 1,
     CarriageReturn = 11,
     LineFeed = 12,
 

@@ -59,19 +59,19 @@ impl<'a> Parser<'a> {
                     // 在一般情况下到达输入结尾，完成扫描并结束解析。
                     self.state = State::Ended;
                     break if offset != 0 {
-                        self.produce_undetermined(offset)
+                        self.produce_unparsed(offset)
                     } else {
                         None
                     };
                 }
                 Some(b'\r') => {
-                    let ret = self.produce_undetermined(offset);
+                    let ret = self.produce_unparsed(offset);
                     self.deferred = Some(Event::CarriageReturn { index });
                     self.cursor += "\r".len();
                     break ret;
                 }
                 Some(b'\n') => {
-                    let ret = self.produce_undetermined(offset);
+                    let ret = self.produce_unparsed(offset);
                     self.deferred = Some(Event::LineFeed { index });
                     self.cursor += "\n".len();
                     break ret;
@@ -79,7 +79,7 @@ impl<'a> Parser<'a> {
                 Some(b'<') => match self.input.get(index + 1) {
                     Some(b'`') => {
                         // 在一般情况下遇到 “<`”，完成扫描并开启逐字文本转义。
-                        let ret = self.produce_undetermined(offset);
+                        let ret = self.produce_unparsed(offset);
 
                         let backticks = {
                             let start_index = self.cursor + 2;
@@ -93,7 +93,7 @@ impl<'a> Parser<'a> {
                     None => {
                         // 在一般情况下遇到 “<” 后到达输入结尾，完成扫描并结束解
                         // 析。
-                        let ret = self.produce_undetermined(offset + "<".len());
+                        let ret = self.produce_unparsed(offset + "<".len());
                         self.state = State::Ended;
                         break ret;
                     }
@@ -154,13 +154,13 @@ impl<'a> Parser<'a> {
     }
 
     /// 产出以 `self.cursor` 开始，长度为 `content_length` 的
-    /// [Event::Undetermined]，这之后，`self.cursor` 移至下个 Event 的开始。
-    fn produce_undetermined(&mut self, length: usize) -> Option<Event> {
+    /// [Event::Unparsed]，这之后，`self.cursor` 移至下个 Event 的开始。
+    fn produce_unparsed(&mut self, length: usize) -> Option<Event> {
         if length == 0 {
             return None;
         }
 
-        let ret = Event::Undetermined(Range::new(self.cursor, length));
+        let ret = Event::Unparsed(Range::new(self.cursor, length));
         self.cursor += length;
         Some(ret)
     }
@@ -261,14 +261,14 @@ mod tests {
     // ## 无特殊语法
     #[case("", vec![])]
     #[case("Hello, world!", vec![
-        (EventType::Undetermined, Some("Hello, world!"), None)])]
+        (EventType::Unparsed, Some("Hello, world!"), None)])]
     // ### CR
     #[case("\r", vec![
         (EventType::CarriageReturn, None, None)])]
     #[case("Left\rRight", vec![
-        (EventType::Undetermined, Some("Left"), None),
+        (EventType::Unparsed, Some("Left"), None),
         (EventType::CarriageReturn, None, None),
-        (EventType::Undetermined, Some("Right"), None)])]
+        (EventType::Unparsed, Some("Right"), None)])]
     // ## 逐字文本转义
     #[case("<` … `>", vec![
         (EventType::VerbatimEscaping, Some(" … "), None)])]
@@ -278,16 +278,16 @@ mod tests {
         (EventType::VerbatimEscaping, Some(" A "), None),
         (EventType::VerbatimEscaping, Some(" B "), None)])]
     #[case("Left<` … `>Right", vec![
-        (EventType::Undetermined, Some("Left"), None),
+        (EventType::Unparsed, Some("Left"), None),
         (EventType::VerbatimEscaping, Some(" … "), None),
-        (EventType::Undetermined, Some("Right"), None)])]
+        (EventType::Unparsed, Some("Right"), None)])]
     #[case("<` `> `>", vec![
         (EventType::VerbatimEscaping, Some(" "), None),
-        (EventType::Undetermined, Some(" `>"), None)])]
+        (EventType::Unparsed, Some(" `>"), None)])]
     #[case("<` <` `>", vec![
         (EventType::VerbatimEscaping, Some(" <` "), None)])]
     #[case("Foo<`Bar", vec![
-        (EventType::Undetermined, Some("Foo"), None),
+        (EventType::Unparsed, Some("Foo"), None),
         (EventType::VerbatimEscaping, Some("Bar"), Some(HashSet::from(["F"])))])]
     #[timeout(time::Duration::from_secs(1))]
     fn it_works(#[case] input: &str, #[case] expected: Vec<EventCase>) {
