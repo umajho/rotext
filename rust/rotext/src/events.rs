@@ -2,7 +2,8 @@
 #[repr(u32)]
 pub enum EventType {
     Undetermined = 1,
-    LineFeed = 2,
+    CarriageReturn = 11,
+    LineFeed = 12,
 
     Exit = 1001,
 

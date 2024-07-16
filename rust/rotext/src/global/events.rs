@@ -15,6 +15,13 @@ pub enum Event {
         content: Range,
         is_closed_forcedly: bool,
     } = EventType::VerbatimEscaping as u32,
+
+    CarriageReturn {
+        index: usize,
+    } = EventType::CarriageReturn as u32,
+    LineFeed {
+        index: usize,
+    } = EventType::LineFeed as u32,
 }
 
 impl Event {
@@ -31,6 +38,7 @@ impl Event {
                 content,
                 is_closed_forcedly: _,
             } => content.content(input),
+            Event::CarriageReturn { .. } | Event::LineFeed { .. } => return None,
         };
 
         Some(result)
@@ -41,7 +49,7 @@ impl Event {
         let mut flags = std::collections::HashSet::new();
 
         match *self {
-            Event::Undetermined(_) => {}
+            Event::Undetermined(_) | Event::CarriageReturn { .. } | Event::LineFeed { .. } => {}
             Event::VerbatimEscaping {
                 content: _,
                 is_closed_forcedly,

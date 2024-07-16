@@ -8,6 +8,7 @@ pub struct Parser<'a> {
     input: &'a [u8],
     cursor: usize,
     state: State,
+    deferred: Option<Event>,
 }
 
 enum State {
@@ -22,11 +23,16 @@ impl<'a> Parser<'a> {
             input,
             cursor,
             state: State::Normal,
+            deferred: None,
         }
     }
 
     pub fn next(&mut self) -> Option<Event> {
         loop {
+            if self.deferred.is_some() {
+                return self.deferred.take();
+            }
+
             let result = match self.state {
                 State::Ended => {
                     break None;
@@ -60,7 +66,14 @@ impl<'a> Parser<'a> {
                 }
                 Some(b'\r') => {
                     let ret = self.produce_undetermined(offset);
+                    self.deferred = Some(Event::CarriageReturn { index });
                     self.cursor += "\r".len();
+                    break ret;
+                }
+                Some(b'\n') => {
+                    let ret = self.produce_undetermined(offset);
+                    self.deferred = Some(Event::LineFeed { index });
+                    self.cursor += "\n".len();
                     break ret;
                 }
                 Some(b'<') => match self.input.get(index + 1) {
@@ -249,10 +262,12 @@ mod tests {
     #[case("", vec![])]
     #[case("Hello, world!", vec![
         (EventType::Undetermined, Some("Hello, world!"), None)])]
-    // ### 无视 CR
-    #[case("\r", vec![])]
+    // ### CR
+    #[case("\r", vec![
+        (EventType::CarriageReturn, None, None)])]
     #[case("Left\rRight", vec![
         (EventType::Undetermined, Some("Left"), None),
+        (EventType::CarriageReturn, None, None),
         (EventType::Undetermined, Some("Right"), None)])]
     // ## 逐字文本转义
     #[case("<` … `>", vec![
