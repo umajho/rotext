@@ -1,6 +1,7 @@
 use crate::{
     block::{
         global_mapper,
+        sub_parsers::utils::consume_peeked,
         utils::{InputCursor, Peekable3},
         Event,
     },
@@ -54,13 +55,6 @@ pub fn scan_inline_or_exit<'a, I: 'a + Iterator<Item = global::Event>>(
             InternalResult::Done => break Result::Done,
         }
     }
-}
-
-macro_rules! consume_peeked {
-    ($cursor:ident, $mapper:ident, $peeked:ident) => {
-        $cursor.apply($peeked);
-        $mapper.next();
-    };
 }
 
 #[inline(always)]
