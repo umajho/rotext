@@ -15,11 +15,6 @@ pub enum Event {
         content: Range,
         is_closed_forcedly: bool,
     } = EventType::VerbatimEscaping as u32,
-    ///注释。
-    Comment {
-        content: Range,
-        is_closed_forcedly: bool,
-    } = EventType::Comment as u32,
 }
 
 impl Event {
@@ -32,10 +27,6 @@ impl Event {
     pub fn content<'a>(&self, input: &'a [u8]) -> Option<&'a str> {
         let result = match *self {
             Event::Undetermined(content) => content.content(input),
-            Event::Comment {
-                content,
-                is_closed_forcedly: _,
-            } => content.content(input),
             Event::VerbatimEscaping {
                 content,
                 is_closed_forcedly: _,
@@ -51,14 +42,6 @@ impl Event {
 
         match *self {
             Event::Undetermined(_) => {}
-            Event::Comment {
-                content: _,
-                is_closed_forcedly,
-            } => {
-                if is_closed_forcedly {
-                    flags.insert("F");
-                }
-            }
             Event::VerbatimEscaping {
                 content: _,
                 is_closed_forcedly,

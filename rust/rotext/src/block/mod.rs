@@ -174,11 +174,6 @@ mod tests {
         (EventType::Undetermined, Some("b")),
         (EventType::Exit, None)])]
     // ### 段落与全局阶段语法的互动
-    #[case(vec!["<%%>a<%%>b<%%>"], vec![
-        (EventType::EnterParagraph, None),
-        (EventType::Undetermined, Some("a")),
-        (EventType::Undetermined, Some("b")),
-        (EventType::Exit, None)])]
     #[case(vec!["a<`c`>"], vec![
         (EventType::EnterParagraph, None),
         (EventType::Undetermined, Some("a")),
@@ -224,8 +219,6 @@ mod tests {
         (EventType::Undetermined, Some("a")),
         (EventType::Exit, None)])]
     // ### 分割线与全局阶段语法的互动
-    #[case(vec!["<%%>-<%%>-<%%>-<%%>"], vec![
-        (EventType::ThematicBreak, None)])]
     #[case(vec!["---\n<`a`>", "---<`a`>", "--- <`a`>"], vec![
         (EventType::ThematicBreak, None),
         (EventType::EnterParagraph, None),

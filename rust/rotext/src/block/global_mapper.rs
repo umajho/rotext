@@ -135,7 +135,6 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> GlobalEventStreamMapper<'a, I> 
                     }
                     return mapped_text;
                 }
-                global::Event::Comment { .. } => {}
             }
         }
     }
@@ -171,8 +170,6 @@ mod tests {
     // ### 空行
     #[case("\n", vec![
         Mapped::LineFeed ])]
-    #[case("<%…%>\n", vec![
-        Mapped::LineFeed])]
     #[case("\r\n", vec![
         Mapped::LineFeed])]
     #[case("\n\n", vec![
@@ -192,8 +189,6 @@ mod tests {
         Mapped::CharAt(0), Mapped::LineFeed,
         Mapped::BlankAtLineBeginning(Range::new(2, 2)),
         Mapped::LineFeed])]
-    #[case("  <%…%>\n", vec![
-        Mapped::BlankAtLineBeginning(Range::new(0, 2)), Mapped::LineFeed])]
     #[case("  <` `>\n", vec![
         Mapped::BlankAtLineBeginning(Range::new(0, 2)),
         Mapped::Text(Range::new(4, 1)), Mapped::LineFeed])]
@@ -221,9 +216,6 @@ mod tests {
         Mapped::CharAt(0), Mapped::LineFeed,
         Mapped::BlankAtLineBeginning(Range::new(2, 1)),
         Mapped::Text(Range::new(5, 1))])]
-    // ## 注释
-    #[case("ab<% … %>c", vec![
-        Mapped::CharAt(0), Mapped::NextChar, Mapped::CharAt(11)])]
     #[timeout(time::Duration::from_secs(1))]
     fn it_works(#[case] input: &str, #[case] expected: Vec<Mapped>) {
         let global_parser = global::Parser::new(input.as_bytes(), 0);

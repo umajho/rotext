@@ -7,7 +7,6 @@ pub enum EventType {
     Exit = 1001,
 
     VerbatimEscaping = 10001,
-    Comment = 10002,
 
     EnterParagraph = 20001,
     /// XXX: 数字是临时的。
