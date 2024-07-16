@@ -25,8 +25,8 @@ impl Range {
         self.length = value;
     }
 
-    pub fn content(&self, input: &[u8]) -> String {
+    pub fn content<'a>(&self, input: &'a [u8]) -> &'a str {
         let slice = &input[self.start..self.start + self.length];
-        String::from_utf8(slice.to_vec()).unwrap()
+        unsafe { std::str::from_utf8_unchecked(slice) }
     }
 }

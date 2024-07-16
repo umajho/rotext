@@ -355,11 +355,7 @@ mod tests {
 
     use crate::events::EventType;
 
-    type EventCase = (
-        EventType,
-        Option<&'static str>,
-        Option<HashSet<&'static str>>,
-    );
+    type EventCase<'a> = (EventType, Option<&'a str>, Option<HashSet<&'a str>>);
 
     #[rstest]
     // ## 无特殊语法
@@ -432,8 +428,7 @@ mod tests {
             .map(|ev| -> EventCase {
                 (
                     EventType::from(ev.discriminant()),
-                    ev.content(input.as_bytes())
-                        .map(|s| -> &'static str { s.leak() }),
+                    ev.content(input.as_bytes()),
                     ev.assertion_flags(),
                 )
             })

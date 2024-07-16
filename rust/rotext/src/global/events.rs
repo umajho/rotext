@@ -29,7 +29,7 @@ impl Event {
     }
 
     #[cfg(test)]
-    pub fn content(&self, input: &[u8]) -> Option<String> {
+    pub fn content<'a>(&self, input: &'a [u8]) -> Option<&'a str> {
         let result = match *self {
             Event::Undetermined(content) => content.content(input),
             Event::Comment {
