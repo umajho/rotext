@@ -125,7 +125,7 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> GlobalEventStreamMapper<'a, I> 
                 global::Event::Unparsed(_) => unreachable!(),
                 global::Event::VerbatimEscaping {
                     content,
-                    is_closed_forcedly: _,
+                    is_closed_forcedly,
                 } => {
                     let (mut start, mut length) = (content.start(), content.length());
                     if length >= 2 {
@@ -133,7 +133,7 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> GlobalEventStreamMapper<'a, I> 
                             start += 1;
                             length -= 1;
                         }
-                        if self.input[start + length - 1] == b' ' {
+                        if !is_closed_forcedly && self.input[start + length - 1] == b' ' {
                             length -= 1;
                         }
                     }
@@ -248,6 +248,8 @@ mod tests {
         Mapped::CharAt(10), Mapped::NextChar])]
     #[case("a<` b", vec![
         Mapped::CharAt(0), Mapped::Text(Range::new(4, 1))])]
+    #[case("a<` b ", vec![
+        Mapped::CharAt(0), Mapped::Text(Range::new(4, 2))])]
     #[case("a\n<`b`>", vec![
         Mapped::CharAt(0), Mapped::LineFeed, Mapped::Text(Range::new(4, 1))])]
     #[case("a\n <`b`>", vec![
