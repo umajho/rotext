@@ -6,7 +6,6 @@ use crate::{
 enum State {
     Initial,
     Content(Box<sub_parsers::content::Parser>),
-    ContentDeferred(Box<sub_parsers::content::Parser>, Event),
     Exiting,
     Exited,
 
@@ -38,21 +37,10 @@ impl Parser {
 
         let state = std::mem::replace(&mut self.state, State::Invalid);
         (ret, self.state) = match state {
-            State::Initial => {
-                let mut content_parser = Box::new(sub_parsers::content::Parser::new());
-                match content_parser.next(ctx) {
-                    sub_parsers::Result::ToYield(ev) => (
-                        sub_parsers::Result::ToYield(Event::EnterParagraph),
-                        State::ContentDeferred(content_parser, ev),
-                    ),
-                    // 块级阶段的解析器一定是 peek 到了非空白内容才使用本解析器，
-                    // 因此，本解析器的初始状态不可能是空白。
-                    sub_parsers::Result::ToPauseForNewLine => unreachable!(),
-                    sub_parsers::Result::Done => {
-                        (sub_parsers::Result::ToYield(Event::Exit), State::Exiting)
-                    }
-                }
-            }
+            State::Initial => (
+                sub_parsers::Result::ToYield(Event::EnterParagraph),
+                State::Content(Box::new(sub_parsers::content::Parser::new())),
+            ),
             State::Content(mut content_parser) => {
                 let next = content_parser.next(ctx);
                 match next {
@@ -68,9 +56,6 @@ impl Parser {
                         (sub_parsers::Result::ToYield(Event::Exit), State::Exiting)
                     }
                 }
-            }
-            State::ContentDeferred(parser, ev) => {
-                (sub_parsers::Result::ToYield(ev), State::Content(parser))
             }
             State::Exiting => (sub_parsers::Result::Done, State::Exited),
             // 当解析器作为迭代器被耗尽而返回 `None` 时，解析器进入状态
