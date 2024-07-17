@@ -17,8 +17,7 @@ pub enum EventType {
 
     // 在块级阶段产出。
     EnterParagraph = 20001,
-    /// XXX: 数字是临时的。
-    ThematicBreak = 29001,
+    ThematicBreak = 20011,
     /// XXX: 数字是临时的。
     EnterCodeBlock = 29011,
     /// XXX: 数字是临时的。
