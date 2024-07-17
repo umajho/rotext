@@ -22,6 +22,7 @@ pub struct Parser<'a, I: 'a + Iterator<Item = global::Event>> {
 
 enum State<'a, I: 'a + Iterator<Item = global::Event>> {
     InRoot,
+    InRootWithPausedSubParser(Box<dyn sub_parsers::SubParser<'a, I> + 'a>),
     InSubParser(Box<dyn sub_parsers::SubParser<'a, I> + 'a>),
 
     Invalid,
@@ -66,12 +67,20 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
                         (None, State::Invalid)
                     }
                 },
+                State::InRootWithPausedSubParser(mut sub_parser) => {
+                    sub_parser.resume_from_pause_for_new_line_and_continue();
+                    (None, State::InSubParser(sub_parser))
+                }
                 State::InSubParser(mut sub_parser) => {
-                    let ev = sub_parser.next(&mut self.context);
-                    if ev.is_none() {
-                        (None, State::InRoot)
-                    } else {
-                        (ev, State::InSubParser(sub_parser))
+                    let result = sub_parser.next(&mut self.context);
+                    match result {
+                        sub_parsers::Result::ToYield(ev) => {
+                            (Some(ev), State::InSubParser(sub_parser))
+                        }
+                        sub_parsers::Result::ToPauseForNewLine => {
+                            (None, State::InRootWithPausedSubParser(sub_parser))
+                        }
+                        sub_parsers::Result::Done => (None, State::InRoot),
                     }
                 }
                 State::Invalid => unreachable!(),
