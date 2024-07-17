@@ -26,7 +26,6 @@ impl Parser {
         Self
     }
 
-    #[inline(always)]
     pub fn next<'a, I: 'a + Iterator<Item = global::Event>>(
         &mut self,
         ctx: &mut Context<'a, I>,
