@@ -12,7 +12,7 @@ pub enum EventType {
     // 在块级阶段与行内阶段产出。
     Exit = 1001,
 
-    // 全局阶段产出，在块级阶段消耗（转化为 [EventType::Text）。
+    // 在全局阶段产出，在块级阶段消耗（转化为 [EventType::Text）。
     VerbatimEscaping = 10001,
 
     // 在块级阶段产出。
