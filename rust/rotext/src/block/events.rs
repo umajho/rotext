@@ -8,7 +8,7 @@ pub enum Event {
     /// LF 换行。只在行内内容中产生。
     LineFeed = EventType::LineFeed as u32,
 
-    // 退出一层 “进入…”。
+    /// 退出一层 “进入…”。
     Exit = EventType::Exit as u32,
 
     /// 进入段落。
