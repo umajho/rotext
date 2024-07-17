@@ -10,8 +10,9 @@ enum State {
     Exited,
 
     Paused(Box<sub_parsers::content::Parser>),
-    /// 此状态仅在实现 [sub_parsers::SubParser::resume_and_exit] 时设置。其他情
-    /// 况下会直接进入 [State::Exiting]。
+    /// 此状态仅在实现
+    /// [sub_parsers::SubParser::resume_from_pause_for_new_line_and_exit] 时设置。
+    /// 其他情况下会直接进入 [State::Exiting]。
     ToExit,
 
     Invalid,
