@@ -26,7 +26,7 @@ enum InternalResult {
     /// 继续 next 中的循环。
     ToContinue,
     /// 改变 next 内部的状态，并继续循环。
-    ToChangeStepStateAndContinue(StepState),
+    ToContinueIn(StepState),
 
     /// 打破 next 中的循环，产出 [Event]。
     ToYield(Event),
@@ -110,7 +110,7 @@ impl Parser {
 
             match internal_result {
                 InternalResult::ToContinue => {}
-                InternalResult::ToChangeStepStateAndContinue(new_state) => {
+                InternalResult::ToContinueIn(new_state) => {
                     state = new_state;
                 }
                 InternalResult::ToYield(ev) => break sub_parsers::Result::ToYield(ev),
@@ -138,7 +138,7 @@ impl Parser {
                 // 级元素（最简单的，如分割线）后面存在文本时。
                 consume_peeked!(ctx, peeked);
                 let content = Range::new(ctx.cursor.value().unwrap(), 1);
-                InternalResult::ToChangeStepStateAndContinue(StepState::Normal(content))
+                InternalResult::ToContinueIn(StepState::Normal(content))
             }
             global_mapper::Mapped::LineFeed => {
                 consume_peeked!(ctx, peeked);
@@ -259,7 +259,7 @@ impl Parser {
                     .filter(|c| c.at_line_beginning && c.character == ctx.input[index])
                 else {
                     if self.is_at_first_line {
-                        return InternalResult::ToChangeStepStateAndContinue(StepState::Initial);
+                        return InternalResult::ToContinueIn(StepState::Initial);
                     } else {
                         return InternalResult::ToYield(Event::LineFeed);
                     }
@@ -274,9 +274,7 @@ impl Parser {
                 } else {
                     // XXX: 被 drop 的那些不会重新尝试解析，而是直接当成文本。
                     potential_closing_part.set_length(1 + dropped);
-                    InternalResult::ToChangeStepStateAndContinue(StepState::Normal(
-                        potential_closing_part,
-                    ))
+                    InternalResult::ToContinueIn(StepState::Normal(potential_closing_part))
                 }
             }
             global_mapper::Mapped::NextChar => unreachable!(),
@@ -297,7 +295,7 @@ impl Parser {
             }
             global_mapper::Mapped::Text(_) => {
                 if self.is_at_first_line {
-                    InternalResult::ToChangeStepStateAndContinue(StepState::Initial)
+                    InternalResult::ToContinueIn(StepState::Initial)
                 } else {
                     InternalResult::ToYield(Event::LineFeed)
                 }
