@@ -164,15 +164,19 @@ impl Parser {
         state_content: &mut Range,
     ) -> InternalResult {
         let Some(peeked) = ctx.mapper.peek_1() else {
-            return InternalResult::ToYield(Event::Unparsed(*state_content));
+            return InternalResult::ToYield(match self.mode {
+                Mode::Inline => Event::Unparsed(*state_content),
+                Mode::Verbatim => Event::Text(*state_content),
+            });
         };
 
         match peeked {
             global_mapper::Mapped::CharAt(_)
             | global_mapper::Mapped::LineFeed
-            | global_mapper::Mapped::Text(_) => {
-                InternalResult::ToYield(Event::Unparsed(*state_content))
-            }
+            | global_mapper::Mapped::Text(_) => InternalResult::ToYield(match self.mode {
+                Mode::Inline => Event::Unparsed(*state_content),
+                Mode::Verbatim => Event::Text(*state_content),
+            }),
             global_mapper::Mapped::NextChar => {
                 consume_peeked!(ctx, peeked);
                 state_content.set_length(state_content.length() + 1);
