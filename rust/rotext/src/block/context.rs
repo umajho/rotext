@@ -35,6 +35,14 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Context<'a, I> {
         }
     }
 
+    /// 从 `mapper` 窥视接下来至多 1 个 `u8` 字符。
+    pub fn peek_next_char(&mut self) -> Option<u8> {
+        let mut cursor = self.cursor;
+
+        cursor.apply(self.mapper.peek_1()?);
+        cursor.at(self.input)
+    }
+
     /// 从 `mapper` 窥视接下来至多 3 个 `u8` 字符。
     pub fn peek_next_three_chars(&mut self) -> [Option<u8>; 3] {
         let mut cursor = self.cursor;
@@ -68,6 +76,31 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Context<'a, I> {
                 },
             ) {
                 dropped += 1;
+            } else {
+                break;
+            }
+        }
+
+        dropped
+    }
+    pub fn drop_from_mapper_while_char_with_maximum(&mut self, char: u8, maximum: usize) -> usize {
+        if maximum == 0 {
+            return 0;
+        }
+        let mut dropped = 0;
+
+        loop {
+            if self.take_from_mapper_and_apply_to_cursor_if_applied_cursor_satisfies(
+                |applied_cursor| {
+                    applied_cursor
+                        .at(self.input)
+                        .is_some_and(|actual_char| char == actual_char)
+                },
+            ) {
+                dropped += 1;
+                if dropped == maximum {
+                    break;
+                }
             } else {
                 break;
             }

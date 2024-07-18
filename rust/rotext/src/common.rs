@@ -25,8 +25,21 @@ impl Range {
         self.length = value;
     }
 
+    #[inline(always)]
+    pub fn increase_length(&mut self, delta: usize) {
+        self.length += delta;
+    }
+
     pub fn content<'a>(&self, input: &'a [u8]) -> &'a str {
         let slice = &input[self.start..self.start + self.length];
         unsafe { std::str::from_utf8_unchecked(slice) }
+    }
+
+    pub fn next_index_after_range(&self) -> usize {
+        self.start + self.length
+    }
+
+    pub fn next_char_after_range(&self, input: &[u8]) -> u8 {
+        input[self.next_index_after_range()]
     }
 }

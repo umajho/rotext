@@ -10,10 +10,15 @@ use crate::{
 };
 
 #[derive(Debug)]
-enum StepState {
+pub enum StepState {
     Initial,
     Normal(Range),
     IsAfterLineFeed,
+}
+impl Default for StepState {
+    fn default() -> Self {
+        Self::Initial
+    }
 }
 
 #[derive(Debug)]
@@ -38,16 +43,15 @@ pub struct Parser {
     mode: Mode,
     end_conditions: EndConditions,
 
-    is_at_line_beginning: bool,
+    next_initial_step_state: StepState,
     is_at_first_line: bool,
 }
 
 #[derive(Default)]
 pub struct Options {
+    pub initial_step_state: StepState,
     pub mode: Mode,
     pub end_conditions: EndConditions,
-
-    pub is_at_line_beginning: bool,
 }
 
 pub enum Mode {
@@ -66,11 +70,18 @@ impl Default for Mode {
 pub struct EndConditions {
     pub before_new_line: bool,
     pub before_blank_line: bool,
-    pub at_end_of_leading_repetitive_characters_at_new_line: Option<RepetitiveCharactersCondition>,
+    pub after_repetitive_characters: Option<RepetitiveCharactersCondition>,
 }
 
 pub struct RepetitiveCharactersCondition {
+    /// 如果是在行首，则满足条件。
+    pub at_line_beginning: bool,
+    /// 如果是在行尾，且之前有一个空白，则满足条件。
+    pub at_line_end_and_with_space_before: bool,
+
     pub character: u8,
+    /// 如果是对应于 `at_line_beginning` 的判断，则是最少需要的数量；如果对应于
+    /// `at_line_end_and_with_space_before` 的判断，则是准确需要的数量。
     pub minimal_count: usize,
 }
 
@@ -79,7 +90,7 @@ impl Parser {
         Self {
             mode: options.mode,
             end_conditions: options.end_conditions,
-            is_at_line_beginning: options.is_at_line_beginning,
+            next_initial_step_state: options.initial_step_state,
             is_at_first_line: true,
         }
     }
@@ -88,12 +99,7 @@ impl Parser {
         &mut self,
         ctx: &mut Context<'a, I>,
     ) -> sub_parsers::Result {
-        let mut state = if self.is_at_line_beginning {
-            self.is_at_line_beginning = false;
-            StepState::IsAfterLineFeed
-        } else {
-            StepState::Initial
-        };
+        let mut state = std::mem::replace(&mut self.next_initial_step_state, StepState::Initial);
 
         loop {
             let internal_result = match state {
@@ -164,26 +170,69 @@ impl Parser {
         state_content: &mut Range,
     ) -> InternalResult {
         let Some(peeked) = ctx.mapper.peek_1() else {
-            return InternalResult::ToYield(match self.mode {
-                Mode::Inline => Event::Unparsed(*state_content),
-                Mode::Verbatim => Event::Text(*state_content),
-            });
+            return InternalResult::ToYield(self.make_content_event(*state_content));
         };
+        let peeked = peeked.clone();
 
         match peeked {
             global_mapper::Mapped::CharAt(_)
             | global_mapper::Mapped::LineFeed
-            | global_mapper::Mapped::Text(_) => InternalResult::ToYield(match self.mode {
-                Mode::Inline => Event::Unparsed(*state_content),
-                Mode::Verbatim => Event::Text(*state_content),
-            }),
-            global_mapper::Mapped::NextChar => {
-                consume_peeked!(ctx, peeked);
-                state_content.set_length(state_content.length() + 1);
-                InternalResult::ToContinue
+            | global_mapper::Mapped::Text(_) => {
+                InternalResult::ToYield(self.make_content_event(*state_content))
             }
-            &global_mapper::Mapped::BlankAtLineBeginning(blank) => {
-                consume_peeked!(ctx, peeked);
+            global_mapper::Mapped::NextChar => {
+                let Some(condition) = self
+                    .end_conditions
+                    .after_repetitive_characters
+                    .as_ref()
+                    .filter(|c| {
+                        c.at_line_end_and_with_space_before && ctx.peek_next_char() == Some(b' ')
+                    })
+                else {
+                    consume_peeked!(ctx, &peeked);
+                    state_content.increase_length(1);
+                    return InternalResult::ToContinue;
+                };
+
+                let confirmed_content = *state_content;
+                let mut potential_closing_part_length = 0;
+
+                if condition.at_line_end_and_with_space_before {
+                    consume_peeked!(ctx, &peeked);
+                    potential_closing_part_length += 1;
+                }
+
+                if ctx.peek_next_char() != Some(condition.character) {
+                    state_content
+                        .set_length(confirmed_content.length() + potential_closing_part_length);
+                    return InternalResult::ToContinue;
+                }
+                ctx.must_take_from_mapper_and_apply_to_cursor(1);
+                potential_closing_part_length += 1;
+
+                let dropped = ctx.drop_from_mapper_while_char_with_maximum(
+                    condition.character,
+                    condition.minimal_count,
+                );
+                // XXX: 被 drop 的那些不会重新尝试解析，而是直接当成文本。
+                potential_closing_part_length += dropped;
+                if 1 + dropped == condition.minimal_count {
+                    let peeked = ctx.mapper.peek_1();
+                    if !matches!(peeked, Some(global_mapper::Mapped::LineFeed) | None) {
+                        state_content
+                            .set_length(confirmed_content.length() + potential_closing_part_length);
+                        return InternalResult::ToContinue;
+                    };
+
+                    InternalResult::ToYield(Event::Unparsed(confirmed_content))
+                } else {
+                    state_content
+                        .set_length(confirmed_content.length() + potential_closing_part_length);
+                    InternalResult::ToContinue
+                }
+            }
+            global_mapper::Mapped::BlankAtLineBeginning(blank) => {
+                consume_peeked!(ctx, &peeked);
                 match self.mode {
                     Mode::Inline => InternalResult::ToContinue,
                     Mode::Verbatim => InternalResult::ToYield(Event::Text(blank)),
@@ -202,21 +251,13 @@ impl Parser {
         };
 
         match peeked {
-            global_mapper::Mapped::CharAt(index) => {
-                let Some((expected_char, minimal_count)) = (|| {
-                    if let Some(RepetitiveCharactersCondition {
-                        character,
-                        minimal_count,
-                    }) = self
-                        .end_conditions
-                        .at_end_of_leading_repetitive_characters_at_new_line
-                    {
-                        if ctx.input[*index] == character {
-                            return Some((character, minimal_count));
-                        }
-                    }
-                    None
-                })() else {
+            &global_mapper::Mapped::CharAt(index) => {
+                let Some(condition) = self
+                    .end_conditions
+                    .after_repetitive_characters
+                    .as_ref()
+                    .filter(|c| c.at_line_beginning && c.character == ctx.input[index])
+                else {
                     if self.is_at_first_line {
                         return InternalResult::ToChangeStepStateAndContinue(StepState::Initial);
                     } else {
@@ -224,14 +265,14 @@ impl Parser {
                     }
                 };
 
-                let index = *index;
                 consume_peeked!(ctx, peeked);
                 let mut potential_closing_part = Range::new(index, 1);
 
-                let dropped = ctx.drop_from_mapper_while_char(expected_char);
-                if 1 + dropped >= minimal_count {
+                let dropped = ctx.drop_from_mapper_while_char(condition.character);
+                if 1 + dropped >= condition.minimal_count {
                     InternalResult::Done
                 } else {
+                    // XXX: 被 drop 的那些不会重新尝试解析，而是直接当成文本。
                     potential_closing_part.set_length(1 + dropped);
                     InternalResult::ToChangeStepStateAndContinue(StepState::Normal(
                         potential_closing_part,
@@ -265,6 +306,14 @@ impl Parser {
     }
 
     pub fn resume_from_pause_for_new_line_and_continue(&mut self) {
-        self.is_at_line_beginning = true;
+        self.next_initial_step_state = StepState::IsAfterLineFeed;
+    }
+
+    #[inline(always)]
+    fn make_content_event(&self, content: Range) -> Event {
+        match self.mode {
+            Mode::Inline => Event::Unparsed(content),
+            Mode::Verbatim => Event::Text(content),
+        }
     }
 }

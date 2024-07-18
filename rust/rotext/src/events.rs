@@ -20,6 +20,12 @@ pub enum EventType {
     // 在块级阶段产出。
     EnterParagraph = 10001,
     ThematicBreak = 10011,
+    EnterHeading1 = 10021,
+    EnterHeading2 = 10022,
+    EnterHeading3 = 10023,
+    EnterHeading4 = 10024,
+    EnterHeading5 = 10025,
+    EnterHeading6 = 10026,
     /// XXX: 数字是临时的。
     EnterCodeBlock = 19011,
 }

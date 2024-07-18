@@ -7,7 +7,7 @@ mod utils;
 use context::Context;
 pub use events::Event;
 
-use crate::global;
+use crate::{common::Range, global};
 use global_mapper::GlobalEventStreamMapper;
 use utils::Peekable3;
 
@@ -121,7 +121,9 @@ fn parse_root<'a, I: 'a + Iterator<Item = global::Event>>(
                 continue;
             }
             global_mapper::Mapped::Text(_) => {
-                return RootParseResult::ToEnter(Box::new(sub_parsers::paragraph::Parser::new()));
+                return RootParseResult::ToEnter(Box::new(sub_parsers::paragraph::Parser::new(
+                    None,
+                )));
             }
             global_mapper::Mapped::CharAt(_) | global_mapper::Mapped::NextChar => {
                 if !ctx.take_from_mapper_and_apply_to_cursor_if_applied_cursor_satisfies(
@@ -140,6 +142,21 @@ fn parse_root<'a, I: 'a + Iterator<Item = global::Event>>(
             ctx.drop_from_mapper_while_char(b'-');
             RootParseResult::ToYield(Event::ThematicBreak)
         }
+        [Some(b'='), ..] => {
+            ctx.must_take_from_mapper_and_apply_to_cursor(1);
+            let mut potential_opening_part = Range::new(ctx.cursor.value().unwrap(), 1);
+            let dropped = ctx.drop_from_mapper_while_char_with_maximum(b'=', 5);
+            potential_opening_part.increase_length(dropped);
+
+            if ctx.peek_next_char() == Some(b' ') {
+                ctx.must_take_from_mapper_and_apply_to_cursor(1);
+                RootParseResult::ToEnter(Box::new(sub_parsers::heading::Parser::new(1 + dropped)))
+            } else {
+                RootParseResult::ToEnter(Box::new(sub_parsers::paragraph::Parser::new(Some(
+                    potential_opening_part,
+                ))))
+            }
+        }
         [Some(b'`'), Some(b'`'), Some(b'`')] => {
             ctx.must_take_from_mapper_and_apply_to_cursor(3);
             let extra_count = ctx.drop_from_mapper_while_char(b'`');
@@ -147,7 +164,7 @@ fn parse_root<'a, I: 'a + Iterator<Item = global::Event>>(
                 3 + extra_count,
             )))
         }
-        _ => RootParseResult::ToEnter(Box::new(sub_parsers::paragraph::Parser::new())),
+        _ => RootParseResult::ToEnter(Box::new(sub_parsers::paragraph::Parser::new(None))),
     }
 }
 

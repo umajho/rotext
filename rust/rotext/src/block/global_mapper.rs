@@ -22,7 +22,7 @@ struct RemainUnparsed {
     next_offset: usize,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Mapped {
     /// 对应索引的字符。
     CharAt(usize),

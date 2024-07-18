@@ -70,11 +70,13 @@ impl Parser {
                     sub_parsers::Result::ToPauseForNewLine => unreachable!(),
                     sub_parsers::Result::Done => {
                         let opts = sub_parsers::content::Options {
-                            is_at_line_beginning: true,
+                            initial_step_state: sub_parsers::content::StepState::IsAfterLineFeed,
                             mode: sub_parsers::content::Mode::Verbatim,
                             end_conditions: sub_parsers::content::EndConditions {
-                                at_end_of_leading_repetitive_characters_at_new_line: Some(
+                                after_repetitive_characters: Some(
                                     sub_parsers::content::RepetitiveCharactersCondition {
+                                        at_line_beginning: true,
+                                        at_line_end_and_with_space_before: false,
                                         character: b'`',
                                         minimal_count: self.leading_backticks,
                                     },
