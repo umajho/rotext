@@ -142,7 +142,10 @@ fn parse_root<'a, I: 'a + Iterator<Item = global::Event>>(
         }
         [Some(b'`'), Some(b'`'), Some(b'`')] => {
             ctx.must_take_from_mapper_and_apply_to_cursor(3);
-            todo!()
+            let extra_count = ctx.drop_from_mapper_while_char(b'`');
+            RootParseResult::ToEnter(Box::new(sub_parsers::code_block::Parser::new(
+                3 + extra_count,
+            )))
         }
         _ => RootParseResult::ToEnter(Box::new(sub_parsers::paragraph::Parser::new())),
     }
@@ -165,7 +168,7 @@ mod tests {
     // ## 空
     #[case(vec![""], vec![])]
     // ## 段落
-    #[case(vec!["a", " a", "\na"], vec![
+    #[case(vec!["a", " a", "\na", "a\n"], vec![
         (EventType::EnterParagraph, None),
         (EventType::Unparsed, Some("a")),
         (EventType::Exit, None)])]

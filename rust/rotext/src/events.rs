@@ -15,16 +15,13 @@ pub enum EventType {
     // 在块级阶段与行内阶段产出。
     Text = 1001,
     Exit = 1011,
+    Separator = 1021,
 
     // 在块级阶段产出。
     EnterParagraph = 10001,
     ThematicBreak = 10011,
     /// XXX: 数字是临时的。
     EnterCodeBlock = 19011,
-    /// XXX: 数字是临时的。
-    EnterCodeBlockMeta = 19012,
-    /// XXX: 数字是临时的。
-    EnterCodeBlockContent = 19013,
 }
 
 #[cfg(test)]

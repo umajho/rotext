@@ -38,10 +38,20 @@ impl Parser {
 
         let state = std::mem::replace(&mut self.state, State::Invalid);
         (ret, self.state) = match state {
-            State::Initial => (
-                sub_parsers::Result::ToYield(Event::EnterParagraph),
-                State::Content(Box::new(sub_parsers::content::Parser::new())),
-            ),
+            State::Initial => {
+                let opts = sub_parsers::content::Options {
+                    end_conditions: sub_parsers::content::EndConditions {
+                        before_blank_line: true,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                };
+                let parser = sub_parsers::content::Parser::new(opts);
+                (
+                    sub_parsers::Result::ToYield(Event::EnterParagraph),
+                    State::Content(Box::new(parser)),
+                )
+            }
             State::Content(mut content_parser) => {
                 let next = content_parser.next(ctx);
                 match next {

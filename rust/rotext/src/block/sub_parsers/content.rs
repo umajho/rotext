@@ -1,6 +1,9 @@
 use crate::{
     block::{
-        context::Context, global_mapper, sub_parsers, sub_parsers::utils::consume_peeked, Event,
+        context::Context,
+        global_mapper::{self},
+        sub_parsers::{self, utils::consume_peeked},
+        Event,
     },
     common::Range,
     global,
@@ -32,13 +35,52 @@ enum InternalResult {
 }
 
 pub struct Parser {
-    is_resumed_from_pause_for_new_line: bool,
+    mode: Mode,
+    end_conditions: EndConditions,
+
+    is_at_line_beginning: bool,
+    is_at_first_line: bool,
+}
+
+#[derive(Default)]
+pub struct Options {
+    pub mode: Mode,
+    pub end_conditions: EndConditions,
+
+    pub is_at_line_beginning: bool,
+}
+
+pub enum Mode {
+    /// 无视空白。
+    Inline,
+    /// 保留空白。
+    Verbatim,
+}
+impl Default for Mode {
+    fn default() -> Self {
+        Self::Inline
+    }
+}
+
+#[derive(Default)]
+pub struct EndConditions {
+    pub before_new_line: bool,
+    pub before_blank_line: bool,
+    pub at_end_of_leading_repetitive_characters_at_new_line: Option<RepetitiveCharactersCondition>,
+}
+
+pub struct RepetitiveCharactersCondition {
+    pub character: u8,
+    pub minimal_count: usize,
 }
 
 impl Parser {
-    pub fn new() -> Self {
+    pub fn new(options: Options) -> Self {
         Self {
-            is_resumed_from_pause_for_new_line: false,
+            mode: options.mode,
+            end_conditions: options.end_conditions,
+            is_at_line_beginning: options.is_at_line_beginning,
+            is_at_first_line: true,
         }
     }
 
@@ -46,8 +88,8 @@ impl Parser {
         &mut self,
         ctx: &mut Context<'a, I>,
     ) -> sub_parsers::Result {
-        let mut state = if self.is_resumed_from_pause_for_new_line {
-            self.is_resumed_from_pause_for_new_line = false;
+        let mut state = if self.is_at_line_beginning {
+            self.is_at_line_beginning = false;
             StepState::IsAfterLineFeed
         } else {
             StepState::Initial
@@ -66,7 +108,10 @@ impl Parser {
                     state = new_state;
                 }
                 InternalResult::ToYield(ev) => break sub_parsers::Result::ToYield(ev),
-                InternalResult::ToPauseForNewLine => break sub_parsers::Result::ToPauseForNewLine,
+                InternalResult::ToPauseForNewLine => {
+                    self.is_at_first_line = false;
+                    break sub_parsers::Result::ToPauseForNewLine;
+                }
                 InternalResult::Done => break sub_parsers::Result::Done,
             }
         }
@@ -91,11 +136,18 @@ impl Parser {
             }
             global_mapper::Mapped::LineFeed => {
                 consume_peeked!(ctx, peeked);
-                InternalResult::ToPauseForNewLine
+                if self.end_conditions.before_new_line {
+                    InternalResult::Done
+                } else {
+                    InternalResult::ToPauseForNewLine
+                }
             }
-            global_mapper::Mapped::BlankAtLineBeginning(_) => {
+            &global_mapper::Mapped::BlankAtLineBeginning(blank) => {
                 consume_peeked!(ctx, peeked);
-                InternalResult::ToContinue
+                match self.mode {
+                    Mode::Inline => InternalResult::ToContinue,
+                    Mode::Verbatim => InternalResult::ToYield(Event::Text(blank)),
+                }
             }
             global_mapper::Mapped::Text(content) => {
                 let content = *content;
@@ -126,9 +178,12 @@ impl Parser {
                 state_content.set_length(state_content.length() + 1);
                 InternalResult::ToContinue
             }
-            global_mapper::Mapped::BlankAtLineBeginning(_) => {
+            &global_mapper::Mapped::BlankAtLineBeginning(blank) => {
                 consume_peeked!(ctx, peeked);
-                InternalResult::ToContinue
+                match self.mode {
+                    Mode::Inline => InternalResult::ToContinue,
+                    Mode::Verbatim => InternalResult::ToYield(Event::Text(blank)),
+                }
             }
         }
     }
@@ -139,25 +194,67 @@ impl Parser {
         ctx: &mut Context<'a, I>,
     ) -> InternalResult {
         let Some(peeked) = ctx.mapper.peek_1() else {
-            return InternalResult::ToYield(Event::LineFeed);
+            return InternalResult::Done;
         };
 
         match peeked {
-            global_mapper::Mapped::CharAt(_) => InternalResult::ToYield(Event::LineFeed),
+            global_mapper::Mapped::CharAt(index) => {
+                let Some((expected_char, minimal_count)) = (|| {
+                    if let Some(RepetitiveCharactersCondition {
+                        character,
+                        minimal_count,
+                    }) = self
+                        .end_conditions
+                        .at_end_of_leading_repetitive_characters_at_new_line
+                    {
+                        if ctx.input[*index] == character {
+                            return Some((character, minimal_count));
+                        }
+                    }
+                    None
+                })() else {
+                    if self.is_at_first_line {
+                        return InternalResult::ToChangeStepStateAndContinue(StepState::Initial);
+                    } else {
+                        return InternalResult::ToYield(Event::LineFeed);
+                    }
+                };
+
+                let index = *index;
+                consume_peeked!(ctx, peeked);
+                let mut potential_closing_part = Range::new(index, 1);
+
+                let dropped = ctx.drop_from_mapper_while_char(expected_char);
+                if 1 + dropped >= minimal_count {
+                    InternalResult::Done
+                } else {
+                    potential_closing_part.set_length(1 + dropped);
+                    InternalResult::ToChangeStepStateAndContinue(StepState::Normal(
+                        potential_closing_part,
+                    ))
+                }
+            }
             global_mapper::Mapped::NextChar => unreachable!(),
             global_mapper::Mapped::LineFeed => {
-                consume_peeked!(ctx, peeked);
-                InternalResult::Done
+                if self.end_conditions.before_blank_line {
+                    consume_peeked!(ctx, peeked);
+                    InternalResult::Done
+                } else {
+                    InternalResult::ToYield(Event::LineFeed)
+                }
             }
-            global_mapper::Mapped::BlankAtLineBeginning(_) => {
+            &global_mapper::Mapped::BlankAtLineBeginning(blank) => {
                 consume_peeked!(ctx, peeked);
-                InternalResult::ToContinue
+                match self.mode {
+                    Mode::Inline => InternalResult::ToContinue,
+                    Mode::Verbatim => InternalResult::ToYield(Event::Text(blank)),
+                }
             }
             global_mapper::Mapped::Text(_) => InternalResult::ToYield(Event::LineFeed),
         }
     }
 
     pub fn resume_from_pause_for_new_line_and_continue(&mut self) {
-        self.is_resumed_from_pause_for_new_line = true;
+        self.is_at_line_beginning = true;
     }
 }

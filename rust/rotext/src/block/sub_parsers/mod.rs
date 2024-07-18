@@ -1,6 +1,7 @@
 use super::{context::Context, Event};
 use crate::global;
 
+pub mod code_block;
 pub mod paragraph;
 
 mod content;
