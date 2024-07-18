@@ -131,33 +131,50 @@ impl Parser {
         let Some(peeked) = ctx.mapper.peek_1() else {
             return InternalResult::Done;
         };
+        let peeked = peeked.clone();
 
         match peeked {
             global_mapper::Mapped::CharAt(_) | global_mapper::Mapped::NextChar => {
                 // NOTE: 初始状态也可能遇到 `NextChar`，比如在一个并非结束与换行的块
                 // 级元素（最简单的，如分割线）后面存在文本时。
-                consume_peeked!(ctx, peeked);
-                let content = Range::new(ctx.cursor.value().unwrap(), 1);
-                InternalResult::ToContinueIn(StepState::Normal(content))
+
+                let Some(condition) = self
+                    .end_conditions
+                    .after_repetitive_characters
+                    .as_ref()
+                    .filter(|c| {
+                        c.at_line_end_and_with_space_before && ctx.peek_next_char() == Some(b' ')
+                    })
+                else {
+                    consume_peeked!(ctx, &peeked);
+                    let content = Range::new(ctx.cursor.value().unwrap(), 1);
+                    return InternalResult::ToContinueIn(StepState::Normal(content));
+                };
+
+                process_potential_closing_part_at_line_end_and_with_space_before(
+                    ctx,
+                    condition,
+                    Range::new(ctx.cursor.applying(&peeked).value().unwrap(), 0),
+                    peeked,
+                )
             }
             global_mapper::Mapped::LineFeed => {
-                consume_peeked!(ctx, peeked);
+                consume_peeked!(ctx, &peeked);
                 if self.end_conditions.before_new_line {
                     InternalResult::Done
                 } else {
                     InternalResult::ToPauseForNewLine
                 }
             }
-            &global_mapper::Mapped::BlankAtLineBeginning(blank) => {
-                consume_peeked!(ctx, peeked);
+            global_mapper::Mapped::BlankAtLineBeginning(blank) => {
+                consume_peeked!(ctx, &peeked);
                 match self.mode {
                     Mode::Inline => InternalResult::ToContinue,
                     Mode::Verbatim => InternalResult::ToYield(Event::Text(blank)),
                 }
             }
             global_mapper::Mapped::Text(content) => {
-                let content = *content;
-                consume_peeked!(ctx, peeked);
+                consume_peeked!(ctx, &peeked);
                 InternalResult::ToYield(Event::Text(content))
             }
         }
@@ -194,42 +211,12 @@ impl Parser {
                     return InternalResult::ToContinue;
                 };
 
-                let confirmed_content = *state_content;
-                let mut potential_closing_part_length = 0;
-
-                if condition.at_line_end_and_with_space_before {
-                    consume_peeked!(ctx, &peeked);
-                    potential_closing_part_length += 1;
-                }
-
-                if ctx.peek_next_char() != Some(condition.character) {
-                    state_content
-                        .set_length(confirmed_content.length() + potential_closing_part_length);
-                    return InternalResult::ToContinue;
-                }
-                ctx.must_take_from_mapper_and_apply_to_cursor(1);
-                potential_closing_part_length += 1;
-
-                let dropped = ctx.drop_from_mapper_while_char_with_maximum(
-                    condition.character,
-                    condition.minimal_count,
-                );
-                // XXX: 被 drop 的那些不会重新尝试解析，而是直接当成文本。
-                potential_closing_part_length += dropped;
-                if 1 + dropped == condition.minimal_count {
-                    let peeked = ctx.mapper.peek_1();
-                    if !matches!(peeked, Some(global_mapper::Mapped::LineFeed) | None) {
-                        state_content
-                            .set_length(confirmed_content.length() + potential_closing_part_length);
-                        return InternalResult::ToContinue;
-                    };
-
-                    InternalResult::ToYield(Event::Unparsed(confirmed_content))
-                } else {
-                    state_content
-                        .set_length(confirmed_content.length() + potential_closing_part_length);
-                    InternalResult::ToContinue
-                }
+                process_potential_closing_part_at_line_end_and_with_space_before(
+                    ctx,
+                    condition,
+                    *state_content,
+                    peeked,
+                )
             }
             global_mapper::Mapped::BlankAtLineBeginning(blank) => {
                 consume_peeked!(ctx, &peeked);
@@ -313,5 +300,52 @@ impl Parser {
             Mode::Inline => Event::Unparsed(content),
             Mode::Verbatim => Event::Text(content),
         }
+    }
+}
+
+fn process_potential_closing_part_at_line_end_and_with_space_before<
+    'a,
+    I: 'a + Iterator<Item = global::Event>,
+>(
+    ctx: &mut Context<'a, I>,
+    condition: &RepetitiveCharactersCondition,
+    mut confirmed_content: Range,
+    peeked: global_mapper::Mapped,
+) -> InternalResult {
+    let mut potential_closing_part_length = 0;
+
+    if condition.at_line_end_and_with_space_before {
+        consume_peeked!(ctx, &peeked);
+        potential_closing_part_length += 1;
+    }
+
+    if ctx.peek_next_char() != Some(condition.character) {
+        confirmed_content.increase_length(potential_closing_part_length);
+        return InternalResult::ToContinueIn(StepState::Normal(confirmed_content));
+    }
+    ctx.must_take_from_mapper_and_apply_to_cursor(1);
+    potential_closing_part_length += 1;
+
+    let dropped =
+        ctx.drop_from_mapper_while_char_with_maximum(condition.character, condition.minimal_count);
+    // XXX: 被 drop 的那些不会重新尝试解析，而是直接当成文本。
+    potential_closing_part_length += dropped;
+    if 1 + dropped == condition.minimal_count {
+        let peeked = ctx.mapper.peek_1();
+        if !matches!(peeked, Some(global_mapper::Mapped::LineFeed) | None) {
+            confirmed_content.increase_length(potential_closing_part_length);
+            return InternalResult::ToContinueIn(StepState::Normal(confirmed_content));
+        };
+
+        if confirmed_content.length() == 0 {
+            // XXX: 只有在 [StepState::Initial] 下（逐字文本转义后直接是闭合部
+            // 分）有可能走到这里。
+            InternalResult::ToContinue
+        } else {
+            InternalResult::ToYield(Event::Unparsed(confirmed_content))
+        }
+    } else {
+        confirmed_content.increase_length(potential_closing_part_length);
+        InternalResult::ToContinueIn(StepState::Normal(confirmed_content))
     }
 }
