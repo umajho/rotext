@@ -233,6 +233,8 @@ mod tests {
     // ## 逐字文本转义转为文本
     #[case("<`a`>", vec![
         Mapped::Text(Range::new(2, 1))])]
+    #[case("<`a\nb`>", vec![
+        Mapped::Text(Range::new(2, 3))])]
     #[case("<` a `>", vec![
         Mapped::Text(Range::new(3, 1))])]
     #[case("<`  a  `>", vec![

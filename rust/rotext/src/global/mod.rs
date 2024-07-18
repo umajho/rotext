@@ -274,6 +274,8 @@ mod tests {
         (EventType::VerbatimEscaping, Some(" … "), None)])]
     #[case("<`` `> ``>", vec![
         (EventType::VerbatimEscaping, Some(" `> "), None)])]
+    #[case("<` line 1\nline 2 `>", vec![
+        (EventType::VerbatimEscaping, Some(" line 1\nline 2 "), None)])]
     #[case("<` A `><` B `>", vec![
         (EventType::VerbatimEscaping, Some(" A "), None),
         (EventType::VerbatimEscaping, Some(" B "), None)])]
