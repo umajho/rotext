@@ -257,6 +257,95 @@ mod tests {
         (EventType::EnterParagraph, None),
         (EventType::Text, Some("a")),
         (EventType::Exit, None)])]
+    // ## 段落
+    #[case(vec!["= a ="], vec![
+        (EventType::EnterHeading1, None),
+        (EventType::Unparsed, Some("a")),
+        (EventType::Exit, None)])]
+    #[case(vec!["== a ==", "== a ==\n", "== a ==\n\n"], vec![
+        (EventType::EnterHeading2, None),
+        (EventType::Unparsed, Some("a")),
+        (EventType::Exit, None)])]
+    #[case(vec!["=== a ==="], vec![
+        (EventType::EnterHeading3, None),
+        (EventType::Unparsed, Some("a")),
+        (EventType::Exit, None)])]
+    #[case(vec!["==== a ===="], vec![
+        (EventType::EnterHeading4, None),
+        (EventType::Unparsed, Some("a")),
+        (EventType::Exit, None)])]
+    #[case(vec!["===== a ====="], vec![
+        (EventType::EnterHeading5, None),
+        (EventType::Unparsed, Some("a")),
+        (EventType::Exit, None)])]
+    #[case(vec!["====== a ======"], vec![
+        (EventType::EnterHeading6, None),
+        (EventType::Unparsed, Some("a")),
+        (EventType::Exit, None)])]
+    #[case(vec!["== a"], vec![
+        (EventType::EnterHeading2, None),
+        (EventType::Unparsed, Some("a")),
+        (EventType::Exit, None)])]
+    #[case(vec!["== a ="], vec![
+        (EventType::EnterHeading2, None),
+        (EventType::Unparsed, Some("a =")),
+        (EventType::Exit, None)])]
+    #[case(vec!["== a ==="], vec![
+        (EventType::EnterHeading2, None),
+        (EventType::Unparsed, Some("a ===")),
+        (EventType::Exit, None)])]
+    #[case(vec!["==  a  =="], vec![
+        (EventType::EnterHeading2, None),
+        (EventType::Unparsed, Some(" a ")),
+        (EventType::Exit, None)])]
+    #[case(vec!["== a ==\nb", "== a ==\n\nb"], vec![
+        (EventType::EnterHeading2, None),
+        (EventType::Unparsed, Some("a")),
+        (EventType::Exit, None),
+        (EventType::EnterParagraph, None),
+        (EventType::Unparsed, Some("b")),
+        (EventType::Exit, None)])]
+    #[case(vec!["== a ==\n=== b ===", "== a ==\n\n=== b ==="], vec![
+        (EventType::EnterHeading2, None),
+        (EventType::Unparsed, Some("a")),
+        (EventType::Exit, None),
+        (EventType::EnterHeading3, None),
+        (EventType::Unparsed, Some("b")),
+        (EventType::Exit, None)])]
+    #[case(vec!["==a =="], vec![
+        (EventType::EnterParagraph, None),
+        (EventType::Unparsed, Some("==a ==")),
+        (EventType::Exit, None)])]
+    #[case(vec!["== a=="], vec![
+        (EventType::EnterHeading2, None),
+        (EventType::Unparsed, Some("a==")),
+        (EventType::Exit, None)])]
+    #[case(vec!["== a == "], vec![
+        (EventType::EnterHeading2, None),
+        (EventType::Unparsed, Some("a == ")),
+        (EventType::Exit, None)])]
+    #[case(vec!["== a ==b"], vec![
+        (EventType::EnterHeading2, None),
+        (EventType::Unparsed, Some("a ==b")),
+        (EventType::Exit, None)])]
+    #[case(vec!["== a == b =="], vec![
+        (EventType::EnterHeading2, None),
+        (EventType::Unparsed, Some("a == b")),
+        (EventType::Exit, None)])]
+    #[case(vec!["======= a ======="], vec![
+        (EventType::EnterParagraph, None),
+        (EventType::Unparsed, Some("======= a =======")),
+        (EventType::Exit, None)])]
+    #[case(vec!["== <`c`> =="], vec![
+        (EventType::EnterHeading2, None),
+        (EventType::Text, Some("c")),
+        (EventType::Exit, None)])]
+    #[case(vec!["== a<`c`>b =="], vec![
+        (EventType::EnterHeading2, None),
+        (EventType::Unparsed, Some("a")),
+        (EventType::Text, Some("c")),
+        (EventType::Unparsed, Some("b")),
+        (EventType::Exit, None)])]
     // ## 代码块
     #[case(vec!["```\ncode\n```", "```\ncode\n````", "````\ncode\n````"], vec![
         (EventType::EnterCodeBlock, None),
