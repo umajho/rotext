@@ -302,7 +302,8 @@ mod tests {
         (EventType::Exit, None)])]
     #[case(vec!["```info<`\ninfo line 2`>\n```"], vec![
         (EventType::EnterCodeBlock, None),
-        (EventType::Text, Some("info\ninfo line 2")),
+        (EventType::Text, Some("info")),
+        (EventType::Text, Some("\ninfo line 2")),
         (EventType::Separator, None),
         (EventType::Exit, None)])]
 
