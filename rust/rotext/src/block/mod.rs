@@ -240,6 +240,71 @@ mod tests {
         (EventType::EnterParagraph, None),
         (EventType::Text, Some("a")),
         (EventType::Exit, None)])]
+    // ## 代码块
+    #[case(vec!["```\ncode\n```", "```\ncode\n````", "````\ncode\n````"], vec![
+        (EventType::EnterCodeBlock, None),
+        (EventType::Separator, None),
+        (EventType::Text, Some("code")),
+        (EventType::Exit, None)])]
+    #[case(vec!["```\n```", "```\n````", "````\n````"], vec![
+        (EventType::EnterCodeBlock, None),
+        (EventType::Separator, None),
+        (EventType::Exit, None)])]
+    #[case(vec!["```\n\n```"], vec![
+        (EventType::EnterCodeBlock, None),
+        (EventType::Separator, None),
+        (EventType::LineFeed, None),
+        (EventType::Exit, None)])]
+    #[case(vec!["````\n```\n````"], vec![
+        (EventType::EnterCodeBlock, None),
+        (EventType::Separator, None),
+        (EventType::Text, Some("```")),
+        (EventType::Exit, None)])]
+    #[case(vec!["```info\ncode\n```"], vec![
+        (EventType::EnterCodeBlock, None),
+        (EventType::Text, Some("info")),
+        (EventType::Separator, None),
+        (EventType::Text, Some("code")),
+        (EventType::Exit, None)])]
+    #[case(vec!["```\ncode\n\n```"], vec![
+        (EventType::EnterCodeBlock, None),
+        (EventType::Separator, None),
+        (EventType::Text, Some("code")),
+        (EventType::LineFeed, None),
+        (EventType::Exit, None)])]
+    #[case(vec!["```\ncode\n\n\n```"], vec![
+        (EventType::EnterCodeBlock, None),
+        (EventType::Separator, None),
+        (EventType::Text, Some("code")),
+        (EventType::LineFeed, None),
+        (EventType::LineFeed, None),
+        (EventType::Exit, None)])]
+    #[case(vec!["```\ncode\nline 3\n```"], vec![
+        (EventType::EnterCodeBlock, None),
+        (EventType::Separator, None),
+        (EventType::Text, Some("code")),
+        (EventType::LineFeed, None),
+        (EventType::Text, Some("line 3")),
+        (EventType::Exit, None)])]
+    #[case(vec!["```\ncode\n\nline 3\n```"], vec![
+        (EventType::EnterCodeBlock, None),
+        (EventType::Separator, None),
+        (EventType::Text, Some("code")),
+        (EventType::LineFeed, None),
+        (EventType::LineFeed, None),
+        (EventType::Text, Some("line 3")),
+        (EventType::Exit, None)])]
+    // ### 代码块与全局阶段语法的互动
+    #[case(vec!["```\n<` ``` `>\n```"], vec![
+        (EventType::EnterCodeBlock, None),
+        (EventType::Separator, None),
+        (EventType::Text, Some("```")),
+        (EventType::Exit, None)])]
+    #[case(vec!["```info<`\ninfo line 2`>\n```"], vec![
+        (EventType::EnterCodeBlock, None),
+        (EventType::Text, Some("info\ninfo line 2")),
+        (EventType::Separator, None),
+        (EventType::Exit, None)])]
 
     fn it_works(#[case] inputs: Vec<&str>, #[case] expected: Vec<EventCase>) {
         for input in inputs {
