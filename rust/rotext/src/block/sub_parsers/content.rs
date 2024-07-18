@@ -254,7 +254,13 @@ impl Parser {
                     Mode::Verbatim => InternalResult::ToYield(Event::Text(blank)),
                 }
             }
-            global_mapper::Mapped::Text(_) => InternalResult::ToYield(Event::LineFeed),
+            global_mapper::Mapped::Text(_) => {
+                if self.is_at_first_line {
+                    InternalResult::ToChangeStepStateAndContinue(StepState::Initial)
+                } else {
+                    InternalResult::ToYield(Event::LineFeed)
+                }
+            }
         }
     }
 
