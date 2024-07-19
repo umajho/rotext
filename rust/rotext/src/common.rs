@@ -34,12 +34,4 @@ impl Range {
         let slice = &input[self.start..self.start + self.length];
         unsafe { std::str::from_utf8_unchecked(slice) }
     }
-
-    pub fn next_index_after_range(&self) -> usize {
-        self.start + self.length
-    }
-
-    pub fn next_char_after_range(&self, input: &[u8]) -> u8 {
-        input[self.next_index_after_range()]
-    }
 }
