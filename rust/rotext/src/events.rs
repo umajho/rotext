@@ -156,10 +156,8 @@ impl Event {
             Event::VerbatimEscaping {
                 content: _,
                 is_closed_forcedly,
-            } => {
-                if is_closed_forcedly {
-                    flags.insert("F");
-                }
+            } if is_closed_forcedly => {
+                flags.insert("F");
             }
             _ => {}
         }
