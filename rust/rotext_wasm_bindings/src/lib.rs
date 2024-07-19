@@ -4,7 +4,7 @@ use std::sync::Once;
 
 #[wasm_bindgen]
 pub fn parse(input: &[u8]) -> usize {
-    rotext::parse(input)
+    todo!()
 }
 
 static INIT: Once = Once::new();
@@ -16,5 +16,5 @@ pub fn dev(input: &[u8]) -> String {
         console_log::init_with_level(log::Level::Debug).unwrap();
     });
 
-    rotext::dev(input)
+    rotext::parse_and_render_to_html(input)
 }
