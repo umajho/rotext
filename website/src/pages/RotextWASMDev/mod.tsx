@@ -33,7 +33,7 @@ export default (() => {
         onInput={(ev) => setInput(ev.currentTarget.value)}
       >
       </textarea>
-      <pre>{result()}</pre>
+      <pre class="whitespace-pre-wrap break-all">{result()}</pre>
     </Card>
   );
 }) satisfies Component;
