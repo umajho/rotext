@@ -1,9 +1,9 @@
 use crate::{common::Range, global};
 
 /// 用于将产出 [global::Event] 的流转化为便于 [Parser] 处理的流。
-pub struct GlobalEventStreamMapper<'a, I: 'a + Iterator<Item = global::Event>> {
+pub struct GlobalEventStreamMapper<'a> {
     input: &'a [u8],
-    stream: I,
+    stream: global::Parser<'a>,
 
     deferred: Option<Deferred>,
     remain: Option<RemainUnparsed>,
@@ -36,8 +36,8 @@ pub enum Mapped {
     Text(Range),
 }
 
-impl<'a, I: 'a + Iterator<Item = global::Event>> GlobalEventStreamMapper<'a, I> {
-    pub fn new(input: &'a [u8], stream: I) -> GlobalEventStreamMapper<'a, I> {
+impl<'a> GlobalEventStreamMapper<'a> {
+    pub fn new(input: &'a [u8], stream: global::Parser<'a>) -> GlobalEventStreamMapper<'a> {
         GlobalEventStreamMapper {
             input,
             stream,
@@ -172,7 +172,7 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> GlobalEventStreamMapper<'a, I> 
     }
 }
 
-impl<'a, I: 'a + Iterator<Item = global::Event>> Iterator for GlobalEventStreamMapper<'a, I> {
+impl<'a> Iterator for GlobalEventStreamMapper<'a> {
     type Item = Mapped;
 
     fn next(&mut self) -> Option<Self::Item> {

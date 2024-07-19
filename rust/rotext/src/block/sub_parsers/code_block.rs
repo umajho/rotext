@@ -1,7 +1,4 @@
-use crate::{
-    block::{context::Context, sub_parsers, Event},
-    global,
-};
+use crate::block::{context::Context, sub_parsers, Event};
 
 enum State {
     /// 构造解析器后，解析器所处的初始状态。此时，其所解析语法的开启部分应已经被
@@ -37,10 +34,7 @@ impl Parser {
     }
 
     #[inline(always)]
-    fn next<'a, I: 'a + Iterator<Item = global::Event>>(
-        &mut self,
-        ctx: &mut Context<'a, I>,
-    ) -> sub_parsers::Result {
+    fn next(&mut self, ctx: &mut Context) -> sub_parsers::Result {
         let ret: sub_parsers::Result;
 
         let state = std::mem::replace(&mut self.state, State::Invalid);
@@ -121,8 +115,8 @@ impl Parser {
     }
 }
 
-impl<'a, I: 'a + Iterator<Item = global::Event>> sub_parsers::SubParser<'a, I> for Parser {
-    fn next(&mut self, ctx: &mut Context<'a, I>) -> sub_parsers::Result {
+impl<'a> sub_parsers::SubParser<'a> for Parser {
+    fn next(&mut self, ctx: &mut Context<'a>) -> sub_parsers::Result {
         self.next(ctx)
     }
 

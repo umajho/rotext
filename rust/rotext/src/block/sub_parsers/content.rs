@@ -6,7 +6,6 @@ use crate::{
         Event,
     },
     common::Range,
-    global,
 };
 
 #[derive(Debug)]
@@ -95,10 +94,7 @@ impl Parser {
         }
     }
 
-    pub fn next<'a, I: 'a + Iterator<Item = global::Event>>(
-        &mut self,
-        ctx: &mut Context<'a, I>,
-    ) -> sub_parsers::Result {
+    pub fn next(&mut self, ctx: &mut Context) -> sub_parsers::Result {
         let mut state = std::mem::replace(&mut self.next_initial_step_state, StepState::Initial);
 
         loop {
@@ -124,10 +120,7 @@ impl Parser {
     }
 
     #[inline(always)]
-    fn process_in_initial_state<'a, I: 'a + Iterator<Item = global::Event>>(
-        &mut self,
-        ctx: &mut Context<'a, I>,
-    ) -> InternalResult {
+    fn process_in_initial_state(&mut self, ctx: &mut Context) -> InternalResult {
         let Some(peeked) = ctx.mapper.peek_1() else {
             return InternalResult::Done;
         };
@@ -181,9 +174,9 @@ impl Parser {
     }
 
     #[inline(always)]
-    fn process_in_normal_state<'a, I: 'a + Iterator<Item = global::Event>>(
+    fn process_in_normal_state(
         &mut self,
-        ctx: &mut Context<'a, I>,
+        ctx: &mut Context,
         state_content: &mut Range,
     ) -> InternalResult {
         let Some(peeked) = ctx.mapper.peek_1() else {
@@ -229,10 +222,7 @@ impl Parser {
     }
 
     #[inline(always)]
-    fn process_in_is_after_line_feed_state<'a, I: 'a + Iterator<Item = global::Event>>(
-        &mut self,
-        ctx: &mut Context<'a, I>,
-    ) -> InternalResult {
+    fn process_in_is_after_line_feed_state(&mut self, ctx: &mut Context) -> InternalResult {
         let Some(peeked) = ctx.mapper.peek_1() else {
             return InternalResult::Done;
         };
@@ -303,11 +293,8 @@ impl Parser {
     }
 }
 
-fn process_potential_closing_part_at_line_end_and_with_space_before<
-    'a,
-    I: 'a + Iterator<Item = global::Event>,
->(
-    ctx: &mut Context<'a, I>,
+fn process_potential_closing_part_at_line_end_and_with_space_before(
+    ctx: &mut Context,
     condition: &RepetitiveCharactersCondition,
     mut confirmed_content: Range,
     peeked: global_mapper::Mapped,

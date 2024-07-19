@@ -2,15 +2,14 @@ use super::{
     global_mapper::GlobalEventStreamMapper,
     utils::{InputCursor, Peekable3},
 };
-use crate::global;
 
-pub struct Context<'a, I: 'a + Iterator<Item = global::Event>> {
+pub struct Context<'a> {
     pub input: &'a [u8],
-    pub mapper: Peekable3<GlobalEventStreamMapper<'a, I>>,
+    pub mapper: Peekable3<GlobalEventStreamMapper<'a>>,
     pub cursor: InputCursor,
 }
 
-impl<'a, I: 'a + Iterator<Item = global::Event>> Context<'a, I> {
+impl<'a> Context<'a> {
     pub fn take_from_mapper_and_apply_to_cursor_if_applied_cursor_satisfies<
         F: FnOnce(&InputCursor) -> bool,
     >(

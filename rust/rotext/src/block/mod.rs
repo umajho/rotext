@@ -11,27 +11,27 @@ use crate::{common::Range, global};
 use global_mapper::GlobalEventStreamMapper;
 use utils::Peekable3;
 
-pub struct Parser<'a, I: 'a + Iterator<Item = global::Event>> {
-    context: Context<'a, I>,
+pub struct Parser<'a> {
+    context: Context<'a>,
 
     /// 如果为 true，代表没有后续输入了，要清理栈中余留的内容。
     is_cleaning_up: bool,
-    state: State<'a, I>,
+    state: State<'a>,
     stack: Vec<StackEntry>,
 }
 
-enum State<'a, I: 'a + Iterator<Item = global::Event>> {
+enum State<'a> {
     InRoot,
-    InRootWithPausedSubParser(Box<dyn sub_parsers::SubParser<'a, I> + 'a>),
-    InSubParser(Box<dyn sub_parsers::SubParser<'a, I> + 'a>),
+    InRootWithPausedSubParser(Box<dyn sub_parsers::SubParser<'a> + 'a>),
+    InSubParser(Box<dyn sub_parsers::SubParser<'a> + 'a>),
 
     Invalid,
 }
 
 enum StackEntry {}
 
-impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
-    pub fn new(input: &'a [u8], global_stream: I) -> Parser<'a, I> {
+impl<'a> Parser<'a> {
+    pub fn new(input: &'a [u8], global_stream: global::Parser<'a>) -> Parser<'a> {
         let context = Context {
             input,
             mapper: Peekable3::new(GlobalEventStreamMapper::new(input, global_stream)),
@@ -93,7 +93,7 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Parser<'a, I> {
     }
 }
 
-impl<'a, I: 'a + Iterator<Item = global::Event>> Iterator for Parser<'a, I> {
+impl<'a> Iterator for Parser<'a> {
     type Item = Event;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -101,15 +101,13 @@ impl<'a, I: 'a + Iterator<Item = global::Event>> Iterator for Parser<'a, I> {
     }
 }
 
-enum RootParseResult<'a, I: 'a + Iterator<Item = global::Event>> {
+enum RootParseResult<'a> {
     ToYield(Event),
-    ToEnter(Box<dyn sub_parsers::SubParser<'a, I> + 'a>),
+    ToEnter(Box<dyn sub_parsers::SubParser<'a> + 'a>),
     Done,
 }
 
-fn parse_root<'a, I: 'a + Iterator<Item = global::Event>>(
-    ctx: &mut Context<'a, I>,
-) -> RootParseResult<'a, I> {
+fn parse_root<'a>(ctx: &mut Context<'a>) -> RootParseResult<'a> {
     loop {
         let Some(peeked) = ctx.mapper.peek_1() else {
             return RootParseResult::Done;
