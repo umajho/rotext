@@ -1,5 +1,7 @@
 import { Component, createEffect, createSignal, on } from "solid-js";
 
+import pretty from "pretty";
+
 import { makeOnlyInstance as makeOnlyRotextAdapterInstance } from "@rotext/wasm-bindings-adapter";
 import initRotextWASM, * as rotextBindings from "rotext_wasm_bindings";
 
@@ -19,7 +21,7 @@ export default (() => {
       console.time("rotext RS (dev)");
       const result = rotextAdapter.dev(input);
       console.timeEnd("rotext RS (dev)");
-      setResult(`${result}`);
+      setResult(pretty(result));
     }),
   );
 
