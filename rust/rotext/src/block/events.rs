@@ -16,23 +16,24 @@ pub enum Event {
 
     /// 进入段落。
     EnterParagraph = EventType::EnterParagraph as u32,
-    /// 分割线
+    /// 分割线。
     ThematicBreak = EventType::ThematicBreak as u32,
-    /// 一级标题
+    /// 一级标题。
     EnterHeading1 = EventType::EnterHeading1 as u32,
-    /// 二级标题
+    /// 二级标题。
     EnterHeading2 = EventType::EnterHeading2 as u32,
-    /// 三级标题
+    /// 三级标题。
     EnterHeading3 = EventType::EnterHeading3 as u32,
-    /// 四级标题
+    /// 四级标题。
     EnterHeading4 = EventType::EnterHeading4 as u32,
-    /// 五级标题
+    /// 五级标题。
     EnterHeading5 = EventType::EnterHeading5 as u32,
-    /// 六级标题
+    /// 六级标题。
     EnterHeading6 = EventType::EnterHeading6 as u32,
     /// 代码块。
     EnterCodeBlock = EventType::EnterCodeBlock as u32,
 
+    /// 文本。
     Text(Range) = EventType::Text as u32,
 }
 
