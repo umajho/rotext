@@ -1,11 +1,8 @@
-mod events;
-
-pub use events::{Event, EventForInlineLevel};
-
 use std::{cell::RefCell, iter::Peekable, rc::Rc};
 
 use crate::{
     block,
+    events::{BlendEvent, BlockEvent, Event, InlineLevelParseInputEvent},
     inline::{self},
 };
 
@@ -16,7 +13,7 @@ enum State<'a> {
     Invalid,
 }
 
-/// 用于将 “产出 [block::Event] 的流” 中每段 “留给行内阶段解析器处理的、连续产出
+/// 用于将 “产出 [BlockEvent] 的流” 中每段 “留给行内阶段解析器处理的、连续产出
 /// 的事件” 截取为单独的流提供给使用者。使用者需要将提供的那些流映射为新的流。
 pub struct BlockEventStreamInlineSegmentMapper<'a> {
     map_fn: Box<dyn Fn(WhileInlineSegment<'a>) -> inline::Parser + 'a>,
@@ -38,38 +35,47 @@ impl<'a> BlockEventStreamInlineSegmentMapper<'a> {
     }
 
     #[inline(always)]
-    fn next(&mut self) -> Option<Event> {
+    fn next(&mut self) -> Option<BlendEvent> {
         loop {
-            let to_break: Option<Event>;
+            let to_break: Option<BlendEvent>;
 
             (to_break, self.state) = match std::mem::replace(&mut self.state, State::Invalid) {
                 State::Normal(mut input_stream) => {
                     let next = input_stream.next()?;
                     if matches!(
                         next,
-                        block::Event::EnterParagraph
-                            | block::Event::EnterHeading1
-                            | block::Event::EnterHeading2
-                            | block::Event::EnterHeading3
-                            | block::Event::EnterHeading4
-                            | block::Event::EnterHeading5
-                            | block::Event::EnterHeading6
-                            | block::Event::EnterCodeBlock
-                            | block::Event::Separator
+                        BlockEvent::EnterParagraph
+                            | BlockEvent::EnterHeading1
+                            | BlockEvent::EnterHeading2
+                            | BlockEvent::EnterHeading3
+                            | BlockEvent::EnterHeading4
+                            | BlockEvent::EnterHeading5
+                            | BlockEvent::EnterHeading6
+                            | BlockEvent::EnterCodeBlock
+                            | BlockEvent::Separator
                     ) {
                         let segment_stream = WhileInlineSegment::new(
                             input_stream,
                             self.input_stream_returner.clone(),
                         );
                         let inline_parser = (self.map_fn)(segment_stream);
-                        (Some(Event::Block(next)), State::TakenOver(inline_parser))
+                        (
+                            Some(BlendEvent::try_from(Event::from(next)).unwrap()),
+                            State::TakenOver(inline_parser),
+                        )
                     } else {
-                        (Some(Event::Block(next)), State::Normal(input_stream))
+                        (
+                            Some(BlendEvent::try_from(Event::from(next)).unwrap()),
+                            State::Normal(input_stream),
+                        )
                     }
                 }
                 State::TakenOver(mut inline_parser) => {
                     if let Some(next) = inline_parser.next() {
-                        (Some(Event::Inline(next)), State::TakenOver(inline_parser))
+                        (
+                            Some(BlendEvent::try_from(Event::from(next)).unwrap()),
+                            State::TakenOver(inline_parser),
+                        )
                     } else {
                         let input_stream = self.input_stream_returner.borrow_mut().take().unwrap();
                         (None, State::Normal(input_stream))
@@ -86,7 +92,7 @@ impl<'a> BlockEventStreamInlineSegmentMapper<'a> {
 }
 
 impl<'a> Iterator for BlockEventStreamInlineSegmentMapper<'a> {
-    type Item = Event;
+    type Item = BlendEvent;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.next()
@@ -110,27 +116,23 @@ impl<'a> WhileInlineSegment<'a> {
     }
 
     #[inline(always)]
-    fn next(&mut self) -> Option<EventForInlineLevel> {
+    fn next(&mut self) -> Option<InlineLevelParseInputEvent> {
         let peeked = self.inner.as_mut().unwrap().peek();
         if matches!(
             peeked,
-            None | Some(&block::Event::Exit) | Some(&block::Event::Separator)
+            None | Some(&BlockEvent::Exit) | Some(&BlockEvent::Separator)
         ) {
             *self.input_stream_returner.borrow_mut() = self.inner.take();
             None
         } else {
-            self.inner.as_mut().unwrap().next().map(|ev| match ev {
-                block::Event::Unparsed(content) => EventForInlineLevel::Unparsed(content),
-                block::Event::LineFeed => EventForInlineLevel::LineFeed,
-                block::Event::Text(content) => EventForInlineLevel::Text(content),
-                _ => unreachable!(),
-            })
+            let next = self.inner.as_mut().unwrap().next();
+            next.map(|ev| InlineLevelParseInputEvent::try_from(Event::from(ev)).unwrap())
         }
     }
 }
 
 impl<'a> Iterator for WhileInlineSegment<'a> {
-    type Item = EventForInlineLevel;
+    type Item = InlineLevelParseInputEvent;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.next()

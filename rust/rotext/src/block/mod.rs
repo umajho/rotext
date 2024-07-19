@@ -1,13 +1,11 @@
 mod context;
-mod events;
 mod global_mapper;
 mod sub_parsers;
 mod utils;
 
 use context::Context;
-pub use events::Event;
 
-use crate::{common::Range, global};
+use crate::{common::Range, events::BlockEvent, global};
 use global_mapper::GlobalEventStreamMapper;
 use utils::Peekable3;
 
@@ -47,15 +45,15 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn next(&mut self) -> Option<Event> {
+    pub fn next(&mut self) -> Option<BlockEvent> {
         loop {
             if self.is_cleaning_up {
                 // 若栈中还有内容，出栈并返回 `Some(Event::Exit)`；若栈已空，返回
                 // `None`。
-                return self.stack.pop().map(|_| Event::Exit);
+                return self.stack.pop().map(|_| BlockEvent::Exit);
             }
 
-            let to_break: Option<Event>;
+            let to_break: Option<BlockEvent>;
 
             let state = std::mem::replace(&mut self.state, State::Invalid);
             (to_break, self.state) = match state {
@@ -94,7 +92,7 @@ impl<'a> Parser<'a> {
 }
 
 impl<'a> Iterator for Parser<'a> {
-    type Item = Event;
+    type Item = BlockEvent;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.next()
@@ -102,7 +100,7 @@ impl<'a> Iterator for Parser<'a> {
 }
 
 enum RootParseResult<'a> {
-    ToYield(Event),
+    ToYield(BlockEvent),
     ToEnter(Box<dyn sub_parsers::SubParser<'a> + 'a>),
     Done,
 }
@@ -138,7 +136,7 @@ fn parse_root<'a>(ctx: &mut Context<'a>) -> RootParseResult<'a> {
         [Some(b'-'), Some(b'-'), Some(b'-')] => {
             ctx.must_take_from_mapper_and_apply_to_cursor(3);
             ctx.drop_from_mapper_while_char(b'-');
-            RootParseResult::ToYield(Event::ThematicBreak)
+            RootParseResult::ToYield(BlockEvent::ThematicBreak)
         }
         [Some(b'='), ..] => {
             ctx.must_take_from_mapper_and_apply_to_cursor(1);
@@ -175,7 +173,7 @@ mod tests {
     use super::*;
     use rstest::rstest;
 
-    use crate::events::EventType;
+    use crate::events::{Event, EventType};
 
     type EventCase<'a> = (EventType, Option<&'a str>);
 
@@ -194,7 +192,7 @@ mod tests {
     #[case(vec!["a\nb", "a\n b"], vec![
         (EventType::EnterParagraph, None),
         (EventType::Unparsed, Some("a")),
-        (EventType::LineFeed, None),
+        (EventType::LineBreak, None),
         (EventType::Unparsed, Some("b")),
         (EventType::Exit, None)])]
     #[case(vec!["a\n\nb", "a\n\n b"], vec![
@@ -224,14 +222,14 @@ mod tests {
     #[case(vec!["a\n<`c`>", "a\n <`c`>"], vec![
         (EventType::EnterParagraph, None),
         (EventType::Unparsed, Some("a")),
-        (EventType::LineFeed, None),
+        (EventType::LineBreak, None),
         (EventType::Text, Some("c")),
         (EventType::Exit, None)])]
     // ### “继续段落” 的优先级 “高于开启其他块级语法” 的优先级
     #[case(vec!["a\n---"], vec![ // 分割线
         (EventType::EnterParagraph, None),
         (EventType::Unparsed, Some("a")),
-        (EventType::LineFeed, None),
+        (EventType::LineBreak, None),
         (EventType::Unparsed, Some("---")),
         (EventType::Exit, None)])]
     // ## 分割线
@@ -357,7 +355,7 @@ mod tests {
     #[case(vec!["```\n\n```"], vec![
         (EventType::EnterCodeBlock, None),
         (EventType::Separator, None),
-        (EventType::LineFeed, None),
+        (EventType::LineBreak, None),
         (EventType::Exit, None)])]
     #[case(vec!["````\n```\n````"], vec![
         (EventType::EnterCodeBlock, None),
@@ -374,28 +372,28 @@ mod tests {
         (EventType::EnterCodeBlock, None),
         (EventType::Separator, None),
         (EventType::Text, Some("code")),
-        (EventType::LineFeed, None),
+        (EventType::LineBreak, None),
         (EventType::Exit, None)])]
     #[case(vec!["```\ncode\n\n\n```"], vec![
         (EventType::EnterCodeBlock, None),
         (EventType::Separator, None),
         (EventType::Text, Some("code")),
-        (EventType::LineFeed, None),
-        (EventType::LineFeed, None),
+        (EventType::LineBreak, None),
+        (EventType::LineBreak, None),
         (EventType::Exit, None)])]
     #[case(vec!["```\ncode\nline 3\n```"], vec![
         (EventType::EnterCodeBlock, None),
         (EventType::Separator, None),
         (EventType::Text, Some("code")),
-        (EventType::LineFeed, None),
+        (EventType::LineBreak, None),
         (EventType::Text, Some("line 3")),
         (EventType::Exit, None)])]
     #[case(vec!["```\ncode\n\nline 3\n```"], vec![
         (EventType::EnterCodeBlock, None),
         (EventType::Separator, None),
         (EventType::Text, Some("code")),
-        (EventType::LineFeed, None),
-        (EventType::LineFeed, None),
+        (EventType::LineBreak, None),
+        (EventType::LineBreak, None),
         (EventType::Text, Some("line 3")),
         (EventType::Exit, None)])]
     // ### 代码块与全局阶段语法的互动
@@ -418,6 +416,7 @@ mod tests {
 
             let actual: Vec<_> = block_parser
                 .map(|ev| -> EventCase {
+                    let ev: Event = ev.into();
                     (
                         EventType::from(ev.discriminant()),
                         ev.content(input.as_bytes()),

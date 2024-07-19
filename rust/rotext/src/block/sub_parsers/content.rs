@@ -3,9 +3,9 @@ use crate::{
         context::Context,
         global_mapper::{self},
         sub_parsers::{self, utils::consume_peeked},
-        Event,
     },
     common::Range,
+    events::BlockEvent,
 };
 
 #[derive(Debug)]
@@ -27,8 +27,8 @@ enum InternalResult {
     /// 改变 next 内部的状态，并继续循环。
     ToContinueIn(StepState),
 
-    /// 打破 next 中的循环，产出 [Event]。
-    ToYield(Event),
+    /// 打破 next 中的循环，产出 [BlockEvent]。
+    ToYield(BlockEvent),
     /// 由于遇到了 LF，打破 next 中的循环，通知外部暂停本解析器的解析。遇到的 LF
     /// 应由外部负责产出。当外部认为可以恢复本解析器的解析时，那之后第一次调用
     /// [Parser::next] 时对应于 `is_resumed_from_line_feed` 位置的参数应该填
@@ -163,12 +163,12 @@ impl Parser {
                 consume_peeked!(ctx, &peeked);
                 match self.mode {
                     Mode::Inline => InternalResult::ToContinue,
-                    Mode::Verbatim => InternalResult::ToYield(Event::Text(blank)),
+                    Mode::Verbatim => InternalResult::ToYield(BlockEvent::Text(blank)),
                 }
             }
             global_mapper::Mapped::Text(content) => {
                 consume_peeked!(ctx, &peeked);
-                InternalResult::ToYield(Event::Text(content))
+                InternalResult::ToYield(BlockEvent::Text(content))
             }
         }
     }
@@ -215,7 +215,7 @@ impl Parser {
                 consume_peeked!(ctx, &peeked);
                 match self.mode {
                     Mode::Inline => InternalResult::ToContinue,
-                    Mode::Verbatim => InternalResult::ToYield(Event::Text(blank)),
+                    Mode::Verbatim => InternalResult::ToYield(BlockEvent::Text(blank)),
                 }
             }
         }
@@ -238,7 +238,7 @@ impl Parser {
                     if self.is_at_first_line {
                         return InternalResult::ToContinueIn(StepState::Initial);
                     } else {
-                        return InternalResult::ToYield(Event::LineFeed);
+                        return InternalResult::ToYield(BlockEvent::LineBreak);
                     }
                 };
 
@@ -260,21 +260,21 @@ impl Parser {
                     consume_peeked!(ctx, peeked);
                     InternalResult::Done
                 } else {
-                    InternalResult::ToYield(Event::LineFeed)
+                    InternalResult::ToYield(BlockEvent::LineBreak)
                 }
             }
             &global_mapper::Mapped::BlankAtLineBeginning(blank) => {
                 consume_peeked!(ctx, peeked);
                 match self.mode {
                     Mode::Inline => InternalResult::ToContinue,
-                    Mode::Verbatim => InternalResult::ToYield(Event::Text(blank)),
+                    Mode::Verbatim => InternalResult::ToYield(BlockEvent::Text(blank)),
                 }
             }
             global_mapper::Mapped::Text(_) => {
                 if self.is_at_first_line {
                     InternalResult::ToContinueIn(StepState::Initial)
                 } else {
-                    InternalResult::ToYield(Event::LineFeed)
+                    InternalResult::ToYield(BlockEvent::LineBreak)
                 }
             }
         }
@@ -285,10 +285,10 @@ impl Parser {
     }
 
     #[inline(always)]
-    fn make_content_event(&self, content: Range) -> Event {
+    fn make_content_event(&self, content: Range) -> BlockEvent {
         match self.mode {
-            Mode::Inline => Event::Unparsed(content),
-            Mode::Verbatim => Event::Text(content),
+            Mode::Inline => BlockEvent::Unparsed(content),
+            Mode::Verbatim => BlockEvent::Text(content),
         }
     }
 }
@@ -329,7 +329,7 @@ fn process_potential_closing_part_at_line_end_and_with_space_before(
             // 分）有可能走到这里。
             InternalResult::ToContinue
         } else {
-            InternalResult::ToYield(Event::Unparsed(confirmed_content))
+            InternalResult::ToYield(BlockEvent::Unparsed(confirmed_content))
         }
     } else {
         confirmed_content.increase_length(potential_closing_part_length);

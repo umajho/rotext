@@ -1,3 +1,5 @@
+use events::Event;
+
 mod blend;
 mod block;
 mod common;
@@ -10,7 +12,11 @@ pub fn parse_and_render_to_html(input: &[u8]) -> String {
 
     for event in parse(input) {
         // output.push_str(&format!("{:?}\n", event));
-        output.push_str(&format!("{:?} {:?}\n", event, event.content(input)));
+        output.push_str(&format!(
+            "{:?} {:?}\n",
+            event,
+            Event::from(event.clone()).content(input)
+        ));
     }
 
     output

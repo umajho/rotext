@@ -1,6 +1,7 @@
 use crate::{
-    block::{context::Context, sub_parsers, Event},
+    block::{context::Context, sub_parsers},
     common::Range,
+    events::BlockEvent,
 };
 
 enum State {
@@ -52,7 +53,7 @@ impl Parser {
                 };
                 let parser = sub_parsers::content::Parser::new(opts);
                 (
-                    sub_parsers::Result::ToYield(Event::EnterParagraph),
+                    sub_parsers::Result::ToYield(BlockEvent::EnterParagraph),
                     State::Content(Box::new(parser)),
                 )
             }
@@ -67,9 +68,10 @@ impl Parser {
                         sub_parsers::Result::ToPauseForNewLine,
                         State::Paused(content_parser),
                     ),
-                    sub_parsers::Result::Done => {
-                        (sub_parsers::Result::ToYield(Event::Exit), State::Exiting)
-                    }
+                    sub_parsers::Result::Done => (
+                        sub_parsers::Result::ToYield(BlockEvent::Exit),
+                        State::Exiting,
+                    ),
                 }
             }
             State::Exiting => (sub_parsers::Result::Done, State::Exited),
@@ -78,7 +80,10 @@ impl Parser {
             // 这里。正确的做法是 `take_context` 取回 [Context]，并将解析器
             // drop 掉。
             State::Exited | State::Paused(_) | State::Invalid => unreachable!(),
-            State::ToExit => (sub_parsers::Result::ToYield(Event::Exit), State::Exiting),
+            State::ToExit => (
+                sub_parsers::Result::ToYield(BlockEvent::Exit),
+                State::Exiting,
+            ),
         };
 
         ret

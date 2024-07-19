@@ -1,4 +1,5 @@
-use super::{context::Context, Event};
+use super::context::Context;
+use crate::events::BlockEvent;
 
 pub mod code_block;
 pub mod heading;
@@ -9,7 +10,7 @@ mod utils;
 
 #[derive(Debug)]
 pub enum Result {
-    ToYield(Event),
+    ToYield(BlockEvent),
     ToPauseForNewLine,
     Done,
 }

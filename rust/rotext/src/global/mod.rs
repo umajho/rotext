@@ -1,14 +1,10 @@
-mod events;
-
-pub use events::Event;
-
-use crate::common::Range;
+use crate::{common::Range, events::GlobalEvent};
 
 pub struct Parser<'a> {
     input: &'a [u8],
     cursor: usize,
     state: State,
-    deferred: Option<Event>,
+    deferred: Option<GlobalEvent>,
 }
 
 enum State {
@@ -27,7 +23,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn next(&mut self) -> Option<Event> {
+    pub fn next(&mut self) -> Option<GlobalEvent> {
         loop {
             if self.deferred.is_some() {
                 return self.deferred.take();
@@ -50,7 +46,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn scan_normal(&mut self) -> Option<Event> {
+    fn scan_normal(&mut self) -> Option<GlobalEvent> {
         let mut offset = 0;
         loop {
             let index = self.cursor + offset;
@@ -66,13 +62,13 @@ impl<'a> Parser<'a> {
                 }
                 Some(b'\r') => {
                     let ret = self.produce_unparsed(offset);
-                    self.deferred = Some(Event::CarriageReturn { index });
+                    self.deferred = Some(GlobalEvent::CarriageReturn { index });
                     self.cursor += "\r".len();
                     break ret;
                 }
                 Some(b'\n') => {
                     let ret = self.produce_unparsed(offset);
-                    self.deferred = Some(Event::LineFeed { index });
+                    self.deferred = Some(GlobalEvent::LineFeed { index });
                     self.cursor += "\n".len();
                     break ret;
                 }
@@ -111,7 +107,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn scan_verbatim_escaping(&mut self, backticks: usize) -> Option<Event> {
+    fn scan_verbatim_escaping(&mut self, backticks: usize) -> Option<GlobalEvent> {
         let mut offset = 0;
         loop {
             let index = self.cursor + offset;
@@ -155,12 +151,12 @@ impl<'a> Parser<'a> {
 
     /// 产出以 `self.cursor` 开始，长度为 `content_length` 的
     /// [Event::Unparsed]，这之后，`self.cursor` 移至下个 Event 的开始。
-    fn produce_unparsed(&mut self, length: usize) -> Option<Event> {
+    fn produce_unparsed(&mut self, length: usize) -> Option<GlobalEvent> {
         if length == 0 {
             return None;
         }
 
-        let ret = Event::Unparsed(Range::new(self.cursor, length));
+        let ret = GlobalEvent::Unparsed(Range::new(self.cursor, length));
         self.cursor += length;
         Some(ret)
     }
@@ -170,8 +166,8 @@ impl<'a> Parser<'a> {
         backtick_length: usize,
         content_length: usize,
         is_closed_normally: bool,
-    ) -> Option<Event> {
-        let ret = Event::VerbatimEscaping {
+    ) -> Option<GlobalEvent> {
+        let ret = GlobalEvent::VerbatimEscaping {
             content: Range::new(self.cursor, content_length),
             is_closed_forcedly: !is_closed_normally,
         };
@@ -184,7 +180,7 @@ impl<'a> Parser<'a> {
 }
 
 impl<'a> Iterator for Parser<'a> {
-    type Item = Event;
+    type Item = GlobalEvent;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.next()
@@ -253,7 +249,7 @@ mod tests {
 
     use std::{collections::HashSet, time};
 
-    use crate::events::EventType;
+    use crate::events::{Event, EventType};
 
     type EventCase<'a> = (EventType, Option<&'a str>, Option<HashSet<&'a str>>);
 
@@ -296,6 +292,7 @@ mod tests {
         let parser = Parser::new(input.as_bytes(), 0);
         let actual: Vec<_> = parser
             .map(|ev| -> EventCase {
+                let ev: Event = ev.into();
                 (
                     EventType::from(ev.discriminant()),
                     ev.content(input.as_bytes()),

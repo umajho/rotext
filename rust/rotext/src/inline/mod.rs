@@ -1,8 +1,7 @@
-mod events;
-
-pub use events::{Event, EventFromBlockLevel};
-
-use crate::blend;
+use crate::{
+    blend,
+    events::{InlineEvent, InlineLevelParseInputEvent},
+};
 
 pub struct Parser<'a> {
     input_stream: blend::WhileInlineSegment<'a>,
@@ -14,13 +13,13 @@ impl<'a> Parser<'a> {
     }
 
     #[inline(always)]
-    fn next(&mut self) -> Option<Event> {
+    fn next(&mut self) -> Option<InlineEvent> {
         let next = self.input_stream.next()?;
 
         let to_yield = match next {
-            EventFromBlockLevel::Unparsed(content) => Event::Text(content),
-            EventFromBlockLevel::LineFeed => Event::LineFeed,
-            EventFromBlockLevel::Text(content) => Event::Text(content),
+            InlineLevelParseInputEvent::Unparsed(content) => InlineEvent::Text(content),
+            InlineLevelParseInputEvent::LineBreak => InlineEvent::LineBreak,
+            InlineLevelParseInputEvent::Text(content) => InlineEvent::Text(content),
         };
 
         Some(to_yield)
@@ -28,7 +27,7 @@ impl<'a> Parser<'a> {
 }
 
 impl<'a> Iterator for Parser<'a> {
-    type Item = Event;
+    type Item = InlineEvent;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.next()

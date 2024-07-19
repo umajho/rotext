@@ -1,4 +1,4 @@
-use crate::{common::Range, global};
+use crate::{common::Range, events::GlobalEvent, global};
 
 /// 用于将产出 [global::Event] 的流转化为便于 [Parser] 处理的流。
 pub struct GlobalEventStreamMapper<'a> {
@@ -12,7 +12,7 @@ pub struct GlobalEventStreamMapper<'a> {
 
 enum Deferred {
     MappedToYield(Mapped),
-    GlobalEventToMap(Option<global::Event>),
+    GlobalEventToMap(Option<GlobalEvent>),
 }
 
 #[derive(Debug)]
@@ -106,7 +106,7 @@ impl<'a> GlobalEventStreamMapper<'a> {
                 }
             };
 
-            if let Some(global::Event::Unparsed(content)) = next {
+            if let Some(GlobalEvent::Unparsed(content)) = next {
                 self.remain = Some(RemainUnparsed {
                     content,
                     next_offset: 0,
@@ -122,8 +122,8 @@ impl<'a> GlobalEventStreamMapper<'a> {
             }
 
             match next? {
-                global::Event::Unparsed(_) => unreachable!(),
-                global::Event::VerbatimEscaping {
+                GlobalEvent::Unparsed(_) => unreachable!(),
+                GlobalEvent::VerbatimEscaping {
                     content,
                     is_closed_forcedly,
                 } => {
@@ -147,9 +147,9 @@ impl<'a> GlobalEventStreamMapper<'a> {
                     }
                     return Some(mapped_text);
                 }
-                global::Event::CarriageReturn { index } => {
+                GlobalEvent::CarriageReturn { index } => {
                     match self.stream.next() {
-                        Some(global::Event::LineFeed { index: lf_index }) => {
+                        Some(GlobalEvent::LineFeed { index: lf_index }) => {
                             self.blank_at_line_beginning = Some(Range::new(lf_index + 1, 0));
                         }
                         None => {
@@ -163,7 +163,7 @@ impl<'a> GlobalEventStreamMapper<'a> {
                     };
                     return Some(Mapped::LineFeed);
                 }
-                global::Event::LineFeed { index } => {
+                GlobalEvent::LineFeed { index } => {
                     self.blank_at_line_beginning = Some(Range::new(index + 1, 0));
                     return Some(Mapped::LineFeed);
                 }

@@ -1,4 +1,7 @@
-use crate::block::{context::Context, sub_parsers, Event};
+use crate::{
+    block::{context::Context, sub_parsers},
+    events::BlockEvent,
+};
 
 enum State {
     /// 构造解析器后，解析器所处的初始状态。此时，其所解析语法的开启部分应已经被
@@ -52,12 +55,12 @@ impl Parser {
                 let content_parser = sub_parsers::content::Parser::new(opts);
                 (
                     sub_parsers::Result::ToYield(match self.leading_signs {
-                        1 => Event::EnterHeading1,
-                        2 => Event::EnterHeading2,
-                        3 => Event::EnterHeading3,
-                        4 => Event::EnterHeading4,
-                        5 => Event::EnterHeading5,
-                        6 => Event::EnterHeading6,
+                        1 => BlockEvent::EnterHeading1,
+                        2 => BlockEvent::EnterHeading2,
+                        3 => BlockEvent::EnterHeading3,
+                        4 => BlockEvent::EnterHeading4,
+                        5 => BlockEvent::EnterHeading5,
+                        6 => BlockEvent::EnterHeading6,
                         _ => unreachable!(),
                     }),
                     State::Content(Box::new(content_parser)),
@@ -71,9 +74,10 @@ impl Parser {
                         State::Content(content_parser),
                     ),
                     sub_parsers::Result::ToPauseForNewLine => unreachable!(),
-                    sub_parsers::Result::Done => {
-                        (sub_parsers::Result::ToYield(Event::Exit), State::Exiting)
-                    }
+                    sub_parsers::Result::Done => (
+                        sub_parsers::Result::ToYield(BlockEvent::Exit),
+                        State::Exiting,
+                    ),
                 }
             }
             State::Exiting => (sub_parsers::Result::Done, State::Exited),

@@ -9,6 +9,7 @@ description = "The official and de facto Rotext parser."
 
 [dependencies]
 log = "0.4.22"
+subenum = "1.1.2"
 
 [dev-dependencies]
 rstest = "0.21.0"

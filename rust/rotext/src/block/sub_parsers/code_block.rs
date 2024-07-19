@@ -1,4 +1,7 @@
-use crate::block::{context::Context, sub_parsers, Event};
+use crate::{
+    block::{context::Context, sub_parsers},
+    events::BlockEvent,
+};
 
 enum State {
     /// 构造解析器后，解析器所处的初始状态。此时，其所解析语法的开启部分应已经被
@@ -50,7 +53,7 @@ impl Parser {
                 };
                 let info_string_parser = sub_parsers::content::Parser::new(opts);
                 (
-                    sub_parsers::Result::ToYield(Event::EnterCodeBlock),
+                    sub_parsers::Result::ToYield(BlockEvent::EnterCodeBlock),
                     State::InfoStringContent(Box::new(info_string_parser)),
                 )
             }
@@ -80,7 +83,7 @@ impl Parser {
                         };
                         let code_content_parser = sub_parsers::content::Parser::new(opts);
                         (
-                            sub_parsers::Result::ToYield(Event::Separator),
+                            sub_parsers::Result::ToYield(BlockEvent::Separator),
                             State::CodeContent(Box::new(code_content_parser)),
                         )
                     }
@@ -97,9 +100,10 @@ impl Parser {
                         sub_parsers::Result::ToPauseForNewLine,
                         State::Paused(code_content_parser),
                     ),
-                    sub_parsers::Result::Done => {
-                        (sub_parsers::Result::ToYield(Event::Exit), State::Exiting)
-                    }
+                    sub_parsers::Result::Done => (
+                        sub_parsers::Result::ToYield(BlockEvent::Exit),
+                        State::Exiting,
+                    ),
                 }
             }
             State::Exiting => (sub_parsers::Result::Done, State::Exited),
@@ -108,7 +112,10 @@ impl Parser {
             // 这里。正确的做法是 `take_context` 取回 [Context]，并将解析器
             // drop 掉。
             State::Exited | State::Paused(_) | State::Invalid => unreachable!(),
-            State::ToExit => (sub_parsers::Result::ToYield(Event::Exit), State::Exiting),
+            State::ToExit => (
+                sub_parsers::Result::ToYield(BlockEvent::Exit),
+                State::Exiting,
+            ),
         };
 
         ret
