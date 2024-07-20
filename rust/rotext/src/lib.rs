@@ -7,40 +7,17 @@ mod events;
 mod global;
 mod inline;
 
-pub fn parse_and_render_to_html(input: &[u8]) -> String {
-    // let mut output = "".to_string();
-
-    // for event in parse(input) {
-    //     // output.push_str(&format!("{:?}\n", event));
-    //     output.push_str(&format!(
-    //         "{:?} {:?}\n",
-    //         event,
-    //         Event::from(event.clone()).content(input)
-    //     ));
-    // }
-
-    let input_stream = parse(input);
-
-    render_to_html(
-        input,
-        input_stream,
-        RenderToHTMLOptions {
-            initial_output_string_capacity: 20_000,
-        },
-    )
-}
-
-fn parse(input: &[u8]) -> blend::BlockEventStreamInlineSegmentMapper {
+pub fn parse(input: &[u8]) -> blend::BlockEventStreamInlineSegmentMapper {
     let global_parser = global::Parser::new(input, 0);
     let block_parser = block::Parser::new(input, global_parser);
 
     blend::BlockEventStreamInlineSegmentMapper::new(block_parser, Box::new(inline::Parser::new))
 }
 
-struct RenderToHTMLOptions {
-    initial_output_string_capacity: usize,
+pub struct RenderToHTMLOptions {
+    pub initial_output_string_capacity: usize,
 }
-fn render_to_html<I: Iterator<Item = BlendEvent>>(
+pub fn render_to_html<I: Iterator<Item = BlendEvent>>(
     input: &[u8],
     mut input_stream: I,
     opts: RenderToHTMLOptions,

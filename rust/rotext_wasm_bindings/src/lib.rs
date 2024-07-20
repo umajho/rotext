@@ -29,5 +29,28 @@ pub fn dev(input: &[u8]) -> String {
         });
     }
 
-    rotext::parse_and_render_to_html(input)
+    parse_and_render_to_html(input)
+}
+
+fn parse_and_render_to_html(input: &[u8]) -> String {
+    // let mut output = "".to_string();
+
+    // for event in parse(input) {
+    //     // output.push_str(&format!("{:?}\n", event));
+    //     output.push_str(&format!(
+    //         "{:?} {:?}\n",
+    //         event,
+    //         Event::from(event.clone()).content(input)
+    //     ));
+    // }
+
+    let input_stream = rotext::parse(input);
+
+    rotext::render_to_html(
+        input,
+        input_stream,
+        rotext::RenderToHTMLOptions {
+            initial_output_string_capacity: 20_000,
+        },
+    )
 }
