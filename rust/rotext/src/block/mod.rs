@@ -21,8 +21,9 @@ pub struct Parser<'a> {
 }
 
 enum State<'a> {
-    InRoot,
-    InRootWithPausedSubParser(Box<dyn sub_parsers::SubParser<'a> + 'a>),
+    InRoot {
+        paused_sub_parser: Option<Box<dyn sub_parsers::SubParser<'a> + 'a>>,
+    },
     InSubParser(Box<dyn sub_parsers::SubParser<'a> + 'a>),
 
     Invalid,
@@ -42,7 +43,9 @@ impl<'a> Parser<'a> {
             context,
 
             is_cleaning_up: false,
-            state: State::InRoot,
+            state: State::InRoot {
+                paused_sub_parser: None,
+            },
             stack: vec![],
         }
     }
@@ -59,27 +62,32 @@ impl<'a> Parser<'a> {
 
             let state = std::mem::replace(&mut self.state, State::Invalid);
             (to_break, self.state) = match state {
-                State::InRoot => match parse_root(&mut self.context) {
-                    RootParseResult::ToYield(ev) => (Some(ev), State::InRoot),
-                    RootParseResult::ToEnter(sub_parser) => (None, State::InSubParser(sub_parser)),
-                    RootParseResult::ToEnterParagraph => (
-                        None,
-                        State::InSubParser(Box::new(sub_parsers::paragraph::Parser::new(None))),
-                    ),
-                    RootParseResult::ToEnterParagraphWithContentBefore(content_before) => (
-                        None,
-                        State::InSubParser(Box::new(sub_parsers::paragraph::Parser::new(Some(
-                            content_before,
-                        )))),
-                    ),
-                    RootParseResult::Done => {
-                        self.is_cleaning_up = true;
-                        (None, State::Invalid)
+                State::InRoot { paused_sub_parser } => {
+                    match parse_root(&mut self.context, paused_sub_parser) {
+                        RootParseResult::ToYield(ev) => (
+                            Some(ev),
+                            State::InRoot {
+                                paused_sub_parser: None,
+                            },
+                        ),
+                        RootParseResult::ToEnter(sub_parser) => {
+                            (None, State::InSubParser(sub_parser))
+                        }
+                        RootParseResult::ToEnterParagraph => (
+                            None,
+                            State::InSubParser(Box::new(sub_parsers::paragraph::Parser::new(None))),
+                        ),
+                        RootParseResult::ToEnterParagraphWithContentBefore(content_before) => (
+                            None,
+                            State::InSubParser(Box::new(sub_parsers::paragraph::Parser::new(
+                                Some(content_before),
+                            ))),
+                        ),
+                        RootParseResult::Done => {
+                            self.is_cleaning_up = true;
+                            (None, State::Invalid)
+                        }
                     }
-                },
-                State::InRootWithPausedSubParser(mut sub_parser) => {
-                    sub_parser.resume_from_pause_for_new_line_and_continue();
-                    (None, State::InSubParser(sub_parser))
                 }
                 State::InSubParser(mut sub_parser) => {
                     let result = sub_parser.next(&mut self.context);
@@ -87,10 +95,18 @@ impl<'a> Parser<'a> {
                         sub_parsers::Result::ToYield(ev) => {
                             (Some(ev), State::InSubParser(sub_parser))
                         }
-                        sub_parsers::Result::ToPauseForNewLine => {
-                            (None, State::InRootWithPausedSubParser(sub_parser))
-                        }
-                        sub_parsers::Result::Done => (None, State::InRoot),
+                        sub_parsers::Result::ToPauseForNewLine => (
+                            None,
+                            State::InRoot {
+                                paused_sub_parser: Some(sub_parser),
+                            },
+                        ),
+                        sub_parsers::Result::Done => (
+                            None,
+                            State::InRoot {
+                                paused_sub_parser: None,
+                            },
+                        ),
                     }
                 }
                 State::Invalid => unreachable!(),
@@ -119,11 +135,24 @@ enum RootParseResult<'a> {
     Done,
 }
 
-fn parse_root<'a>(ctx: &mut Context<'a>) -> RootParseResult<'a> {
+fn parse_root<'a>(
+    ctx: &mut Context<'a>,
+    paused_sub_parser: Option<Box<dyn sub_parsers::SubParser<'a> + 'a>>,
+) -> RootParseResult<'a> {
     loop {
         let Some(peeked) = ctx.mapper.peek_1() else {
+            if let Some(mut paused_sub_parser) = paused_sub_parser {
+                paused_sub_parser.resume_from_pause_for_new_line_and_exit();
+                return RootParseResult::ToEnter(paused_sub_parser);
+            }
+
             return RootParseResult::Done;
         };
+
+        if let Some(mut paused_sub_parser) = paused_sub_parser {
+            paused_sub_parser.resume_from_pause_for_new_line_and_continue();
+            return RootParseResult::ToEnter(paused_sub_parser);
+        }
 
         match peeked {
             global_mapper::Mapped::LineFeed | global_mapper::Mapped::BlankAtLineBeginning(_) => {
