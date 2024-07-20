@@ -1,6 +1,15 @@
+extern crate alloc;
+
 use wasm_bindgen::prelude::*;
 
 use std::sync::Once;
+
+#[cfg(target_arch = "wasm32")]
+use lol_alloc::{AssumeSingleThreaded, FreeListAllocator};
+#[cfg(target_arch = "wasm32")]
+#[global_allocator]
+static ALLOCATOR: AssumeSingleThreaded<FreeListAllocator> =
+    unsafe { AssumeSingleThreaded::new(FreeListAllocator::new()) };
 
 #[wasm_bindgen]
 pub fn parse(input: &[u8]) -> usize {

@@ -20,6 +20,8 @@ console_log = "1.0.0"
 
 log = "0.4.22"
 
+lol_alloc = "0.4.1"
+
 [profile.release]
 # small code size.
 opt-level = "s"
