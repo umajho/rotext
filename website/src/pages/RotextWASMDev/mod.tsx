@@ -19,6 +19,8 @@ import initRotextWASM, * as rotextBindings from "rotext_wasm_bindings";
 
 import { Card } from "../../components/ui/mod";
 
+const textEncoder = new TextEncoder();
+
 const rotextAdapter = await (async () => {
   await initRotextWASM();
   return makeOnlyRotextAdapterInstance(rotextBindings);
@@ -78,6 +80,8 @@ export default (() => {
           </select>
           <Switch>
             <Match when={currentTab() === "html-source"}>
+              {`输入字节数：${textEncoder.encode(input()).length}；`}
+              {`渲染结果字节数：${textEncoder.encode(result()!.html).length}。`}
               <pre class="whitespace-pre-wrap break-all">{prettyResultHTML()}</pre>
             </Match>
             <Match when={currentTab() === "events"}>
