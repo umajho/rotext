@@ -11,16 +11,29 @@ use lol_alloc::{AssumeSingleThreaded, FreeListAllocator};
 static ALLOCATOR: AssumeSingleThreaded<FreeListAllocator> =
     unsafe { AssumeSingleThreaded::new(FreeListAllocator::new()) };
 
-#[wasm_bindgen]
-pub fn parse(input: &[u8]) -> usize {
-    todo!()
-}
-
 #[cfg(debug_assertions)]
 static INIT: Once = Once::new();
 
 #[wasm_bindgen]
-pub fn dev(input: &[u8]) -> String {
+#[derive(Default)]
+pub struct ParseAndRenderResult {
+    html: String,
+    #[cfg(debug_assertions)]
+    dev_events_in_debug_format: String,
+}
+#[wasm_bindgen]
+impl ParseAndRenderResult {
+    pub fn clone_html(&self) -> String {
+        self.html.clone()
+    }
+    #[cfg(debug_assertions)]
+    pub fn clone_dev_events_in_debug_format(&self) -> String {
+        self.dev_events_in_debug_format.clone()
+    }
+}
+
+#[wasm_bindgen]
+pub fn parse_and_render(input: &[u8]) -> ParseAndRenderResult {
     #[cfg(debug_assertions)]
     {
         console_error_panic_hook::set_once();
@@ -29,28 +42,39 @@ pub fn dev(input: &[u8]) -> String {
         });
     }
 
-    parse_and_render_to_html(input)
+    let all_events: Vec<_> = rotext::parse(input).collect();
+
+    let mut result = ParseAndRenderResult {
+        html: rotext::render_to_html(
+            input,
+            all_events.clone().into_iter(),
+            rotext::RenderToHTMLOptions {
+                initial_output_string_capacity: input.len() * 3,
+            },
+        ),
+        ..Default::default()
+    };
+
+    #[cfg(debug_assertions)]
+    {
+        result.dev_events_in_debug_format = render_events_in_debug_format(input, all_events);
+    }
+
+    result
 }
 
-fn parse_and_render_to_html(input: &[u8]) -> String {
-    // let mut output = "".to_string();
+#[cfg(debug_assertions)]
+fn render_events_in_debug_format(input: &[u8], all_events: Vec<rotext::BlendEvent>) -> String {
+    let mut output = "".to_string();
 
-    // for event in parse(input) {
-    //     // output.push_str(&format!("{:?}\n", event));
-    //     output.push_str(&format!(
-    //         "{:?} {:?}\n",
-    //         event,
-    //         Event::from(event.clone()).content(input)
-    //     ));
-    // }
+    for event in all_events {
+        // output.push_str(&format!("{:?}\n", event));
+        output.push_str(&format!(
+            "{:?} {:?}\n",
+            event,
+            rotext::Event::from(event.clone()).content(input)
+        ));
+    }
 
-    let input_stream = rotext::parse(input);
-
-    rotext::render_to_html(
-        input,
-        input_stream,
-        rotext::RenderToHTMLOptions {
-            initial_output_string_capacity: 20_000,
-        },
-    )
+    output
 }

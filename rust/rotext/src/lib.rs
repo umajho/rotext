@@ -1,11 +1,11 @@
-use events::BlendEvent;
-
 mod blend;
 mod block;
 mod common;
 mod events;
 mod global;
 mod inline;
+
+pub use events::{BlendEvent, Event};
 
 pub fn parse(input: &[u8]) -> blend::BlockEventStreamInlineSegmentMapper {
     let global_parser = global::Parser::new(input, 0);

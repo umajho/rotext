@@ -2,10 +2,22 @@ import { bindings } from "./bindings";
 
 const textEncoder = new TextEncoder();
 
-export function parse(input: string): number {
-  return bindings.parse(textEncoder.encode(input));
+export interface ParseAndRenderResult {
+  html: string;
+  devEventsInDebugFormat?: string;
 }
 
-export function dev(input: string): string {
-  return bindings.dev(textEncoder.encode(input));
+export function parseAndRender(
+  input: string,
+): ParseAndRenderResult {
+  let result = bindings.parse_and_render(textEncoder.encode(input));
+  return {
+    html: result.clone_html(),
+    ...("clone_dev_events_in_debug_format" in result
+      ? {
+        devEventsInDebugFormat:
+          (result.clone_dev_events_in_debug_format as () => string)(),
+      }
+      : {}),
+  };
 }
