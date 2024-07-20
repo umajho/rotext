@@ -7,7 +7,7 @@ mod tests;
 
 use context::Context;
 
-use crate::{common::Range, events::BlockEvent, global};
+use crate::{common::Range, events::BlockEvent, global, Event};
 use global_mapper::GlobalEventStreamMapper;
 use utils::Peekable3;
 
@@ -59,55 +59,14 @@ impl<'a> Parser<'a> {
             }
 
             let to_break: Option<BlockEvent>;
-
-            let state = std::mem::replace(&mut self.state, State::Invalid);
-            (to_break, self.state) = match state {
-                State::InRoot { paused_sub_parser } => {
-                    match parse_root(&mut self.context, paused_sub_parser) {
-                        RootParseResult::ToYield(ev) => (
-                            Some(ev),
-                            State::InRoot {
-                                paused_sub_parser: None,
-                            },
-                        ),
-                        RootParseResult::ToEnter(sub_parser) => {
-                            (None, State::InSubParser(sub_parser))
-                        }
-                        RootParseResult::ToEnterParagraph => (
-                            None,
-                            State::InSubParser(Box::new(sub_parsers::paragraph::Parser::new(None))),
-                        ),
-                        RootParseResult::ToEnterParagraphWithContentBefore(content_before) => (
-                            None,
-                            State::InSubParser(Box::new(sub_parsers::paragraph::Parser::new(
-                                Some(content_before),
-                            ))),
-                        ),
-                        RootParseResult::Done => {
-                            self.is_cleaning_up = true;
-                            (None, State::Invalid)
-                        }
-                    }
-                }
-                State::InSubParser(mut sub_parser) => {
-                    let result = sub_parser.next(&mut self.context);
-                    match result {
-                        sub_parsers::Result::ToYield(ev) => {
-                            (Some(ev), State::InSubParser(sub_parser))
-                        }
-                        sub_parsers::Result::ToPauseForNewLine => (
-                            None,
-                            State::InRoot {
-                                paused_sub_parser: Some(sub_parser),
-                            },
-                        ),
-                        sub_parsers::Result::Done => (
-                            None,
-                            State::InRoot {
-                                paused_sub_parser: None,
-                            },
-                        ),
-                    }
+            (to_break, self.state) = match std::mem::replace(&mut self.state, State::Invalid) {
+                State::InRoot { paused_sub_parser } => process_in_root_state(
+                    &mut self.context,
+                    paused_sub_parser,
+                    &mut self.is_cleaning_up,
+                ),
+                State::InSubParser(sub_parser) => {
+                    process_in_sub_parser_state(&mut self.context, sub_parser)
                 }
                 State::Invalid => unreachable!(),
             };
@@ -124,6 +83,57 @@ impl<'a> Iterator for Parser<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.next()
+    }
+}
+
+#[inline(always)]
+fn process_in_root_state<'a>(
+    ctx: &mut Context<'a>,
+    paused_sub_parser: Option<Box<dyn sub_parsers::SubParser<'a> + 'a>>,
+    is_cleaning_up: &mut bool,
+) -> (Option<BlockEvent>, State<'a>) {
+    match parse_root(ctx, paused_sub_parser) {
+        RootParseResult::ToYield(ev) => {
+            let new_state = State::InRoot {
+                paused_sub_parser: None,
+            };
+            (Some(ev), new_state)
+        }
+        RootParseResult::ToEnter(sub_parser) => (None, State::InSubParser(sub_parser)),
+        RootParseResult::ToEnterParagraph => {
+            let p_parser = Box::new(sub_parsers::paragraph::Parser::new(None));
+            (None, State::InSubParser(p_parser))
+        }
+        RootParseResult::ToEnterParagraphWithContentBefore(content_before) => {
+            let p_parser = Box::new(sub_parsers::paragraph::Parser::new(Some(content_before)));
+            (None, State::InSubParser(p_parser))
+        }
+        RootParseResult::Done => {
+            *is_cleaning_up = true;
+            (None, State::Invalid)
+        }
+    }
+}
+
+#[inline(always)]
+fn process_in_sub_parser_state<'a>(
+    ctx: &mut Context<'a>,
+    mut sub_parser: Box<dyn sub_parsers::SubParser<'a> + 'a>,
+) -> (Option<BlockEvent>, State<'a>) {
+    match sub_parser.next(ctx) {
+        sub_parsers::Result::ToYield(ev) => (Some(ev), State::InSubParser(sub_parser)),
+        sub_parsers::Result::ToPauseForNewLine => {
+            let new_state = State::InRoot {
+                paused_sub_parser: Some(sub_parser),
+            };
+            (None, new_state)
+        }
+        sub_parsers::Result::Done => {
+            let new_state = State::InRoot {
+                paused_sub_parser: None,
+            };
+            (None, new_state)
+        }
     }
 }
 
