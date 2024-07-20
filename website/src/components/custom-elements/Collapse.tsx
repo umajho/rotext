@@ -19,11 +19,13 @@ function createCollapseComponent(): Component {
     });
 
     return (
-      <details class="mb-4 p-2 border border-[#444] rounded-lg bg-[#1e1e1e] text-gray-300">
-        <summary class="cursor-pointer font-bold text-white px-2 hover:text-blue-500 focus:outline-none">
+      <details class="mb-4 py-2 px-4 border border-[#444] rounded-lg bg-[#1e1e1e] text-gray-300">
+        <summary class="cursor-pointer font-bold text-white hover:text-blue-500 focus:outline-none">
           <slot name="title">折叠内容</slot>
         </summary>
-        <slot name="content" />
+        <div class="px-2 pt-2">
+          <slot name="content" />
+        </div>
       </details>
     );
   };
