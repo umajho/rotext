@@ -62,6 +62,12 @@ impl<'a> Parser<'a> {
                 State::InRoot => match parse_root(&mut self.context) {
                     RootParseResult::ToYield(ev) => (Some(ev), State::InRoot),
                     RootParseResult::ToEnter(sub_parser) => (None, State::InSubParser(sub_parser)),
+                    RootParseResult::ToEnterParagraph { content_before } => (
+                        None,
+                        State::InSubParser(Box::new(sub_parsers::paragraph::Parser::new(
+                            content_before,
+                        ))),
+                    ),
                     RootParseResult::Done => {
                         self.is_cleaning_up = true;
                         (None, State::Invalid)
@@ -104,6 +110,7 @@ impl<'a> Iterator for Parser<'a> {
 enum RootParseResult<'a> {
     ToYield(BlockEvent),
     ToEnter(Box<dyn sub_parsers::SubParser<'a> + 'a>),
+    ToEnterParagraph { content_before: Option<Range> },
     Done,
 }
 
@@ -119,9 +126,9 @@ fn parse_root<'a>(ctx: &mut Context<'a>) -> RootParseResult<'a> {
                 continue;
             }
             global_mapper::Mapped::Text(_) => {
-                return RootParseResult::ToEnter(Box::new(sub_parsers::paragraph::Parser::new(
-                    None,
-                )));
+                return RootParseResult::ToEnterParagraph {
+                    content_before: None,
+                };
             }
             global_mapper::Mapped::CharAt(_) | global_mapper::Mapped::NextChar => {
                 if !ctx.take_from_mapper_and_apply_to_cursor_if_applied_cursor_satisfies(
@@ -150,9 +157,9 @@ fn parse_root<'a>(ctx: &mut Context<'a>) -> RootParseResult<'a> {
                 ctx.must_take_from_mapper_and_apply_to_cursor(1);
                 RootParseResult::ToEnter(Box::new(sub_parsers::heading::Parser::new(1 + dropped)))
             } else {
-                RootParseResult::ToEnter(Box::new(sub_parsers::paragraph::Parser::new(Some(
-                    potential_opening_part,
-                ))))
+                RootParseResult::ToEnterParagraph {
+                    content_before: Some(potential_opening_part),
+                }
             }
         }
         [Some(b'`'), Some(b'`'), Some(b'`')] => {
@@ -162,7 +169,9 @@ fn parse_root<'a>(ctx: &mut Context<'a>) -> RootParseResult<'a> {
                 3 + extra_count,
             )))
         }
-        _ => RootParseResult::ToEnter(Box::new(sub_parsers::paragraph::Parser::new(None))),
+        _ => RootParseResult::ToEnterParagraph {
+            content_before: None,
+        },
     }
 }
 
