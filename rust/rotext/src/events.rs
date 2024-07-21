@@ -130,24 +130,24 @@ impl Event {
 
     pub fn content<'a>(&self, input: &'a [u8]) -> Option<&'a str> {
         let result = match self {
-            Event::Unparsed(content) => content.content(input),
-            Event::VerbatimEscaping { content, .. } => content.content(input),
-            Event::CarriageReturn { .. } => return None,
-            Event::LineFeed { .. } => return None,
-            Event::LineBreak => return None,
-            Event::Exit => return None,
-            Event::Separator => return None,
-            Event::Text(content) => content.content(input),
-            Event::EnterParagraph => return None,
-            Event::ThematicBreak => return None,
-            Event::EnterHeading1 => return None,
-            Event::EnterHeading2 => return None,
-            Event::EnterHeading3 => return None,
-            Event::EnterHeading4 => return None,
-            Event::EnterHeading5 => return None,
-            Event::EnterHeading6 => return None,
-            Event::EnterBlockQuote => return None,
-            Event::EnterCodeBlock => return None,
+            Event::Unparsed(content)
+            | Event::VerbatimEscaping { content, .. }
+            | Event::Text(content) => content.content(input),
+            Event::CarriageReturn { .. }
+            | Event::LineFeed { .. }
+            | Event::LineBreak
+            | Event::Exit
+            | Event::Separator
+            | Event::EnterParagraph
+            | Event::ThematicBreak
+            | Event::EnterHeading1
+            | Event::EnterHeading2
+            | Event::EnterHeading3
+            | Event::EnterHeading4
+            | Event::EnterHeading5
+            | Event::EnterHeading6
+            | Event::EnterBlockQuote
+            | Event::EnterCodeBlock => return None,
         };
 
         Some(result)
@@ -172,5 +172,26 @@ impl Event {
         } else {
             None
         }
+    }
+}
+
+impl BlockEvent {
+    pub fn opens_inline_phase(&self) -> bool {
+        matches!(
+            self,
+            BlockEvent::EnterParagraph
+                | BlockEvent::EnterHeading1
+                | BlockEvent::EnterHeading2
+                | BlockEvent::EnterHeading3
+                | BlockEvent::EnterHeading4
+                | BlockEvent::EnterHeading5
+                | BlockEvent::EnterHeading6
+                | BlockEvent::EnterCodeBlock
+                | BlockEvent::Separator
+        )
+    }
+
+    pub fn closes_inline_phase(&self) -> bool {
+        matches!(self, BlockEvent::Exit | BlockEvent::Separator)
     }
 }

@@ -312,7 +312,7 @@ fn process_potential_closing_part_at_line_end_and_with_space_before(
     potential_closing_part_length += dropped;
     if 1 + dropped == condition.minimal_count {
         let peeked = ctx.mapper.peek_1();
-        if !matches!(peeked, Some(global_mapper::Mapped::LineFeed) | None) {
+        if peeked.is_some_and(|p| !p.is_line_feed()) {
             confirmed_content.increase_length(potential_closing_part_length);
             return InternalResult::ToContinueIn(StepState::Normal(confirmed_content));
         };

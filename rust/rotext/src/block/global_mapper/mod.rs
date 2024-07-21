@@ -37,6 +37,14 @@ pub enum Mapped {
     /// 文本。
     Text(Range),
 }
+impl Mapped {
+    pub fn is_line_feed(&self) -> bool {
+        matches!(self, Mapped::LineFeed)
+    }
+    pub fn is_blank_at_line_beginning(&self) -> bool {
+        matches!(self, Mapped::BlankAtLineBeginning(..))
+    }
+}
 
 impl<'a> GlobalEventStreamMapper<'a> {
     pub fn new(input: &'a [u8], stream: global::Parser<'a>) -> GlobalEventStreamMapper<'a> {

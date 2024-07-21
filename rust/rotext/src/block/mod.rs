@@ -49,6 +49,11 @@ impl From<ItemLikeType> for StackEntry {
         Self::ItemLike(value)
     }
 }
+impl StackEntry {
+    pub fn is_item_like(&self) -> bool {
+        matches!(self, StackEntry::ItemLike(_))
+    }
+}
 
 enum ItemLikeType {
     BlockQuoteLine,
@@ -202,7 +207,7 @@ fn parse_root<'a>(
         && item_likes_state.count_in_stack > item_likes_state.processed_count
     {
         let popped = stack.pop().unwrap();
-        if matches!(popped, StackEntry::ItemLike(_)) {
+        if popped.is_item_like() {
             item_likes_state.count_in_stack -= 1;
         }
         return RootParseResult::ToYield(paused_sub_parser, BlockEvent::Exit);
@@ -215,7 +220,7 @@ fn parse_root<'a>(
             return RootParseResult::ToEnter(paused_sub_parser_);
         };
 
-        if matches!(peeked, global_mapper::Mapped::LineFeed) {
+        if peeked.is_line_feed() {
             // 新的一行。
 
             ctx.must_take_from_mapper_and_apply_to_cursor(1);
@@ -223,13 +228,14 @@ fn parse_root<'a>(
             item_likes_state.processed_count = 0;
             item_likes_state.is_over = true;
 
-            if matches!(ctx.mapper.peek_1(), Some(global_mapper::Mapped::LineFeed)) {
+            if ctx.mapper.peek_1().is_some_and(|p| p.is_line_feed()) {
                 paused_sub_parser_.resume_from_pause_for_new_line_and_continue();
                 return RootParseResult::ToEnter(paused_sub_parser_);
-            } else if matches!(
-                ctx.mapper.peek_1(),
-                Some(global_mapper::Mapped::BlankAtLineBeginning(_))
-            ) && matches!(ctx.mapper.peek_2(), Some(global_mapper::Mapped::LineFeed))
+            } else if ctx
+                .mapper
+                .peek_1()
+                .is_some_and(|p| p.is_blank_at_line_beginning())
+                && ctx.mapper.peek_2().is_some_and(|p| p.is_line_feed())
             {
                 ctx.must_take_from_mapper_and_apply_to_cursor(1);
                 paused_sub_parser_.resume_from_pause_for_new_line_and_continue();
@@ -255,7 +261,7 @@ fn parse_root<'a>(
                 global_mapper::Mapped::BlankAtLineBeginning(_) => {
                     ctx.must_take_from_mapper_and_apply_to_cursor(1);
                 }
-                m if ctx.cursor.applying(m).at(&ctx.input) == Some(b' ') => {
+                m if ctx.cursor.applying(m).at(ctx.input) == Some(b' ') => {
                     ctx.must_take_from_mapper_and_apply_to_cursor(1);
                 }
                 _ => break,
@@ -356,17 +362,13 @@ fn parse_root<'a>(
 }
 
 #[inline(always)]
-fn try_parse_item_like<'a>(
-    ctx: &mut Context<'a>,
-    peeked: &[Option<u8>; 3],
-) -> Option<ItemLikeType> {
+fn try_parse_item_like(ctx: &mut Context, peeked: &[Option<u8>; 3]) -> Option<ItemLikeType> {
     match peeked {
-        [first_char, second_char, ..] if matches!(first_char, Some(b'>')) => {
-            let is_indeed_item_like = second_char == &Some(b' ')
-                || matches!(
-                    ctx.mapper.peek_2(),
-                    Some(global_mapper::Mapped::LineFeed) | None
-                );
+        [Some(b'>'), second_char, ..] => {
+            let is_indeed_item_like = second_char == &Some(b' ') || {
+                let p = ctx.mapper.peek_2();
+                p.is_none() || p.is_some_and(|p| p.is_line_feed())
+            };
             if is_indeed_item_like {
                 let to_take = if second_char.is_some() { 2 } else { 1 };
                 ctx.must_take_from_mapper_and_apply_to_cursor(to_take);

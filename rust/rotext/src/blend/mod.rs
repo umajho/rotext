@@ -2,7 +2,7 @@ use std::{cell::RefCell, iter::Peekable, rc::Rc};
 
 use crate::{
     block,
-    events::{BlendEvent, BlockEvent, Event, InlineLevelParseInputEvent},
+    events::{BlendEvent, Event, InlineLevelParseInputEvent},
     inline::{self},
 };
 
@@ -42,18 +42,7 @@ impl<'a> BlockEventStreamInlineSegmentMapper<'a> {
             (to_break, self.state) = match std::mem::replace(&mut self.state, State::Invalid) {
                 State::Normal(mut input_stream) => {
                     let next = input_stream.next()?;
-                    if matches!(
-                        next,
-                        BlockEvent::EnterParagraph
-                            | BlockEvent::EnterHeading1
-                            | BlockEvent::EnterHeading2
-                            | BlockEvent::EnterHeading3
-                            | BlockEvent::EnterHeading4
-                            | BlockEvent::EnterHeading5
-                            | BlockEvent::EnterHeading6
-                            | BlockEvent::EnterCodeBlock
-                            | BlockEvent::Separator
-                    ) {
+                    if next.opens_inline_phase() {
                         let segment_stream = WhileInlineSegment::new(
                             input_stream,
                             self.input_stream_returner.clone(),
@@ -118,10 +107,7 @@ impl<'a> WhileInlineSegment<'a> {
     #[inline(always)]
     fn next(&mut self) -> Option<InlineLevelParseInputEvent> {
         let peeked = self.inner.as_mut().unwrap().peek();
-        if matches!(
-            peeked,
-            None | Some(&BlockEvent::Exit) | Some(&BlockEvent::Separator)
-        ) {
+        if peeked.is_some_and(|p| p.closes_inline_phase()) {
             *self.input_stream_returner.borrow_mut() = self.inner.take();
             None
         } else {
