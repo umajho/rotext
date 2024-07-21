@@ -65,6 +65,10 @@ pub fn render_to_html<I: Iterator<Item = BlendEvent>>(
                 stack.push("</h6>");
                 result.push_str("<h6>")
             }
+            BlendEvent::EnterBlockQuote => {
+                stack.push("</blockquote>");
+                result.push_str("<blockquote>")
+            }
             BlendEvent::EnterCodeBlock => {
                 stack.push("</x-code-block>");
                 result.push_str("<x-code-block info-string=\"");

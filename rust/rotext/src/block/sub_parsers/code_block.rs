@@ -8,6 +8,7 @@ enum State {
     /// 消耗。
     Initial,
     InfoStringContent(Box<sub_parsers::content::Parser>),
+    BeforeCodeContent(Box<sub_parsers::content::Parser>),
     CodeContent(Box<sub_parsers::content::Parser>),
     Exiting,
     Exited,
@@ -84,11 +85,15 @@ impl Parser {
                         let code_content_parser = sub_parsers::content::Parser::new(opts);
                         (
                             sub_parsers::Result::ToYield(BlockEvent::Separator),
-                            State::CodeContent(Box::new(code_content_parser)),
+                            State::BeforeCodeContent(Box::new(code_content_parser)),
                         )
                     }
                 }
             }
+            State::BeforeCodeContent(code_content_parser) => (
+                sub_parsers::Result::ToPauseForNewLine,
+                State::Paused(code_content_parser),
+            ),
             State::CodeContent(mut code_content_parser) => {
                 let next = code_content_parser.next(ctx);
                 match next {

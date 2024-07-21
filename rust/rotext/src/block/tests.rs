@@ -83,12 +83,12 @@ type EventCase<'a> = (EventType, Option<&'a str>);
     (EventType::EnterParagraph, None),
     (EventType::Text, Some("a")),
     (EventType::Exit, None)])]
-// ## 段落
+// ## 标题
 #[case(vec!["= a ="], vec![
     (EventType::EnterHeading1, None),
     (EventType::Unparsed, Some("a")),
     (EventType::Exit, None)])]
-#[case(vec!["== a ==", "== a ==\n", "== a ==\n\n"], vec![
+#[case(vec!["== a ==", "\n== a ==", "== a ==\n", "== a ==\n\n"], vec![
     (EventType::EnterHeading2, None),
     (EventType::Unparsed, Some("a")),
     (EventType::Exit, None)])]
@@ -178,6 +178,12 @@ type EventCase<'a> = (EventType, Option<&'a str>);
     (EventType::Separator, None),
     (EventType::Text, Some("code")),
     (EventType::Exit, None)])]
+#[case(vec!["```\n  code  \n```", "```\n  code  \n````", "````\n  code  \n````"], vec![
+    (EventType::EnterCodeBlock, None),
+    (EventType::Separator, None),
+    (EventType::Text, Some("  ")),
+    (EventType::Text, Some("code  ")), // TODO: 应该考虑合并两个 Texts。
+    (EventType::Exit, None)])]
 #[case(vec!["```\n```", "```\n````", "````\n````"], vec![
     (EventType::EnterCodeBlock, None),
     (EventType::Separator, None),
@@ -240,7 +246,9 @@ type EventCase<'a> = (EventType, Option<&'a str>);
     (EventType::Exit, None)])]
 
 fn it_works(#[case] inputs: Vec<&str>, #[case] expected: Vec<EventCase>) {
-    for input in inputs {
+    for (i, input) in inputs.iter().enumerate() {
+        println!("sub case {}:\n=begin\n{}\n=end", i + 1, input);
+
         let global_parser = global::Parser::new(input.as_bytes(), 0);
         let block_parser = Parser::new(input.as_bytes(), global_parser);
 

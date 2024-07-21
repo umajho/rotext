@@ -152,7 +152,7 @@ impl Parser {
                 )
             }
             global_mapper::Mapped::LineFeed => {
-                consume_peeked!(ctx, &peeked);
+                // consume_peeked!(ctx, &peeked);
                 if self.end_conditions.before_new_line {
                     InternalResult::Done
                 } else {
@@ -263,14 +263,7 @@ impl Parser {
                     InternalResult::ToYield(BlockEvent::LineBreak)
                 }
             }
-            &global_mapper::Mapped::BlankAtLineBeginning(blank) => {
-                consume_peeked!(ctx, peeked);
-                match self.mode {
-                    Mode::Inline => InternalResult::ToContinue,
-                    Mode::Verbatim => InternalResult::ToYield(BlockEvent::Text(blank)),
-                }
-            }
-            global_mapper::Mapped::Text(_) => {
+            global_mapper::Mapped::BlankAtLineBeginning(_) | global_mapper::Mapped::Text(_) => {
                 if self.is_at_first_line {
                     InternalResult::ToContinueIn(StepState::Initial)
                 } else {

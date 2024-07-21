@@ -33,6 +33,7 @@ pub enum EventType {
     EnterHeading4 = 10024,
     EnterHeading5 = 10025,
     EnterHeading6 = 10026,
+    EnterBlockQuote = 10031,
     /// XXX: 数字是临时的。
     EnterCodeBlock = 19011,
 }
@@ -113,6 +114,9 @@ pub enum Event {
     /// 六级标题。
     #[subenum(BlockEvent, BlendEvent)]
     EnterHeading6 = EventType::EnterHeading6 as u32,
+    /// 块引用
+    #[subenum(BlockEvent, BlendEvent)]
+    EnterBlockQuote = EventType::EnterBlockQuote as u32,
     /// 代码块。
     #[subenum(BlockEvent, BlendEvent)]
     EnterCodeBlock = EventType::EnterCodeBlock as u32,
@@ -142,6 +146,7 @@ impl Event {
             Event::EnterHeading4 => return None,
             Event::EnterHeading5 => return None,
             Event::EnterHeading6 => return None,
+            Event::EnterBlockQuote => return None,
             Event::EnterCodeBlock => return None,
         };
 
