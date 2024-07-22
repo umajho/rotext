@@ -17,7 +17,7 @@ enum State {
     },
     ExpectingContainer,
     ExpectingLeaf,
-    ExitingDiscountinuedItemLikes,
+    ExitingDiscontinuedItemLikes,
 
     Invalid,
 }
@@ -69,8 +69,8 @@ impl<'a> Parser<'a> {
                     self.process_in_expecting_container_state(ctx, stack, nesting)
                 }
                 State::ExpectingLeaf => self.process_in_expecting_leaf_state(ctx),
-                State::ExitingDiscountinuedItemLikes => {
-                    self.process_in_exiting_discountinued_item_likes_state(stack, nesting)
+                State::ExitingDiscontinuedItemLikes => {
+                    self.process_in_exiting_discontinued_item_likes_state(stack, nesting)
                 }
                 State::Invalid => unreachable!(),
             };
@@ -102,9 +102,9 @@ impl<'a> Parser<'a> {
         nesting: &mut Nesting,
         is_certain_is_new_line: Option<bool>,
     ) -> InternalResult<'a> {
-        if nesting.is_exiting_discountinued_item_likes {
-            nesting.is_exiting_discountinued_item_likes = false;
-            return InternalResult::ToContinue(State::ExitingDiscountinuedItemLikes);
+        if nesting.is_exiting_discontinued_item_likes {
+            nesting.is_exiting_discontinued_item_likes = false;
+            return InternalResult::ToContinue(State::ExitingDiscontinuedItemLikes);
         }
 
         if let Some(is_new_line) = is_certain_is_new_line {
@@ -141,7 +141,7 @@ impl<'a> Parser<'a> {
                 if is_expecting_deeper {
                     return InternalResult::ToContinue(State::ExpectingLeaf);
                 } else {
-                    return InternalResult::ToContinue(State::ExitingDiscountinuedItemLikes);
+                    return InternalResult::ToContinue(State::ExitingDiscontinuedItemLikes);
                 }
             };
 
@@ -201,7 +201,7 @@ impl<'a> Parser<'a> {
     }
 
     #[inline(always)]
-    fn process_in_exiting_discountinued_item_likes_state(
+    fn process_in_exiting_discontinued_item_likes_state(
         &mut self,
         stack: &mut Vec<StackEntry>,
         nesting: &mut Nesting,
@@ -211,7 +211,7 @@ impl<'a> Parser<'a> {
         }
 
         if let Some(mut sub_parser) = self.paused_sub_parser.take() {
-            nesting.is_exiting_discountinued_item_likes = true;
+            nesting.is_exiting_discontinued_item_likes = true;
             sub_parser.resume_from_pause_for_new_line_and_exit();
             return InternalResult::ToSwitchToSubParser(sub_parser);
         }
@@ -220,7 +220,7 @@ impl<'a> Parser<'a> {
             nesting.item_likes_in_stack -= 1;
         }
 
-        InternalResult::ToYield(State::ExitingDiscountinuedItemLikes, BlockEvent::Exit)
+        InternalResult::ToYield(State::ExitingDiscontinuedItemLikes, BlockEvent::Exit)
     }
 }
 

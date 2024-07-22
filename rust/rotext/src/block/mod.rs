@@ -35,7 +35,7 @@ pub struct Nesting {
     /// 目前已处理了多少 item-likes。（每次换行后重置。）
     processed_item_likes: usize,
 
-    is_exiting_discountinued_item_likes: bool,
+    is_exiting_discontinued_item_likes: bool,
 }
 
 enum StackEntry {
@@ -81,7 +81,7 @@ impl<'a> Parser<'a> {
             nesting: Nesting {
                 item_likes_in_stack: 0,
                 processed_item_likes: 0,
-                is_exiting_discountinued_item_likes: false,
+                is_exiting_discontinued_item_likes: false,
             },
         }
     }
