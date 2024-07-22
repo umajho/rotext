@@ -1,5 +1,7 @@
 #![cfg(test)]
 
+use std::time;
+
 use super::*;
 use rstest::rstest;
 
@@ -243,7 +245,7 @@ type EventCase<'a> = (EventType, Option<&'a str>);
     (EventType::Text, Some("\ninfo line 2")),
     (EventType::Separator, None),
     (EventType::Exit, None)])]
-
+#[timeout(time::Duration::from_secs(1))]
 fn it_works(#[case] inputs: Vec<&str>, #[case] expected: Vec<EventCase>) {
     for (i, input) in inputs.iter().enumerate() {
         println!("sub case {}:\n=begin\n{}\n=end", i + 1, input);

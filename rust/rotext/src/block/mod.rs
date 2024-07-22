@@ -76,7 +76,7 @@ impl<'a> Parser<'a> {
             context,
 
             is_cleaning_up: false,
-            state: State::InRootParser(root_parser::Parser::new(None)),
+            state: State::InRootParser(root_parser::Parser::new(Some(true), None)),
             stack: vec![],
             nesting: Nesting {
                 item_likes_in_stack: 0,
@@ -132,11 +132,16 @@ impl<'a> Parser<'a> {
         match sub_parser.next(&mut self.context) {
             sub_parsers::Result::ToYield(ev) => (Some(ev), State::InSubParser(sub_parser)),
             sub_parsers::Result::ToPauseForNewLine => {
-                let new_state = State::InRootParser(root_parser::Parser::new(Some(sub_parser)));
+                // TODO: 搞明白为什么如果在这里 take 走 LF，然后在构造 Parser 时以
+                // `Some(true)` 作为 `is_certain_is_new_line` 的值，解析的结果就会
+                // 变得不正确。明明这么做和现在的做法应该没有区别。
+                // self.context.must_take_from_mapper_and_apply_to_cursor(1);
+                let new_state =
+                    State::InRootParser(root_parser::Parser::new(None, Some(sub_parser)));
                 (None, new_state)
             }
             sub_parsers::Result::Done => {
-                let new_state = State::InRootParser(root_parser::Parser::new(None));
+                let new_state = State::InRootParser(root_parser::Parser::new(None, None));
                 (None, new_state)
             }
         }
