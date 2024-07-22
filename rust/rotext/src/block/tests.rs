@@ -64,6 +64,12 @@ type EventCase<'a> = (EventType, Option<&'a str>);
     (EventType::LineBreak, None),
     (EventType::Unparsed, Some("---")),
     (EventType::Exit, None)])]
+#[case(vec!["a\n> b"], vec![ // 块引用
+    (EventType::EnterParagraph, None),
+    (EventType::Unparsed, Some("a")),
+    (EventType::LineBreak, None),
+    (EventType::Unparsed, Some("> b")),
+    (EventType::Exit, None)])]
 // ## 分割线
 #[case(vec!["---", "----"], vec![
     (EventType::ThematicBreak, None)])]
@@ -174,6 +180,93 @@ type EventCase<'a> = (EventType, Option<&'a str>);
     (EventType::Text, Some("c")),
     (EventType::Unparsed, Some("b")),
     (EventType::Exit, None)])]
+// ## 块引用
+#[case(vec!["> foo", " > foo", ">  foo", "\n> foo", "\n\n> foo", "> foo\n"], vec![
+    (EventType::EnterBlockQuote, None),
+    (EventType::EnterParagraph, None),
+    (EventType::Unparsed, Some("foo")),
+    (EventType::Exit, None),
+    (EventType::Exit, None)])]
+#[case(vec!["> foo\n> bar", "> foo\n>  bar", "\n> foo\n> bar"], vec![
+    (EventType::EnterBlockQuote, None),
+    (EventType::EnterParagraph, None),
+    (EventType::Unparsed, Some("foo")),
+    (EventType::LineBreak, None),
+    (EventType::Unparsed, Some("bar")),
+    (EventType::Exit, None),
+    (EventType::Exit, None)])]
+#[case(vec!["> foo\nbar", "> foo\n bar", "\n> foo\nbar"], vec![
+    (EventType::EnterBlockQuote, None),
+    (EventType::EnterParagraph, None),
+    (EventType::Unparsed, Some("foo")),
+    (EventType::Exit, None),
+    (EventType::Exit, None),
+    (EventType::EnterParagraph, None),
+    (EventType::Unparsed, Some("bar")),
+    (EventType::Exit, None)])]
+#[case(vec!["> foo\n\n> bar", "> foo\n\n>  bar", "\n> foo\n\n> bar"], vec![
+    (EventType::EnterBlockQuote, None),
+    (EventType::EnterParagraph, None),
+    (EventType::Unparsed, Some("foo")),
+    (EventType::Exit, None),
+    (EventType::Exit, None),
+    (EventType::EnterBlockQuote, None),
+    (EventType::EnterParagraph, None),
+    (EventType::Unparsed, Some("bar")),
+    (EventType::Exit, None),
+    (EventType::Exit, None)])]
+#[case(vec!["> > foo", " > > foo", "\n> > foo", "\n\n> > foo", "> > foo\n"], vec![
+    (EventType::EnterBlockQuote, None),
+    (EventType::EnterBlockQuote, None),
+    (EventType::EnterParagraph, None),
+    (EventType::Unparsed, Some("foo")),
+    (EventType::Exit, None),
+    (EventType::Exit, None),
+    (EventType::Exit, None)])]
+#[case(vec!["> > foo\n> bar", "> > foo\n>  bar", "\n> > foo\n> bar"], vec![
+    (EventType::EnterBlockQuote, None),
+    (EventType::EnterBlockQuote, None),
+    (EventType::EnterParagraph, None),
+    (EventType::Unparsed, Some("foo")),
+    (EventType::Exit, None),
+    (EventType::Exit, None),
+    (EventType::EnterParagraph, None),
+    (EventType::Unparsed, Some("bar")),
+    (EventType::Exit, None),
+    (EventType::Exit, None)])]
+#[case(vec!["> foo\n> > bar", "\n> foo\n> > bar"], vec![
+    (EventType::EnterBlockQuote, None),
+    (EventType::EnterParagraph, None),
+    (EventType::Unparsed, Some("foo")),
+    (EventType::LineBreak, None),
+    (EventType::Unparsed, Some("> bar")),
+    (EventType::Exit, None),
+    (EventType::Exit, None)])]
+// ### 块引用中的分割线与标题
+#[case(vec!["> ---", "> ---\n"], vec![
+    (EventType::EnterBlockQuote, None),
+    (EventType::ThematicBreak, None),
+    (EventType::Exit, None)])]
+#[case(vec!["> ---\n---"], vec![
+    (EventType::EnterBlockQuote, None),
+    (EventType::ThematicBreak, None),
+    (EventType::Exit, None),
+    (EventType::ThematicBreak, None)])]
+#[case(vec!["> == a ==", "> == a ==\n"], vec![
+    (EventType::EnterBlockQuote, None),
+    (EventType::EnterHeading2, None),
+    (EventType::Unparsed, Some("a")),
+    (EventType::Exit, None),
+    (EventType::Exit, None)])]
+#[case(vec!["> == a ==\n=== b ==="], vec![
+    (EventType::EnterBlockQuote, None),
+    (EventType::EnterHeading2, None),
+    (EventType::Unparsed, Some("a")),
+    (EventType::Exit, None),
+    (EventType::Exit, None),
+    (EventType::EnterHeading3, None),
+    (EventType::Unparsed, Some("b")),
+    (EventType::Exit, None)])]
 // ## 代码块
 #[case(vec!["```\ncode\n```", "```\ncode\n````", "````\ncode\n````"], vec![
     (EventType::EnterCodeBlock, None),
@@ -245,6 +338,35 @@ type EventCase<'a> = (EventType, Option<&'a str>);
     (EventType::Text, Some("\ninfo line 2")),
     (EventType::Separator, None),
     (EventType::Exit, None)])]
+#[case(vec!["> ```info\n> code\n> ```", "> ```info\n> code\n> ```\n",
+    "> ```info\n> code", "> ```info\n> code\n"], vec![
+    (EventType::EnterBlockQuote, None),
+    (EventType::EnterCodeBlock, None),
+    (EventType::Text, Some("info")),
+    (EventType::Separator, None),
+    (EventType::Text, Some("code")),
+    (EventType::Exit, None),
+    (EventType::Exit, None)])]
+#[case(vec!["> ```info\n>  code\n> ```"], vec![
+    (EventType::EnterBlockQuote, None),
+    (EventType::EnterCodeBlock, None),
+    (EventType::Text, Some("info")),
+    (EventType::Separator, None),
+    (EventType::Text, Some(" code")),
+    (EventType::Exit, None),
+    (EventType::Exit, None)])]
+#[case(vec!["> ```info\n>  code\n```"], vec![
+    (EventType::EnterBlockQuote, None),
+    (EventType::EnterCodeBlock, None),
+    (EventType::Text, Some("info")),
+    (EventType::Separator, None),
+    (EventType::Text, Some(" code")),
+    (EventType::Exit, None),
+    (EventType::Exit, None),
+    (EventType::EnterCodeBlock, None),
+    (EventType::Separator, None),
+    (EventType::Exit, None)])]
+// ### 代码块于 list-like 中
 #[timeout(time::Duration::from_secs(1))]
 fn it_works(#[case] inputs: Vec<&str>, #[case] expected: Vec<EventCase>) {
     for (i, input) in inputs.iter().enumerate() {
