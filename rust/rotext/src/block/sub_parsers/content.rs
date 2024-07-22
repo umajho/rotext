@@ -98,11 +98,15 @@ impl Parser {
         let mut state = std::mem::replace(&mut self.next_initial_step_state, StepState::Initial);
 
         loop {
+            // log::debug!("CONTENT step_state={:?}", state);
+
             let internal_result = match state {
                 StepState::Initial => self.process_in_initial_state(ctx),
                 StepState::Normal(ref mut content) => self.process_in_normal_state(ctx, content),
                 StepState::IsAfterLineFeed => self.process_in_is_after_line_feed_state(ctx),
             };
+
+            // log::debug!("CONTENT internal_result={:?}", internal_result);
 
             match internal_result {
                 InternalResult::ToContinue => {}
@@ -248,7 +252,6 @@ impl Parser {
             }
             global_mapper::Mapped::LineFeed => {
                 if self.end_conditions.before_blank_line {
-                    consume_peeked!(ctx, peeked);
                     InternalResult::Done
                 } else {
                     InternalResult::ToYield(BlockEvent::LineBreak)

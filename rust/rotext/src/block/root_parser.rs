@@ -1,3 +1,5 @@
+use derivative::Derivative;
+
 use super::{context::Context, sub_parsers, ItemLikeType, Nesting, StackEntry};
 use crate::{common::Range, events::BlockEvent};
 
@@ -8,6 +10,7 @@ pub struct Parser<'a> {
     is_new_line: bool,
 }
 
+#[derive(Debug)]
 enum State {
     Start,
     ExpectingContainer,
@@ -23,10 +26,12 @@ pub enum Result<'a> {
     Done,
 }
 
+#[derive(Derivative)]
+#[derivative(Debug)]
 enum InternalResult<'a> {
     ToYield(State, BlockEvent),
     ToContinue(State),
-    ToSwitchToSubParser(Box<dyn sub_parsers::SubParser<'a> + 'a>),
+    ToSwitchToSubParser(#[derivative(Debug = "ignore")] Box<dyn sub_parsers::SubParser<'a> + 'a>),
     Done,
 }
 
@@ -47,10 +52,12 @@ impl<'a> Parser<'a> {
         nesting: &mut Nesting,
     ) -> Result<'a> {
         loop {
+            // log::debug!("ROOT state={:?}", self.state);
+
             let internal_result = match self.state {
                 State::Start => self.process_in_start_state(ctx, nesting),
                 State::ExpectingContainer => {
-                    self.process_in_expecting_container_state(ctx, nesting)
+                    self.process_in_expecting_container_state(ctx, stack, nesting)
                 }
                 State::ExpectingLeaf => self.process_in_expecting_leaf_state(ctx),
                 State::ExitingDiscountinuedItemLikes => {
@@ -58,6 +65,8 @@ impl<'a> Parser<'a> {
                 }
                 State::Invalid => unreachable!(),
             };
+
+            // log::debug!("ROOT internal_result={:?}", internal_result);
 
             match internal_result {
                 InternalResult::ToYield(state, ev) => {
@@ -101,6 +110,7 @@ impl<'a> Parser<'a> {
     fn process_in_expecting_container_state(
         &mut self,
         ctx: &mut Context<'a>,
+        stack: &mut Vec<StackEntry>,
         nesting: &mut Nesting,
     ) -> InternalResult<'a> {
         let is_expecting_deeper = nesting.item_likes_in_stack == nesting.processed_item_likes;
@@ -125,6 +135,8 @@ impl<'a> Parser<'a> {
             match item_like {
                 ItemLikeType::BlockQuoteLine => {
                     if is_expecting_deeper {
+                        stack.push(item_like.into());
+                        nesting.item_likes_in_stack += 1;
                         return InternalResult::ToYield(
                             State::ExpectingContainer,
                             BlockEvent::EnterBlockQuote,

@@ -8,6 +8,7 @@ repository.workspace = true
 description = "The official and de facto Rotext parser."
 
 [dependencies]
+derivative = "2.2.0"
 log = "0.4.22"
 subenum = "1.1.2"
 
