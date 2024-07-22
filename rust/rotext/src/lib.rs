@@ -69,6 +69,18 @@ pub fn render_to_html<I: Iterator<Item = BlendEvent>>(
                 stack.push("</blockquote>");
                 result.push_str("<blockquote>")
             }
+            BlendEvent::EnterOrderedList => {
+                stack.push("</ol>");
+                result.push_str("<ol>")
+            }
+            BlendEvent::EnterUnorderedList => {
+                stack.push("</ul>");
+                result.push_str("<ul>")
+            }
+            BlendEvent::EnterListItem => {
+                stack.push("</li>");
+                result.push_str("<li>")
+            }
             BlendEvent::EnterCodeBlock => {
                 stack.push("</x-code-block>");
                 result.push_str("<x-code-block info-string=\"");

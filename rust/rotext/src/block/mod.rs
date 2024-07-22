@@ -7,6 +7,7 @@ mod utils;
 mod tests;
 
 use context::Context;
+use root_parser::ExitingDiscontinuedItemLikesState;
 
 use crate::{events::BlockEvent, global};
 use global_mapper::GlobalEventStreamMapper;
@@ -35,31 +36,38 @@ pub struct Nesting {
     /// 目前已处理了多少 item-likes。（每次换行后重置。）
     processed_item_likes: usize,
 
-    is_exiting_discontinued_item_likes: bool,
+    is_exiting_discontinued_item_likes: Option<ExitingDiscontinuedItemLikesState>,
 }
 
 enum StackEntry {
     ItemLike(ItemLikeType),
+    Container,
 }
 impl From<ItemLikeType> for StackEntry {
     fn from(value: ItemLikeType) -> Self {
         Self::ItemLike(value)
     }
 }
-impl StackEntry {
-    pub fn is_item_like(&self) -> bool {
-        matches!(self, StackEntry::ItemLike(_))
-    }
-}
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ItemLikeType {
     BlockQuoteLine,
+    OrderedListItem,
+    UnorderedListItem,
 }
 impl From<u8> for ItemLikeType {
     fn from(value: u8) -> Self {
         match value {
             b'>' => ItemLikeType::BlockQuoteLine,
             _ => unreachable!(),
+        }
+    }
+}
+impl ItemLikeType {
+    fn has_container(&self) -> bool {
+        match self {
+            ItemLikeType::BlockQuoteLine => false,
+            ItemLikeType::OrderedListItem | ItemLikeType::UnorderedListItem => true,
         }
     }
 }
@@ -81,7 +89,7 @@ impl<'a> Parser<'a> {
             nesting: Nesting {
                 item_likes_in_stack: 0,
                 processed_item_likes: 0,
-                is_exiting_discontinued_item_likes: false,
+                is_exiting_discontinued_item_likes: None,
             },
         }
     }
