@@ -54,9 +54,9 @@ pub struct Options {
 }
 
 pub enum Mode {
-    /// 无视空白。
+    /// 无视行首空白。
     Inline,
-    /// 保留空白。
+    /// 保留行首空白。
     Verbatim,
 }
 impl Default for Mode {
@@ -159,13 +159,6 @@ impl Parser {
                     InternalResult::ToPauseForNewLine
                 }
             }
-            global_mapper::Mapped::BlankAtLineBeginning(blank) => {
-                consume_peeked!(ctx, &peeked);
-                match self.mode {
-                    Mode::Inline => InternalResult::ToContinue,
-                    Mode::Verbatim => InternalResult::ToYield(BlockEvent::Text(blank)),
-                }
-            }
             global_mapper::Mapped::Text(content) => {
                 consume_peeked!(ctx, &peeked);
                 InternalResult::ToYield(BlockEvent::Text(content))
@@ -211,24 +204,23 @@ impl Parser {
                     peeked,
                 )
             }
-            global_mapper::Mapped::BlankAtLineBeginning(blank) => {
-                consume_peeked!(ctx, &peeked);
-                match self.mode {
-                    Mode::Inline => InternalResult::ToContinue,
-                    Mode::Verbatim => InternalResult::ToYield(BlockEvent::Text(blank)),
-                }
-            }
         }
     }
 
     #[inline(always)]
     fn process_in_is_after_line_feed_state(&mut self, ctx: &mut Context) -> InternalResult {
+        if matches!(self.mode, Mode::Inline) {
+            _ = ctx.scan_blank_text();
+        }
+
         let Some(peeked) = ctx.mapper.peek_1() else {
             return InternalResult::Done;
         };
 
         match peeked {
-            &global_mapper::Mapped::CharAt(index) => {
+            global_mapper::Mapped::CharAt(_) | global_mapper::Mapped::NextChar => {
+                let index = ctx.cursor.applying(peeked).value().unwrap();
+
                 let Some(condition) = self
                     .end_conditions
                     .after_repetitive_characters
@@ -254,7 +246,6 @@ impl Parser {
                     InternalResult::ToContinueIn(StepState::Normal(potential_closing_part))
                 }
             }
-            global_mapper::Mapped::NextChar => unreachable!(),
             global_mapper::Mapped::LineFeed => {
                 if self.end_conditions.before_blank_line {
                     consume_peeked!(ctx, peeked);
@@ -263,7 +254,7 @@ impl Parser {
                     InternalResult::ToYield(BlockEvent::LineBreak)
                 }
             }
-            global_mapper::Mapped::BlankAtLineBeginning(_) | global_mapper::Mapped::Text(_) => {
+            global_mapper::Mapped::Text(_) => {
                 if self.is_at_first_line {
                     InternalResult::ToContinueIn(StepState::Initial)
                 } else {

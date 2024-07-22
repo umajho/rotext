@@ -9,7 +9,7 @@ use rstest::rstest;
 // ## 无特殊语法
 #[case("", vec![])]
 #[case("  ", vec![
-    Mapped::BlankAtLineBeginning(Range::new(0, 2))])]
+    Mapped::CharAt(0), Mapped::NextChar])]
 #[case("a", vec![
     Mapped::CharAt(0)])]
 #[case("ab", vec![
@@ -38,15 +38,14 @@ use rstest::rstest;
     Mapped::CharAt(0), Mapped::LineFeed, Mapped::LineFeed])]
 // ### 一行开头的空格
 #[case("  \n", vec![
-    Mapped::BlankAtLineBeginning(Range::new(0, 2)), Mapped::LineFeed])]
+    Mapped::CharAt(0), Mapped::NextChar, Mapped::LineFeed])]
 #[case("  a", vec![
-    Mapped::BlankAtLineBeginning(Range::new(0, 2)), Mapped::CharAt(2)])]
+    Mapped::CharAt(0), Mapped::NextChar, Mapped::NextChar])]
 #[case("a\n  \n", vec![
-    Mapped::CharAt(0), Mapped::LineFeed,
-    Mapped::BlankAtLineBeginning(Range::new(2, 2)),
+    Mapped::CharAt(0), Mapped::LineFeed, Mapped::CharAt(2), Mapped::NextChar,
     Mapped::LineFeed])]
 #[case("  <` `>\n", vec![
-    Mapped::BlankAtLineBeginning(Range::new(0, 2)),
+    Mapped::CharAt(0), Mapped::NextChar,
     Mapped::Text(Range::new(4, 1)), Mapped::LineFeed])]
 // ## 逐字文本转义转为文本
 #[case("<`a`>", vec![
@@ -73,8 +72,7 @@ use rstest::rstest;
 #[case("a\n<`b`>", vec![
     Mapped::CharAt(0), Mapped::LineFeed, Mapped::Text(Range::new(4, 1))])]
 #[case("a\n <`b`>", vec![
-    Mapped::CharAt(0), Mapped::LineFeed,
-    Mapped::BlankAtLineBeginning(Range::new(2, 1)),
+    Mapped::CharAt(0), Mapped::LineFeed, Mapped::CharAt(2),
     Mapped::Text(Range::new(5, 1))])]
 #[case("<`b`>  c", vec![
     Mapped::Text(Range::new(2, 1)), Mapped::CharAt(5), Mapped::NextChar,

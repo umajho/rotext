@@ -181,8 +181,7 @@ type EventCase<'a> = (EventType, Option<&'a str>);
 #[case(vec!["```\n  code  \n```", "```\n  code  \n````", "````\n  code  \n````"], vec![
     (EventType::EnterCodeBlock, None),
     (EventType::Separator, None),
-    (EventType::Text, Some("  ")),
-    (EventType::Text, Some("code  ")), // TODO: 应该考虑合并两个 Texts。
+    (EventType::Text, Some("  code  ")),
     (EventType::Exit, None)])]
 #[case(vec!["```\n```", "```\n````", "````\n````"], vec![
     (EventType::EnterCodeBlock, None),

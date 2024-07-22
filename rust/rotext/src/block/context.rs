@@ -1,3 +1,5 @@
+use crate::common::Range;
+
 use super::{
     global_mapper::GlobalEventStreamMapper,
     utils::{InputCursor, Peekable3},
@@ -106,5 +108,19 @@ impl<'a> Context<'a> {
         }
 
         dropped
+    }
+
+    pub fn scan_blank_text(&mut self) -> Option<Range> {
+        let start = self.cursor.applying(self.mapper.peek_1()?).value()?;
+        let mut length = 0;
+        while self.peek_next_char() == Some(b' ') {
+            length += 1;
+            self.must_take_from_mapper_and_apply_to_cursor(1);
+        }
+        if length > 0 {
+            Some(Range::new(start, length))
+        } else {
+            None
+        }
     }
 }
