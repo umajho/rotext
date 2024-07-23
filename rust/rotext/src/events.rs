@@ -37,6 +37,9 @@ pub enum EventType {
     EnterOrderedList = 10041,
     EnterUnorderedList = 10042,
     EnterListItem = 10049,
+    EnterDescriptionList = 10051,
+    EnterDescriptionTerm = 10058,
+    EnterDescriptionDetails = 10059,
     /// XXX: 数字是临时的。
     EnterCodeBlock = 19011,
 }
@@ -129,6 +132,15 @@ pub enum Event {
     /// 列表项
     #[subenum(BlockEvent, BlendEvent)]
     EnterListItem = EventType::EnterListItem as u32,
+    /// 描述列表
+    #[subenum(BlockEvent, BlendEvent)]
+    EnterDescriptionList = EventType::EnterDescriptionList as u32,
+    /// 描述术语
+    #[subenum(BlockEvent, BlendEvent)]
+    EnterDescriptionTerm = EventType::EnterDescriptionTerm as u32,
+    /// 描述详情
+    #[subenum(BlockEvent, BlendEvent)]
+    EnterDescriptionDetails = EventType::EnterDescriptionDetails as u32,
     /// 代码块。
     #[subenum(BlockEvent, BlendEvent)]
     EnterCodeBlock = EventType::EnterCodeBlock as u32,
@@ -162,6 +174,9 @@ impl Event {
             | Event::EnterOrderedList
             | Event::EnterUnorderedList
             | Event::EnterListItem
+            | Event::EnterDescriptionList
+            | Event::EnterDescriptionTerm
+            | Event::EnterDescriptionDetails
             | Event::EnterCodeBlock => return None,
         };
 

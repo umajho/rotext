@@ -58,6 +58,8 @@ enum ItemLikeType {
     BlockQuoteLine,
     OrderedListItem,
     UnorderedListItem,
+    DescriptionTerm,
+    DescriptionDetails,
 }
 impl From<u8> for ItemLikeType {
     fn from(value: u8) -> Self {
@@ -71,7 +73,10 @@ impl ItemLikeType {
     fn has_container(&self) -> bool {
         match self {
             ItemLikeType::BlockQuoteLine => false,
-            ItemLikeType::OrderedListItem | ItemLikeType::UnorderedListItem => true,
+            ItemLikeType::OrderedListItem
+            | ItemLikeType::UnorderedListItem
+            | ItemLikeType::DescriptionTerm
+            | ItemLikeType::DescriptionDetails => true,
         }
     }
 }

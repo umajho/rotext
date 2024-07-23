@@ -68,6 +68,15 @@ pub fn render_to_html<I: Iterator<Item = BlendEvent>>(
             BlendEvent::EnterListItem => {
                 push_simple(&mut result, &mut stack, "li");
             }
+            BlendEvent::EnterDescriptionList => {
+                push_simple(&mut result, &mut stack, "dl");
+            }
+            BlendEvent::EnterDescriptionTerm => {
+                push_simple(&mut result, &mut stack, "dt");
+            }
+            BlendEvent::EnterDescriptionDetails => {
+                push_simple(&mut result, &mut stack, "dd");
+            }
             BlendEvent::EnterCodeBlock => {
                 stack.push("</x-code-block>");
                 result.push_str("<x-code-block info-string=\"");

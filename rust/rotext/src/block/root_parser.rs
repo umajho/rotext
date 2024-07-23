@@ -186,17 +186,22 @@ impl<'a> Parser<'a> {
                         return InternalResult::ToContinue(State::ExpectingContainer);
                     }
                 }
-                ItemLikeType::OrderedListItem | ItemLikeType::UnorderedListItem => {
+                ItemLikeType::OrderedListItem
+                | ItemLikeType::UnorderedListItem
+                | ItemLikeType::DescriptionTerm
+                | ItemLikeType::DescriptionDetails => {
                     if is_expecting_deeper {
                         self.enter_item_like(stack, nesting, item_like_type, true);
                         return InternalResult::ToContinue(State::ExpectingContainer);
                     } else {
-                        let is_item_like_type_same_with_last_line = self
-                            .get_nth_item_like_in_stack(stack, nesting.processed_item_likes)
-                            == item_like_type;
+                        let last_item_like_type =
+                            self.get_nth_item_like_in_stack(stack, nesting.processed_item_likes);
                         return InternalResult::ToContinue(State::ExitingDiscontinuedItemLikes(
                             ExitingDiscontinuedItemLikesState {
-                                should_keep_container: is_item_like_type_same_with_last_line,
+                                should_keep_container: are_item_likes_in_same_group(
+                                    item_like_type,
+                                    last_item_like_type,
+                                ),
                                 and_then_enter_item_like: Some(item_like_type),
                             },
                         ));
@@ -319,7 +324,10 @@ impl<'a> Parser<'a> {
     ) {
         if !matches!(
             item_like_type,
-            ItemLikeType::OrderedListItem | ItemLikeType::UnorderedListItem
+            ItemLikeType::OrderedListItem
+                | ItemLikeType::UnorderedListItem
+                | ItemLikeType::DescriptionTerm
+                | ItemLikeType::DescriptionDetails
         ) {
             unreachable!()
         }
@@ -336,9 +344,19 @@ impl<'a> Parser<'a> {
                 ItemLikeType::BlockQuoteLine => unreachable!(),
                 ItemLikeType::OrderedListItem => BlockEvent::EnterOrderedList,
                 ItemLikeType::UnorderedListItem => BlockEvent::EnterUnorderedList,
+                ItemLikeType::DescriptionTerm | ItemLikeType::DescriptionDetails => {
+                    BlockEvent::EnterDescriptionList
+                }
             });
         }
-        self.to_yield.push_back(BlockEvent::EnterListItem);
+        self.to_yield.push_back(match item_like_type {
+            ItemLikeType::BlockQuoteLine => unreachable!(),
+            ItemLikeType::OrderedListItem | ItemLikeType::UnorderedListItem => {
+                BlockEvent::EnterListItem
+            }
+            ItemLikeType::DescriptionTerm => BlockEvent::EnterDescriptionTerm,
+            ItemLikeType::DescriptionDetails => BlockEvent::EnterDescriptionDetails,
+        });
     }
 }
 
@@ -353,6 +371,12 @@ fn scan_item_like(ctx: &mut Context) -> Option<ItemLikeType> {
         }
         [Some(b'*'), ref second_char, ..] if check_is_indeed_item_like(ctx, second_char) => {
             return Some(ItemLikeType::UnorderedListItem);
+        }
+        [Some(b';'), ref second_char, ..] if check_is_indeed_item_like(ctx, second_char) => {
+            return Some(ItemLikeType::DescriptionTerm);
+        }
+        [Some(b':'), ref second_char, ..] if check_is_indeed_item_like(ctx, second_char) => {
+            return Some(ItemLikeType::DescriptionDetails);
         }
         _ => {}
     };
@@ -413,5 +437,17 @@ fn scan_leaf(ctx: &mut Context) -> LeafType {
         _ => LeafType::Paragraph {
             content_before: None,
         },
+    }
+}
+
+/// XXX: 期待 `left` 不为 [ItemLikeType::BlockQuoteLine]。
+fn are_item_likes_in_same_group(left: ItemLikeType, right: ItemLikeType) -> bool {
+    match left {
+        ItemLikeType::BlockQuoteLine => unreachable!(),
+        ItemLikeType::OrderedListItem | ItemLikeType::UnorderedListItem => left == right,
+        ItemLikeType::DescriptionTerm | ItemLikeType::DescriptionDetails => matches!(
+            right,
+            ItemLikeType::DescriptionTerm | ItemLikeType::DescriptionDetails
+        ),
     }
 }
