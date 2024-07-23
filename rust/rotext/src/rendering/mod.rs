@@ -16,57 +16,57 @@ pub fn render_to_html<I: Iterator<Item = BlendEvent>>(
             break;
         };
 
+        fn push_simple(result: &mut String, stack: &mut Vec<&'static str>, tag_name: &'static str) {
+            result.push('<');
+            result.push_str(tag_name);
+            result.push('>');
+            stack.push(tag_name);
+        }
+
         match ev {
             BlendEvent::LineBreak => result.push_str("<br>"),
             BlendEvent::Text(content) => {
                 write_escaped_html_text(&mut result, content.content(input));
             }
-            BlendEvent::Exit => result.push_str(stack.pop().unwrap()),
+            BlendEvent::Exit => {
+                result.push_str("</");
+                result.push_str(stack.pop().unwrap());
+                result.push('>');
+            }
             BlendEvent::Separator => unreachable!(),
             BlendEvent::EnterParagraph => {
-                stack.push("</p>");
-                result.push_str("<p>")
+                push_simple(&mut result, &mut stack, "p");
             }
             BlendEvent::ThematicBreak => result.push_str("<hr>"),
             BlendEvent::EnterHeading1 => {
-                stack.push("</h1>");
-                result.push_str("<h1>")
+                push_simple(&mut result, &mut stack, "h1");
             }
             BlendEvent::EnterHeading2 => {
-                stack.push("</h2>");
-                result.push_str("<h2>")
+                push_simple(&mut result, &mut stack, "h2");
             }
             BlendEvent::EnterHeading3 => {
-                stack.push("</h3>");
-                result.push_str("<h3>")
+                push_simple(&mut result, &mut stack, "h3");
             }
             BlendEvent::EnterHeading4 => {
-                stack.push("</h4>");
-                result.push_str("<h4>")
+                push_simple(&mut result, &mut stack, "h4");
             }
             BlendEvent::EnterHeading5 => {
-                stack.push("</h5>");
-                result.push_str("<h5>")
+                push_simple(&mut result, &mut stack, "h5");
             }
             BlendEvent::EnterHeading6 => {
-                stack.push("</h6>");
-                result.push_str("<h6>")
+                push_simple(&mut result, &mut stack, "h6");
             }
             BlendEvent::EnterBlockQuote => {
-                stack.push("</blockquote>");
-                result.push_str("<blockquote>")
+                push_simple(&mut result, &mut stack, "blockquote");
             }
             BlendEvent::EnterOrderedList => {
-                stack.push("</ol>");
-                result.push_str("<ol>")
+                push_simple(&mut result, &mut stack, "ol");
             }
             BlendEvent::EnterUnorderedList => {
-                stack.push("</ul>");
-                result.push_str("<ul>")
+                push_simple(&mut result, &mut stack, "ul");
             }
             BlendEvent::EnterListItem => {
-                stack.push("</li>");
-                result.push_str("<li>")
+                push_simple(&mut result, &mut stack, "li");
             }
             BlendEvent::EnterCodeBlock => {
                 stack.push("</x-code-block>");
