@@ -404,6 +404,7 @@ enum LeafType {
     Paragraph { content_before: Option<Range> },
 }
 
+#[inline(always)]
 fn scan_leaf(ctx: &mut Context) -> LeafType {
     match ctx.peek_next_three_chars() {
         [Some(b'-'), Some(b'-'), Some(b'-')] => {
@@ -441,6 +442,7 @@ fn scan_leaf(ctx: &mut Context) -> LeafType {
 }
 
 /// XXX: 期待 `left` 不为 [ItemLikeType::BlockQuoteLine]。
+#[inline(always)]
 fn are_item_likes_in_same_group(left: ItemLikeType, right: ItemLikeType) -> bool {
     match left {
         ItemLikeType::BlockQuoteLine => unreachable!(),
