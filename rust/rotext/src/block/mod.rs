@@ -99,11 +99,11 @@ impl<'a> Parser<'a> {
     }
 
     pub fn next(&mut self) -> Option<BlockEvent> {
-        loop {
+        let next = loop {
             if self.is_cleaning_up {
                 // 若栈中还有内容，出栈并返回 `Some(Event::Exit)`；若栈已空，返
                 // 回 `None`。
-                return self.stack.pop().map(|_| BlockEvent::Exit);
+                break self.stack.pop().map(|_| BlockEvent::Exit);
             }
 
             let to_break: Option<BlockEvent>;
@@ -116,7 +116,12 @@ impl<'a> Parser<'a> {
             if to_break.is_some() {
                 break to_break;
             }
-        }
+        };
+
+        #[cfg(debug_assertions)]
+        log::debug!("NEXT {:?}", next);
+
+        next
     }
 
     #[inline(always)]

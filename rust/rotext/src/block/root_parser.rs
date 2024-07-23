@@ -1,6 +1,6 @@
 use derivative::Derivative;
 
-use super::{context::Context, sub_parsers, ItemLikeType, Nesting, StackEntry};
+use super::{context::Context, sub_parsers, utils::Queue4, ItemLikeType, Nesting, StackEntry};
 use crate::{common::Range, events::BlockEvent};
 
 pub struct Parser<'a> {
@@ -8,7 +8,7 @@ pub struct Parser<'a> {
 
     state: State,
     is_new_line: bool,
-    deferred_to_yield: Option<ToYield>,
+    to_yield: Queue4<BlockEvent>,
 
     get_nth_item_like_in_stack_memo: Option<GetNthItemLikeInStackMemo>,
 }
@@ -32,12 +32,6 @@ pub struct ExitingDiscontinuedItemLikesState {
     and_then_enter_item_like: Option<ItemLikeType>,
 }
 
-#[derive(Debug)]
-enum ToYield {
-    One(BlockEvent),
-    Two(BlockEvent, BlockEvent),
-}
-
 #[derive(Default)]
 struct GetNthItemLikeInStackMemo {
     last_n: usize,
@@ -54,7 +48,6 @@ pub enum Result<'a> {
 #[derive(Derivative)]
 #[derivative(Debug)]
 enum InternalResult<'a> {
-    ToYield(State, ToYield),
     ToContinue(State),
     ToSwitchToSubParser(#[derivative(Debug = "ignore")] Box<dyn sub_parsers::SubParser<'a> + 'a>),
     Done,
@@ -72,7 +65,7 @@ impl<'a> Parser<'a> {
             },
             // 这里只是随便初始化一下，实际在 [State::Start] 中决定。
             is_new_line: false,
-            deferred_to_yield: None,
+            to_yield: Queue4::new(),
             get_nth_item_like_in_stack_memo: None,
         }
     }
@@ -83,20 +76,13 @@ impl<'a> Parser<'a> {
         stack: &mut Vec<StackEntry>,
         nesting: &mut Nesting,
     ) -> Result<'a> {
-        if let Some(to_yield) = self.deferred_to_yield.take() {
-            match to_yield {
-                ToYield::One(ev) => {
-                    return Result::ToYield(ev);
-                }
-                ToYield::Two(ev_1, ev_2) => {
-                    self.deferred_to_yield = Some(ToYield::One(ev_2));
-                    return Result::ToYield(ev_1);
-                }
-            }
-        }
-
         loop {
-            // log::debug!("ROOT state={:?}", self.state);
+            if let Some(ev) = self.to_yield.pop_front() {
+                return Result::ToYield(ev);
+            }
+
+            #[cfg(debug_assertions)]
+            log::debug!("BLOCK->ROOT state={:?}", self.state);
 
             let internal_result = match std::mem::replace(&mut self.state, State::Invalid) {
                 State::Start {
@@ -112,18 +98,10 @@ impl<'a> Parser<'a> {
                 State::Invalid => unreachable!(),
             };
 
-            // log::debug!("ROOT internal_result={:?}", internal_result);
+            #[cfg(debug_assertions)]
+            log::debug!("BLOCK->ROOT internal_result={:?}", internal_result);
 
             match internal_result {
-                InternalResult::ToYield(state, ToYield::One(ev)) => {
-                    self.state = state;
-                    break Result::ToYield(ev);
-                }
-                InternalResult::ToYield(state, ToYield::Two(ev_1, ev_2)) => {
-                    self.state = state;
-                    self.deferred_to_yield = Some(ToYield::One(ev_2));
-                    break Result::ToYield(ev_1);
-                }
                 InternalResult::ToContinue(state) => self.state = state,
                 InternalResult::ToSwitchToSubParser(sub_parser) => {
                     self.state = State::Invalid;
@@ -202,18 +180,16 @@ impl<'a> Parser<'a> {
                     if is_expecting_deeper {
                         stack.push(item_like_type.into());
                         nesting.item_likes_in_stack += 1;
-                        return InternalResult::ToYield(
-                            State::ExpectingContainer,
-                            ToYield::One(BlockEvent::EnterBlockQuote),
-                        );
+                        self.to_yield.push_back(BlockEvent::EnterBlockQuote);
+                        return InternalResult::ToContinue(State::ExpectingContainer);
                     } else {
                         return InternalResult::ToContinue(State::ExpectingContainer);
                     }
                 }
                 ItemLikeType::OrderedListItem | ItemLikeType::UnorderedListItem => {
                     if is_expecting_deeper {
-                        let to_yield = enter_item_like(stack, nesting, item_like_type, true);
-                        return InternalResult::ToYield(State::ExpectingContainer, to_yield);
+                        self.enter_item_like(stack, nesting, item_like_type, true);
+                        return InternalResult::ToContinue(State::ExpectingContainer);
                     } else {
                         let is_item_like_type_same_with_last_line = self
                             .get_nth_item_like_in_stack(stack, nesting.processed_item_likes)
@@ -253,7 +229,8 @@ impl<'a> Parser<'a> {
                 let new_state = State::Start {
                     is_certain_is_new_line: None,
                 };
-                InternalResult::ToYield(new_state, ToYield::One(BlockEvent::ThematicBreak))
+                self.to_yield.push_back(BlockEvent::ThematicBreak);
+                InternalResult::ToContinue(new_state)
             }
             LeafType::Heading { leading_signs } => InternalResult::ToSwitchToSubParser(Box::new(
                 sub_parsers::heading::Parser::new(leading_signs),
@@ -275,7 +252,7 @@ impl<'a> Parser<'a> {
         state: ExitingDiscontinuedItemLikesState,
     ) -> InternalResult<'a> {
         if nesting.processed_item_likes == nesting.item_likes_in_stack {
-            return InternalResult::ToContinue(State::ExpectingContainer);
+            unreachable!();
         }
 
         if let Some(mut sub_parser) = self.paused_sub_parser.take() {
@@ -287,32 +264,26 @@ impl<'a> Parser<'a> {
         if let StackEntry::ItemLike(item_like_type_to_exit) = stack.pop().unwrap() {
             nesting.item_likes_in_stack -= 1;
             if nesting.processed_item_likes == nesting.item_likes_in_stack {
+                self.to_yield.push_back(BlockEvent::Exit);
                 let should_exit_container =
                     item_like_type_to_exit.has_container() && !state.should_keep_container;
                 if should_exit_container {
                     stack.pop().unwrap();
+                    self.to_yield.push_back(BlockEvent::Exit);
                 }
                 if let Some(item_like_type_to_enter) = state.and_then_enter_item_like {
-                    let to_yield = enter_item_like(
+                    self.enter_item_like(
                         stack,
                         nesting,
                         item_like_type_to_enter,
                         !state.should_keep_container,
                     );
-                    self.deferred_to_yield = Some(to_yield);
                 }
-                if should_exit_container {
-                    return InternalResult::ToYield(
-                        State::ExitingDiscontinuedItemLikes(state),
-                        ToYield::Two(BlockEvent::Exit, BlockEvent::Exit),
-                    );
-                }
+                return InternalResult::ToContinue(State::ExpectingContainer);
             }
         }
-        InternalResult::ToYield(
-            State::ExitingDiscontinuedItemLikes(state),
-            ToYield::One(BlockEvent::Exit),
-        )
+        self.to_yield.push_back(BlockEvent::Exit);
+        InternalResult::ToContinue(State::ExitingDiscontinuedItemLikes(state))
     }
 
     /// `n` 基于 0。
@@ -337,6 +308,37 @@ impl<'a> Parser<'a> {
             }
         }
         unreachable!()
+    }
+
+    fn enter_item_like(
+        &mut self,
+        stack: &mut Vec<StackEntry>,
+        nesting: &mut Nesting,
+        item_like_type: ItemLikeType,
+        should_enter_container: bool,
+    ) {
+        if !matches!(
+            item_like_type,
+            ItemLikeType::OrderedListItem | ItemLikeType::UnorderedListItem
+        ) {
+            unreachable!()
+        }
+
+        nesting.processed_item_likes += 1;
+        if should_enter_container {
+            stack.push(StackEntry::Container);
+        }
+        stack.push(item_like_type.into());
+        nesting.item_likes_in_stack += 1;
+
+        if should_enter_container {
+            self.to_yield.push_back(match item_like_type {
+                ItemLikeType::BlockQuoteLine => unreachable!(),
+                ItemLikeType::OrderedListItem => BlockEvent::EnterOrderedList,
+                ItemLikeType::UnorderedListItem => BlockEvent::EnterUnorderedList,
+            });
+        }
+        self.to_yield.push_back(BlockEvent::EnterListItem);
     }
 }
 
@@ -422,39 +424,5 @@ fn scan_leaf(ctx: &mut Context) -> LeafType {
         _ => LeafType::Paragraph {
             content_before: None,
         },
-    }
-}
-
-fn enter_item_like(
-    stack: &mut Vec<StackEntry>,
-    nesting: &mut Nesting,
-    item_like_type: ItemLikeType,
-    should_enter_container: bool,
-) -> ToYield {
-    if !matches!(
-        item_like_type,
-        ItemLikeType::OrderedListItem | ItemLikeType::UnorderedListItem
-    ) {
-        unreachable!()
-    }
-
-    nesting.processed_item_likes += 1;
-    if should_enter_container {
-        stack.push(StackEntry::Container);
-    }
-    stack.push(item_like_type.into());
-    nesting.item_likes_in_stack += 1;
-
-    if should_enter_container {
-        ToYield::Two(
-            match item_like_type {
-                ItemLikeType::BlockQuoteLine => unreachable!(),
-                ItemLikeType::OrderedListItem => BlockEvent::EnterOrderedList,
-                ItemLikeType::UnorderedListItem => BlockEvent::EnterUnorderedList,
-            },
-            BlockEvent::EnterListItem,
-        )
-    } else {
-        ToYield::One(BlockEvent::EnterListItem)
     }
 }

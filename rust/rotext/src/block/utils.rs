@@ -85,3 +85,36 @@ impl<I: Iterator> Iterator for Peekable3<I> {
         }
     }
 }
+
+pub struct Queue4<T> {
+    queue: [Option<T>; 4],
+    end: usize,
+    length: usize,
+}
+impl<T> Queue4<T> {
+    pub fn new() -> Self {
+        Self {
+            queue: [None, None, None, None],
+            end: 0,
+            length: 0,
+        }
+    }
+
+    pub fn push_back(&mut self, item: T) {
+        self.length += 1;
+        if self.length > 4 {
+            unreachable!();
+        }
+        self.queue[self.end] = Some(item);
+        self.end = (self.end + 1) % 4;
+    }
+
+    pub fn pop_front(&mut self) -> Option<T> {
+        if self.length == 0 {
+            return None;
+        }
+        let item = self.queue[(self.end + 4 - self.length) % 4].take();
+        self.length -= 1;
+        Some(item.unwrap())
+    }
+}
