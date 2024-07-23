@@ -30,13 +30,17 @@ enum State<'a> {
     Invalid,
 }
 
+/// 与嵌套的块级语法有关的状态。
 pub struct Nesting {
     /// 目前栈中有多少 item-likes。
     item_likes_in_stack: usize,
-    /// 目前已处理了多少 item-likes。（每次换行后重置。）
+    /// 当前行目前已处理了多少 item-likes。（每次换行后重置。）
     processed_item_likes: usize,
 
     is_exiting_discontinued_item_likes: Option<ExitingDiscontinuedItemLikesState>,
+    //
+    // /// 当前行是否已经完成处理嵌套的块级语法。
+    // is_done_for_current_line: bool,
 }
 
 enum StackEntry {

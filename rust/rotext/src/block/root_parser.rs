@@ -145,18 +145,22 @@ impl<'a> Parser<'a> {
         is_certain_is_new_line: Option<bool>,
     ) -> InternalResult<'a> {
         if let Some(state) = nesting.is_exiting_discontinued_item_likes.take() {
+            self.is_new_line = true;
             return InternalResult::ToContinue(State::ExitingDiscontinuedItemLikes(state));
         }
 
         if let Some(is_new_line) = is_certain_is_new_line {
             self.is_new_line = is_new_line;
-            self.get_nth_item_like_in_stack_memo = None;
         } else {
             self.is_new_line = ctx.mapper.peek_1().is_some_and(|p| p.is_line_feed());
             if self.is_new_line {
                 ctx.must_take_from_mapper_and_apply_to_cursor(1);
-                nesting.processed_item_likes = 0;
             }
+        }
+
+        if self.is_new_line {
+            self.get_nth_item_like_in_stack_memo = None;
+            nesting.processed_item_likes = 0;
         }
 
         InternalResult::ToContinue(State::ExpectingContainer)
