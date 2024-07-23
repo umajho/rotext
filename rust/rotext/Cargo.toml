@@ -13,4 +13,5 @@ log = "0.4.22"
 subenum = "1.1.2"
 
 [dev-dependencies]
+indoc = "2.0.5"
 rstest = "0.21.0"
