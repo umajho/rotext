@@ -686,6 +686,151 @@ type EventCase<'a> = (EventType, Option<&'a str>);
             (EventType::Exit, None),
         (EventType::Exit, None),
     (EventType::Exit, None)])]
+#[case(vec![
+    indoc!{"
+        # # a
+        > > b"},
+    ], vec![
+    (EventType::EnterOrderedList, None),
+        (EventType::EnterListItem, None),
+            (EventType::EnterOrderedList, None),
+                (EventType::EnterListItem, None),
+                    (EventType::EnterParagraph, None),
+                        (EventType::Unparsed, Some("a")),
+                        (EventType::LineBreak, None),
+                        (EventType::Unparsed, Some("b")),
+                    (EventType::Exit, None),
+                (EventType::Exit, None),
+            (EventType::Exit, None),
+        (EventType::Exit, None),
+    (EventType::Exit, None)])]
+// ### 列表中的先前测试过的块级元素
+#[case(vec![
+    indoc!{"
+        == a ==
+        # 1"},
+    ], vec![
+    (EventType::EnterHeading2, None),
+        (EventType::Unparsed, Some("a")),
+    (EventType::Exit, None),
+    (EventType::EnterOrderedList, None),
+        (EventType::EnterListItem, None),
+            (EventType::EnterParagraph, None),
+                (EventType::Unparsed, Some("1")),
+            (EventType::Exit, None),
+        (EventType::Exit, None),
+    (EventType::Exit, None)])]
+#[case(vec![
+    indoc!{"
+        # == a =="},
+    ], vec![
+    (EventType::EnterOrderedList, None),
+        (EventType::EnterListItem, None),
+            (EventType::EnterHeading2, None),
+                (EventType::Unparsed, Some("a")),
+            (EventType::Exit, None),
+        (EventType::Exit, None),
+    (EventType::Exit, None)])]
+#[case(vec![
+    indoc!{"
+        # == a ==
+        > b"},
+    ], vec![
+    (EventType::EnterOrderedList, None),
+        (EventType::EnterListItem, None),
+            (EventType::EnterHeading2, None),
+                (EventType::Unparsed, Some("a")),
+            (EventType::Exit, None),
+            (EventType::EnterParagraph, None),
+                (EventType::Unparsed, Some("b")),
+            (EventType::Exit, None),
+        (EventType::Exit, None),
+    (EventType::Exit, None)])]
+#[case(vec![
+    indoc!{"
+        # == a ==
+        # b"},
+    ], vec![
+    (EventType::EnterOrderedList, None),
+        (EventType::EnterListItem, None),
+            (EventType::EnterHeading2, None),
+                (EventType::Unparsed, Some("a")),
+            (EventType::Exit, None),
+        (EventType::Exit, None),
+        (EventType::EnterListItem, None),
+            (EventType::EnterParagraph, None),
+                (EventType::Unparsed, Some("b")),
+            (EventType::Exit, None),
+        (EventType::Exit, None),
+    (EventType::Exit, None)])]
+#[case(vec![
+    indoc!{"
+        > foo
+        # 1"},
+    ], vec![
+    (EventType::EnterBlockQuote, None),
+        (EventType::EnterParagraph, None),
+            (EventType::Unparsed, Some("foo")),
+        (EventType::Exit, None),
+    (EventType::Exit, None),
+    (EventType::EnterOrderedList, None),
+        (EventType::EnterListItem, None),
+            (EventType::EnterParagraph, None),
+                (EventType::Unparsed, Some("1")),
+            (EventType::Exit, None),
+        (EventType::Exit, None),
+    (EventType::Exit, None)])]
+#[case(vec![
+    indoc!{"
+        # > foo
+        # # 1.1
+        > # 1.2"},
+    ], vec![
+    (EventType::EnterOrderedList, None),
+        (EventType::EnterListItem, None),
+            (EventType::EnterBlockQuote, None),
+                (EventType::EnterParagraph, None),
+                    (EventType::Unparsed, Some("foo")),
+                (EventType::Exit, None),
+            (EventType::Exit, None),
+        (EventType::Exit, None),
+        (EventType::EnterListItem, None),
+            (EventType::EnterOrderedList, None),
+                (EventType::EnterListItem, None),
+                    (EventType::EnterParagraph, None),
+                        (EventType::Unparsed, Some("1.1")),
+                    (EventType::Exit, None),
+                (EventType::Exit, None),
+                (EventType::EnterListItem, None),
+                    (EventType::EnterParagraph, None),
+                        (EventType::Unparsed, Some("1.2")),
+                    (EventType::Exit, None),
+                (EventType::Exit, None),
+            (EventType::Exit, None),
+        (EventType::Exit, None),
+    (EventType::Exit, None)])]
+#[case(vec![
+    indoc!{"
+        # # 1.1
+        >
+        > > foo"},
+    ], vec![
+    (EventType::EnterOrderedList, None),
+        (EventType::EnterListItem, None),
+            (EventType::EnterOrderedList, None),
+                (EventType::EnterListItem, None),
+                    (EventType::EnterParagraph, None),
+                        (EventType::Unparsed, Some("1.1")),
+                    (EventType::Exit, None),
+                (EventType::Exit, None),
+            (EventType::Exit, None),
+            (EventType::EnterBlockQuote, None),
+                (EventType::EnterParagraph, None),
+                    (EventType::Unparsed, Some("foo")),
+                (EventType::Exit, None),
+            (EventType::Exit, None),
+        (EventType::Exit, None),
+    (EventType::Exit, None)])]
 // ## 代码块
 #[case(vec![
     indoc!{"
