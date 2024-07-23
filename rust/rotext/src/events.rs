@@ -126,7 +126,7 @@ pub enum Event {
     /// 无序列表
     #[subenum(BlockEvent, BlendEvent)]
     EnterUnorderedList = EventType::EnterUnorderedList as u32,
-    /// 无序列表
+    /// 列表项
     #[subenum(BlockEvent, BlendEvent)]
     EnterListItem = EventType::EnterListItem as u32,
     /// 代码块。
