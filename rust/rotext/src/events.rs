@@ -40,8 +40,7 @@ pub enum EventType {
     EnterDescriptionList = 10051,
     EnterDescriptionTerm = 10058,
     EnterDescriptionDetails = 10059,
-    /// XXX: 数字是临时的。
-    EnterCodeBlock = 19011,
+    EnterCodeBlock = 10061,
 }
 
 #[cfg(test)]
