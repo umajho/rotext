@@ -2,8 +2,6 @@ extern crate alloc;
 
 use wasm_bindgen::prelude::*;
 
-use std::sync::Once;
-
 #[cfg(target_arch = "wasm32")]
 use lol_alloc::{AssumeSingleThreaded, FreeListAllocator};
 #[cfg(target_arch = "wasm32")]
@@ -11,6 +9,8 @@ use lol_alloc::{AssumeSingleThreaded, FreeListAllocator};
 static ALLOCATOR: AssumeSingleThreaded<FreeListAllocator> =
     unsafe { AssumeSingleThreaded::new(FreeListAllocator::new()) };
 
+#[cfg(debug_assertions)]
+use std::sync::Once;
 #[cfg(debug_assertions)]
 static INIT: Once = Once::new();
 
@@ -44,6 +44,7 @@ pub fn parse_and_render(input: &[u8]) -> ParseAndRenderResult {
 
     let all_events: Vec<_> = rotext::parse(input).collect();
 
+    #[allow(unused_mut)]
     let mut result = ParseAndRenderResult {
         html: rotext::render_to_html(
             input,
