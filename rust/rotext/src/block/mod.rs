@@ -38,9 +38,6 @@ pub struct Nesting {
     processed_item_likes: usize,
 
     is_exiting_discontinued_item_likes: Option<ExitingDiscontinuedItemLikesState>,
-    //
-    // /// 当前行是否已经完成处理嵌套的块级语法。
-    // is_done_for_current_line: bool,
 }
 
 enum StackEntry {
