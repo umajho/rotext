@@ -1,6 +1,6 @@
 use derivative::Derivative;
 
-use super::{context::Context, sub_parsers, utils::Queue4, ItemLikeType, Nesting, StackEntry};
+use super::{context::Context, sub_parsers, utils::ArrayQueue, ItemLikeType, Nesting, StackEntry};
 use crate::{common::Range, events::BlockEvent};
 
 pub struct Parser<'a> {
@@ -8,7 +8,7 @@ pub struct Parser<'a> {
 
     state: State,
     is_new_line: bool,
-    to_yield: Queue4<BlockEvent>,
+    to_yield: ArrayQueue<4, BlockEvent>,
 
     get_nth_item_like_in_stack_memo: Option<GetNthItemLikeInStackMemo>,
 }
@@ -65,7 +65,7 @@ impl<'a> Parser<'a> {
             },
             // 这里只是随便初始化一下，实际在 [State::Start] 中决定。
             is_new_line: false,
-            to_yield: Queue4::new(),
+            to_yield: ArrayQueue::new(),
             get_nth_item_like_in_stack_memo: None,
         }
     }
@@ -130,7 +130,7 @@ impl<'a> Parser<'a> {
         if let Some(is_new_line) = is_certain_is_new_line {
             self.is_new_line = is_new_line;
         } else {
-            self.is_new_line = ctx.mapper.peek_1().is_some_and(|p| p.is_line_feed());
+            self.is_new_line = ctx.mapper.peek(0).is_some_and(|p| p.is_line_feed());
             if self.is_new_line {
                 ctx.must_take_from_mapper_and_apply_to_cursor(1);
             }
@@ -217,7 +217,7 @@ impl<'a> Parser<'a> {
         // `ctx.scan_blank_text`，因此 `ctx.mapper.peek_1()` 一定不对应空白字符（
         // “空白字符” 不包含换行。）。
 
-        let Some(peeked) = ctx.mapper.peek_1() else {
+        let Some(peeked) = ctx.mapper.peek(0) else {
             return InternalResult::Done;
         };
         if peeked.is_line_feed() {
@@ -396,7 +396,7 @@ fn scan_paragraph_or_item_like(ctx: &mut Context) -> ScanParagraphOrItemLikeResu
 
 fn check_is_indeed_item_like(ctx: &mut Context, second_char: &Option<u8>) -> bool {
     let is_indeed_item_like = second_char == &Some(b' ') || {
-        let p = ctx.mapper.peek_2();
+        let p = ctx.mapper.peek(1);
         p.is_none() || p.is_some_and(|p| p.is_line_feed())
     };
     if is_indeed_item_like {

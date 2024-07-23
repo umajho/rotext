@@ -2,12 +2,12 @@ use crate::common::Range;
 
 use super::{
     global_mapper::GlobalEventStreamMapper,
-    utils::{InputCursor, Peekable3},
+    utils::{InputCursor, Peekable},
 };
 
 pub struct Context<'a> {
     pub input: &'a [u8],
-    pub mapper: Peekable3<GlobalEventStreamMapper<'a>>,
+    pub mapper: Peekable<3, GlobalEventStreamMapper<'a>>,
     pub cursor: InputCursor,
 }
 
@@ -18,7 +18,7 @@ impl<'a> Context<'a> {
         &mut self,
         condition: F,
     ) -> bool {
-        let Some(peeked) = self.mapper.peek_1() else {
+        let Some(peeked) = self.mapper.peek(0) else {
             return false;
         };
         let applied = self.cursor.applying(peeked);
@@ -40,7 +40,7 @@ impl<'a> Context<'a> {
     pub fn peek_next_char(&mut self) -> Option<u8> {
         let mut cursor = self.cursor;
 
-        cursor.apply(self.mapper.peek_1()?);
+        cursor.apply(self.mapper.peek(0)?);
         cursor.at(self.input)
     }
 
@@ -50,13 +50,13 @@ impl<'a> Context<'a> {
         let mut result: [Option<u8>; 3] = [None; 3];
 
         (|| -> Option<()> {
-            cursor.apply(self.mapper.peek_1()?);
+            cursor.apply(self.mapper.peek(0)?);
             result[0] = Some(cursor.at(self.input)?);
 
-            cursor.apply(self.mapper.peek_2()?);
+            cursor.apply(self.mapper.peek(1)?);
             result[1] = Some(cursor.at(self.input)?);
 
-            cursor.apply(self.mapper.peek_3()?);
+            cursor.apply(self.mapper.peek(2)?);
             result[2] = Some(cursor.at(self.input)?);
 
             None
@@ -111,7 +111,7 @@ impl<'a> Context<'a> {
     }
 
     pub fn scan_blank_text(&mut self) -> Option<Range> {
-        let start = self.cursor.applying(self.mapper.peek_1()?).value()?;
+        let start = self.cursor.applying(self.mapper.peek(0)?).value()?;
         let mut length = 0;
         while self.peek_next_char() == Some(b' ') {
             length += 1;

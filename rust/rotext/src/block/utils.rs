@@ -34,45 +34,35 @@ impl InputCursor {
     }
 }
 
-pub struct Peekable3<I: Iterator> {
+pub struct Peekable<const N: usize, I: Iterator> {
     inner: I,
 
-    buffer: [Option<I::Item>; 3],
+    buffer: [Option<I::Item>; N],
     start: usize,
 }
 
-impl<I: Iterator> Peekable3<I> {
-    pub fn new(inner: I) -> Peekable3<I> {
-        Peekable3 {
+impl<const N: usize, I: Iterator> Peekable<N, I> {
+    pub fn new(inner: I) -> Peekable<N, I> {
+        Peekable {
             inner,
-            buffer: [None, None, None],
+            buffer: std::array::from_fn(|_| None),
             start: 0,
         }
     }
 
-    pub fn peek_1(&mut self) -> Option<&I::Item> {
-        if self.buffer[self.start].is_none() {
-            self.buffer[self.start] = self.inner.next();
+    /// `i` 以 0 为起始。
+    pub fn peek(&mut self, i: usize) -> Option<&I::Item> {
+        if self.buffer[(self.start + i) % N].is_none() {
+            if i > 0 {
+                self.peek(i - 1);
+            }
+            self.buffer[(self.start + i) % N] = self.inner.next();
         }
-        self.buffer[self.start].as_ref()
-    }
-    pub fn peek_2(&mut self) -> Option<&I::Item> {
-        if self.buffer[(self.start + 1) % 3].is_none() {
-            self.peek_1();
-            self.buffer[(self.start + 1) % 3] = self.inner.next();
-        }
-        self.buffer[(self.start + 1) % 3].as_ref()
-    }
-    pub fn peek_3(&mut self) -> Option<&I::Item> {
-        if self.buffer[(self.start + 2) % 3].is_none() {
-            self.peek_2();
-            self.buffer[(self.start + 2) % 3] = self.inner.next();
-        }
-        self.buffer[(self.start + 2) % 3].as_ref()
+        self.buffer[(self.start + i) % N].as_ref()
     }
 }
 
-impl<I: Iterator> Iterator for Peekable3<I> {
+impl<const N: usize, I: Iterator> Iterator for Peekable<N, I> {
     type Item = I::Item;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -86,15 +76,15 @@ impl<I: Iterator> Iterator for Peekable3<I> {
     }
 }
 
-pub struct Queue4<T> {
-    queue: [Option<T>; 4],
+pub struct ArrayQueue<const N: usize, T> {
+    queue: [Option<T>; N],
     end: usize,
     length: usize,
 }
-impl<T> Queue4<T> {
+impl<const N: usize, T> ArrayQueue<N, T> {
     pub fn new() -> Self {
         Self {
-            queue: [None, None, None, None],
+            queue: std::array::from_fn(|_| None),
             end: 0,
             length: 0,
         }
@@ -102,18 +92,18 @@ impl<T> Queue4<T> {
 
     pub fn push_back(&mut self, item: T) {
         self.length += 1;
-        if self.length > 4 {
+        if self.length > N {
             unreachable!();
         }
         self.queue[self.end] = Some(item);
-        self.end = (self.end + 1) % 4;
+        self.end = (self.end + 1) % N;
     }
 
     pub fn pop_front(&mut self) -> Option<T> {
         if self.length == 0 {
             return None;
         }
-        let item = self.queue[(self.end + 4 - self.length) % 4].take();
+        let item = self.queue[(self.end + N - self.length) % N].take();
         self.length -= 1;
         Some(item.unwrap())
     }

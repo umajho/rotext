@@ -11,7 +11,7 @@ use root_parser::ExitingDiscontinuedItemLikesState;
 
 use crate::{events::BlockEvent, global};
 use global_mapper::GlobalEventStreamMapper;
-use utils::Peekable3;
+use utils::Peekable;
 
 pub struct Parser<'a> {
     context: Context<'a>,
@@ -66,7 +66,7 @@ impl<'a> Parser<'a> {
     pub fn new(input: &'a [u8], global_stream: global::Parser<'a>) -> Parser<'a> {
         let context = Context {
             input,
-            mapper: Peekable3::new(GlobalEventStreamMapper::new(input, global_stream)),
+            mapper: Peekable::new(GlobalEventStreamMapper::new(input, global_stream)),
             cursor: utils::InputCursor::new(),
         };
 

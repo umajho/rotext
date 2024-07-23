@@ -125,7 +125,7 @@ impl Parser {
 
     #[inline(always)]
     fn process_in_initial_state(&mut self, ctx: &mut Context) -> InternalResult {
-        let Some(peeked) = ctx.mapper.peek_1() else {
+        let Some(peeked) = ctx.mapper.peek(0) else {
             return InternalResult::Done;
         };
         let peeked = peeked.clone();
@@ -176,7 +176,7 @@ impl Parser {
         ctx: &mut Context,
         state_content: &mut Range,
     ) -> InternalResult {
-        let Some(peeked) = ctx.mapper.peek_1() else {
+        let Some(peeked) = ctx.mapper.peek(0) else {
             return InternalResult::ToYield(self.make_content_event(*state_content));
         };
         let peeked = peeked.clone();
@@ -217,7 +217,7 @@ impl Parser {
             _ = ctx.scan_blank_text();
         }
 
-        let Some(peeked) = ctx.mapper.peek_1() else {
+        let Some(peeked) = ctx.mapper.peek(0) else {
             return InternalResult::Done;
         };
 
@@ -305,7 +305,7 @@ fn process_potential_closing_part_at_line_end_and_with_space_before(
     // XXX: 被 drop 的那些不会重新尝试解析，而是直接当成文本。
     potential_closing_part_length += dropped;
     if 1 + dropped == condition.minimal_count {
-        let peeked = ctx.mapper.peek_1();
+        let peeked = ctx.mapper.peek(0);
         if peeked.is_some_and(|p| !p.is_line_feed()) {
             confirmed_content.increase_length(potential_closing_part_length);
             return InternalResult::ToContinueIn(StepState::Normal(confirmed_content));
