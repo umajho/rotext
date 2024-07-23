@@ -14,6 +14,8 @@ type EventCase<'a> = (EventType, Option<&'a str>, Option<HashSet<&'a str>>);
 #[case("", vec![])]
 #[case("Hello, world!", vec![
     (EventType::Unparsed, Some("Hello, world!"), None)])]
+#[case("<", vec![
+    (EventType::Unparsed, Some("<"), None)])]
 // ### CR
 #[case("\r", vec![
     (EventType::CarriageReturn, None, None)])]
@@ -24,6 +26,10 @@ type EventCase<'a> = (EventType, Option<&'a str>, Option<HashSet<&'a str>>);
 // ## 逐字文本转义
 #[case("<` … `>", vec![
     (EventType::VerbatimEscaping, Some(" … "), None)])]
+#[case("<`` … `>", vec![
+    (EventType::VerbatimEscaping, Some(" … `>"), Some(HashSet::from(["F"])))])]
+#[case("<` … ``>", vec![
+    (EventType::VerbatimEscaping, Some(" … `"), None)])]
 #[case("<`` `> ``>", vec![
     (EventType::VerbatimEscaping, Some(" `> "), None)])]
 #[case("<` line 1\nline 2 `>", vec![

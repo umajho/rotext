@@ -707,6 +707,19 @@ type EventCase<'a> = (EventType, Option<&'a str>);
     (EventType::Exit, None)])]
 #[case(vec![
     indoc!{"
+        ``
+        code
+        ```"},
+], vec![
+    (EventType::EnterParagraph, None),
+        (EventType::Unparsed, Some("``")),
+        (EventType::LineBreak, None),
+        (EventType::Unparsed, Some("code")),
+        (EventType::LineBreak, None),
+        (EventType::Unparsed, Some("```")),
+    (EventType::Exit, None)])]
+#[case(vec![
+    indoc!{"
         ```
         ␠␠code␠␠
         ```"},
