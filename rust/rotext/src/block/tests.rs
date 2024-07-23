@@ -831,6 +831,133 @@ type EventCase<'a> = (EventType, Option<&'a str>);
             (EventType::Exit, None),
         (EventType::Exit, None),
     (EventType::Exit, None)])]
+// ## 描述列表
+#[case(vec!["; term"], vec![
+    (EventType::EnterDescriptionList, None),
+        (EventType::EnterDescriptionTerm, None),
+            (EventType::EnterParagraph, None),
+                (EventType::Unparsed, Some("term")),
+            (EventType::Exit, None),
+        (EventType::Exit, None),
+    (EventType::Exit, None)])]
+#[case(vec![": details"], vec![
+    (EventType::EnterDescriptionList, None),
+        (EventType::EnterDescriptionDetails, None),
+            (EventType::EnterParagraph, None),
+                (EventType::Unparsed, Some("details")),
+            (EventType::Exit, None),
+        (EventType::Exit, None),
+    (EventType::Exit, None)])]
+#[case(vec![
+    indoc!{"
+        ; term
+        : details"},
+], vec![
+    (EventType::EnterDescriptionList, None),
+        (EventType::EnterDescriptionTerm, None),
+            (EventType::EnterParagraph, None),
+                (EventType::Unparsed, Some("term")),
+            (EventType::Exit, None),
+        (EventType::Exit, None),
+        (EventType::EnterDescriptionDetails, None),
+            (EventType::EnterParagraph, None),
+                (EventType::Unparsed, Some("details")),
+            (EventType::Exit, None),
+        (EventType::Exit, None),
+    (EventType::Exit, None)])]
+#[case(vec![
+    indoc!{"
+        ; term 1
+        : details 1
+        ; term 2
+        : details 2.1
+        : details 2.2"},
+    ], vec![
+    (EventType::EnterDescriptionList, None),
+        (EventType::EnterDescriptionTerm, None),
+            (EventType::EnterParagraph, None),
+                (EventType::Unparsed, Some("term 1")),
+            (EventType::Exit, None),
+        (EventType::Exit, None),
+        (EventType::EnterDescriptionDetails, None),
+            (EventType::EnterParagraph, None),
+                (EventType::Unparsed, Some("details 1")),
+            (EventType::Exit, None),
+        (EventType::Exit, None),
+        (EventType::EnterDescriptionTerm, None),
+            (EventType::EnterParagraph, None),
+                (EventType::Unparsed, Some("term 2")),
+            (EventType::Exit, None),
+        (EventType::Exit, None),
+        (EventType::EnterDescriptionDetails, None),
+            (EventType::EnterParagraph, None),
+                (EventType::Unparsed, Some("details 2.1")),
+            (EventType::Exit, None),
+        (EventType::Exit, None),
+        (EventType::EnterDescriptionDetails, None),
+            (EventType::EnterParagraph, None),
+                (EventType::Unparsed, Some("details 2.2")),
+            (EventType::Exit, None),
+        (EventType::Exit, None),
+    (EventType::Exit, None)])]
+#[case(vec![
+    indoc!{"
+        ; ; term 1
+        > : details 1
+        : ; term 2"},
+    ], vec![
+    (EventType::EnterDescriptionList, None),
+        (EventType::EnterDescriptionTerm, None),
+
+            (EventType::EnterDescriptionList, None),
+                (EventType::EnterDescriptionTerm, None),
+                    (EventType::EnterParagraph, None),
+                        (EventType::Unparsed, Some("term 1")),
+                    (EventType::Exit, None),
+                (EventType::Exit, None),
+                (EventType::EnterDescriptionDetails, None),
+                    (EventType::EnterParagraph, None),
+                        (EventType::Unparsed, Some("details 1")),
+                    (EventType::Exit, None),
+                (EventType::Exit, None),
+            (EventType::Exit, None),
+        (EventType::Exit, None),
+        (EventType::EnterDescriptionDetails, None),
+            (EventType::EnterDescriptionList, None),
+                (EventType::EnterDescriptionTerm, None),
+                    (EventType::EnterParagraph, None),
+                        (EventType::Unparsed, Some("term 2")),
+                    (EventType::Exit, None),
+                (EventType::Exit, None),
+            (EventType::Exit, None),
+        (EventType::Exit, None),
+    (EventType::Exit, None)])]
+#[case(vec![
+    indoc!{"
+        ; # a
+        > > b
+        : > foo"},
+    ], vec![
+    (EventType::EnterDescriptionList, None),
+        (EventType::EnterDescriptionTerm, None),
+            (EventType::EnterOrderedList, None),
+                (EventType::EnterListItem, None),
+                    (EventType::EnterParagraph, None),
+                        (EventType::Unparsed, Some("a")),
+                        (EventType::LineBreak,None),
+                        (EventType::Unparsed, Some("b")),
+                    (EventType::Exit, None),
+                (EventType::Exit, None),
+            (EventType::Exit, None),
+        (EventType::Exit, None),
+        (EventType::EnterDescriptionDetails, None),
+            (EventType::EnterBlockQuote, None),
+                (EventType::EnterParagraph, None),
+                    (EventType::Unparsed, Some("foo")),
+                (EventType::Exit, None),
+            (EventType::Exit, None),
+        (EventType::Exit, None),
+    (EventType::Exit, None)])]
 // ## 代码块
 #[case(vec![
     indoc!{"
