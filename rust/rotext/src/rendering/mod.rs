@@ -34,49 +34,21 @@ pub fn render_to_html<I: Iterator<Item = BlendEvent>>(
                 result.push('>');
             }
             BlendEvent::Separator => unreachable!(),
-            BlendEvent::EnterParagraph => {
-                push_simple(&mut result, &mut stack, "p");
-            }
+            BlendEvent::EnterParagraph => push_simple(&mut result, &mut stack, "p"),
             BlendEvent::ThematicBreak => result.push_str("<hr>"),
-            BlendEvent::EnterHeading1 => {
-                push_simple(&mut result, &mut stack, "h1");
-            }
-            BlendEvent::EnterHeading2 => {
-                push_simple(&mut result, &mut stack, "h2");
-            }
-            BlendEvent::EnterHeading3 => {
-                push_simple(&mut result, &mut stack, "h3");
-            }
-            BlendEvent::EnterHeading4 => {
-                push_simple(&mut result, &mut stack, "h4");
-            }
-            BlendEvent::EnterHeading5 => {
-                push_simple(&mut result, &mut stack, "h5");
-            }
-            BlendEvent::EnterHeading6 => {
-                push_simple(&mut result, &mut stack, "h6");
-            }
-            BlendEvent::EnterBlockQuote => {
-                push_simple(&mut result, &mut stack, "blockquote");
-            }
-            BlendEvent::EnterOrderedList => {
-                push_simple(&mut result, &mut stack, "ol");
-            }
-            BlendEvent::EnterUnorderedList => {
-                push_simple(&mut result, &mut stack, "ul");
-            }
-            BlendEvent::EnterListItem => {
-                push_simple(&mut result, &mut stack, "li");
-            }
-            BlendEvent::EnterDescriptionList => {
-                push_simple(&mut result, &mut stack, "dl");
-            }
-            BlendEvent::EnterDescriptionTerm => {
-                push_simple(&mut result, &mut stack, "dt");
-            }
-            BlendEvent::EnterDescriptionDetails => {
-                push_simple(&mut result, &mut stack, "dd");
-            }
+            BlendEvent::EnterHeading1 => push_simple(&mut result, &mut stack, "h1"),
+            BlendEvent::EnterHeading2 => push_simple(&mut result, &mut stack, "h2"),
+            BlendEvent::EnterHeading3 => push_simple(&mut result, &mut stack, "h3"),
+            BlendEvent::EnterHeading4 => push_simple(&mut result, &mut stack, "h4"),
+            BlendEvent::EnterHeading5 => push_simple(&mut result, &mut stack, "h5"),
+            BlendEvent::EnterHeading6 => push_simple(&mut result, &mut stack, "h6"),
+            BlendEvent::EnterBlockQuote => push_simple(&mut result, &mut stack, "blockquote"),
+            BlendEvent::EnterOrderedList => push_simple(&mut result, &mut stack, "ol"),
+            BlendEvent::EnterUnorderedList => push_simple(&mut result, &mut stack, "ul"),
+            BlendEvent::EnterListItem => push_simple(&mut result, &mut stack, "li"),
+            BlendEvent::EnterDescriptionList => push_simple(&mut result, &mut stack, "dl"),
+            BlendEvent::EnterDescriptionTerm => push_simple(&mut result, &mut stack, "dt"),
+            BlendEvent::EnterDescriptionDetails => push_simple(&mut result, &mut stack, "dd"),
             BlendEvent::EnterCodeBlock => {
                 stack.push("</x-code-block>");
                 result.push_str("<x-code-block info-string=\"");
