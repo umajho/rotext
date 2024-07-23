@@ -345,29 +345,18 @@ impl<'a> Parser<'a> {
 #[inline(always)]
 fn scan_item_like(ctx: &mut Context) -> Option<ItemLikeType> {
     match ctx.peek_next_three_chars() {
-        [Some(b'>'), ref second_char, ..] => {
-            if check_is_indeed_item_like(ctx, second_char) {
-                Some(ItemLikeType::BlockQuoteLine)
-            } else {
-                None
-            }
+        [Some(b'>'), ref second_char, ..] if check_is_indeed_item_like(ctx, second_char) => {
+            return Some(ItemLikeType::BlockQuoteLine);
         }
-        [Some(b'#'), ref second_char, ..] => {
-            if check_is_indeed_item_like(ctx, second_char) {
-                Some(ItemLikeType::OrderedListItem)
-            } else {
-                None
-            }
+        [Some(b'#'), ref second_char, ..] if check_is_indeed_item_like(ctx, second_char) => {
+            return Some(ItemLikeType::OrderedListItem);
         }
-        [Some(b'*'), ref second_char, ..] => {
-            if check_is_indeed_item_like(ctx, second_char) {
-                Some(ItemLikeType::UnorderedListItem)
-            } else {
-                None
-            }
+        [Some(b'*'), ref second_char, ..] if check_is_indeed_item_like(ctx, second_char) => {
+            return Some(ItemLikeType::UnorderedListItem);
         }
-        _ => None,
-    }
+        _ => {}
+    };
+    None
 }
 
 fn check_is_indeed_item_like(ctx: &mut Context, second_char: &Option<u8>) -> bool {
