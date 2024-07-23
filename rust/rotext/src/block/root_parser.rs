@@ -161,24 +161,23 @@ impl<'a> Parser<'a> {
 
         _ = ctx.scan_blank_text();
         if self.is_new_line {
-            let Some(item_like_type) = scan_item_like(ctx) else {
-                if is_expecting_deeper {
-                    return InternalResult::ToContinue(State::ExpectingLeaf);
-                } else {
-                    return InternalResult::ToContinue(State::ExitingDiscontinuedItemLikes(
-                        ExitingDiscontinuedItemLikesState {
-                            should_keep_container: false,
-                            and_then_enter_item_like: None,
-                        },
-                    ));
+            match scan_paragraph_or_item_like(ctx) {
+                ScanParagraphOrItemLikeResult::None => {
+                    if is_expecting_deeper {
+                        return InternalResult::ToContinue(State::ExpectingLeaf);
+                    } else {
+                        return InternalResult::ToContinue(State::ExitingDiscontinuedItemLikes(
+                            ExitingDiscontinuedItemLikesState {
+                                should_keep_container: false,
+                                and_then_enter_item_like: None,
+                            },
+                        ));
+                    }
                 }
-            };
-
-            match item_like_type {
-                ItemLikeType::BlockQuoteLine => {
+                ScanParagraphOrItemLikeResult::BlockQuoteLine => {
                     nesting.processed_item_likes += 1;
                     if is_expecting_deeper {
-                        stack.push(item_like_type.into());
+                        stack.push(StackEntry::BlockQuote);
                         nesting.item_likes_in_stack += 1;
                         self.to_yield.push_back(BlockEvent::EnterBlockQuote);
                         return InternalResult::ToContinue(State::ExpectingContainer);
@@ -186,16 +185,15 @@ impl<'a> Parser<'a> {
                         return InternalResult::ToContinue(State::ExpectingContainer);
                     }
                 }
-                ItemLikeType::OrderedListItem
-                | ItemLikeType::UnorderedListItem
-                | ItemLikeType::DescriptionTerm
-                | ItemLikeType::DescriptionDetails => {
+                ScanParagraphOrItemLikeResult::ItemLike(item_like_type) => {
                     if is_expecting_deeper {
                         self.enter_item_like(stack, nesting, item_like_type, true);
                         return InternalResult::ToContinue(State::ExpectingContainer);
                     } else {
-                        let last_item_like_type =
-                            self.get_nth_item_like_in_stack(stack, nesting.processed_item_likes);
+                        let last_item_like_type = self.get_nth_item_like_or_paragraph_in_stack(
+                            stack,
+                            nesting.processed_item_likes,
+                        );
                         return InternalResult::ToContinue(State::ExitingDiscontinuedItemLikes(
                             ExitingDiscontinuedItemLikesState {
                                 should_keep_container: are_item_likes_in_same_group(
@@ -266,13 +264,12 @@ impl<'a> Parser<'a> {
             return InternalResult::ToSwitchToSubParser(sub_parser);
         }
 
-        if let StackEntry::ItemLike(item_like_type_to_exit) = stack.pop().unwrap() {
+        let top = stack.pop().unwrap();
+        if matches!(top, StackEntry::ItemLike(_) | StackEntry::BlockQuote) {
             nesting.item_likes_in_stack -= 1;
             if nesting.processed_item_likes == nesting.item_likes_in_stack {
                 self.to_yield.push_back(BlockEvent::Exit);
-                let should_exit_container =
-                    item_like_type_to_exit.has_container() && !state.should_keep_container;
-                if should_exit_container {
+                if matches!(top, StackEntry::ItemLike(_)) && !state.should_keep_container {
                     stack.pop().unwrap();
                     self.to_yield.push_back(BlockEvent::Exit);
                 }
@@ -292,7 +289,13 @@ impl<'a> Parser<'a> {
     }
 
     /// `n` 基于 0。
-    fn get_nth_item_like_in_stack(&mut self, stack: &[StackEntry], n: usize) -> ItemLikeType {
+    ///
+    /// 返回 [None] 代表对应位置的是段落而非 item-like。
+    fn get_nth_item_like_or_paragraph_in_stack(
+        &mut self,
+        stack: &[StackEntry],
+        n: usize,
+    ) -> Option<ItemLikeType> {
         let memo = self
             .get_nth_item_like_in_stack_memo
             .take()
@@ -301,16 +304,21 @@ impl<'a> Parser<'a> {
         let mut n_countdown = n - memo.last_n;
 
         for (delta_index, entry) in stack.iter().skip(memo.last_index).enumerate() {
-            if let StackEntry::ItemLike(item_like_type) = entry {
-                if n_countdown == 0 {
-                    self.get_nth_item_like_in_stack_memo = Some(GetNthItemLikeInStackMemo {
-                        last_n: n,
-                        last_index: memo.last_index + delta_index,
-                    });
-                    return *item_like_type;
-                }
-                n_countdown -= 1;
+            let mut item_like_type: Option<ItemLikeType> = None;
+            if let StackEntry::ItemLike(item_like_type_) = entry {
+                item_like_type = Some(*item_like_type_);
+            } else if !matches!(entry, StackEntry::BlockQuote) {
+                continue;
             }
+
+            if n_countdown == 0 {
+                self.get_nth_item_like_in_stack_memo = Some(GetNthItemLikeInStackMemo {
+                    last_n: n,
+                    last_index: memo.last_index + delta_index,
+                });
+                return item_like_type;
+            }
+            n_countdown -= 1;
         }
         unreachable!()
     }
@@ -341,7 +349,6 @@ impl<'a> Parser<'a> {
 
         if should_enter_container {
             self.to_yield.push_back(match item_like_type {
-                ItemLikeType::BlockQuoteLine => unreachable!(),
                 ItemLikeType::OrderedListItem => BlockEvent::EnterOrderedList,
                 ItemLikeType::UnorderedListItem => BlockEvent::EnterUnorderedList,
                 ItemLikeType::DescriptionTerm | ItemLikeType::DescriptionDetails => {
@@ -350,7 +357,6 @@ impl<'a> Parser<'a> {
             });
         }
         self.to_yield.push_back(match item_like_type {
-            ItemLikeType::BlockQuoteLine => unreachable!(),
             ItemLikeType::OrderedListItem | ItemLikeType::UnorderedListItem => {
                 BlockEvent::EnterListItem
             }
@@ -360,27 +366,32 @@ impl<'a> Parser<'a> {
     }
 }
 
+enum ScanParagraphOrItemLikeResult {
+    BlockQuoteLine,
+    ItemLike(ItemLikeType),
+    None,
+}
 #[inline(always)]
-fn scan_item_like(ctx: &mut Context) -> Option<ItemLikeType> {
+fn scan_paragraph_or_item_like(ctx: &mut Context) -> ScanParagraphOrItemLikeResult {
     match ctx.peek_next_three_chars() {
         [Some(b'>'), ref second_char, ..] if check_is_indeed_item_like(ctx, second_char) => {
-            return Some(ItemLikeType::BlockQuoteLine);
+            return ScanParagraphOrItemLikeResult::BlockQuoteLine;
         }
         [Some(b'#'), ref second_char, ..] if check_is_indeed_item_like(ctx, second_char) => {
-            return Some(ItemLikeType::OrderedListItem);
+            return ScanParagraphOrItemLikeResult::ItemLike(ItemLikeType::OrderedListItem);
         }
         [Some(b'*'), ref second_char, ..] if check_is_indeed_item_like(ctx, second_char) => {
-            return Some(ItemLikeType::UnorderedListItem);
+            return ScanParagraphOrItemLikeResult::ItemLike(ItemLikeType::UnorderedListItem);
         }
         [Some(b';'), ref second_char, ..] if check_is_indeed_item_like(ctx, second_char) => {
-            return Some(ItemLikeType::DescriptionTerm);
+            return ScanParagraphOrItemLikeResult::ItemLike(ItemLikeType::DescriptionTerm);
         }
         [Some(b':'), ref second_char, ..] if check_is_indeed_item_like(ctx, second_char) => {
-            return Some(ItemLikeType::DescriptionDetails);
+            return ScanParagraphOrItemLikeResult::ItemLike(ItemLikeType::DescriptionDetails);
         }
         _ => {}
     };
-    None
+    ScanParagraphOrItemLikeResult::None
 }
 
 fn check_is_indeed_item_like(ctx: &mut Context, second_char: &Option<u8>) -> bool {
@@ -441,11 +452,12 @@ fn scan_leaf(ctx: &mut Context) -> LeafType {
     }
 }
 
-/// XXX: 期待 `left` 不为 [ItemLikeType::BlockQuoteLine]。
 #[inline(always)]
-fn are_item_likes_in_same_group(left: ItemLikeType, right: ItemLikeType) -> bool {
+fn are_item_likes_in_same_group(left: ItemLikeType, right: Option<ItemLikeType>) -> bool {
+    let Some(right) = right else {
+        return false;
+    };
     match left {
-        ItemLikeType::BlockQuoteLine => unreachable!(),
         ItemLikeType::OrderedListItem | ItemLikeType::UnorderedListItem => left == right,
         ItemLikeType::DescriptionTerm | ItemLikeType::DescriptionDetails => matches!(
             right,

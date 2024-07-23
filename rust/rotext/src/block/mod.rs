@@ -44,6 +44,7 @@ pub struct Nesting {
 }
 
 enum StackEntry {
+    BlockQuote,
     ItemLike(ItemLikeType),
     Container,
 }
@@ -55,30 +56,10 @@ impl From<ItemLikeType> for StackEntry {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ItemLikeType {
-    BlockQuoteLine,
     OrderedListItem,
     UnorderedListItem,
     DescriptionTerm,
     DescriptionDetails,
-}
-impl From<u8> for ItemLikeType {
-    fn from(value: u8) -> Self {
-        match value {
-            b'>' => ItemLikeType::BlockQuoteLine,
-            _ => unreachable!(),
-        }
-    }
-}
-impl ItemLikeType {
-    fn has_container(&self) -> bool {
-        match self {
-            ItemLikeType::BlockQuoteLine => false,
-            ItemLikeType::OrderedListItem
-            | ItemLikeType::UnorderedListItem
-            | ItemLikeType::DescriptionTerm
-            | ItemLikeType::DescriptionDetails => true,
-        }
-    }
 }
 
 impl<'a> Parser<'a> {
