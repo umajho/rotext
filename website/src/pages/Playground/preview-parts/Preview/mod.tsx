@@ -10,20 +10,6 @@ import {
 } from "solid-js";
 
 import {
-  attributesModule,
-  Classes,
-  classModule,
-  h,
-  init,
-  Module,
-  styleModule,
-  VNode,
-} from "snabbdom";
-
-import { parse } from "@rotext/parsing";
-import { toSnabbdomChildren } from "@rotext/to-html";
-
-import {
   ErrorAlert,
   registerRoWidgetOwner,
 } from "@rotext/solid-components/internal";
@@ -32,7 +18,6 @@ import { debounceEventHandler } from "../../../../utils/mod";
 import {
   PROSE_CLASS,
   registerCustomElementsOnce,
-  TAG_NAME_MAP,
   WIDGET_OWNER_CLASS,
 } from "../../../../utils/custom-elements-registration/mod";
 
@@ -41,10 +26,13 @@ import {
   EditorStore,
   TopLine,
 } from "../../../../hooks/editor-store";
+import { createAutoResetCounter } from "../../../../hooks/auto-reset-counter";
+
+import { RotextProcessor } from "../../../../processors/mod";
+import { OldRotextProcessor } from "../../../../processors/old";
 
 import { LookupList, LookupListRaw } from "./internal-types";
 import * as ScrollUtils from "./scroll-utils";
-import { createAutoResetCounter } from "../../../../hooks/auto-reset-counter";
 
 registerCustomElementsOnce();
 
@@ -62,6 +50,10 @@ const Preview: Component<
   let widgetAnchorEl!: HTMLDivElement;
   let outputContainerEl!: HTMLDivElement;
 
+  const [rotextProcessor, setRotextProcessor] = createSignal<
+    RotextProcessor | null
+  >(null);
+
   const [err, setErr] = createSignal<Error | null>(null);
 
   const [scrollHandler, setScrollHandler] = createSignal<(ev: Event) => void>();
@@ -74,15 +66,38 @@ const Preview: Component<
       outputContainer: outputContainerEl,
     });
 
-    //==== 文档渲染 ====
-    setUpRendering({
-      text: () => props.store.text,
-      setLookupListRaw,
-      setParsingTimeText: (v) => props.setParsingTimeText(v),
-      setErr,
-    }, {
-      outputContainer: outputContainerEl,
-    });
+    { //==== 文档渲染 ====
+      createEffect(
+        on(
+          [rotextProcessor, () => props.store.text],
+          ([processor, text], old) => {
+            if (old && processor !== old[0]) {
+              outputContainerEl.innerText = "";
+              setErr(null);
+              setLookupListRaw([]);
+              props.setParsingTimeText("");
+            }
+            if (!processor) return;
+
+            const result = processor.parseAndRender(text);
+            setErr(result.error);
+            setLookupListRaw(result.lookupListRaw);
+
+            if (result.parsingTimeMs) {
+              props.setParsingTimeText(`${result.parsingTimeMs.toFixed(3)}ms`);
+            } else {
+              props.setParsingTimeText("");
+            }
+          },
+        ),
+      );
+      setRotextProcessor(
+        new OldRotextProcessor({
+          outputContainerEl,
+          contentRootClass: CONTENT_ROOT_CLASS,
+        }),
+      );
+    }
 
     //==== 滚动同步 ====
     const { handleScroll } = createScrollSyncing({
@@ -161,7 +176,7 @@ export default Preview;
 function createLookupList(
   els: { scrollContainer: HTMLElement; outputContainer: HTMLElement },
 ) {
-  const [lookupListRaw, setLookupListRaw] = createSignal<LookupList>([]);
+  const [lookupListRaw, setLookupListRaw] = createSignal<LookupListRaw>([]);
   const [lookupList, setLookupList] = createSignal<LookupList>([]);
   function roastLookupList() {
     const _raw = lookupListRaw();
@@ -176,102 +191,6 @@ function createLookupList(
   });
 
   return [lookupList, setLookupListRaw] as const;
-}
-
-/**
- * 用于处理文档渲染。
- */
-function setUpRendering(
-  props: {
-    text: () => string;
-    setLookupListRaw: (v: LookupListRaw) => void;
-    setParsingTimeText(v: string | null): void;
-    setErr: (v: Error | null) => void;
-  },
-  els: {
-    outputContainer: HTMLElement;
-  },
-) {
-  let patch: ReturnType<typeof init>;
-  let lastNode: HTMLElement | VNode;
-
-  const {
-    module: locationModule,
-  } = createLocationModule(props.setLookupListRaw);
-
-  onMount(() => {
-    const outputEl = document.createElement("div");
-    els.outputContainer.appendChild(outputEl);
-
-    patch = init(
-      [classModule, styleModule, attributesModule, locationModule],
-      undefined,
-      { experimental: { fragments: true } },
-    );
-    lastNode = outputEl;
-  });
-
-  createEffect(on([props.text], () => {
-    props.setErr(null);
-    try {
-      const parsingStart = performance.now();
-      console.time("rotext JS");
-      const doc = parse(props.text(), {
-        softBreakAs: "br",
-        recordsLocation: true,
-      });
-      console.timeLog("rotext JS", "parsed by peggy");
-      const vChildren = toSnabbdomChildren(doc, {
-        customElementTagNameMap: TAG_NAME_MAP,
-      });
-      console.timeLog("rotext JS", "transformed to Snabbdom VDOM");
-      console.timeEnd("rotext JS");
-      props.setParsingTimeText(
-        `${+(performance.now() - parsingStart).toFixed(3)}ms`,
-      );
-
-      const classMap: Classes = { "relative": true };
-      classMap[CONTENT_ROOT_CLASS] = true;
-      const vNode = h("article", { class: classMap }, vChildren);
-
-      patch(lastNode, vNode);
-      lastNode = vNode;
-    } catch (e) {
-      if (!(e instanceof Error)) {
-        e = new Error(`${e}`);
-      }
-      props.setErr(e as Error);
-    }
-  }));
-}
-
-function createLocationModule(
-  setLookupListRaw: (view: LookupListRaw) => void,
-): { module: Module } {
-  let lookupListRaw!: LookupListRaw;
-
-  const module = {
-    pre: () => {
-      lookupListRaw = [];
-    },
-    create: (_oldVNode: VNode, vnode: VNode) => {
-      if (vnode.data?.location) {
-        const el = vnode.elm as HTMLElement;
-        lookupListRaw.push({
-          element: el,
-          location: vnode.data.location,
-        });
-      }
-    },
-    update: (oldVNode: VNode, vnode: VNode) => {
-      module.create(oldVNode, vnode);
-    },
-    post: () => {
-      setLookupListRaw(lookupListRaw);
-    },
-  };
-
-  return { module };
 }
 
 /**
