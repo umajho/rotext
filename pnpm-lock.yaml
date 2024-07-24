@@ -241,6 +241,9 @@ importers:
       codemirror:
         specifier: ^6.0.1
         version: 6.0.1(@lezer/common@1.2.1)
+      idiomorph:
+        specifier: ^0.3.0
+        version: 0.3.0
       pretty:
         specifier: ^2.0.0
         version: 2.0.0
@@ -3184,6 +3187,10 @@ packages:
     dependencies:
       postcss: 8.4.31
     dev: true
+
+  /idiomorph@0.3.0:
+    resolution: {integrity: sha512-UhV1Ey5xCxIwR9B+OgIjQa+1Jx99XQ1vQHUsKBU1RpQzCx1u+b+N6SOXgf5mEJDqemUI/ffccu6+71l2mJUsRA==}
+    dev: false
 
   /ignore@5.2.4:
     resolution: {integrity: sha512-MAb38BcSbH0eHNBxn7ql2NH/kX33OkB3lZ1BNdh7ENeRChHTYsTvWrMubiIAMNS2llXEEgZ1MUOBtXChP3kaFQ==}

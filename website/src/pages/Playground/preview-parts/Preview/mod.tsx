@@ -30,6 +30,7 @@ import { createAutoResetCounter } from "../../../../hooks/auto-reset-counter";
 
 import { RotextProcessor } from "../../../../processors/mod";
 import { OldRotextProcessor } from "../../../../processors/old";
+import { RustRotextProcessor } from "../../../../processors/rust";
 
 import { LookupList, LookupListRaw } from "./internal-types";
 import * as ScrollUtils from "./scroll-utils";
@@ -96,6 +97,10 @@ const Preview: Component<
           outputContainerEl,
           contentRootClass: CONTENT_ROOT_CLASS,
         }),
+        // new RustRotextProcessor({
+        //   outputContainerEl,
+        //   contentRootClass: CONTENT_ROOT_CLASS,
+        // }),
       );
     }
 

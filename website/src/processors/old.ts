@@ -77,6 +77,7 @@ export class OldRotextProcessor implements RotextProcessor {
         parsingTimeMs,
       };
     } catch (e) {
+      console.timeEnd("rotext JS");
       if (!(e instanceof Error)) {
         e = new Error(`${e}`);
       }
