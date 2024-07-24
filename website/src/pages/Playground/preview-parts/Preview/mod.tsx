@@ -248,16 +248,16 @@ function setUpRendering(
 function createLocationModule(
   setLookupListRaw: (view: LookupListRaw) => void,
 ): { module: Module } {
-  let loookupListRaw!: LookupListRaw;
+  let lookupListRaw!: LookupListRaw;
 
   const module = {
     pre: () => {
-      loookupListRaw = [];
+      lookupListRaw = [];
     },
     create: (_oldVNode: VNode, vnode: VNode) => {
       if (vnode.data?.location) {
         const el = vnode.elm as HTMLElement;
-        loookupListRaw.push({
+        lookupListRaw.push({
           element: el,
           location: vnode.data.location,
         });
@@ -267,7 +267,7 @@ function createLocationModule(
       module.create(oldVNode, vnode);
     },
     post: () => {
-      setLookupListRaw(loookupListRaw);
+      setLookupListRaw(lookupListRaw);
     },
   };
 
