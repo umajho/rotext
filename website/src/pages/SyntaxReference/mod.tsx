@@ -42,7 +42,7 @@ registerCustomElementForRotextPreview("x-rotext-example", { getFixtures });
 
 export default (() => {
   if (contentContainerEl) {
-    throw new Error("");
+    throw new Error("unreachable");
   }
   onCleanup(() => {
     // @ts-ignore
