@@ -5,9 +5,11 @@ import {
   JSX,
   on,
   onMount,
-  Setter,
   Show,
 } from "solid-js";
+
+// @ts-ignore
+import { Idiomorph } from "idiomorph/dist/idiomorph.esm.js";
 
 import {
   ErrorAlert,
@@ -27,9 +29,7 @@ import {
   TopLine,
 } from "../../../../hooks/editor-store";
 import { createAutoResetCounter } from "../../../../hooks/auto-reset-counter";
-
-import { RotextProcessor } from "../../../../processors/mod";
-import { OldRotextProcessor } from "../../../../processors/old";
+import { RotextProcessResult } from "../../../../processors/mod";
 
 import { LookupList, LookupListRaw } from "./internal-types";
 import * as ScrollUtils from "./scroll-utils";
@@ -41,20 +41,15 @@ const CONTENT_ROOT_CLASS = "previewer-content-root";
 const Preview: Component<
   {
     store: EditorStore;
+    processResult: RotextProcessResult;
+
     class?: string;
-    setParsingTimeText: Setter<string | null>;
-    onThrowInParsing: (thrown: unknown) => void;
   }
 > = (props) => {
   let scrollContainerEl!: HTMLDivElement;
   let widgetAnchorEl!: HTMLDivElement;
   let outputContainerEl!: HTMLDivElement;
-
-  const [rotextProcessor, setRotextProcessor] = createSignal<
-    RotextProcessor | null
-  >(null);
-
-  const [err, setErr] = createSignal<Error | null>(null);
+  let outputEl!: HTMLElement;
 
   const [scrollHandler, setScrollHandler] = createSignal<(ev: Event) => void>();
 
@@ -67,45 +62,34 @@ const Preview: Component<
     });
 
     { //==== 文档渲染 ====
-      createEffect(
-        on(
-          [rotextProcessor, () => props.store.text],
-          ([processor, text], old) => {
-            if (old && processor !== old[0]) {
-              outputContainerEl.innerText = "";
-              setErr(null);
-              setLookupListRaw([]);
-              props.setParsingTimeText("");
-            }
-            if (!processor) return;
+      createEffect(on([() => props.processResult.html], ([html]) => {
+        if (!html) {
+          outputEl.innerText = "";
+          setLookupListRaw([]);
+          return;
+        }
 
-            const result = processor.parseAndRender(text);
-            setErr(result.error);
-            setLookupListRaw(result.lookupListRaw);
+        Idiomorph.morph(outputEl, html, { morphStyle: "innerHTML" });
 
-            if (result.parsingTimeMs) {
-              props.setParsingTimeText(`${result.parsingTimeMs.toFixed(3)}ms`);
-            } else {
-              props.setParsingTimeText("");
-            }
-          },
-        ),
-      );
-      setRotextProcessor(
-        new OldRotextProcessor({
-          outputContainerEl,
-          contentRootClass: CONTENT_ROOT_CLASS,
-        }),
-        // new RustRotextProcessor({
-        //   outputContainerEl,
-        //   contentRootClass: CONTENT_ROOT_CLASS,
-        // }),
-      );
+        const lookupListRaw: LookupListRaw = [];
+        for (const el_ of outputEl.querySelectorAll("[data-sourcemap]")) {
+          const el = el_ as HTMLElement;
+          const [startLnStr, endLnStr] = el.dataset["sourcemap"]!.split("-");
+          lookupListRaw.push({
+            element: el,
+            location: {
+              start: { line: Number(startLnStr) },
+              end: { line: Number(endLnStr) },
+            },
+          });
+        }
+        setLookupListRaw(lookupListRaw);
+      }));
     }
 
     //==== 滚动同步 ====
     const { handleScroll } = createScrollSyncing({
-      text: () => props.store.text,
+      inputChangeNotifier: () => props.processResult,
       topLine: () => props.store.topLine,
       setTopLine: (v) => props.store.topLine = v,
       lookupList,
@@ -153,7 +137,7 @@ const Preview: Component<
       ref={scrollContainerEl}
       onScroll={(ev) => scrollHandler()!(ev)}
     >
-      <Show when={err()}>
+      <Show when={props.processResult.error}>
         {(err) => <ErrorAlert message={err().message} stack={err().stack} />}
       </Show>
 
@@ -170,7 +154,9 @@ const Preview: Component<
           `${PROSE_CLASS} ` +
           ""}
       >
-        <div ref={outputContainerEl} />
+        <div ref={outputContainerEl}>
+          <article ref={outputEl} class={`relative ${CONTENT_ROOT_CLASS}`} />
+        </div>
       </div>
     </div>
   );
@@ -202,7 +188,7 @@ function createLookupList(
  */
 function createScrollSyncing(
   props: {
-    text: () => string;
+    inputChangeNotifier: () => void;
     topLine: () => TopLine;
     setTopLine: (v: TopLine) => void;
     lookupList: () => LookupList;
@@ -262,7 +248,10 @@ function createScrollSyncing(
     //       在使预览的高度增加而导致可以继续滚动的位置向下延伸时，预览可以同步位置。
     createEffect(on([props.topLine], () => scrollToTopLine()));
     createEffect(
-      on([props.text], () => scrollToTopLine({ triggeredBy: "text-changes" })),
+      on(
+        [props.inputChangeNotifier],
+        () => scrollToTopLine({ triggeredBy: "text-changes" }),
+      ),
     );
   }
 

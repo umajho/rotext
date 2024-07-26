@@ -1,5 +1,5 @@
 import { Document, Element, MixedSlot, RawTextSlot } from "@rotext/nodes";
-import { h, VNode, VNodeChildren } from "snabbdom";
+import { Dataset, h, VNode, VNodeChildren } from "snabbdom";
 import { LocationRange } from "peggy";
 
 type LocMap = WeakMap<any, LocationRange>;
@@ -34,7 +34,7 @@ export function elementToSnabbdom(
   },
 ): VNode {
   let children: VNodeChildren | undefined;
-  const location = getLocationData(opts.locMap, el);
+  const dataset = makeDataset(opts.locMap, el);
 
   if ("slot" in el) {
     let sel: string;
@@ -80,8 +80,8 @@ export function elementToSnabbdom(
     }
 
     children ??= slotToChildren(el.slot, opts);
-    const data = (classes || location || attrs)
-      ? { class: classes, location, attrs }
+    const data = (classes || dataset || attrs)
+      ? { class: classes, dataset, attrs }
       : null;
 
     return h(sel, data, children);
@@ -89,9 +89,9 @@ export function elementToSnabbdom(
 
   switch (el.type) {
     case "br":
-      return h("br", location ? { location } : null);
+      return h("br", { dataset });
     case "ruby":
-      return h("ruby", location ? { location } : null, [
+      return h("ruby", { dataset }, [
         h("rb", slotToChildren(el.slots.base, opts)),
         h("rp", String(el.props.p[0])),
         h("rt", slotToChildren(el.slots.text, opts)),
@@ -123,19 +123,15 @@ export function elementToSnabbdom(
       );
     }
     case "THEMATIC-BREAK":
-      return h("hr", location ? { location } : null);
+      return h("hr", { dataset });
     case "OL":
     case "UL":
       return h(
         el.type === "OL" ? "ol" : "ul",
-        location ? { location } : null,
+        { dataset },
         el.items.map((item) => {
-          const itemLocation = getLocationData(opts.locMap, item);
-          return h(
-            "li",
-            itemLocation ? { location: itemLocation } : null,
-            slotToChildren(item.slot, opts),
-          );
+          const dataset = makeDataset(opts.locMap, item);
+          return h("li", { dataset }, slotToChildren(item.slot, opts));
         }),
       );
     case "DL":
@@ -143,13 +139,9 @@ export function elementToSnabbdom(
         "dl",
         location ? { location } : null,
         el.items.map((item) => {
-          const itemLocation = getLocationData(opts.locMap, item);
+          const dataset = makeDataset(opts.locMap, item);
           const children = slotToChildren(item.slot, opts);
-          return h(
-            item.type === "DL:T" ? "dt" : "dd",
-            itemLocation ? { location: itemLocation } : null,
-            children,
-          );
+          return h(item.type === "DL:T" ? "dt" : "dd", { dataset }, children);
         }),
       );
     case "TABLE": {
@@ -163,17 +155,16 @@ export function elementToSnabbdom(
         i++;
       }
       for (const row of el.cells) {
-        const rowLocation = getLocationData(opts.locMap, row);
-
+        const dataset = makeDataset(opts.locMap, row);
         children[i] = h(
           "tr",
-          rowLocation ? { location: rowLocation } : null,
+          { dataset },
           row.map((cell) => {
-            const cellLocation = getLocationData(opts.locMap, cell);
+            const dataset = makeDataset(opts.locMap, cell);
             const children = slotToChildren(cell.slot, opts);
             return h(
               cell.type === "TABLE:H" ? "th" : "td",
-              cellLocation ? { location: cellLocation } : null,
+              { dataset },
               children,
             );
           }),
@@ -203,20 +194,22 @@ function slotToChildren(
   );
 }
 
-interface LocationData {
-  start: { line: number };
-  end: { line: number };
-}
-
-function getLocationData(
+function makeDataset(
   locMap: LocMap | undefined,
   key: any,
-): LocationData | undefined {
+): Dataset {
+  const dataSourceMap = generateDataSourceMap(locMap, key);
+  return {
+    ...(dataSourceMap ? { sourcemap: dataSourceMap } : {}),
+  };
+}
+
+function generateDataSourceMap(
+  locMap: LocMap | undefined,
+  key: any,
+): string | undefined {
   if (!locMap) return undefined;
   const location = locMap.get(key);
   if (!location) return undefined;
-  return {
-    start: { line: location.start.line },
-    end: { line: location.end.line },
-  };
+  return `${location.start.line}-${location.end.line}`;
 }

@@ -1,7 +1,6 @@
-import { createSignal, JSX, lazy, Show, Suspense } from "solid-js";
+import { createEffect, createSignal, JSX, lazy, on, Show } from "solid-js";
 
 import {
-  Alert,
   Badge,
   BadgeBar,
   Loading,
@@ -10,6 +9,8 @@ import {
 } from "../../../components/ui/mod";
 
 import { EditorStore } from "../../../hooks/editor-store";
+import { OldRotextProcessor } from "../../../processors/old";
+import { RotextProcessResult } from "../../../processors/mod";
 
 const Preview = lazy(() => import("./Preview/mod"));
 
@@ -20,14 +21,14 @@ export function createPreviewParts(
   PreviewTopBar: JSX.Element;
   Preview: JSX.Element;
 } {
-  const [parsingTimeText, setParsingTimeText] = //
-    createSignal<string | null>(null);
-  const [errParseInfo, setErrParseInfo] = //
-    createSignal<PreviewErrorInfo | null>(null);
+  const rotextProcessor = new OldRotextProcessor();
 
-  const handleThrowInParsing = (thrown: unknown) => {
-    setErrParseInfo(extractPreviewErrorInfoFromThrown(thrown, "解析期间"));
-  };
+  const [processResult, setProcessResult] = createSignal<
+    RotextProcessResult | null
+  >(null);
+  createEffect(on([() => store.text], ([text]) => {
+    setProcessResult(rotextProcessor.process(text));
+  }));
 
   return {
     PreviewTopBar: (
@@ -36,25 +37,18 @@ export function createPreviewParts(
           <Tab isActive={true}>预览</Tab>
         </Tabs>
         <BadgeBar>
-          <Show when={parsingTimeText()}>
-            <Badge>解析时间：{parsingTimeText()}</Badge>
+          <Show when={processResult()?.parsingTimeMs}>
+            <Badge>
+              解析时间：{`${processResult()!.parsingTimeMs!.toFixed(3)}ms`}
+            </Badge>
           </Show>
         </BadgeBar>
       </div>
     ),
     Preview: (
       <div class={`flex flex-col items-center ${opts.heightClass}`}>
-        <Show when={errParseInfo()}>
-          {(errParseInfo) => (
-            <Alert
-              type="error"
-              title={errParseInfo().title}
-              message={errParseInfo().message}
-              details={errParseInfo().details}
-            />
-          )}
-        </Show>
-        <Suspense
+        <Show
+          when={processResult()}
           fallback={
             <div
               class={`flex justify-center items-center h-full ${opts.widthClass}`}
@@ -63,38 +57,15 @@ export function createPreviewParts(
             </div>
           }
         >
-          <Preview
-            store={store}
-            class={`${opts.widthClass} px-4`}
-            setParsingTimeText={setParsingTimeText}
-            onThrowInParsing={handleThrowInParsing}
-          />
-        </Suspense>
+          {(processResult) => (
+            <Preview
+              store={store}
+              processResult={processResult()}
+              class={`${opts.widthClass} px-4`}
+            />
+          )}
+        </Show>
       </div>
     ),
   };
-}
-
-interface PreviewErrorInfo {
-  title: string;
-  message: string;
-  details?: string;
-}
-
-function extractPreviewErrorInfoFromThrown(
-  thrown: unknown,
-  when: string,
-): PreviewErrorInfo {
-  if (thrown instanceof Error) {
-    return {
-      title: when + "发生了错误",
-      message: thrown.message,
-      details: thrown.stack,
-    };
-  } else {
-    return {
-      title: when + "抛出了并非 `Error` 实例的值",
-      message: `${thrown}`,
-    };
-  }
 }

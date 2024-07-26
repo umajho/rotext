@@ -1,48 +1,15 @@
 import * as snabbdom from "snabbdom";
+import toHTML from "snabbdom-to-html";
 
 import { parse } from "@rotext/parsing";
 import { toSnabbdomChildren } from "@rotext/to-html";
 
-import { LookupListRaw } from "../pages/Playground/preview-parts/Preview/internal-types";
 import { TAG_NAME_MAP } from "../utils/custom-elements-registration/mod";
 
 import { RotextProcessor, RotextProcessResult } from "./mod";
 
 export class OldRotextProcessor implements RotextProcessor {
-  private readonly patch: ReturnType<typeof snabbdom.init>;
-  private lastNode: HTMLElement | snabbdom.VNode;
-  private readonly lookupListRaw: LookupListRaw = [];
-
-  private readonly contentRootClass: string;
-
-  constructor(opts: {
-    outputContainerEl: HTMLDivElement;
-    contentRootClass: string;
-  }) {
-    if (opts.outputContainerEl.childNodes.length) {
-      throw new Error("output container is not empty!");
-    }
-
-    const outputEl = document.createElement("div");
-    opts.outputContainerEl.appendChild(outputEl);
-
-    this.patch = snabbdom.init(
-      [
-        snabbdom.classModule,
-        snabbdom.styleModule,
-        snabbdom.attributesModule,
-        createLocationModule(this.lookupListRaw),
-      ],
-      undefined,
-      { experimental: { fragments: true } },
-    );
-
-    this.lastNode = outputEl;
-
-    this.contentRootClass = opts.contentRootClass;
-  }
-
-  parseAndRender(input: string): RotextProcessResult {
+  process(input: string): RotextProcessResult {
     try {
       const parsingStart = performance.now();
       console.time("rotext JS");
@@ -62,18 +29,10 @@ export class OldRotextProcessor implements RotextProcessor {
       console.timeEnd("rotext JS");
       const parsingTimeMs = performance.now() - parsingStart;
 
-      const classMap: snabbdom.Classes = {
-        "relative": true,
-        [this.contentRootClass]: true,
-      };
-      const vNode = snabbdom.h("article", { class: classMap }, vChildren);
-
-      this.patch(this.lastNode, vNode);
-      this.lastNode = vNode;
-
       return {
+        html: toHTML(snabbdom.fragment(vChildren))
+          .slice("<div>".length, -("</div>".length)),
         error: null,
-        lookupListRaw: [...this.lookupListRaw],
         parsingTimeMs,
       };
     } catch (e) {
@@ -82,31 +41,9 @@ export class OldRotextProcessor implements RotextProcessor {
         e = new Error(`${e}`);
       }
       return {
+        html: null,
         error: e as Error,
-        lookupListRaw: [...this.lookupListRaw],
       };
     }
   }
-}
-
-function createLocationModule(lookupListRaw: LookupListRaw) {
-  const module = {
-    pre: () => {
-      lookupListRaw.length = 0;
-    },
-    create: (_oldVNode: snabbdom.VNode, vnode: snabbdom.VNode) => {
-      if (vnode.data?.location) {
-        const el = vnode.elm as HTMLElement;
-        lookupListRaw.push({
-          element: el,
-          location: vnode.data.location,
-        });
-      }
-    },
-    update: (oldVNode: snabbdom.VNode, vnode: snabbdom.VNode) => {
-      module.create(oldVNode, vnode);
-    },
-  };
-
-  return module;
 }

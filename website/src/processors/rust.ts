@@ -1,6 +1,3 @@
-// @ts-ignore
-import { Idiomorph } from "idiomorph/dist/idiomorph.esm.js";
-
 import {
   makeOnlyInstance as makeOnlyRotextAdapterInstance,
 } from "@rotext/wasm-bindings-adapter";
@@ -14,32 +11,15 @@ const rotextAdapter = await (async () => {
 })();
 
 export class RustRotextProcessor implements RotextProcessor {
-  private readonly outputEl: HTMLElement;
-
-  constructor(opts: {
-    outputContainerEl: HTMLDivElement;
-    contentRootClass: string;
-  }) {
-    if (opts.outputContainerEl.childNodes.length) {
-      throw new Error("output container is not empty!");
-    }
-
-    this.outputEl = document.createElement("article");
-    this.outputEl.classList.add("relative", opts.contentRootClass);
-    opts.outputContainerEl.appendChild(this.outputEl);
-  }
-
-  parseAndRender(input: string): RotextProcessResult {
+  process(input: string): RotextProcessResult {
     try {
       console.time("rotext RS (dev)");
       const result = rotextAdapter.parseAndRender(input);
       console.timeEnd("rotext RS (dev)");
 
-      Idiomorph.morph(this.outputEl, result.html, { morphStyle: "innerHTML" });
-
       return {
+        html: result.html,
         error: null,
-        lookupListRaw: [], // TODO!!!
       };
     } catch (e) {
       console.timeEnd("rotext JS");
@@ -47,8 +27,8 @@ export class RustRotextProcessor implements RotextProcessor {
         e = new Error(`${e}`);
       }
       return {
+        html: null,
         error: e as Error,
-        lookupListRaw: [],
       };
     }
   }
