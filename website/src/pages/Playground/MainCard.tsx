@@ -29,7 +29,7 @@ const MainCard: Component = () => {
 
   return (
     <Card
-      class="h-content xl:max-w-[80rem]"
+      class="h-content w-full xl:w-[80rem]"
       bodyClass="max-sm:px-1 max-sm:py-1"
     >
       <div class="grid grid-cols-1 xl:grid-cols-2">

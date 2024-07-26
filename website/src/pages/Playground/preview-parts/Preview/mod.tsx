@@ -44,6 +44,7 @@ const Preview: Component<
     processResult: RotextProcessResult;
 
     class?: string;
+    hidden: boolean;
   }
 > = (props) => {
   let scrollContainerEl!: HTMLDivElement;
@@ -71,19 +72,9 @@ const Preview: Component<
 
         Idiomorph.morph(outputEl, html, { morphStyle: "innerHTML" });
 
-        const lookupListRaw: LookupListRaw = [];
-        for (const el_ of outputEl.querySelectorAll("[data-sourcemap]")) {
-          const el = el_ as HTMLElement;
-          const [startLnStr, endLnStr] = el.dataset["sourcemap"]!.split("-");
-          lookupListRaw.push({
-            element: el,
-            location: {
-              start: { line: Number(startLnStr) },
-              end: { line: Number(endLnStr) },
-            },
-          });
-        }
-        setLookupListRaw(lookupListRaw);
+        setLookupListRaw(
+          props.processResult.lookupListRawCollector?.(outputEl) ?? [],
+        );
       }));
     }
 
@@ -126,16 +117,49 @@ const Preview: Component<
     }
   });
 
+  const { fixScrollOutOfSyncAfterUnhide } = (() => {
+    // XXX: 在已经滚动了一段距离时，将预览部分的标签页切到并非 “预览” 的标签页，
+    // 再切回 “预览” 标签页，部分浏览器会有不正常的行为。观察如下：
+    // - Chrome (126)：预览会莫名其妙往上跳一小段距离，导致触发滚动事件。
+    // - Firefox (127): 有概率正常，有概率出现和 Chrome 类似的情况，且即使第一次
+    // 情况正常，只是切换标签页不进行其他额外操作，再切换几次还是能触发不正常的
+    // 情况。
+    // - Safari (16.5) 一切正常。
+    //
+    // 目前的解决方法就是在取消隐藏后第一次触发滚动事件时终止通常的处理（去让编
+    // 辑器部分同步），而是强制让编辑器部分同步原先的滚动位置以恢复同步。
+
+    const [hasScrolled, setHasScrolled] = createSignal(false);
+    createEffect(on([() => props.hidden], ([hidden]) => {
+      if (!hidden) setHasScrolled(false);
+    }));
+
+    function fixScrollOutOfSyncAfterUnhide(): "should_stop" | undefined {
+      if (!hasScrolled()) {
+        setHasScrolled(true);
+        props.store.triggerTopLineUpdateForcedly();
+        return "should_stop";
+      }
+      return undefined;
+    }
+
+    return { fixScrollOutOfSyncAfterUnhide };
+  })();
+
   //==== 组件 ====
   return (
     <div
       class={[
+        `${props.hidden ? "hidden" : ""}`,
         `previewer ${WIDGET_OWNER_CLASS}`,
         "relative tuan-background overflow-y-auto",
         props.class,
       ].join(" ")}
       ref={scrollContainerEl}
-      onScroll={(ev) => scrollHandler()!(ev)}
+      onScroll={(ev) => {
+        if (fixScrollOutOfSyncAfterUnhide() === "should_stop") return;
+        scrollHandler()!(ev);
+      }}
     >
       <Show when={props.processResult.error}>
         {(err) => <ErrorAlert message={err().message} stack={err().stack} />}

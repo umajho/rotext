@@ -33,6 +33,12 @@ export function createEditorStore(initialText: string = "") {
     set topLine(v: TopLine) {
       setTopLine(v);
     },
+    /**
+     * workaround，详见使用了本函数的地方。
+     */
+    triggerTopLineUpdateForcedly() {
+      setTopLine(structuredClone(topLine()));
+    },
     get activeLines(): ActiveLines | null {
       return activeLines();
     },

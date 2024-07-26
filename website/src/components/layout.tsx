@@ -8,6 +8,7 @@ import {
   For,
   Match,
   on,
+  onMount,
   Show,
   Suspense,
   Switch,
@@ -30,6 +31,10 @@ import { Button, Dropdown, DropdownItem, Loading } from "./ui/mod";
 import { Navigation } from "../types/navigation";
 import { syntaxReferenceIndex } from "../data-sources/syntax-reference";
 import { getSyntaxReferencePathOfHeading } from "../utils/syntax-reference";
+
+import rotextProcessors, {
+  RotextProcessorName,
+} from "../global-stores/rotext-processors";
 
 import "../styles/preflight";
 import "../styles/tailwind";
@@ -165,6 +170,8 @@ const SyntaxReferenceIndexContext = //
 const NavMenu: Component<{
   onClickMenuItem: () => boolean | void;
 }> = (props) => {
+  let selectEl!: HTMLSelectElement;
+
   const navigate = useNavigate();
   const matchPlayground = useMatch(() => "/playground");
 
@@ -177,18 +184,37 @@ const NavMenu: Component<{
   const isSyntaxReferenceReady = () =>
     (!!syntaxReferenceNavigation()) && (!!syntaxReferenceIndex());
 
+  onMount(() => {
+    rotextProcessors.switchProcessor(selectEl.value as RotextProcessorName);
+  });
+
   return (
     <ul class="menu w-full">
-      <p class="menu-title">导航</p>
+      <p class="menu-title">解析器 & 渲染器</p>
       <li>
-        <a
-          onClick={() => {
-            props.onClickMenuItem(), navigate("/rotext-wasm-dev");
-          }}
+        <select
+          ref={selectEl}
+          disabled={rotextProcessors.isBusy}
+          onChange={(ev) =>
+            rotextProcessors.switchProcessor(
+              ev.currentTarget.value as RotextProcessorName,
+            )}
         >
-          Rotext WASM Dev
-        </a>
+          <option
+            value="old"
+            selected={rotextProcessors.currentProviderName === "old"}
+          >
+            旧式
+          </option>
+          <option
+            value="rust"
+            selected={rotextProcessors.currentProviderName === "rust"}
+          >
+            新式
+          </option>
+        </select>
       </li>
+      <p class="menu-title">导航</p>
       <li>
         <a
           class={`${matchPlayground() ? "active" : ""}`}

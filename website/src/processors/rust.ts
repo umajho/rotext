@@ -13,13 +13,27 @@ const rotextAdapter = await (async () => {
 export class RustRotextProcessor implements RotextProcessor {
   process(input: string): RotextProcessResult {
     try {
+      const parsingStart = performance.now();
       console.time("rotext RS (dev)");
+
       const result = rotextAdapter.parseAndRender(input);
+
       console.timeEnd("rotext RS (dev)");
+      const parsingTimeMs = performance.now() - parsingStart;
 
       return {
         html: result.html,
         error: null,
+        parsingTimeMs,
+        extraInfos: [
+          ...(result.devEventsInDebugFormat
+            ? [{
+              name: "事件",
+              content: result.devEventsInDebugFormat,
+            }]
+            : []),
+        ],
+        lookupListRawCollector: () => [],
       };
     } catch (e) {
       console.timeEnd("rotext JS");
@@ -29,6 +43,9 @@ export class RustRotextProcessor implements RotextProcessor {
       return {
         html: null,
         error: e as Error,
+        parsingTimeMs: null,
+        extraInfos: [],
+        lookupListRawCollector: null,
       };
     }
   }
