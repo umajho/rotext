@@ -6,17 +6,18 @@ export type RotextProcessorName = "old" | "rust";
 
 export type RotextProcessorProvider = () => RotextProcessor;
 
-const CURRENT_ROTEXT_PROCESSOR_NAME_LOCAL_KEY = "currentRotextProcessorName";
-
 const cache: {
   [name in RotextProcessorName]?: RotextProcessorProvider;
 } = {};
 
-function createRotextProcessorsStore(
-  currentProcessorName: RotextProcessorName,
+export function createRotextProcessorsStore(
+  opts: {
+    initialProcessorName: RotextProcessorName;
+    onCurrentProcessorNameChange: (newName: RotextProcessorName) => void;
+  },
 ) {
   const [processorName, setProcessorName] = //
-    createSignal<RotextProcessorName>(currentProcessorName);
+    createSignal<RotextProcessorName>(opts.initialProcessorName);
   const [isBusy, setIsBusy] = createSignal(false);
   const [currentProvider, setCurrentProvider] = createSignal<
     RotextProcessorProvider | null
@@ -61,11 +62,11 @@ function createRotextProcessorsStore(
 
   return {
     switchProcessor(name: RotextProcessorName) {
-      localStorage.setItem(CURRENT_ROTEXT_PROCESSOR_NAME_LOCAL_KEY, name);
       setProcessorName(name);
+      opts.onCurrentProcessorNameChange(name);
     },
 
-    get currentProviderName(): RotextProcessorName {
+    get currentName(): RotextProcessorName {
       return processorName();
     },
 
@@ -79,15 +80,6 @@ function createRotextProcessorsStore(
   };
 }
 
-function getCurrentRotextProcessorNameInLocalStorage(): RotextProcessorName {
-  const item = localStorage.getItem(
-    CURRENT_ROTEXT_PROCESSOR_NAME_LOCAL_KEY,
-  );
-  if (item === "old") return item;
-  if (item === "rust") return item;
-  return "old";
-}
-
-export default createRotextProcessorsStore(
-  getCurrentRotextProcessorNameInLocalStorage(),
-);
+export type RotextProcessorsStore = ReturnType<
+  typeof createRotextProcessorsStore
+>;

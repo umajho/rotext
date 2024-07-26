@@ -7,10 +7,17 @@ import { toSnabbdomChildren } from "@rotext/to-html";
 import { TAG_NAME_MAP } from "../utils/custom-elements-registration/mod";
 import { LookupListRaw } from "../pages/Playground/preview-parts/Preview/internal-types";
 
-import { RotextProcessor, RotextProcessResult } from "./mod";
+import {
+  RotextProcessor,
+  RotextProcessorProcessOptions,
+  RotextProcessResult,
+} from "./mod";
 
 export class OldRotextProcessor implements RotextProcessor {
-  process(input: string): RotextProcessResult {
+  process(
+    input: string,
+    opts: RotextProcessorProcessOptions,
+  ): RotextProcessResult {
     try {
       const parsingStart = performance.now();
       console.time("rotext JS");
@@ -19,6 +26,10 @@ export class OldRotextProcessor implements RotextProcessor {
         softBreakAs: "br",
         recordsLocation: true,
       });
+
+      if (!opts.requiresLookupListRaw) {
+        delete doc.metadata?.locMap;
+      }
 
       console.timeLog("rotext JS", "parsed by peggy");
 

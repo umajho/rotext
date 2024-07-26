@@ -1,9 +1,11 @@
 import {
   Component,
+  createEffect,
   createMemo,
   createSignal,
   JSX,
   Match,
+  on,
   Show,
   Switch,
 } from "solid-js";
@@ -21,6 +23,15 @@ export function createOutputParts(
     createSignal<"preview" | "source" | "actual-preview" | "actual-source">(
       "preview",
     );
+  createEffect(on([currentTab], ([currentTab]) => {
+    if (store.actualOutputHTMLForOriginalInput === null) {
+      if (currentTab === "actual-preview") {
+        setCurrentTab("preview");
+      } else if (currentTab === "actual-source") {
+        setCurrentTab("source");
+      }
+    }
+  }));
 
   const previewContentSource = () => store.currentOutput[1];
   const previewContent = (): PreviewContent => {
@@ -28,7 +39,7 @@ export function createOutputParts(
       case "for-unmodified":
         return ["html", previewContentSource()];
       case "for-modified":
-        return ["v-node-children", store.currentOutput[2]];
+        return ["html", store.currentOutput[1]];
       default:
         throw new Error("unreachable");
     }

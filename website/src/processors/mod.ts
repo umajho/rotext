@@ -1,7 +1,14 @@
 import { LookupListRaw } from "../pages/Playground/preview-parts/Preview/internal-types";
 
+export interface RotextProcessorProcessOptions {
+  requiresLookupListRaw: boolean;
+}
+
 export interface RotextProcessor {
-  process(input: string): RotextProcessResult;
+  process(
+    input: string,
+    opts: RotextProcessorProcessOptions,
+  ): RotextProcessResult;
 }
 
 export interface RotextProcessResult {

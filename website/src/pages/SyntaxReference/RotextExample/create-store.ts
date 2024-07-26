@@ -1,21 +1,12 @@
 import { createEffect, createMemo, createSignal, on } from "solid-js";
 
-import { fragment, VNodeChildren } from "snabbdom";
+import pretty from "pretty";
 
-import { toSnabbdomChildren } from "@rotext/to-html";
-
-import { TAG_NAME_MAP } from "../../../utils/custom-elements-registration/mod";
-import { formatHTML } from "../../../utils/html-formatting";
+import { useRotextProcessorsStore } from "../../../contexts/rotext-processors-store";
 
 export type CurrentOutput =
   | [type: "for-unmodified", html: string]
-  | [type: "for-modified", html: string, vNodeChildren: VNodeChildren];
-
-type ExtraPackages = {
-  rotextParsing: typeof import("@rotext/parsing");
-  pretty: typeof import("pretty");
-  snabbdomToHTML: typeof import("snabbdom-to-html");
-};
+  | [type: "for-modified", html: string];
 
 export function createRotextExampleStore(opts: {
   originalInput: string;
@@ -23,6 +14,8 @@ export function createRotextExampleStore(opts: {
   fixtureNames: string[] | null;
   fixtures: { [fixtureName: string]: string } | null;
 }) {
+  const rotextProcessors = useRotextProcessorsStore()!;
+
   const [input, setInput] = createSignal(opts.originalInput);
   const [actualOutputForOriginalInput, setActualOutputForOriginalInput] =
     createSignal<string | null>(null);
@@ -31,48 +24,78 @@ export function createRotextExampleStore(opts: {
     return input() === opts.originalInput;
   }
 
-  const [isLoadingExtraPackages, setIsLoadingExtraPackages] = //
-    createSignal(false);
-  const [isVerifyingOutputOfOriginalInput, setIsVerifyingOutputOfOriginalInput] //
-   = createSignal(false);
+  const [isLoading, setIsLoading] = createSignal(false);
+  const [
+    shouldVerifyOutputOfOriginalInput,
+    setShouldVerifyOutputOfOriginalInput,
+  ] = createSignal(false);
+  const isVerifyingOutputOfOriginalInput = () =>
+    shouldVerifyOutputOfOriginalInput() && !actualOutputForOriginalInput();
 
   const [currentOutput, setCurrentOutput] = createSignal<CurrentOutput>([
     "for-unmodified",
     opts.expectedOutputHTMLForOriginalInput,
   ]);
-  createEffect(on([input], async ([input]) => {
-    const extraPackages_ = loadExtraPackages();
-    let extraPackages: ExtraPackages;
-    if (extraPackages_ instanceof Promise) {
-      setIsLoadingExtraPackages(true);
-      extraPackages = await extraPackages_;
-      setIsLoadingExtraPackages(false);
-    } else {
-      extraPackages = extraPackages_;
-    }
 
-    if (getIsInputUnmodified()) {
-      parseOriginalInputAndAssign({
-        originalInput: input,
-        actualOutputForOriginalInput,
-        setActualOutputForOriginalInput,
-        extraPackages,
-      });
-      setCurrentOutput([
-        "for-unmodified",
-        opts.expectedOutputHTMLForOriginalInput,
-      ]);
-    } else {
-      parseOriginalInputAndAssign({
-        originalInput: opts.originalInput,
-        actualOutputForOriginalInput,
-        setActualOutputForOriginalInput,
-        extraPackages,
-      });
-      const [html, vChildren] = parse(input, { extraPackages });
-      setCurrentOutput(["for-modified", html, vChildren]);
-    }
-  }, { defer: true }));
+  createEffect(
+    on(
+      [
+        () => rotextProcessors.currentProvider,
+        input,
+        shouldVerifyOutputOfOriginalInput,
+      ],
+      ([processorProvider, input, shouldVerify], old) => {
+        let shouldUpdateActualOutput = false;
+        if (
+          shouldVerify && old &&
+          old[0] !== processorProvider
+        ) {
+          shouldUpdateActualOutput = true;
+        }
+
+        if (!processorProvider) {
+          setIsLoading(true);
+          return;
+        }
+        setIsLoading(false);
+
+        const processor = processorProvider();
+
+        if (
+          !getIsInputUnmodified() || shouldVerify ||
+          shouldUpdateActualOutput
+        ) {
+          if (
+            shouldUpdateActualOutput || actualOutputForOriginalInput() === null
+          ) {
+            const result = processor.process(opts.originalInput, {
+              requiresLookupListRaw: false,
+            });
+            if (result.error) {
+              throw new Error("TODO!!");
+            }
+            setActualOutputForOriginalInput(pretty(result.html!));
+          }
+        }
+
+        if (getIsInputUnmodified()) {
+          setCurrentOutput([
+            "for-unmodified",
+            opts.expectedOutputHTMLForOriginalInput,
+          ]);
+        } else {
+          const result = processor.process(input, {
+            requiresLookupListRaw: false,
+          });
+          if (result.error) {
+            throw new Error("TODO!!");
+          }
+          setCurrentOutput(["for-modified", pretty(result.html!)]);
+        }
+      },
+      { defer: true },
+    ),
+  );
 
   const expectedOutputMatchesActual = createMemo(() => {
     const actual = actualOutputForOriginalInput();
@@ -125,7 +148,7 @@ export function createRotextExampleStore(opts: {
       return opts.expectedOutputHTMLForOriginalInput;
     },
     get isLoadingForCurrentOutput() {
-      return isLoadingExtraPackages();
+      return isLoading();
     },
     get currentOutput() {
       return currentOutput();
@@ -145,26 +168,7 @@ export function createRotextExampleStore(opts: {
         isVerifyingOutputOfOriginalInput()
       ) return;
 
-      (async () => {
-        setIsVerifyingOutputOfOriginalInput(true);
-        const extraPackages_ = loadExtraPackages();
-        let extraPackages: ExtraPackages;
-        if (extraPackages_ instanceof Promise) {
-          setIsLoadingExtraPackages(true);
-          extraPackages = await extraPackages_;
-          setIsLoadingExtraPackages(false);
-        } else {
-          extraPackages = extraPackages_;
-        }
-
-        parseOriginalInputAndAssign({
-          originalInput: opts.originalInput,
-          actualOutputForOriginalInput,
-          setActualOutputForOriginalInput,
-          extraPackages,
-        });
-        setIsVerifyingOutputOfOriginalInput(false);
-      })();
+      setShouldVerifyOutputOfOriginalInput(true);
     },
     isVerifyingOutputOfOriginalInput() {
       return isVerifyingOutputOfOriginalInput();
@@ -198,53 +202,6 @@ export function createRotextExampleStore(opts: {
       return opts.fixtures;
     },
   };
-}
-
-let extraPackages: ExtraPackages | Promise<ExtraPackages> | null = null;
-
-function loadExtraPackages() {
-  if (!extraPackages) {
-    extraPackages = new Promise(async (resolve) => {
-      extraPackages = {
-        rotextParsing: await import("@rotext/parsing"),
-        pretty: (await import("pretty")).default,
-        snabbdomToHTML: (await import("snabbdom-to-html")).default,
-      };
-      resolve(extraPackages);
-    });
-  }
-  return extraPackages;
-}
-
-function parseOriginalInputAndAssign(opts: {
-  originalInput: string;
-  actualOutputForOriginalInput: () => string | null;
-  setActualOutputForOriginalInput: (value: string) => void;
-  extraPackages: ExtraPackages;
-}) {
-  if (opts.actualOutputForOriginalInput() === null) {
-    const [html, _] = parse(opts.originalInput, {
-      extraPackages: opts.extraPackages,
-    });
-    opts.setActualOutputForOriginalInput(html);
-  }
-}
-
-function parse(
-  input: string,
-  opts: { extraPackages: ExtraPackages },
-): [html: string, vNodeChildren: VNodeChildren] {
-  const doc = opts.extraPackages.rotextParsing.parse(input);
-  const vChildren = toSnabbdomChildren(doc, {
-    customElementTagNameMap: TAG_NAME_MAP,
-  });
-  const html = opts.extraPackages.snabbdomToHTML(fragment(vChildren))
-    .slice("<div>".length, -("</div>".length));
-
-  return [
-    formatHTML(html, { formatter: opts.extraPackages.pretty }),
-    vChildren,
-  ];
 }
 
 export type RotextExampleStore = ReturnType<typeof createRotextExampleStore>;

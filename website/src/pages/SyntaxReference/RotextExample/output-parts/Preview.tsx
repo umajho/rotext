@@ -7,16 +7,8 @@ import {
   Show,
 } from "solid-js";
 
-import {
-  attributesModule,
-  Classes,
-  classModule,
-  h,
-  init,
-  styleModule,
-  VNode,
-  VNodeChildren,
-} from "snabbdom";
+// @ts-ignore
+import { Idiomorph } from "idiomorph/dist/idiomorph.esm.js";
 
 import {
   ElementLayoutChangeObserver,
@@ -29,9 +21,7 @@ import {
   WIDGET_OWNER_CLASS,
 } from "../../../../utils/custom-elements-registration/mod";
 
-export type PreviewContent =
-  | ["html", string]
-  | ["v-node-children", VNodeChildren];
+export type PreviewContent = ["html", string];
 
 registerCustomElementsOnce();
 
@@ -100,34 +90,12 @@ function setUpRendering(opts: {
   };
   setIsOutputEmpty: (value: boolean) => void;
 }) {
-  let patch: ReturnType<typeof init> | null = null;
-  let lastNode: HTMLElement | VNode | null = null;
   createEffect(on([opts.content], ([content]) => {
     if (content[0] === "html") {
-      patch = null;
-      lastNode = null;
-
-      opts.els.outputWrapper.innerHTML = content[1];
+      Idiomorph.morph(opts.els.outputWrapper, content[1], {
+        morphStyle: "innerHTML",
+      });
       opts.setIsOutputEmpty(!content[1]);
-    } else if (content[0] === "v-node-children") {
-      if (!patch) {
-        opts.els.outputWrapper.innerText = "";
-        const outputEl = document.createElement("div");
-        opts.els.outputWrapper.appendChild(outputEl);
-
-        patch = init(
-          [classModule, styleModule, attributesModule],
-          undefined,
-          { experimental: { fragments: true } },
-        );
-        lastNode = outputEl;
-      }
-
-      const classMap: Classes = { "relative": true };
-      const vNode = h("article", { class: classMap }, content[1]);
-
-      patch(lastNode!, vNode);
-      lastNode = vNode;
     } else {
       throw new Error("unreachable");
     }

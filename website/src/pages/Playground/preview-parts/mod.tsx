@@ -22,7 +22,7 @@ import {
 
 import { EditorStore } from "../../../hooks/editor-store";
 import { RotextProcessResult } from "../../../processors/mod";
-import rotextProcessors from "../../../global-stores/rotext-processors";
+import { useRotextProcessorsStore } from "../../../contexts/rotext-processors-store";
 
 const Preview = lazy(() => import("./Preview/mod"));
 
@@ -38,6 +38,8 @@ export function createPreviewParts(
   PreviewTopBar: JSX.Element;
   Preview: JSX.Element;
 } {
+  const rotextProcessors = useRotextProcessorsStore()!;
+
   const [currentTab, setCurrentTab] = createSignal<Tab>(["preview"]);
 
   const [processResult, setProcessResult] = createSignal<
@@ -53,7 +55,9 @@ export function createPreviewParts(
         }
         const processor = processorProvider();
 
-        setProcessResult(processor.process(text));
+        setProcessResult(
+          processor.process(text, { requiresLookupListRaw: true }),
+        );
       },
     ),
   );

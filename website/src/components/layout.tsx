@@ -8,7 +8,6 @@ import {
   For,
   Match,
   on,
-  onMount,
   Show,
   Suspense,
   Switch,
@@ -31,10 +30,8 @@ import { Button, Dropdown, DropdownItem, Loading } from "./ui/mod";
 import { Navigation } from "../types/navigation";
 import { syntaxReferenceIndex } from "../data-sources/syntax-reference";
 import { getSyntaxReferencePathOfHeading } from "../utils/syntax-reference";
-
-import rotextProcessors, {
-  RotextProcessorName,
-} from "../global-stores/rotext-processors";
+import { useRotextProcessorsStore } from "../contexts/rotext-processors-store";
+import { RotextProcessorName } from "../hooks/rotext-processors-store";
 
 import "../styles/preflight";
 import "../styles/tailwind";
@@ -170,6 +167,8 @@ const SyntaxReferenceIndexContext = //
 const NavMenu: Component<{
   onClickMenuItem: () => boolean | void;
 }> = (props) => {
+  const rotextProcessors = useRotextProcessorsStore();
+
   let selectEl!: HTMLSelectElement;
 
   const navigate = useNavigate();
@@ -184,31 +183,27 @@ const NavMenu: Component<{
   const isSyntaxReferenceReady = () =>
     (!!syntaxReferenceNavigation()) && (!!syntaxReferenceIndex());
 
-  onMount(() => {
-    rotextProcessors.switchProcessor(selectEl.value as RotextProcessorName);
-  });
-
   return (
     <ul class="menu w-full">
       <p class="menu-title">解析器 & 渲染器</p>
       <li>
         <select
           ref={selectEl}
-          disabled={rotextProcessors.isBusy}
+          disabled={rotextProcessors?.isBusy ?? true}
           onChange={(ev) =>
-            rotextProcessors.switchProcessor(
+            rotextProcessors?.switchProcessor(
               ev.currentTarget.value as RotextProcessorName,
             )}
         >
           <option
             value="old"
-            selected={rotextProcessors.currentProviderName === "old"}
+            selected={rotextProcessors?.currentName === "old"}
           >
             旧式
           </option>
           <option
             value="rust"
-            selected={rotextProcessors.currentProviderName === "rust"}
+            selected={rotextProcessors?.currentName === "rust"}
           >
             新式
           </option>
