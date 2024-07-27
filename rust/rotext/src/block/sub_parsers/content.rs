@@ -5,14 +5,14 @@ use crate::{
         sub_parsers::{self, utils::consume_peeked},
     },
     common::Range,
-    events::BlockEvent,
+    events::{BlockEvent, NewLine},
 };
 
 #[derive(Debug)]
 pub enum StepState {
     Initial,
     Normal(Range),
-    IsAfterLineFeed,
+    IsAfterLineBreak(NewLine),
 
     Invalid,
 }
@@ -102,10 +102,13 @@ impl Parser {
         loop {
             // log::debug!("CONTENT step_state={:?}", state);
 
-            let internal_result = match state {
+            let internal_result = match &mut state {
                 StepState::Initial => self.process_in_initial_state(ctx),
-                StepState::Normal(ref mut content) => self.process_in_normal_state(ctx, content),
-                StepState::IsAfterLineFeed => self.process_in_is_after_line_feed_state(ctx),
+
+                StepState::Normal(content) => self.process_in_normal_state(ctx, content),
+                StepState::IsAfterLineBreak(new_line) => {
+                    self.process_in_is_after_line_feed_state(ctx, new_line.clone())
+                }
                 StepState::Invalid => unreachable!(),
             };
 
@@ -133,7 +136,7 @@ impl Parser {
         };
         let peeked = peeked.clone();
 
-        match peeked {
+        match &peeked {
             global_mapper::Mapped::CharAt(_) | global_mapper::Mapped::NextChar => {
                 // NOTE: 初始状态也可能遇到 `NextChar`，比如在一个并非结束与换行的块
                 // 级元素（最简单的，如分割线）后面存在文本时。
@@ -158,7 +161,7 @@ impl Parser {
                     peeked,
                 )
             }
-            global_mapper::Mapped::LineFeed => {
+            global_mapper::Mapped::NewLine(_) => {
                 // consume_peeked!(ctx, &peeked);
                 if self.end_conditions.before_new_line {
                     InternalResult::Done
@@ -166,9 +169,9 @@ impl Parser {
                     InternalResult::ToPauseForNewLine
                 }
             }
-            global_mapper::Mapped::Text(content) => {
+            global_mapper::Mapped::VerbatimEscaping(verbatim_escaping) => {
                 consume_peeked!(ctx, &peeked);
-                InternalResult::ToYield(BlockEvent::Text(content))
+                InternalResult::ToYield(BlockEvent::VerbatimEscaping(verbatim_escaping.clone()))
             }
         }
     }
@@ -186,8 +189,8 @@ impl Parser {
 
         match peeked {
             global_mapper::Mapped::CharAt(_)
-            | global_mapper::Mapped::LineFeed
-            | global_mapper::Mapped::Text(_) => {
+            | global_mapper::Mapped::NewLine(_)
+            | global_mapper::Mapped::VerbatimEscaping(_) => {
                 InternalResult::ToYield(self.make_content_event(*state_content))
             }
             global_mapper::Mapped::NextChar => {
@@ -215,7 +218,11 @@ impl Parser {
     }
 
     #[inline(always)]
-    fn process_in_is_after_line_feed_state(&mut self, ctx: &mut Context) -> InternalResult {
+    fn process_in_is_after_line_feed_state(
+        &mut self,
+        ctx: &mut Context,
+        new_line: NewLine,
+    ) -> InternalResult {
         if matches!(self.mode, Mode::Inline) {
             _ = ctx.scan_blank_text();
         }
@@ -237,7 +244,7 @@ impl Parser {
                     if self.is_at_first_line {
                         return InternalResult::ToContinueIn(StepState::Initial);
                     } else {
-                        return InternalResult::ToYield(BlockEvent::LineBreak);
+                        return InternalResult::ToYield(BlockEvent::NewLine(new_line));
                     }
                 };
 
@@ -253,25 +260,25 @@ impl Parser {
                     InternalResult::ToContinueIn(StepState::Normal(potential_closing_part))
                 }
             }
-            global_mapper::Mapped::LineFeed => {
+            global_mapper::Mapped::NewLine(new_line) => {
                 if self.end_conditions.before_blank_line {
                     InternalResult::Done
                 } else {
-                    InternalResult::ToYield(BlockEvent::LineBreak)
+                    InternalResult::ToYield(BlockEvent::NewLine(new_line.clone()))
                 }
             }
-            global_mapper::Mapped::Text(_) => {
+            global_mapper::Mapped::VerbatimEscaping(_) => {
                 if self.is_at_first_line {
                     InternalResult::ToContinueIn(StepState::Initial)
                 } else {
-                    InternalResult::ToYield(BlockEvent::LineBreak)
+                    InternalResult::ToYield(BlockEvent::NewLine(new_line))
                 }
             }
         }
     }
 
-    pub fn resume_from_pause_for_new_line_and_continue(&mut self) {
-        self.next_initial_step_state = StepState::IsAfterLineFeed;
+    pub fn resume_from_pause_for_new_line_and_continue(&mut self, new_line: NewLine) {
+        self.next_initial_step_state = StepState::IsAfterLineBreak(new_line);
     }
 
     #[inline(always)]
@@ -309,7 +316,7 @@ fn process_potential_closing_part_at_line_end_and_with_space_before(
     potential_closing_part_length += dropped;
     if 1 + dropped == condition.minimal_count {
         let peeked = ctx.mapper.peek(0);
-        if peeked.is_some_and(|p| !p.is_line_feed()) {
+        if peeked.is_some_and(|p| !p.is_new_line()) {
             confirmed_content.increase_length(potential_closing_part_length);
             return InternalResult::ToContinueIn(StepState::Normal(confirmed_content));
         };

@@ -1,6 +1,6 @@
 use crate::{
     block::{context::Context, sub_parsers},
-    events::BlockEvent,
+    events::{BlockEvent, NewLine},
 };
 
 enum State {
@@ -132,12 +132,12 @@ impl<'a> sub_parsers::SubParser<'a> for Parser {
         self.next(ctx)
     }
 
-    fn resume_from_pause_for_new_line_and_continue(&mut self) {
+    fn resume_from_pause_for_new_line_and_continue(&mut self, new_line: NewLine) {
         let state = std::mem::replace(&mut self.state, State::Invalid);
         let State::Paused(mut content_parser) = state else {
             unreachable!()
         };
-        content_parser.resume_from_pause_for_new_line_and_continue();
+        content_parser.resume_from_pause_for_new_line_and_continue(new_line);
         self.state = State::CodeContent(content_parser);
     }
 

@@ -33,7 +33,7 @@ type EventCase<'a> = (EventType, Option<&'a str>);
 ], vec![
     (EventType::EnterParagraph, None),
         (EventType::Unparsed, Some("a")),
-        (EventType::LineBreak, None),
+        (EventType::NewLine, None),
         (EventType::Unparsed, Some("b")),
     (EventType::Exit, None)])]
 #[case(vec![
@@ -56,17 +56,17 @@ type EventCase<'a> = (EventType, Option<&'a str>);
 #[case(vec!["a<`c`>"], vec![
     (EventType::EnterParagraph, None),
         (EventType::Unparsed, Some("a")),
-        (EventType::Text, Some("c")),
+        (EventType::VerbatimEscaping, Some("c")),
     (EventType::Exit, None)])]
 #[case(vec!["<`c`>b"], vec![
     (EventType::EnterParagraph, None),
-        (EventType::Text, Some("c")),
+        (EventType::VerbatimEscaping, Some("c")),
         (EventType::Unparsed, Some("b")),
     (EventType::Exit, None)])]
 #[case(vec!["a<`c`>b"], vec![
     (EventType::EnterParagraph, None),
         (EventType::Unparsed, Some("a")),
-        (EventType::Text, Some("c")),
+        (EventType::VerbatimEscaping, Some("c")),
         (EventType::Unparsed, Some("b")),
     (EventType::Exit, None)])]
 #[case(vec![
@@ -79,8 +79,8 @@ type EventCase<'a> = (EventType, Option<&'a str>);
 ], vec![
     (EventType::EnterParagraph, None),
         (EventType::Unparsed, Some("a")),
-        (EventType::LineBreak, None),
-        (EventType::Text, Some("c")),
+        (EventType::NewLine, None),
+        (EventType::VerbatimEscaping, Some("c")),
     (EventType::Exit, None)])]
 // ### “继续段落” 的优先级 “高于开启其他块级语法” 的优先级
 #[case(vec![
@@ -90,7 +90,7 @@ type EventCase<'a> = (EventType, Option<&'a str>);
 ], vec![ // 分割线
     (EventType::EnterParagraph, None),
         (EventType::Unparsed, Some("a")),
-        (EventType::LineBreak, None),
+        (EventType::NewLine, None),
         (EventType::Unparsed, Some("---")),
     (EventType::Exit, None)])]
 #[case(vec![
@@ -100,7 +100,7 @@ type EventCase<'a> = (EventType, Option<&'a str>);
 ], vec![ // 块引用
     (EventType::EnterParagraph, None),
         (EventType::Unparsed, Some("a")),
-        (EventType::LineBreak, None),
+        (EventType::NewLine, None),
         (EventType::Unparsed, Some("> b")),
     (EventType::Exit, None)])]
 // ## 分割线
@@ -137,7 +137,7 @@ type EventCase<'a> = (EventType, Option<&'a str>);
 ], vec![
     (EventType::ThematicBreak, None),
     (EventType::EnterParagraph, None),
-        (EventType::Text, Some("a")),
+        (EventType::VerbatimEscaping, Some("a")),
     (EventType::Exit, None)])]
 // ## 标题
 #[case(vec!["= a ="], vec![
@@ -236,12 +236,12 @@ type EventCase<'a> = (EventType, Option<&'a str>);
     (EventType::Exit, None)])]
 #[case(vec!["== <`c`> =="], vec![
     (EventType::EnterHeading2, None),
-        (EventType::Text, Some("c")),
+        (EventType::VerbatimEscaping, Some("c")),
     (EventType::Exit, None)])]
 #[case(vec!["== a<`c`>b =="], vec![
     (EventType::EnterHeading2, None),
         (EventType::Unparsed, Some("a")),
-        (EventType::Text, Some("c")),
+        (EventType::VerbatimEscaping, Some("c")),
         (EventType::Unparsed, Some("b")),
     (EventType::Exit, None)])]
 // ## 块引用与其延续
@@ -262,7 +262,7 @@ type EventCase<'a> = (EventType, Option<&'a str>);
     (EventType::EnterBlockQuote, None),
         (EventType::EnterParagraph, None),
             (EventType::Unparsed, Some("foo")),
-            (EventType::LineBreak, None),
+            (EventType::NewLine, None),
             (EventType::Unparsed, Some("bar")),
         (EventType::Exit, None),
     (EventType::Exit, None)])]
@@ -336,7 +336,7 @@ type EventCase<'a> = (EventType, Option<&'a str>);
     (EventType::EnterBlockQuote, None),
         (EventType::EnterParagraph, None),
             (EventType::Unparsed, Some("foo")),
-            (EventType::LineBreak, None),
+            (EventType::NewLine, None),
             (EventType::Unparsed, Some("> bar")),
         (EventType::Exit, None),
     (EventType::Exit, None)])]
@@ -644,7 +644,7 @@ type EventCase<'a> = (EventType, Option<&'a str>);
         (EventType::EnterListItem, None),
             (EventType::EnterParagraph, None),
                 (EventType::Unparsed, Some("a")),
-                (EventType::LineBreak, None),
+                (EventType::NewLine, None),
                 (EventType::Unparsed, Some("b")),
             (EventType::Exit, None),
         (EventType::Exit, None),
@@ -697,7 +697,7 @@ type EventCase<'a> = (EventType, Option<&'a str>);
                 (EventType::EnterListItem, None),
                     (EventType::EnterParagraph, None),
                         (EventType::Unparsed, Some("a")),
-                        (EventType::LineBreak, None),
+                        (EventType::NewLine, None),
                         (EventType::Unparsed, Some("b")),
                     (EventType::Exit, None),
                 (EventType::Exit, None),
@@ -944,7 +944,7 @@ type EventCase<'a> = (EventType, Option<&'a str>);
                 (EventType::EnterListItem, None),
                     (EventType::EnterParagraph, None),
                         (EventType::Unparsed, Some("a")),
-                        (EventType::LineBreak,None),
+                        (EventType::NewLine,None),
                         (EventType::Unparsed, Some("b")),
                     (EventType::Exit, None),
                 (EventType::Exit, None),
@@ -985,9 +985,9 @@ type EventCase<'a> = (EventType, Option<&'a str>);
 ], vec![
     (EventType::EnterParagraph, None),
         (EventType::Unparsed, Some("``")),
-        (EventType::LineBreak, None),
+        (EventType::NewLine, None),
         (EventType::Unparsed, Some("code")),
-        (EventType::LineBreak, None),
+        (EventType::NewLine, None),
         (EventType::Unparsed, Some("```")),
     (EventType::Exit, None)])]
 #[case(vec![
@@ -1030,7 +1030,7 @@ type EventCase<'a> = (EventType, Option<&'a str>);
 ], vec![
     (EventType::EnterCodeBlock, None),
         (EventType::Separator, None),
-        (EventType::LineBreak, None),
+        (EventType::NewLine, None),
     (EventType::Exit, None)])]
 #[case(vec![
     indoc!{"
@@ -1063,7 +1063,7 @@ type EventCase<'a> = (EventType, Option<&'a str>);
     (EventType::EnterCodeBlock, None),
         (EventType::Separator, None),
         (EventType::Text, Some("code")),
-        (EventType::LineBreak, None),
+        (EventType::NewLine, None),
     (EventType::Exit, None)])]
 #[case(vec![
     indoc!{"
@@ -1076,8 +1076,8 @@ type EventCase<'a> = (EventType, Option<&'a str>);
     (EventType::EnterCodeBlock, None),
         (EventType::Separator, None),
         (EventType::Text, Some("code")),
-        (EventType::LineBreak, None),
-        (EventType::LineBreak, None),
+        (EventType::NewLine, None),
+        (EventType::NewLine, None),
     (EventType::Exit, None)])]
 #[case(vec![
     indoc!{"
@@ -1089,7 +1089,7 @@ type EventCase<'a> = (EventType, Option<&'a str>);
     (EventType::EnterCodeBlock, None),
         (EventType::Separator, None),
         (EventType::Text, Some("code")),
-        (EventType::LineBreak, None),
+        (EventType::NewLine, None),
         (EventType::Text, Some("line 2")),
     (EventType::Exit, None)])]
 #[case(vec![
@@ -1103,8 +1103,8 @@ type EventCase<'a> = (EventType, Option<&'a str>);
     (EventType::EnterCodeBlock, None),
         (EventType::Separator, None),
         (EventType::Text, Some("code")),
-        (EventType::LineBreak, None),
-        (EventType::LineBreak, None),
+        (EventType::NewLine, None),
+        (EventType::NewLine, None),
         (EventType::Text, Some("line 3")),
     (EventType::Exit, None)])]
 #[case(vec![
@@ -1118,9 +1118,9 @@ type EventCase<'a> = (EventType, Option<&'a str>);
     (EventType::EnterCodeBlock, None),
         (EventType::Separator, None),
         (EventType::Text, Some("code")),
-        (EventType::LineBreak, None),
+        (EventType::NewLine, None),
         (EventType::Text, Some("    ")),
-        (EventType::LineBreak, None),
+        (EventType::NewLine, None),
         (EventType::Text, Some("line 3")),
     (EventType::Exit, None)])]
 // ### 代码块与全局阶段语法的互动
@@ -1132,7 +1132,7 @@ type EventCase<'a> = (EventType, Option<&'a str>);
 ], vec![
     (EventType::EnterCodeBlock, None),
         (EventType::Separator, None),
-        (EventType::Text, Some("```")),
+        (EventType::VerbatimEscaping, Some("```")),
     (EventType::Exit, None)])]
 #[case(vec![
     indoc!{"
@@ -1142,7 +1142,7 @@ type EventCase<'a> = (EventType, Option<&'a str>);
 ], vec![
     (EventType::EnterCodeBlock, None),
         (EventType::Text, Some("info")),
-        (EventType::Text, Some("\ninfo line 2")),
+        (EventType::VerbatimEscaping, Some("\ninfo line 2")),
         (EventType::Separator, None),
     (EventType::Exit, None)])]
 // ### 代码块于 list-like 中
@@ -1216,7 +1216,8 @@ fn it_works(#[case] inputs: Vec<&str>, #[case] expected: Vec<EventCase>) {
             };
             println!("{}", description);
 
-            let global_parser = global::Parser::new(input.as_bytes(), 0);
+            let global_parser =
+                global::Parser::new(input.as_bytes(), global::NewParserOptions::default());
             let block_parser = Parser::new(input.as_bytes(), global_parser);
 
             let actual: Vec<_> = block_parser

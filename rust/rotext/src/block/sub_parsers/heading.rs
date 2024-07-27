@@ -1,6 +1,6 @@
 use crate::{
     block::{context::Context, sub_parsers},
-    events::BlockEvent,
+    events::{BlockEvent, NewLine},
 };
 
 enum State {
@@ -97,7 +97,7 @@ impl<'a> sub_parsers::SubParser<'a> for Parser {
         self.next(ctx)
     }
 
-    fn resume_from_pause_for_new_line_and_continue(&mut self) {
+    fn resume_from_pause_for_new_line_and_continue(&mut self, _new_line: NewLine) {
         unreachable!()
     }
 

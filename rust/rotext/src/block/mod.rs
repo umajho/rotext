@@ -9,7 +9,10 @@ mod tests;
 use context::Context;
 use root_parser::ExitingDiscontinuedItemLikesState;
 
-use crate::{events::BlockEvent, global};
+use crate::{
+    events::{BlockEvent, NewLine},
+    global,
+};
 use global_mapper::GlobalEventStreamMapper;
 use utils::Peekable;
 
@@ -67,11 +70,15 @@ impl<'a> Parser<'a> {
             cursor: utils::InputCursor::new(),
         };
 
+        let new_line = NewLine {
+            line_number_after: 1,
+        };
+
         Parser {
             context,
 
             is_cleaning_up: false,
-            state: State::InRootParser(root_parser::Parser::new(Some(true), None)),
+            state: State::InRootParser(root_parser::Parser::new(Some(new_line), None)),
             stack: vec![],
             nesting: Nesting {
                 item_likes_in_stack: 0,

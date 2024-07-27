@@ -1,4 +1,5 @@
 use crate::events::BlendEvent;
+use crate::events::VerbatimEscaping;
 
 pub struct RenderToHTMLOptions {
     pub initial_output_string_capacity: usize,
@@ -7,6 +8,7 @@ pub struct RenderToHTMLOptions {
 pub use using_vec_u8::render_to_html;
 
 pub mod using_string {
+
     use super::*;
 
     pub fn render_to_html<I: Iterator<Item = BlendEvent>>(
@@ -33,8 +35,9 @@ pub mod using_string {
             }
 
             match ev {
-                BlendEvent::LineBreak => result.push_str("<br>"),
-                BlendEvent::Text(content) => {
+                BlendEvent::NewLine(_) => result.push_str("<br>"),
+                BlendEvent::Text(content)
+                | BlendEvent::VerbatimEscaping(VerbatimEscaping { content, .. }) => {
                     write_escaped_html_text(&mut result, content.content(input));
                 }
                 BlendEvent::Exit => {
@@ -129,8 +132,9 @@ pub mod using_vec_u8 {
             }
 
             match ev {
-                BlendEvent::LineBreak => result.extend(b"<br>"),
-                BlendEvent::Text(content) => {
+                BlendEvent::NewLine(_) => result.extend(b"<br>"),
+                BlendEvent::Text(content)
+                | BlendEvent::VerbatimEscaping(VerbatimEscaping { content, .. }) => {
                     write_escaped_html_text(&mut result, content.content_in_u8_array(input));
                 }
                 BlendEvent::Exit => {

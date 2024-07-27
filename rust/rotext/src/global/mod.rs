@@ -1,11 +1,15 @@
 mod tests;
 
-use crate::{common::Range, events::GlobalEvent};
+use crate::{
+    common::Range,
+    events::{GlobalEvent, NewLine, VerbatimEscaping},
+};
 
 pub struct Parser<'a> {
     input: &'a [u8],
     cursor: usize,
     state: State,
+    current_line_number: usize,
     deferred: Option<GlobalEvent>,
 }
 
@@ -15,12 +19,26 @@ enum State {
     InVerbatimEscaping { backticks: usize },
 }
 
+pub struct NewParserOptions {
+    pub cursor: usize,
+    pub current_line_number: usize,
+}
+impl Default for NewParserOptions {
+    fn default() -> Self {
+        Self {
+            cursor: 0,
+            current_line_number: 1,
+        }
+    }
+}
+
 impl<'a> Parser<'a> {
-    pub fn new(input: &'a [u8], cursor: usize) -> Parser<'a> {
+    pub fn new(input: &'a [u8], opts: NewParserOptions) -> Parser<'a> {
         Parser {
             input,
-            cursor,
+            cursor: opts.cursor,
             state: State::Normal,
+            current_line_number: opts.current_line_number,
             deferred: None,
         }
     }
@@ -52,7 +70,8 @@ impl<'a> Parser<'a> {
         let mut offset = 0;
         loop {
             let index = self.cursor + offset;
-            match self.input.get(index) {
+            let ch = self.input.get(index);
+            match ch {
                 None => {
                     // 在一般情况下到达输入结尾，完成扫描并结束解析。
                     self.state = State::Ended;
@@ -62,16 +81,17 @@ impl<'a> Parser<'a> {
                         None
                     };
                 }
-                Some(b'\r') => {
+                Some(b'\r' | b'\n') => {
                     let ret = self.produce_unparsed(offset);
-                    self.deferred = Some(GlobalEvent::CarriageReturn { index });
-                    self.cursor += "\r".len();
-                    break ret;
-                }
-                Some(b'\n') => {
-                    let ret = self.produce_unparsed(offset);
-                    self.deferred = Some(GlobalEvent::LineFeed { index });
-                    self.cursor += "\n".len();
+                    self.current_line_number += 1;
+                    self.deferred = Some(GlobalEvent::NewLine(NewLine {
+                        line_number_after: self.current_line_number,
+                    }));
+                    if ch == Some(&b'\r') && self.input.get(index + 1) == Some(&b'\n') {
+                        self.cursor += "\r\n".len();
+                    } else {
+                        self.cursor += 1;
+                    }
                     break ret;
                 }
                 Some(b'<') => match self.input.get(index + 1) {
@@ -113,8 +133,8 @@ impl<'a> Parser<'a> {
         let mut offset = 0;
         loop {
             let index = self.cursor + offset;
-
-            match self.input.get(index) {
+            let ch = self.input.get(index);
+            match ch {
                 None => {
                     // 在逐字文本转义中到达结尾，完成扫描并结束解析。
                     self.state = State::Ended;
@@ -144,6 +164,14 @@ impl<'a> Parser<'a> {
                         break ret;
                     }
                 }
+                Some(b'\r' | b'\n') => {
+                    self.current_line_number += 1;
+                    if ch == Some(&b'\r') && self.input.get(index + 1) == Some(&b'\n') {
+                        offset += "\r\n".len();
+                    } else {
+                        offset += 1
+                    }
+                }
                 _ => {
                     offset += 1;
                 }
@@ -169,10 +197,29 @@ impl<'a> Parser<'a> {
         content_length: usize,
         is_closed_normally: bool,
     ) -> Option<GlobalEvent> {
-        let ret = GlobalEvent::VerbatimEscaping {
-            content: Range::new(self.cursor, content_length),
-            is_closed_forcedly: !is_closed_normally,
+        let (start, length) = {
+            // 去掉开头与结尾可能存在的一个空格。
+            let mut start = self.cursor;
+            let mut length = content_length;
+
+            if length >= 2 {
+                if self.input[start] == b' ' {
+                    start += 1;
+                    length -= 1;
+                }
+                if is_closed_normally && self.input[start + length - 1] == b' ' {
+                    length -= 1;
+                }
+            }
+
+            (start, length)
         };
+
+        let ret = GlobalEvent::VerbatimEscaping(VerbatimEscaping {
+            content: Range::new(start, length),
+            is_closed_forcedly: !is_closed_normally,
+            line_number_after: self.current_line_number,
+        });
         self.cursor += content_length;
         if is_closed_normally {
             self.cursor += backtick_length + ">".len();

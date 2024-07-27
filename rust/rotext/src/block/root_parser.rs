@@ -1,12 +1,19 @@
 use derivative::Derivative;
 
-use super::{context::Context, sub_parsers, utils::ArrayQueue, ItemLikeType, Nesting, StackEntry};
-use crate::{common::Range, events::BlockEvent};
+use super::{
+    context::Context, global_mapper::Mapped, sub_parsers, utils::ArrayQueue, ItemLikeType, Nesting,
+    StackEntry,
+};
+use crate::{
+    common::Range,
+    events::{BlockEvent, NewLine},
+};
 
 pub struct Parser<'a> {
     paused_sub_parser: Option<Box<dyn sub_parsers::SubParser<'a> + 'a>>,
 
     state: State,
+    current_line_number: usize,
     is_new_line: bool,
     to_yield: ArrayQueue<4, BlockEvent>,
 
@@ -15,9 +22,7 @@ pub struct Parser<'a> {
 
 #[derive(Debug)]
 enum State {
-    Start {
-        is_certain_is_new_line: Option<bool>,
-    },
+    Start { new_line: Option<NewLine> },
     ExpectingContainer,
     ExpectingLeaf,
     ExitingDiscontinuedItemLikes(ExitingDiscontinuedItemLikesState),
@@ -55,14 +60,14 @@ enum InternalResult<'a> {
 
 impl<'a> Parser<'a> {
     pub fn new(
-        is_certain_is_new_line: Option<bool>,
+        new_line: Option<NewLine>,
         paused_sub_parser: Option<Box<dyn sub_parsers::SubParser<'a> + 'a>>,
     ) -> Self {
         Self {
             paused_sub_parser,
-            state: State::Start {
-                is_certain_is_new_line,
-            },
+            state: State::Start { new_line },
+            // 这里只是随便初始化一下，实际在 [State::Start] 中决定。
+            current_line_number: 0,
             // 这里只是随便初始化一下，实际在 [State::Start] 中决定。
             is_new_line: false,
             to_yield: ArrayQueue::new(),
@@ -85,9 +90,7 @@ impl<'a> Parser<'a> {
             log::debug!("BLOCK->ROOT state={:?}", self.state);
 
             let internal_result = match std::mem::replace(&mut self.state, State::Invalid) {
-                State::Start {
-                    is_certain_is_new_line: is_new_line,
-                } => self.process_in_start_state(ctx, nesting, is_new_line),
+                State::Start { new_line } => self.process_in_start_state(ctx, nesting, new_line),
                 State::ExpectingContainer => {
                     self.process_in_expecting_container_state(ctx, stack, nesting)
                 }
@@ -120,20 +123,24 @@ impl<'a> Parser<'a> {
         &mut self,
         ctx: &mut Context<'a>,
         nesting: &mut Nesting,
-        is_certain_is_new_line: Option<bool>,
+        new_line: Option<NewLine>,
     ) -> InternalResult<'a> {
         if let Some(state) = nesting.is_exiting_discontinued_item_likes.take() {
             self.is_new_line = true;
             return InternalResult::ToContinue(State::ExitingDiscontinuedItemLikes(state));
         }
 
-        if let Some(is_new_line) = is_certain_is_new_line {
-            self.is_new_line = is_new_line;
-        } else {
-            self.is_new_line = ctx.mapper.peek(0).is_some_and(|p| p.is_line_feed());
+        if let Some(new_line) = new_line {
+            self.is_new_line = true;
+            self.current_line_number = new_line.line_number_after;
+        } else if let Some(Mapped::NewLine(new_line)) = ctx.mapper.peek(0) {
+            self.is_new_line = true;
+            self.current_line_number = new_line.line_number_after;
             if self.is_new_line {
                 ctx.must_take_from_mapper_and_apply_to_cursor(1);
             }
+        } else {
+            self.is_new_line = false
         }
 
         if self.is_new_line {
@@ -154,7 +161,9 @@ impl<'a> Parser<'a> {
         let is_expecting_deeper = nesting.item_likes_in_stack == nesting.processed_item_likes;
         if is_expecting_deeper {
             if let Some(mut paused_sub_parser) = self.paused_sub_parser.take() {
-                paused_sub_parser.resume_from_pause_for_new_line_and_continue();
+                paused_sub_parser.resume_from_pause_for_new_line_and_continue(NewLine {
+                    line_number_after: self.current_line_number,
+                });
                 return InternalResult::ToSwitchToSubParser(paused_sub_parser);
             }
         }
@@ -220,18 +229,14 @@ impl<'a> Parser<'a> {
         let Some(peeked) = ctx.mapper.peek(0) else {
             return InternalResult::Done;
         };
-        if peeked.is_line_feed() {
-            let new_state = State::Start {
-                is_certain_is_new_line: None,
-            };
+        if peeked.is_new_line() {
+            let new_state = State::Start { new_line: None };
             return InternalResult::ToContinue(new_state);
         }
 
         match scan_leaf(ctx) {
             LeafType::ThematicBreak => {
-                let new_state = State::Start {
-                    is_certain_is_new_line: None,
-                };
+                let new_state = State::Start { new_line: None };
                 self.to_yield.push_back(BlockEvent::ThematicBreak);
                 InternalResult::ToContinue(new_state)
             }
@@ -397,7 +402,7 @@ fn scan_paragraph_or_item_like(ctx: &mut Context) -> ScanParagraphOrItemLikeResu
 fn check_is_indeed_item_like(ctx: &mut Context, second_char: &Option<u8>) -> bool {
     let is_indeed_item_like = second_char == &Some(b' ') || {
         let p = ctx.mapper.peek(1);
-        p.is_none() || p.is_some_and(|p| p.is_line_feed())
+        p.is_none() || p.is_some_and(|p| p.is_new_line())
     };
     if is_indeed_item_like {
         let to_take = if second_char.is_some() { 2 } else { 1 };

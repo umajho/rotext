@@ -11,13 +11,8 @@ pub enum EventType {
     // 在全局阶段产出，在块级阶段消耗（转化为 [EventType::Text]）。
     VerbatimEscaping = 101,
 
-    // 换行相关，皆在全局阶段产出。其中 CR 在块级阶段消耗（可能转化为 LF），LF
-    // 在块级阶段、行内阶段保留或消耗。
-    CarriageReturn = 201,
-    LineFeed = 202,
-
     // 在块级阶段产出，由 CR 与 LF 而来。
-    LineBreak = 299,
+    NewLine = 299,
 
     // 在块级阶段与行内阶段产出。
     Text = 1001,
@@ -68,21 +63,24 @@ pub enum Event {
     ///
     /// NOTE: 内容包含开头和结尾各可能存在的一个空格，省略上述空格的处理是在块级
     /// 阶段将 VerbatimEscaping 变换为 Text 时进行。
-    #[subenum(GlobalEvent)]
-    VerbatimEscaping {
-        content: Range,
-        is_closed_forcedly: bool,
-    } = EventType::VerbatimEscaping as u32,
+    #[subenum(
+        GlobalEvent,
+        BlockEvent,
+        InlineLevelParseInputEvent,
+        InlineEvent,
+        BlendEvent
+    )]
+    VerbatimEscaping(VerbatimEscaping) = EventType::VerbatimEscaping as u32,
 
-    #[subenum(GlobalEvent)]
-    CarriageReturn { index: usize } = EventType::CarriageReturn as u32,
-    /// LF 换行。对于块级阶段，只在解析内容时产生。
-    #[subenum(GlobalEvent)]
-    LineFeed { index: usize } = EventType::LineFeed as u32,
-
-    /// 换行，由 CR 与 LF 而来。
-    #[subenum(BlockEvent, InlineLevelParseInputEvent, InlineEvent, BlendEvent)]
-    LineBreak = EventType::LineBreak as u32,
+    /// 换行，在全局阶段由 CR 与 LF 而来。
+    #[subenum(
+        GlobalEvent,
+        BlockEvent,
+        InlineLevelParseInputEvent,
+        InlineEvent,
+        BlendEvent
+    )]
+    NewLine(NewLine) = EventType::NewLine as u32,
 
     /// 文本。
     #[subenum(BlockEvent, InlineLevelParseInputEvent, InlineEvent, BlendEvent)]
@@ -145,6 +143,18 @@ pub enum Event {
     EnterCodeBlock = EventType::EnterCodeBlock as u32,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct VerbatimEscaping {
+    pub content: Range,
+    pub is_closed_forcedly: bool,
+    pub line_number_after: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NewLine {
+    pub line_number_after: usize,
+}
+
 impl Event {
     #[cfg(test)]
     pub fn discriminant(&self) -> u32 {
@@ -154,11 +164,9 @@ impl Event {
     pub fn content<'a>(&self, input: &'a [u8]) -> Option<&'a str> {
         let result = match self {
             Event::Unparsed(content)
-            | Event::VerbatimEscaping { content, .. }
+            | Event::VerbatimEscaping(VerbatimEscaping { content, .. })
             | Event::Text(content) => content.content(input),
-            Event::CarriageReturn { .. }
-            | Event::LineFeed { .. }
-            | Event::LineBreak
+            Event::NewLine { .. }
             | Event::Exit
             | Event::Separator
             | Event::EnterParagraph
@@ -186,12 +194,23 @@ impl Event {
     pub fn assertion_flags(&self) -> Option<std::collections::HashSet<&'static str>> {
         let mut flags = std::collections::HashSet::new();
 
-        match *self {
-            Event::VerbatimEscaping {
-                content: _,
-                is_closed_forcedly,
-            } if is_closed_forcedly => {
+        match self {
+            Event::VerbatimEscaping(VerbatimEscaping {
+                is_closed_forcedly, ..
+            }) if *is_closed_forcedly => {
                 flags.insert("F");
+            }
+            _ => {}
+        }
+
+        match self {
+            Event::VerbatimEscaping(VerbatimEscaping {
+                line_number_after, ..
+            })
+            | Event::NewLine(NewLine { line_number_after }) => {
+                let flag_ln_after = format!(">ln:{}", line_number_after);
+                // 反正也只在测试时使用，为图开发方便，干脆就 leak 了。
+                flags.insert(flag_ln_after.leak());
             }
             _ => {}
         }

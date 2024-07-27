@@ -18,7 +18,10 @@ impl<'a> Parser<'a> {
 
         let to_yield = match next {
             InlineLevelParseInputEvent::Unparsed(content) => InlineEvent::Text(content),
-            InlineLevelParseInputEvent::LineBreak => InlineEvent::LineBreak,
+            InlineLevelParseInputEvent::VerbatimEscaping(verbatim_escaping) => {
+                InlineEvent::VerbatimEscaping(verbatim_escaping)
+            }
+            InlineLevelParseInputEvent::NewLine(new_line) => InlineEvent::NewLine(new_line),
             InlineLevelParseInputEvent::Text(content) => InlineEvent::Text(content),
         };
 
