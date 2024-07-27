@@ -6,6 +6,9 @@ mod global;
 mod inline;
 pub mod rendering;
 
+#[cfg(test)]
+pub(crate) mod test_utils;
+
 pub use events::{BlendEvent, Event};
 pub use rendering::{render_to_html, RenderToHTMLOptions};
 
