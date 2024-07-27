@@ -1,4 +1,4 @@
-pub use crate::events::BlendEvent;
+use crate::events::BlendEvent;
 
 pub struct RenderToHTMLOptions {
     pub initial_output_string_capacity: usize,
