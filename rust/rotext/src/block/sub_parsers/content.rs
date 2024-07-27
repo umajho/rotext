@@ -13,6 +13,8 @@ pub enum StepState {
     Initial,
     Normal(Range),
     IsAfterLineFeed,
+
+    Invalid,
 }
 impl Default for StepState {
     fn default() -> Self {
@@ -104,6 +106,7 @@ impl Parser {
                 StepState::Initial => self.process_in_initial_state(ctx),
                 StepState::Normal(ref mut content) => self.process_in_normal_state(ctx, content),
                 StepState::IsAfterLineFeed => self.process_in_is_after_line_feed_state(ctx),
+                StepState::Invalid => unreachable!(),
             };
 
             // log::debug!("CONTENT internal_result={:?}", internal_result);

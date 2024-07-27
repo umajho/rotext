@@ -68,7 +68,7 @@ impl Parser {
                     sub_parsers::Result::ToPauseForNewLine => unreachable!(),
                     sub_parsers::Result::Done => {
                         let opts = sub_parsers::content::Options {
-                            initial_step_state: sub_parsers::content::StepState::IsAfterLineFeed,
+                            initial_step_state: sub_parsers::content::StepState::Invalid,
                             mode: sub_parsers::content::Mode::Verbatim,
                             end_conditions: sub_parsers::content::EndConditions {
                                 after_repetitive_characters: Some(
