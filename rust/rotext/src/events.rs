@@ -3,44 +3,42 @@ use subenum::subenum;
 use crate::common::Range;
 
 #[derive(Debug, PartialEq, Eq)]
-#[repr(u32)]
+#[repr(u8)]
 pub enum EventType {
     // 在全局阶段产出，由块级阶段和行内阶段逐渐消耗。
-    Unparsed = 1,
+    Unparsed = 255,
 
-    // 在全局阶段产出，在块级阶段消耗（转化为 [EventType::Text]）。
-    VerbatimEscaping = 101,
-
-    // 在块级阶段产出，由 CR 与 LF 而来。
-    NewLine = 299,
+    // 在全局阶段产出，由 CR 与 LF 而来。
+    NewLine = 201,
+    VerbatimEscaping = 202,
 
     // 在块级阶段与行内阶段产出。
-    Text = 1001,
-    Exit = 1011,
-    Separator = 1021,
+    Text = 203,
+    Exit = 251,
+    Separator = 252,
 
     // 在块级阶段产出。
-    EnterParagraph = 10001,
-    ThematicBreak = 10011,
-    EnterHeading1 = 10021,
-    EnterHeading2 = 10022,
-    EnterHeading3 = 10023,
-    EnterHeading4 = 10024,
-    EnterHeading5 = 10025,
-    EnterHeading6 = 10026,
-    EnterBlockQuote = 10031,
-    EnterOrderedList = 10041,
-    EnterUnorderedList = 10042,
-    EnterListItem = 10049,
-    EnterDescriptionList = 10051,
-    EnterDescriptionTerm = 10058,
-    EnterDescriptionDetails = 10059,
-    EnterCodeBlock = 10061,
+    EnterParagraph = 7,
+    ThematicBreak = 8,
+    EnterHeading1 = 1,
+    EnterHeading2 = 2,
+    EnterHeading3 = 3,
+    EnterHeading4 = 4,
+    EnterHeading5 = 5,
+    EnterHeading6 = 6,
+    EnterBlockQuote = 11,
+    EnterOrderedList = 12,
+    EnterUnorderedList = 13,
+    EnterListItem = 14,
+    EnterDescriptionList = 15,
+    EnterDescriptionTerm = 16,
+    EnterDescriptionDetails = 17,
+    EnterCodeBlock = 21,
 }
 
 #[cfg(test)]
-impl From<u32> for EventType {
-    fn from(value: u32) -> Self {
+impl From<u8> for EventType {
+    fn from(value: u8) -> Self {
         unsafe { std::mem::transmute(value) }
     }
 }
@@ -53,11 +51,11 @@ impl From<u32> for EventType {
     BlendEvent
 )]
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[repr(u32)]
+#[repr(u8)]
 pub enum Event {
     /// 留给下个阶段解析。
     #[subenum(GlobalEvent, BlockEvent, InlineLevelParseInputEvent)]
-    Unparsed(Range) = EventType::Unparsed as u32,
+    Unparsed(Range) = EventType::Unparsed as u8,
 
     /// 逐字文本转义。
     ///
@@ -70,7 +68,7 @@ pub enum Event {
         InlineEvent,
         BlendEvent
     )]
-    VerbatimEscaping(VerbatimEscaping) = EventType::VerbatimEscaping as u32,
+    VerbatimEscaping(VerbatimEscaping) = EventType::VerbatimEscaping as u8,
 
     /// 换行，在全局阶段由 CR 与 LF 而来。
     #[subenum(
@@ -80,67 +78,67 @@ pub enum Event {
         InlineEvent,
         BlendEvent
     )]
-    NewLine(NewLine) = EventType::NewLine as u32,
+    NewLine(NewLine) = EventType::NewLine as u8,
 
     /// 文本。
     #[subenum(BlockEvent, InlineLevelParseInputEvent, InlineEvent, BlendEvent)]
-    Text(Range) = EventType::Text as u32,
+    Text(Range) = EventType::Text as u8,
     /// 退出一层 “进入…”。
     #[subenum(BlockEvent, InlineEvent, BlendEvent)]
-    Exit = EventType::Exit as u32,
+    Exit = EventType::Exit as u8,
     /// 分隔符。出现于块级嵌入包含、块级扩展与代码块的内容中。其中代码块会用它来
     /// 隔开 info string 与实际代码内容。
     #[subenum(BlockEvent, InlineEvent, BlendEvent)]
-    Separator = EventType::Separator as u32,
+    Separator = EventType::Separator as u8,
 
     /// 进入段落。
     #[subenum(BlockEvent, BlendEvent)]
-    EnterParagraph = EventType::EnterParagraph as u32,
+    EnterParagraph = EventType::EnterParagraph as u8,
     /// 分割线。
     #[subenum(BlockEvent, BlendEvent)]
-    ThematicBreak = EventType::ThematicBreak as u32,
+    ThematicBreak = EventType::ThematicBreak as u8,
     /// 一级标题。
     #[subenum(BlockEvent, BlendEvent)]
-    EnterHeading1 = EventType::EnterHeading1 as u32,
+    EnterHeading1 = EventType::EnterHeading1 as u8,
     /// 二级标题。
     #[subenum(BlockEvent, BlendEvent)]
-    EnterHeading2 = EventType::EnterHeading2 as u32,
+    EnterHeading2 = EventType::EnterHeading2 as u8,
     /// 三级标题。
     #[subenum(BlockEvent, BlendEvent)]
-    EnterHeading3 = EventType::EnterHeading3 as u32,
+    EnterHeading3 = EventType::EnterHeading3 as u8,
     /// 四级标题。
     #[subenum(BlockEvent, BlendEvent)]
-    EnterHeading4 = EventType::EnterHeading4 as u32,
+    EnterHeading4 = EventType::EnterHeading4 as u8,
     /// 五级标题。
     #[subenum(BlockEvent, BlendEvent)]
-    EnterHeading5 = EventType::EnterHeading5 as u32,
+    EnterHeading5 = EventType::EnterHeading5 as u8,
     /// 六级标题。
     #[subenum(BlockEvent, BlendEvent)]
-    EnterHeading6 = EventType::EnterHeading6 as u32,
+    EnterHeading6 = EventType::EnterHeading6 as u8,
     /// 块引用
     #[subenum(BlockEvent, BlendEvent)]
-    EnterBlockQuote = EventType::EnterBlockQuote as u32,
+    EnterBlockQuote = EventType::EnterBlockQuote as u8,
     /// 有序列表
     #[subenum(BlockEvent, BlendEvent)]
-    EnterOrderedList = EventType::EnterOrderedList as u32,
+    EnterOrderedList = EventType::EnterOrderedList as u8,
     /// 无序列表
     #[subenum(BlockEvent, BlendEvent)]
-    EnterUnorderedList = EventType::EnterUnorderedList as u32,
+    EnterUnorderedList = EventType::EnterUnorderedList as u8,
     /// 列表项
     #[subenum(BlockEvent, BlendEvent)]
-    EnterListItem = EventType::EnterListItem as u32,
+    EnterListItem = EventType::EnterListItem as u8,
     /// 描述列表
     #[subenum(BlockEvent, BlendEvent)]
-    EnterDescriptionList = EventType::EnterDescriptionList as u32,
+    EnterDescriptionList = EventType::EnterDescriptionList as u8,
     /// 描述术语
     #[subenum(BlockEvent, BlendEvent)]
-    EnterDescriptionTerm = EventType::EnterDescriptionTerm as u32,
+    EnterDescriptionTerm = EventType::EnterDescriptionTerm as u8,
     /// 描述详情
     #[subenum(BlockEvent, BlendEvent)]
-    EnterDescriptionDetails = EventType::EnterDescriptionDetails as u32,
+    EnterDescriptionDetails = EventType::EnterDescriptionDetails as u8,
     /// 代码块。
     #[subenum(BlockEvent, BlendEvent)]
-    EnterCodeBlock = EventType::EnterCodeBlock as u32,
+    EnterCodeBlock = EventType::EnterCodeBlock as u8,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -157,8 +155,8 @@ pub struct NewLine {
 
 impl Event {
     #[cfg(test)]
-    pub fn discriminant(&self) -> u32 {
-        unsafe { *<*const _>::from(self).cast::<u32>() }
+    pub fn discriminant(&self) -> u8 {
+        unsafe { *<*const _>::from(self).cast::<u8>() }
     }
 
     pub fn content<'a>(&self, input: &'a [u8]) -> Option<&'a str> {
