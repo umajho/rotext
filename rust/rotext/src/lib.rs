@@ -4,7 +4,7 @@ mod common;
 mod events;
 mod global;
 mod inline;
-mod rendering;
+pub mod rendering;
 
 pub use events::{BlendEvent, Event};
 pub use rendering::{render_to_html, RenderToHTMLOptions};

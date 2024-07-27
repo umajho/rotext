@@ -30,8 +30,10 @@ impl Range {
         self.length += delta;
     }
 
+    pub fn content_in_u8_array<'a>(&self, input: &'a [u8]) -> &'a [u8] {
+        &input[self.start..self.start + self.length]
+    }
     pub fn content<'a>(&self, input: &'a [u8]) -> &'a str {
-        let slice = &input[self.start..self.start + self.length];
-        unsafe { std::str::from_utf8_unchecked(slice) }
+        unsafe { std::str::from_utf8_unchecked(self.content_in_u8_array(input)) }
     }
 }
