@@ -8,7 +8,7 @@ use crate::{
 
 /// 用于将产出 [global::Event] 的流转化为便于 [Parser] 处理的流。
 pub struct GlobalEventStreamMapper<'a> {
-    input: &'a [u8],
+    // input: &'a [u8],
     stream: global::Parser<'a>,
 
     remain: Option<RemainUnparsed>,
@@ -39,9 +39,9 @@ impl Mapped {
 }
 
 impl<'a> GlobalEventStreamMapper<'a> {
-    pub fn new(input: &'a [u8], stream: global::Parser<'a>) -> GlobalEventStreamMapper<'a> {
+    pub fn new(_input: &'a [u8], stream: global::Parser<'a>) -> GlobalEventStreamMapper<'a> {
         GlobalEventStreamMapper {
-            input,
+            // input,
             stream,
             remain: None,
         }
