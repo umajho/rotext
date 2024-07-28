@@ -6,12 +6,12 @@ fn main() {
 
 static CONTENT: LazyLock<String> = LazyLock::new(|| read_doc("rotext入门-new.rotext"));
 
-#[divan::bench(sample_size = 10_000)]
+#[divan::bench(sample_size = 10)]
 fn parsing_getting_started(bencher: divan::Bencher) {
     let file_content = CONTENT.clone();
 
     bencher.bench(|| {
-        rotext::parse(file_content.as_bytes());
+        rotext::parse(file_content.as_bytes()).for_each(drop);
     })
 }
 
