@@ -97,46 +97,46 @@ pub enum Event {
     /// 分割线。
     #[subenum(BlockEvent, BlendEvent)]
     ThematicBreak = EventType::ThematicBreak as u8,
-    /// 一级标题。
+    /// 进入一级标题。
     #[subenum(BlockEvent, BlendEvent)]
     EnterHeading1 = EventType::EnterHeading1 as u8,
-    /// 二级标题。
+    /// 进入二级标题。
     #[subenum(BlockEvent, BlendEvent)]
     EnterHeading2 = EventType::EnterHeading2 as u8,
-    /// 三级标题。
+    /// 进入三级标题。
     #[subenum(BlockEvent, BlendEvent)]
     EnterHeading3 = EventType::EnterHeading3 as u8,
-    /// 四级标题。
+    /// 进入四级标题。
     #[subenum(BlockEvent, BlendEvent)]
     EnterHeading4 = EventType::EnterHeading4 as u8,
-    /// 五级标题。
+    /// 进入五级标题。
     #[subenum(BlockEvent, BlendEvent)]
     EnterHeading5 = EventType::EnterHeading5 as u8,
-    /// 六级标题。
+    /// 进入六级标题。
     #[subenum(BlockEvent, BlendEvent)]
     EnterHeading6 = EventType::EnterHeading6 as u8,
-    /// 块引用
+    /// 进入块引用
     #[subenum(BlockEvent, BlendEvent)]
     EnterBlockQuote = EventType::EnterBlockQuote as u8,
-    /// 有序列表
+    /// 进入有序列表
     #[subenum(BlockEvent, BlendEvent)]
     EnterOrderedList = EventType::EnterOrderedList as u8,
-    /// 无序列表
+    /// 进入无序列表
     #[subenum(BlockEvent, BlendEvent)]
     EnterUnorderedList = EventType::EnterUnorderedList as u8,
-    /// 列表项
+    /// 进入列表项
     #[subenum(BlockEvent, BlendEvent)]
     EnterListItem = EventType::EnterListItem as u8,
-    /// 描述列表
+    /// 进入描述列表
     #[subenum(BlockEvent, BlendEvent)]
     EnterDescriptionList = EventType::EnterDescriptionList as u8,
-    /// 描述术语
+    /// 进入描述术语
     #[subenum(BlockEvent, BlendEvent)]
     EnterDescriptionTerm = EventType::EnterDescriptionTerm as u8,
-    /// 描述详情
+    /// 进入描述详情
     #[subenum(BlockEvent, BlendEvent)]
     EnterDescriptionDetails = EventType::EnterDescriptionDetails as u8,
-    /// 代码块。
+    /// 进入代码块。
     #[subenum(BlockEvent, BlendEvent)]
     EnterCodeBlock = EventType::EnterCodeBlock as u8,
 }
