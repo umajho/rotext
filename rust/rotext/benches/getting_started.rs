@@ -17,7 +17,7 @@ fn parsing_getting_started(bencher: divan::Bencher) {
 
 #[divan::bench(sample_size = 10)]
 fn rendering_getting_started_using_string(bencher: divan::Bencher) {
-    let file_content = read_doc("rotext入门-new.rotext");
+    let file_content = CONTENT.clone();
 
     bencher
         .with_inputs(|| rotext::parse(file_content.as_bytes()))
@@ -34,7 +34,7 @@ fn rendering_getting_started_using_string(bencher: divan::Bencher) {
 
 #[divan::bench(sample_size = 10)]
 fn rendering_getting_started_using_vec_u8(bencher: divan::Bencher) {
-    let file_content = read_doc("rotext入门-new.rotext");
+    let file_content = CONTENT.clone();
 
     bencher
         .with_inputs(|| rotext::parse(file_content.as_bytes()))
