@@ -68,6 +68,10 @@ impl<'a> Parser<'a> {
             input,
             mapper: Peekable::new(GlobalEventStreamMapper::new(input, global_stream)),
             cursor: utils::InputCursor::new(),
+
+            // 这里只是随便初始化一下，实际在 [State::Start] 中决定。
+            #[cfg(feature = "line-number")]
+            current_line_number: 0,
         };
 
         let new_line = NewLine {

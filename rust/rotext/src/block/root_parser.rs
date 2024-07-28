@@ -13,8 +13,6 @@ pub struct Parser<'a> {
     paused_sub_parser: Option<Box<dyn sub_parsers::SubParser<'a> + 'a>>,
 
     state: State,
-    #[cfg(feature = "line-number")]
-    current_line_number: usize,
     is_new_line: bool,
     to_yield: ArrayQueue<4, BlockEvent>,
 
@@ -67,9 +65,6 @@ impl<'a> Parser<'a> {
         Self {
             paused_sub_parser,
             state: State::Start { new_line },
-            // 这里只是随便初始化一下，实际在 [State::Start] 中决定。
-            #[cfg(feature = "line-number")]
-            current_line_number: 0,
             // 这里只是随便初始化一下，实际在 [State::Start] 中决定。
             is_new_line: false,
             to_yield: ArrayQueue::new(),
@@ -137,13 +132,13 @@ impl<'a> Parser<'a> {
             self.is_new_line = true;
             #[cfg(feature = "line-number")]
             {
-                self.current_line_number = new_line.line_number_after;
+                ctx.current_line_number = new_line.line_number_after;
             }
         } else if let Some(Mapped::NewLine(new_line)) = ctx.mapper.peek(0) {
             self.is_new_line = true;
             #[cfg(feature = "line-number")]
             {
-                self.current_line_number = new_line.line_number_after;
+                ctx.current_line_number = new_line.line_number_after;
             }
             if self.is_new_line {
                 ctx.must_take_from_mapper_and_apply_to_cursor(1);
@@ -172,7 +167,7 @@ impl<'a> Parser<'a> {
             if let Some(mut paused_sub_parser) = self.paused_sub_parser.take() {
                 paused_sub_parser.resume_from_pause_for_new_line_and_continue(NewLine {
                     #[cfg(feature = "line-number")]
-                    line_number_after: self.current_line_number,
+                    line_number_after: ctx.current_line_number,
                 });
                 return InternalResult::ToSwitchToSubParser(paused_sub_parser);
             }

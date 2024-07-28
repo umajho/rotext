@@ -9,6 +9,9 @@ pub struct Context<'a> {
     pub input: &'a [u8],
     pub mapper: Peekable<3, GlobalEventStreamMapper<'a>>,
     pub cursor: InputCursor,
+
+    #[cfg(feature = "line-number")]
+    pub current_line_number: usize,
 }
 
 impl<'a> Context<'a> {
