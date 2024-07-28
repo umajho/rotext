@@ -9,6 +9,18 @@ use crate::{
     test_utils::{report_failed_cases, FaildCase},
 };
 
+/// event matcher
+macro_rules! m {
+    ($event_type:expr, $content:expr, $flags:expr) => {
+        EventMatcher {
+            event_type: $event_type,
+            content: $content,
+            flags: $flags,
+        }
+    };
+}
+
+/// flag
 macro_rules! f {
     ($($flag:expr),*) => {
         Some(HashSet::from([$($flag),*]))
@@ -35,47 +47,53 @@ fn it_works() {
                 case!("", vec![]),
                 case!(
                     "Hello, world!",
-                    vec![(Unparsed, Some("Hello, world!"), None)]
+                    vec![m!(Unparsed, Some("Hello, world!"), None)]
                 ),
-                case!("<", vec![(Unparsed, Some("<"), None)]),
+                case!("<", vec![m!(Unparsed, Some("<"), None)]),
             ],
         },
         GroupedCases {
             group: "CRLF",
             cases: vec![
-                case!("\r", vec![(NewLine, None, f!(">ln:2"))]),
+                case!("\r", vec![m!(NewLine, None, f!(">ln:2"))]),
                 case!(
                     "\r\r",
-                    vec![(NewLine, None, f!(">ln:2")), (NewLine, None, f!(">ln:3"))]
+                    vec![
+                        m!(NewLine, None, f!(">ln:2")),
+                        m!(NewLine, None, f!(">ln:3"))
+                    ]
                 ),
-                case!("\n", vec![(NewLine, None, f!(">ln:2"))]),
+                case!("\n", vec![m!(NewLine, None, f!(">ln:2"))]),
                 case!(
                     "\n\n",
-                    vec![(NewLine, None, f!(">ln:2")), (NewLine, None, f!(">ln:3"))]
+                    vec![
+                        m!(NewLine, None, f!(">ln:2")),
+                        m!(NewLine, None, f!(">ln:3"))
+                    ]
                 ),
-                case!("\r\n", vec![(NewLine, None, f!(">ln:2"))]),
+                case!("\r\n", vec![m!(NewLine, None, f!(">ln:2"))]),
                 case!(
                     "Left\rRight",
                     vec![
-                        (Unparsed, Some("Left"), None),
-                        (NewLine, None, f!(">ln:2")),
-                        (Unparsed, Some("Right"), None)
+                        m!(Unparsed, Some("Left"), None),
+                        m!(NewLine, None, f!(">ln:2")),
+                        m!(Unparsed, Some("Right"), None)
                     ]
                 ),
                 case!(
                     "Left\nRight",
                     vec![
-                        (Unparsed, Some("Left"), None),
-                        (NewLine, None, f!(">ln:2")),
-                        (Unparsed, Some("Right"), None)
+                        m!(Unparsed, Some("Left"), None),
+                        m!(NewLine, None, f!(">ln:2")),
+                        m!(Unparsed, Some("Right"), None)
                     ]
                 ),
                 case!(
                     "Left\r\nRight",
                     vec![
-                        (Unparsed, Some("Left"), None),
-                        (NewLine, None, f!(">ln:2")),
-                        (Unparsed, Some("Right"), None)
+                        m!(Unparsed, Some("Left"), None),
+                        m!(NewLine, None, f!(">ln:2")),
+                        m!(Unparsed, Some("Right"), None)
                     ]
                 ),
             ],
@@ -83,54 +101,57 @@ fn it_works() {
         GroupedCases {
             group: "逐字文本转义",
             cases: vec![
-                case!("<` … `>", vec![(VerbatimEscaping, Some("…"), f!(">ln:1"))]),
+                case!(
+                    "<` … `>",
+                    vec![m!(VerbatimEscaping, Some("…"), f!(">ln:1"))]
+                ),
                 case!(
                     "<`` … `>",
-                    vec![(VerbatimEscaping, Some("… `>"), f!("F", ">ln:1"))]
+                    vec![m!(VerbatimEscaping, Some("… `>"), f!("F", ">ln:1"))]
                 ),
                 case!(
                     "<` … ``>",
-                    vec![(VerbatimEscaping, Some("… `"), f!(">ln:1"))]
+                    vec![m!(VerbatimEscaping, Some("… `"), f!(">ln:1"))]
                 ),
                 case!(
                     "<`` `> ``>",
-                    vec![(VerbatimEscaping, Some("`>"), f!(">ln:1"))]
+                    vec![m!(VerbatimEscaping, Some("`>"), f!(">ln:1"))]
                 ),
                 case!(
                     "<` line 1\nline 2 `>",
-                    vec![(VerbatimEscaping, Some("line 1\nline 2"), f!(">ln:2"))]
+                    vec![m!(VerbatimEscaping, Some("line 1\nline 2"), f!(">ln:2"))]
                 ),
                 case!(
                     "<` A `><` B `>",
                     vec![
-                        (VerbatimEscaping, Some("A"), f!(">ln:1")),
-                        (VerbatimEscaping, Some("B"), f!(">ln:1"))
+                        m!(VerbatimEscaping, Some("A"), f!(">ln:1")),
+                        m!(VerbatimEscaping, Some("B"), f!(">ln:1"))
                     ]
                 ),
                 case!(
                     "Left<` … `>Right",
                     vec![
-                        (Unparsed, Some("Left"), None),
-                        (VerbatimEscaping, Some("…"), f!(">ln:1")),
-                        (Unparsed, Some("Right"), None)
+                        m!(Unparsed, Some("Left"), None),
+                        m!(VerbatimEscaping, Some("…"), f!(">ln:1")),
+                        m!(Unparsed, Some("Right"), None)
                     ]
                 ),
                 case!(
                     "<` `> `>",
                     vec![
-                        (VerbatimEscaping, Some(" "), f!(">ln:1")),
-                        (Unparsed, Some(" `>"), None)
+                        m!(VerbatimEscaping, Some(" "), f!(">ln:1")),
+                        m!(Unparsed, Some(" `>"), None)
                     ]
                 ),
                 case!(
                     "<` <` `>",
-                    vec![(VerbatimEscaping, Some("<`"), f!(">ln:1"))]
+                    vec![m!(VerbatimEscaping, Some("<`"), f!(">ln:1"))]
                 ),
                 case!(
                     "Foo<`Bar",
                     vec![
-                        (Unparsed, Some("Foo"), None),
-                        (VerbatimEscaping, Some("Bar"), f!("F", ">ln:1"))
+                        m!(Unparsed, Some("Foo"), None),
+                        m!(VerbatimEscaping, Some("Bar"), f!("F", ">ln:1"))
                     ]
                 ),
             ],
@@ -182,24 +203,48 @@ struct Case {
 }
 impl Case {
     fn assert_ok(&self) {
+        let expected: Vec<EventMatcher> = if cfg!(not(feature = "line-number")) {
+            self.expected
+                .clone()
+                .into_iter()
+                .map(|mut m| {
+                    if let Some(flags) = m.flags {
+                        let new_flags: HashSet<&str> = flags
+                            .into_iter()
+                            .filter(|f| !f.starts_with(">ln:"))
+                            .collect();
+                        m.flags = if new_flags.is_empty() {
+                            None
+                        } else {
+                            Some(new_flags)
+                        };
+                    }
+                    m
+                })
+                .collect()
+        } else {
+            self.expected.clone()
+        };
+
         let parser = Parser::new(self.input.as_bytes(), NewParserOptions::default());
         let actual: Vec<_> = parser
             .map(|ev| -> EventMatcher {
                 let ev: Event = ev.into();
-                (
-                    EventType::from(ev.discriminant()),
-                    ev.content(self.input.as_bytes()),
-                    ev.assertion_flags(),
-                )
+                EventMatcher {
+                    event_type: EventType::from(ev.discriminant()),
+                    content: ev.content(self.input.as_bytes()),
+                    flags: ev.assertion_flags(),
+                }
             })
             .collect();
 
-        assert_eq!(self.expected, actual);
+        assert_eq!(expected, actual);
     }
 }
 
-type EventMatcher = (
-    EventType,
-    Option<&'static str>,
-    Option<HashSet<&'static str>>,
-);
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct EventMatcher {
+    event_type: EventType,
+    content: Option<&'static str>,
+    flags: Option<HashSet<&'static str>>,
+}

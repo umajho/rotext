@@ -2,7 +2,7 @@ use subenum::subenum;
 
 use crate::common::Range;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum EventType {
     // 在全局阶段产出，由块级阶段和行内阶段逐渐消耗。
@@ -145,11 +145,13 @@ pub enum Event {
 pub struct VerbatimEscaping {
     pub content: Range,
     pub is_closed_forcedly: bool,
+    #[cfg(feature = "line-number")]
     pub line_number_after: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NewLine {
+    #[cfg(feature = "line-number")]
     pub line_number_after: usize,
 }
 
@@ -201,6 +203,7 @@ impl Event {
             _ => {}
         }
 
+        #[cfg(feature = "line-number")]
         match self {
             Event::VerbatimEscaping(VerbatimEscaping {
                 line_number_after, ..

@@ -71,6 +71,7 @@ impl<'a> Parser<'a> {
         };
 
         let new_line = NewLine {
+            #[cfg(feature = "line-number")]
             line_number_after: 1,
         };
 

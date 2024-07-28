@@ -9,6 +9,7 @@ use super::*;
 macro_rules! new_line {
     ($line_number_after:expr) => {
         Mapped::NewLine(NewLine {
+            #[cfg(feature = "line-number")]
             line_number_after: $line_number_after,
         })
     };
@@ -18,6 +19,7 @@ macro_rules! verbatim_escaping {
         Mapped::VerbatimEscaping(VerbatimEscaping {
             content: Range::new($content_start, $content_length),
             is_closed_forcedly: false,
+            #[cfg(feature = "line-number")]
             line_number_after: $line_number_after,
         })
     };
@@ -25,6 +27,7 @@ macro_rules! verbatim_escaping {
         Mapped::VerbatimEscaping(VerbatimEscaping {
             content: Range::new($content_start, $content_length),
             is_closed_forcedly: true,
+            #[cfg(feature = "line-number")]
             line_number_after: $line_number_after,
         })
     };

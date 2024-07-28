@@ -7,6 +7,9 @@ authors.workspace = true
 repository.workspace = true
 description = "The official and de facto Rotext parser."
 
+[features]
+line-number = []
+
 [dependencies]
 derivative = "2.2.0"
 log = "0.4.22"

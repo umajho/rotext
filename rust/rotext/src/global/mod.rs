@@ -9,6 +9,7 @@ pub struct Parser<'a> {
     input: &'a [u8],
     cursor: usize,
     state: State,
+    #[cfg(feature = "line-number")]
     current_line_number: usize,
     deferred: Option<GlobalEvent>,
 }
@@ -21,12 +22,14 @@ enum State {
 
 pub struct NewParserOptions {
     pub cursor: usize,
+    #[cfg(feature = "line-number")]
     pub current_line_number: usize,
 }
 impl Default for NewParserOptions {
     fn default() -> Self {
         Self {
             cursor: 0,
+            #[cfg(feature = "line-number")]
             current_line_number: 1,
         }
     }
@@ -38,6 +41,7 @@ impl<'a> Parser<'a> {
             input,
             cursor: opts.cursor,
             state: State::Normal,
+            #[cfg(feature = "line-number")]
             current_line_number: opts.current_line_number,
             deferred: None,
         }
@@ -83,8 +87,12 @@ impl<'a> Parser<'a> {
                 }
                 Some(b'\r' | b'\n') => {
                     let ret = self.produce_unparsed(offset);
-                    self.current_line_number += 1;
+                    #[cfg(feature = "line-number")]
+                    {
+                        self.current_line_number += 1;
+                    }
                     self.deferred = Some(GlobalEvent::NewLine(NewLine {
+                        #[cfg(feature = "line-number")]
                         line_number_after: self.current_line_number,
                     }));
                     if ch == Some(&b'\r') && self.input.get(index + 1) == Some(&b'\n') {
@@ -165,7 +173,10 @@ impl<'a> Parser<'a> {
                     }
                 }
                 Some(b'\r' | b'\n') => {
-                    self.current_line_number += 1;
+                    #[cfg(feature = "line-number")]
+                    {
+                        self.current_line_number += 1;
+                    }
                     if ch == Some(&b'\r') && self.input.get(index + 1) == Some(&b'\n') {
                         offset += "\r\n".len();
                     } else {
@@ -218,6 +229,7 @@ impl<'a> Parser<'a> {
         let ret = GlobalEvent::VerbatimEscaping(VerbatimEscaping {
             content: Range::new(start, length),
             is_closed_forcedly: !is_closed_normally,
+            #[cfg(feature = "line-number")]
             line_number_after: self.current_line_number,
         });
         self.cursor += content_length;
