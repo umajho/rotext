@@ -16,19 +16,13 @@ enum State<'a> {
 /// 用于将 “产出 [BlockEvent] 的流” 中每段 “留给行内阶段解析器处理的、连续产出
 /// 的事件” 截取为单独的流提供给使用者。使用者需要将提供的那些流映射为新的流。
 pub struct BlockEventStreamInlineSegmentMapper<'a> {
-    map_fn: Box<dyn Fn(WhileInlineSegment<'a>) -> inline::Parser + 'a>,
-
     state: State<'a>,
     input_stream_returner: Rc<RefCell<Option<Box<Peekable<block::Parser<'a>>>>>>,
 }
 
 impl<'a> BlockEventStreamInlineSegmentMapper<'a> {
-    pub fn new(
-        input_stream: block::Parser<'a>,
-        map_fn: Box<dyn Fn(WhileInlineSegment<'a>) -> inline::Parser + 'a>,
-    ) -> Self {
+    pub fn new(input_stream: block::Parser<'a>) -> Self {
         Self {
-            map_fn,
             state: State::Normal(Box::new(input_stream.peekable())),
             input_stream_returner: Rc::new(RefCell::new(None)),
         }
@@ -47,7 +41,7 @@ impl<'a> BlockEventStreamInlineSegmentMapper<'a> {
                             input_stream,
                             self.input_stream_returner.clone(),
                         );
-                        let inline_parser = (self.map_fn)(segment_stream);
+                        let inline_parser = inline::Parser::new(segment_stream);
                         (
                             Some(BlendEvent::try_from(Event::from(next)).unwrap()),
                             State::TakenOver(inline_parser),

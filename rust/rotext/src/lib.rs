@@ -16,5 +16,5 @@ pub fn parse(input: &[u8]) -> blend::BlockEventStreamInlineSegmentMapper {
     let global_parser = global::Parser::new(input, global::NewParserOptions::default());
     let block_parser = block::Parser::new(input, global_parser);
 
-    blend::BlockEventStreamInlineSegmentMapper::new(block_parser, Box::new(inline::Parser::new))
+    blend::BlockEventStreamInlineSegmentMapper::new(block_parser)
 }
