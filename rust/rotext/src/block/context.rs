@@ -12,9 +12,19 @@ pub struct Context<'a> {
 
     #[cfg(feature = "line-number")]
     pub current_line_number: usize,
+
+    #[cfg(feature = "block-id")]
+    pub next_block_id: usize,
 }
 
 impl<'a> Context<'a> {
+    #[cfg(feature = "block-id")]
+    pub fn pop_block_id(&mut self) -> usize {
+        let id = self.next_block_id;
+        self.next_block_id += 1;
+        id
+    }
+
     pub fn take_from_mapper_and_apply_to_cursor_if_applied_cursor_satisfies<
         F: FnOnce(&InputCursor) -> bool,
     >(

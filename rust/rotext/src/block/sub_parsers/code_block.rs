@@ -1,5 +1,5 @@
 use crate::{
-    block::{context::Context, sub_parsers},
+    block::{context::Context, sub_parsers, utils::b_w_id},
     events::{BlockEvent, ExitBlock, NewLine},
 };
 
@@ -64,7 +64,7 @@ impl Parser {
                 };
                 let info_string_parser = sub_parsers::content::Parser::new(opts);
                 (
-                    sub_parsers::Result::ToYield(BlockEvent::EnterCodeBlock),
+                    sub_parsers::Result::ToYield(BlockEvent::EnterCodeBlock(b_w_id!(ctx))),
                     State::InfoStringContent(Box::new(info_string_parser)),
                 )
             }

@@ -1,8 +1,11 @@
 use derivative::Derivative;
 
 use super::{
-    context::Context, global_mapper::Mapped, sub_parsers, utils::ArrayQueue, BlockInStack,
-    ItemLikeType, Nesting, StackEntry,
+    context::Context,
+    global_mapper::Mapped,
+    sub_parsers,
+    utils::{b_w_id, ArrayQueue},
+    BlockInStack, ItemLikeType, Nesting, StackEntry,
 };
 use crate::{
     common::Range,
@@ -196,7 +199,8 @@ impl<'a> Parser<'a> {
                             start_line_number: ctx.current_line_number,
                         });
                         nesting.item_likes_in_stack += 1;
-                        self.to_yield.push_back(BlockEvent::EnterBlockQuote);
+                        self.to_yield
+                            .push_back(BlockEvent::EnterBlockQuote(b_w_id!(ctx)));
                         return InternalResult::ToContinue(State::ExpectingContainer);
                     } else {
                         return InternalResult::ToContinue(State::ExpectingContainer);
@@ -247,6 +251,8 @@ impl<'a> Parser<'a> {
                 let new_state = State::Start { new_line: None };
                 self.to_yield
                     .push_back(BlockEvent::ThematicBreak(ThematicBreak {
+                        #[cfg(feature = "block-id")]
+                        id: ctx.pop_block_id(),
                         #[cfg(feature = "line-number")]
                         line_number: ctx.current_line_number,
                     }));
@@ -409,19 +415,19 @@ impl<'a> Parser<'a> {
 
         if should_enter_container {
             self.to_yield.push_back(match item_like_type {
-                ItemLikeType::OrderedListItem => BlockEvent::EnterOrderedList,
-                ItemLikeType::UnorderedListItem => BlockEvent::EnterUnorderedList,
+                ItemLikeType::OrderedListItem => BlockEvent::EnterOrderedList(b_w_id!(ctx)),
+                ItemLikeType::UnorderedListItem => BlockEvent::EnterUnorderedList(b_w_id!(ctx)),
                 ItemLikeType::DescriptionTerm | ItemLikeType::DescriptionDetails => {
-                    BlockEvent::EnterDescriptionList
+                    BlockEvent::EnterDescriptionList(b_w_id!(ctx))
                 }
             });
         }
         self.to_yield.push_back(match item_like_type {
             ItemLikeType::OrderedListItem | ItemLikeType::UnorderedListItem => {
-                BlockEvent::EnterListItem
+                BlockEvent::EnterListItem(b_w_id!(ctx))
             }
-            ItemLikeType::DescriptionTerm => BlockEvent::EnterDescriptionTerm,
-            ItemLikeType::DescriptionDetails => BlockEvent::EnterDescriptionDetails,
+            ItemLikeType::DescriptionTerm => BlockEvent::EnterDescriptionTerm(b_w_id!(ctx)),
+            ItemLikeType::DescriptionDetails => BlockEvent::EnterDescriptionDetails(b_w_id!(ctx)),
         });
     }
 }

@@ -1,5 +1,5 @@
 use crate::{
-    block::{context::Context, sub_parsers},
+    block::{context::Context, sub_parsers, utils::b_w_id},
     events::{BlockEvent, ExitBlock, NewLine},
 };
 
@@ -65,12 +65,12 @@ impl Parser {
                 let content_parser = sub_parsers::content::Parser::new(opts);
                 (
                     sub_parsers::Result::ToYield(match self.leading_signs {
-                        1 => BlockEvent::EnterHeading1,
-                        2 => BlockEvent::EnterHeading2,
-                        3 => BlockEvent::EnterHeading3,
-                        4 => BlockEvent::EnterHeading4,
-                        5 => BlockEvent::EnterHeading5,
-                        6 => BlockEvent::EnterHeading6,
+                        1 => BlockEvent::EnterHeading1(b_w_id!(ctx)),
+                        2 => BlockEvent::EnterHeading2(b_w_id!(ctx)),
+                        3 => BlockEvent::EnterHeading3(b_w_id!(ctx)),
+                        4 => BlockEvent::EnterHeading4(b_w_id!(ctx)),
+                        5 => BlockEvent::EnterHeading5(b_w_id!(ctx)),
+                        6 => BlockEvent::EnterHeading6(b_w_id!(ctx)),
                         _ => unreachable!(),
                     }),
                     State::Content(Box::new(content_parser)),

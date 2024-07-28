@@ -51,6 +51,7 @@ pub fn parse_and_render(input: &[u8]) -> ParseAndRenderResult {
             all_events.clone().into_iter(),
             rotext::RenderToHTMLOptions {
                 initial_output_string_capacity: input.len() * 3,
+                with_block_id: true,
             },
         ),
         ..Default::default()

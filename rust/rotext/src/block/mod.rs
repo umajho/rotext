@@ -78,6 +78,9 @@ impl<'a> Parser<'a> {
             // 这里只是随便初始化一下，实际在 [State::Start] 中决定。
             #[cfg(feature = "line-number")]
             current_line_number: 0,
+
+            #[cfg(feature = "block-id")]
+            next_block_id: 1,
         };
 
         let new_line = NewLine {

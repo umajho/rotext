@@ -9,6 +9,7 @@ description = "The official and de facto Rotext parser."
 
 [features]
 line-number = []
+block-id = []
 
 [dependencies]
 derivative = "2.2.0"

@@ -3,107 +3,12 @@ use crate::events::VerbatimEscaping;
 
 pub struct RenderToHTMLOptions {
     pub initial_output_string_capacity: usize,
+
+    #[cfg(feature = "block-id")]
+    pub with_block_id: bool,
 }
 
 pub use using_vec_u8::render_to_html;
-
-pub mod using_string {
-
-    use super::*;
-
-    pub fn render_to_html<I: Iterator<Item = BlendEvent>>(
-        input: &[u8],
-        mut input_stream: I,
-        opts: RenderToHTMLOptions,
-    ) -> String {
-        let mut result = String::with_capacity(opts.initial_output_string_capacity);
-        let mut stack: Vec<&'static str> = vec![];
-        loop {
-            let Some(ev) = input_stream.next() else {
-                break;
-            };
-
-            fn push_simple(
-                result: &mut String,
-                stack: &mut Vec<&'static str>,
-                tag_name: &'static str,
-            ) {
-                result.push('<');
-                result.push_str(tag_name);
-                result.push('>');
-                stack.push(tag_name);
-            }
-
-            match ev {
-                BlendEvent::NewLine(_) => result.push_str("<br>"),
-                BlendEvent::Text(content)
-                | BlendEvent::VerbatimEscaping(VerbatimEscaping { content, .. }) => {
-                    write_escaped_html_text(&mut result, content.content(input));
-                }
-                BlendEvent::ExitBlock(_) => {
-                    result.push_str("</");
-                    result.push_str(stack.pop().unwrap());
-                    result.push('>');
-                }
-                BlendEvent::Separator => unreachable!(),
-                BlendEvent::EnterParagraph => push_simple(&mut result, &mut stack, "p"),
-                BlendEvent::ThematicBreak(_) => result.push_str("<hr>"),
-                BlendEvent::EnterHeading1 => push_simple(&mut result, &mut stack, "h1"),
-                BlendEvent::EnterHeading2 => push_simple(&mut result, &mut stack, "h2"),
-                BlendEvent::EnterHeading3 => push_simple(&mut result, &mut stack, "h3"),
-                BlendEvent::EnterHeading4 => push_simple(&mut result, &mut stack, "h4"),
-                BlendEvent::EnterHeading5 => push_simple(&mut result, &mut stack, "h5"),
-                BlendEvent::EnterHeading6 => push_simple(&mut result, &mut stack, "h6"),
-                BlendEvent::EnterBlockQuote => push_simple(&mut result, &mut stack, "blockquote"),
-                BlendEvent::EnterOrderedList => push_simple(&mut result, &mut stack, "ol"),
-                BlendEvent::EnterUnorderedList => push_simple(&mut result, &mut stack, "ul"),
-                BlendEvent::EnterListItem => push_simple(&mut result, &mut stack, "li"),
-                BlendEvent::EnterDescriptionList => push_simple(&mut result, &mut stack, "dl"),
-                BlendEvent::EnterDescriptionTerm => push_simple(&mut result, &mut stack, "dt"),
-                BlendEvent::EnterDescriptionDetails => push_simple(&mut result, &mut stack, "dd"),
-                BlendEvent::EnterCodeBlock => {
-                    stack.push("</x-code-block>");
-                    result.push_str("<x-code-block info-string=\"");
-                    loop {
-                        match input_stream.next().unwrap() {
-                            BlendEvent::Text(content) => {
-                                write_escaped_double_quoted_attribute_value(
-                                    &mut result,
-                                    content.content(input),
-                                )
-                            }
-                            BlendEvent::Separator => break,
-                            _ => unreachable!(),
-                        }
-                    }
-                    result.push_str("\">")
-                }
-            };
-        }
-
-        result
-    }
-
-    fn write_escaped_html_text(dest: &mut String, input: &str) {
-        for char in input.chars() {
-            match char {
-                '<' => dest.push_str("&lt;"),
-                '&' => dest.push_str("&amp;"),
-                _ => dest.push(char),
-            }
-        }
-    }
-
-    fn write_escaped_double_quoted_attribute_value(dest: &mut String, input: &str) {
-        for char in input.chars() {
-            match char {
-                '"' => dest.push_str("&quot;"),
-                '&' => dest.push_str("&amp;"),
-                _ => dest.push(char),
-            }
-        }
-    }
-}
 
 pub mod using_vec_u8 {
     use super::*;
@@ -121,13 +26,32 @@ pub mod using_vec_u8 {
             };
 
             fn push_simple(
+                #[allow(unused_variables)] opts: &RenderToHTMLOptions,
                 result: &mut Vec<u8>,
                 stack: &mut Vec<&'static [u8]>,
                 tag_name: &'static [u8],
+                #[cfg(feature = "block-id")] id: usize,
             ) {
                 result.push(b'<');
                 result.extend(tag_name);
-                result.push(b'>');
+
+                {
+                    #[cfg(feature = "block-id")]
+                    {
+                        if opts.with_block_id {
+                            result.extend(br#" data-block-id=""#);
+                            result.extend(id.to_string().as_bytes());
+                            result.extend(br#"">"#);
+                        } else {
+                            result.push(b'>');
+                        }
+                    }
+                    #[cfg(not(feature = "block-id"))]
+                    {
+                        result.push(b'>');
+                    }
+                }
+
                 stack.push(tag_name);
             }
 
@@ -143,24 +67,152 @@ pub mod using_vec_u8 {
                     result.push(b'>');
                 }
                 BlendEvent::Separator => unreachable!(),
-                BlendEvent::EnterParagraph => push_simple(&mut result, &mut stack, b"p"),
-                BlendEvent::ThematicBreak(_) => result.extend(b"<hr>"),
-                BlendEvent::EnterHeading1 => push_simple(&mut result, &mut stack, b"h1"),
-                BlendEvent::EnterHeading2 => push_simple(&mut result, &mut stack, b"h2"),
-                BlendEvent::EnterHeading3 => push_simple(&mut result, &mut stack, b"h3"),
-                BlendEvent::EnterHeading4 => push_simple(&mut result, &mut stack, b"h4"),
-                BlendEvent::EnterHeading5 => push_simple(&mut result, &mut stack, b"h5"),
-                BlendEvent::EnterHeading6 => push_simple(&mut result, &mut stack, b"h6"),
-                BlendEvent::EnterBlockQuote => push_simple(&mut result, &mut stack, b"blockquote"),
-                BlendEvent::EnterOrderedList => push_simple(&mut result, &mut stack, b"ol"),
-                BlendEvent::EnterUnorderedList => push_simple(&mut result, &mut stack, b"ul"),
-                BlendEvent::EnterListItem => push_simple(&mut result, &mut stack, b"li"),
-                BlendEvent::EnterDescriptionList => push_simple(&mut result, &mut stack, b"dl"),
-                BlendEvent::EnterDescriptionTerm => push_simple(&mut result, &mut stack, b"dt"),
-                BlendEvent::EnterDescriptionDetails => push_simple(&mut result, &mut stack, b"dd"),
-                BlendEvent::EnterCodeBlock => {
-                    stack.push(b"</x-code-block>");
-                    result.extend(b"<x-code-block info-string=\"");
+                #[allow(unused_variables)]
+                BlendEvent::EnterParagraph(data) => push_simple(
+                    &opts,
+                    &mut result,
+                    &mut stack,
+                    b"p",
+                    #[cfg(feature = "block-id")]
+                    data.id,
+                ),
+                #[allow(unused_variables)]
+                BlendEvent::ThematicBreak(data) => {
+                    #[cfg(feature = "block-id")]
+                    {
+                        if opts.with_block_id {
+                            result.extend(br#"<hr data-block-id=""#);
+                            result.extend(data.id.to_string().as_bytes());
+                            result.extend(br#"">"#);
+                        } else {
+                            result.extend(b"<hr>")
+                        }
+                    }
+                    #[cfg(not(feature = "block-id"))]
+                    {
+                        result.extend(b"<hr>")
+                    }
+                }
+                #[allow(unused_variables)]
+                BlendEvent::EnterHeading1(data) => push_simple(
+                    &opts,
+                    &mut result,
+                    &mut stack,
+                    b"h1",
+                    #[cfg(feature = "block-id")]
+                    data.id,
+                ),
+                #[allow(unused_variables)]
+                BlendEvent::EnterHeading2(data) => push_simple(
+                    &opts,
+                    &mut result,
+                    &mut stack,
+                    b"h2",
+                    #[cfg(feature = "block-id")]
+                    data.id,
+                ),
+                #[allow(unused_variables)]
+                BlendEvent::EnterHeading3(data) => push_simple(
+                    &opts,
+                    &mut result,
+                    &mut stack,
+                    b"h3",
+                    #[cfg(feature = "block-id")]
+                    data.id,
+                ),
+                #[allow(unused_variables)]
+                BlendEvent::EnterHeading4(data) => push_simple(
+                    &opts,
+                    &mut result,
+                    &mut stack,
+                    b"h4",
+                    #[cfg(feature = "block-id")]
+                    data.id,
+                ),
+                #[allow(unused_variables)]
+                BlendEvent::EnterHeading5(data) => push_simple(
+                    &opts,
+                    &mut result,
+                    &mut stack,
+                    b"h5",
+                    #[cfg(feature = "block-id")]
+                    data.id,
+                ),
+                #[allow(unused_variables)]
+                BlendEvent::EnterHeading6(data) => push_simple(
+                    &opts,
+                    &mut result,
+                    &mut stack,
+                    b"h6",
+                    #[cfg(feature = "block-id")]
+                    data.id,
+                ),
+                #[allow(unused_variables)]
+                BlendEvent::EnterBlockQuote(data) => push_simple(
+                    &opts,
+                    &mut result,
+                    &mut stack,
+                    b"blockquote",
+                    #[cfg(feature = "block-id")]
+                    data.id,
+                ),
+                #[allow(unused_variables)]
+                BlendEvent::EnterOrderedList(data) => push_simple(
+                    &opts,
+                    &mut result,
+                    &mut stack,
+                    b"ol",
+                    #[cfg(feature = "block-id")]
+                    data.id,
+                ),
+                #[allow(unused_variables)]
+                BlendEvent::EnterUnorderedList(data) => push_simple(
+                    &opts,
+                    &mut result,
+                    &mut stack,
+                    b"ul",
+                    #[cfg(feature = "block-id")]
+                    data.id,
+                ),
+                #[allow(unused_variables)]
+                BlendEvent::EnterListItem(data) => push_simple(
+                    &opts,
+                    &mut result,
+                    &mut stack,
+                    b"li",
+                    #[cfg(feature = "block-id")]
+                    data.id,
+                ),
+                #[allow(unused_variables)]
+                BlendEvent::EnterDescriptionList(data) => push_simple(
+                    &opts,
+                    &mut result,
+                    &mut stack,
+                    b"dl",
+                    #[cfg(feature = "block-id")]
+                    data.id,
+                ),
+                #[allow(unused_variables)]
+                BlendEvent::EnterDescriptionTerm(data) => push_simple(
+                    &opts,
+                    &mut result,
+                    &mut stack,
+                    b"dt",
+                    #[cfg(feature = "block-id")]
+                    data.id,
+                ),
+                #[allow(unused_variables)]
+                BlendEvent::EnterDescriptionDetails(data) => push_simple(
+                    &opts,
+                    &mut result,
+                    &mut stack,
+                    b"dd",
+                    #[cfg(feature = "block-id")]
+                    data.id,
+                ),
+                #[allow(unused_variables)]
+                BlendEvent::EnterCodeBlock(data) => {
+                    result.extend(br#"<x-code-block info-string=""#);
                     loop {
                         match input_stream.next().unwrap() {
                             BlendEvent::Text(content) => {
@@ -173,7 +225,17 @@ pub mod using_vec_u8 {
                             _ => unreachable!(),
                         }
                     }
-                    result.extend(b"\">")
+
+                    #[cfg(feature = "block-id")]
+                    {
+                        if opts.with_block_id {
+                            result.extend(br#"" data-block-id=""#);
+                            result.extend(data.id.to_string().as_bytes());
+                        }
+                    }
+
+                    result.extend(br#"">"#);
+                    stack.push(b"</x-code-block>");
                 }
             };
         }

@@ -90,52 +90,52 @@ pub enum Event {
 
     /// 进入段落。
     #[subenum(BlockEvent, BlendEvent)]
-    EnterParagraph = EventType::EnterParagraph as u8,
+    EnterParagraph(BlockWithID) = EventType::EnterParagraph as u8,
     /// 分割线。
     #[subenum(BlockEvent, BlendEvent)]
     ThematicBreak(ThematicBreak) = EventType::ThematicBreak as u8,
     /// 进入一级标题。
     #[subenum(BlockEvent, BlendEvent)]
-    EnterHeading1 = EventType::EnterHeading1 as u8,
+    EnterHeading1(BlockWithID) = EventType::EnterHeading1 as u8,
     /// 进入二级标题。
     #[subenum(BlockEvent, BlendEvent)]
-    EnterHeading2 = EventType::EnterHeading2 as u8,
+    EnterHeading2(BlockWithID) = EventType::EnterHeading2 as u8,
     /// 进入三级标题。
     #[subenum(BlockEvent, BlendEvent)]
-    EnterHeading3 = EventType::EnterHeading3 as u8,
+    EnterHeading3(BlockWithID) = EventType::EnterHeading3 as u8,
     /// 进入四级标题。
     #[subenum(BlockEvent, BlendEvent)]
-    EnterHeading4 = EventType::EnterHeading4 as u8,
+    EnterHeading4(BlockWithID) = EventType::EnterHeading4 as u8,
     /// 进入五级标题。
     #[subenum(BlockEvent, BlendEvent)]
-    EnterHeading5 = EventType::EnterHeading5 as u8,
+    EnterHeading5(BlockWithID) = EventType::EnterHeading5 as u8,
     /// 进入六级标题。
     #[subenum(BlockEvent, BlendEvent)]
-    EnterHeading6 = EventType::EnterHeading6 as u8,
+    EnterHeading6(BlockWithID) = EventType::EnterHeading6 as u8,
     /// 进入块引用
     #[subenum(BlockEvent, BlendEvent)]
-    EnterBlockQuote = EventType::EnterBlockQuote as u8,
+    EnterBlockQuote(BlockWithID) = EventType::EnterBlockQuote as u8,
     /// 进入有序列表
     #[subenum(BlockEvent, BlendEvent)]
-    EnterOrderedList = EventType::EnterOrderedList as u8,
+    EnterOrderedList(BlockWithID) = EventType::EnterOrderedList as u8,
     /// 进入无序列表
     #[subenum(BlockEvent, BlendEvent)]
-    EnterUnorderedList = EventType::EnterUnorderedList as u8,
+    EnterUnorderedList(BlockWithID) = EventType::EnterUnorderedList as u8,
     /// 进入列表项
     #[subenum(BlockEvent, BlendEvent)]
-    EnterListItem = EventType::EnterListItem as u8,
+    EnterListItem(BlockWithID) = EventType::EnterListItem as u8,
     /// 进入描述列表
     #[subenum(BlockEvent, BlendEvent)]
-    EnterDescriptionList = EventType::EnterDescriptionList as u8,
+    EnterDescriptionList(BlockWithID) = EventType::EnterDescriptionList as u8,
     /// 进入描述术语
     #[subenum(BlockEvent, BlendEvent)]
-    EnterDescriptionTerm = EventType::EnterDescriptionTerm as u8,
+    EnterDescriptionTerm(BlockWithID) = EventType::EnterDescriptionTerm as u8,
     /// 进入描述详情
     #[subenum(BlockEvent, BlendEvent)]
-    EnterDescriptionDetails = EventType::EnterDescriptionDetails as u8,
+    EnterDescriptionDetails(BlockWithID) = EventType::EnterDescriptionDetails as u8,
     /// 进入代码块。
     #[subenum(BlockEvent, BlendEvent)]
-    EnterCodeBlock = EventType::EnterCodeBlock as u8,
+    EnterCodeBlock(BlockWithID) = EventType::EnterCodeBlock as u8,
     /// 退出一层块级的 “进入…”。
     #[subenum(BlockEvent, InlineEvent, BlendEvent)]
     ExitBlock(ExitBlock) = EventType::ExitBlock as u8,
@@ -156,7 +156,15 @@ pub struct NewLine {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BlockWithID {
+    #[cfg(feature = "block-id")]
+    pub id: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ThematicBreak {
+    #[cfg(feature = "block-id")]
+    pub id: usize,
     #[cfg(feature = "line-number")]
     pub line_number: usize,
 }
@@ -183,22 +191,22 @@ impl Event {
             Event::NewLine(_)
             | Event::ExitBlock(_)
             | Event::Separator
-            | Event::EnterParagraph
+            | Event::EnterParagraph(_)
             | Event::ThematicBreak(_)
-            | Event::EnterHeading1
-            | Event::EnterHeading2
-            | Event::EnterHeading3
-            | Event::EnterHeading4
-            | Event::EnterHeading5
-            | Event::EnterHeading6
-            | Event::EnterBlockQuote
-            | Event::EnterOrderedList
-            | Event::EnterUnorderedList
-            | Event::EnterListItem
-            | Event::EnterDescriptionList
-            | Event::EnterDescriptionTerm
-            | Event::EnterDescriptionDetails
-            | Event::EnterCodeBlock => return None,
+            | Event::EnterHeading1(_)
+            | Event::EnterHeading2(_)
+            | Event::EnterHeading3(_)
+            | Event::EnterHeading4(_)
+            | Event::EnterHeading5(_)
+            | Event::EnterHeading6(_)
+            | Event::EnterBlockQuote(_)
+            | Event::EnterOrderedList(_)
+            | Event::EnterUnorderedList(_)
+            | Event::EnterListItem(_)
+            | Event::EnterDescriptionList(_)
+            | Event::EnterDescriptionTerm(_)
+            | Event::EnterDescriptionDetails(_)
+            | Event::EnterCodeBlock(_) => return None,
         };
 
         Some(result)
@@ -242,13 +250,13 @@ impl BlockEvent {
     pub fn opens_inline_phase(&self) -> bool {
         matches!(
             self,
-            BlockEvent::EnterParagraph
-                | BlockEvent::EnterHeading1
-                | BlockEvent::EnterHeading2
-                | BlockEvent::EnterHeading3
-                | BlockEvent::EnterHeading4
-                | BlockEvent::EnterHeading5
-                | BlockEvent::EnterHeading6
+            BlockEvent::EnterParagraph(_)
+                | BlockEvent::EnterHeading1(_)
+                | BlockEvent::EnterHeading2(_)
+                | BlockEvent::EnterHeading3(_)
+                | BlockEvent::EnterHeading4(_)
+                | BlockEvent::EnterHeading5(_)
+                | BlockEvent::EnterHeading6(_)
                 | BlockEvent::Separator
         )
     }

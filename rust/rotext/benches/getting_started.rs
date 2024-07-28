@@ -16,23 +16,6 @@ fn parsing_getting_started(bencher: divan::Bencher) {
 }
 
 #[divan::bench(sample_size = 10)]
-fn rendering_getting_started_using_string(bencher: divan::Bencher) {
-    let file_content = CONTENT.clone();
-
-    bencher
-        .with_inputs(|| rotext::parse(file_content.as_bytes()))
-        .bench_refs(|events| {
-            rotext::rendering::using_string::render_to_html(
-                file_content.as_bytes(),
-                events,
-                rotext::RenderToHTMLOptions {
-                    initial_output_string_capacity: file_content.len() * 3,
-                },
-            );
-        })
-}
-
-#[divan::bench(sample_size = 10)]
 fn rendering_getting_started_using_vec_u8(bencher: divan::Bencher) {
     let file_content = CONTENT.clone();
 
@@ -44,6 +27,8 @@ fn rendering_getting_started_using_vec_u8(bencher: divan::Bencher) {
                 events,
                 rotext::RenderToHTMLOptions {
                     initial_output_string_capacity: file_content.len() * 3,
+                    #[cfg(feature = "block-id")]
+                    with_block_id: true,
                 },
             );
         })

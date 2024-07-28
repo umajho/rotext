@@ -11,7 +11,7 @@ description = "WASM bindings for rust crate `rotext`"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-rotext.workspace = true
+rotext = { workspace = true, features = ["block-id", "line-number"] }
 
 wasm-bindgen = "0.2.92"
 

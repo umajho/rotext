@@ -1,5 +1,5 @@
 use crate::{
-    block::{context::Context, sub_parsers},
+    block::{context::Context, sub_parsers, utils::b_w_id},
     common::Range,
     events::{BlockEvent, ExitBlock, NewLine},
 };
@@ -66,7 +66,7 @@ impl Parser {
                 };
                 let parser = sub_parsers::content::Parser::new(opts);
                 (
-                    sub_parsers::Result::ToYield(BlockEvent::EnterParagraph),
+                    sub_parsers::Result::ToYield(BlockEvent::EnterParagraph(b_w_id!(ctx))),
                     State::Content(Box::new(parser)),
                 )
             }

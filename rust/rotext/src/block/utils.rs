@@ -108,3 +108,15 @@ impl<const N: usize, T> ArrayQueue<N, T> {
         Some(item.unwrap())
     }
 }
+
+/// block with ID
+macro_rules! b_w_id {
+    ($ctx:expr) => {
+        $crate::events::BlockWithID {
+            #[cfg(feature = "block-id")]
+            id: $ctx.pop_block_id(),
+        }
+    };
+}
+
+pub(crate) use b_w_id;
