@@ -109,7 +109,11 @@ impl<'a> HtmlRenderer<'a> {
         unsafe { String::from_utf8_unchecked(self.result) }
     }
 
-    fn push_simple(&mut self, tag_name: &'static [u8], data: &BlockWithID) {
+    fn push_simple(
+        &mut self,
+        tag_name: &'static [u8],
+        #[allow(unused_variables)] data: &BlockWithID,
+    ) {
         self.result.push(b'<');
         self.result.extend(tag_name);
 
