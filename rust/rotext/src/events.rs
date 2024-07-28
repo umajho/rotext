@@ -249,7 +249,6 @@ impl BlockEvent {
                 | BlockEvent::EnterHeading4
                 | BlockEvent::EnterHeading5
                 | BlockEvent::EnterHeading6
-                | BlockEvent::EnterCodeBlock
                 | BlockEvent::Separator
         )
     }
