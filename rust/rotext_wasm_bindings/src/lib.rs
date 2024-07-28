@@ -44,16 +44,18 @@ pub fn parse_and_render(input: &[u8]) -> ParseAndRenderResult {
 
     let all_events: Vec<_> = rotext::parse(input).collect();
 
+    let renderer = rotext::HtmlRenderer::new(
+        input,
+        rotext::NewHtmlRendererOptoins {
+            initial_output_string_capacity: input.len() * 3,
+            with_block_id: true,
+        },
+    );
+    let html: String = renderer.render(all_events.clone().into_iter());
+
     #[allow(unused_mut)]
     let mut result = ParseAndRenderResult {
-        html: rotext::render_to_html(
-            input,
-            all_events.clone().into_iter(),
-            rotext::RenderToHTMLOptions {
-                initial_output_string_capacity: input.len() * 3,
-                with_block_id: true,
-            },
-        ),
+        html,
         ..Default::default()
     };
 

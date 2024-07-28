@@ -10,7 +10,7 @@ pub mod rendering;
 pub(crate) mod test_utils;
 
 pub use events::{BlendEvent, Event};
-pub use rendering::{render_to_html, RenderToHTMLOptions};
+pub use rendering::{HtmlRenderer, NewHtmlRendererOptoins};
 
 pub fn parse(input: &[u8]) -> blend::BlockEventStreamInlineSegmentMapper {
     let global_parser = global::Parser::new(input, global::NewParserOptions::default());

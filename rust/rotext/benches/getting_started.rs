@@ -22,15 +22,15 @@ fn rendering_getting_started_using_vec_u8(bencher: divan::Bencher) {
     bencher
         .with_inputs(|| rotext::parse(file_content.as_bytes()))
         .bench_refs(|events| {
-            rotext::rendering::using_vec_u8::render_to_html(
+            let renderer = rotext::HtmlRenderer::new(
                 file_content.as_bytes(),
-                events,
-                rotext::RenderToHTMLOptions {
+                rotext::NewHtmlRendererOptoins {
                     initial_output_string_capacity: file_content.len() * 3,
                     #[cfg(feature = "block-id")]
                     with_block_id: true,
                 },
             );
+            renderer.render(events);
         })
 }
 
