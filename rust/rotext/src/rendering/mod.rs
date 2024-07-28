@@ -235,7 +235,7 @@ pub mod using_vec_u8 {
                     }
 
                     result.extend(br#"">"#);
-                    stack.push(b"</x-code-block>");
+                    stack.push(b"x-code-block");
                 }
             };
         }
