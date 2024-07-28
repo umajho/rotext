@@ -45,18 +45,19 @@ pub struct Nesting {
 
 struct StackEntry {
     block: BlockInStack,
+
     #[cfg(feature = "line-number")]
     start_line_number: usize,
 }
 
 enum BlockInStack {
     BlockQuote,
-    ItemLike(ItemLikeType),
+    ItemLike { typ: ItemLikeType },
     Container,
 }
 impl From<ItemLikeType> for BlockInStack {
     fn from(value: ItemLikeType) -> Self {
-        Self::ItemLike(value)
+        Self::ItemLike { typ: value }
     }
 }
 

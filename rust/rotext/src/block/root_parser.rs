@@ -305,7 +305,7 @@ impl<'a> Parser<'a> {
         let top = stack.pop().unwrap();
         if matches!(
             top.block,
-            BlockInStack::ItemLike(_) | BlockInStack::BlockQuote
+            BlockInStack::ItemLike { .. } | BlockInStack::BlockQuote
         ) {
             nesting.item_likes_in_stack -= 1;
             if nesting.processed_item_likes == nesting.item_likes_in_stack {
@@ -315,7 +315,9 @@ impl<'a> Parser<'a> {
                     #[cfg(feature = "line-number")]
                     end_line_number: ctx.current_line_number,
                 }));
-                if matches!(top.block, BlockInStack::ItemLike(_)) && !state.should_keep_container {
+                if matches!(top.block, BlockInStack::ItemLike { .. })
+                    && !state.should_keep_container
+                {
                     stack.pop().unwrap();
                     self.to_yield.push_back(BlockEvent::ExitBlock(ExitBlock {
                         #[cfg(feature = "line-number")]
@@ -362,8 +364,8 @@ impl<'a> Parser<'a> {
 
         for (delta_index, entry) in stack.iter().skip(memo.last_index).enumerate() {
             let mut item_like_type: Option<ItemLikeType> = None;
-            if let BlockInStack::ItemLike(item_like_type_) = entry.block {
-                item_like_type = Some(item_like_type_);
+            if let BlockInStack::ItemLike { typ } = entry.block {
+                item_like_type = Some(typ);
             } else if !matches!(entry.block, BlockInStack::BlockQuote) {
                 continue;
             }
