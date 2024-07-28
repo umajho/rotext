@@ -16,7 +16,7 @@ pub fn groups_horizontal_rule() -> Vec<GroupedCases> {
                     vec![
                         (EventType::EnterParagraph, None),
                         (EventType::Unparsed, Some("--")),
-                        (EventType::Exit, None)
+                        (EventType::ExitBlock, None)
                     ]
                 ),
                 case!(
@@ -43,7 +43,7 @@ pub fn groups_horizontal_rule() -> Vec<GroupedCases> {
                         (EventType::ThematicBreak, None),
                         (EventType::EnterParagraph, None),
                         (EventType::Unparsed, Some("a")),
-                        (EventType::Exit, None)
+                        (EventType::ExitBlock, None)
                     ]
                 ),
             ],
@@ -62,7 +62,7 @@ pub fn groups_horizontal_rule() -> Vec<GroupedCases> {
                     (EventType::ThematicBreak, None),
                     (EventType::EnterParagraph, None),
                     (EventType::VerbatimEscaping, Some("a")),
-                    (EventType::Exit, None)
+                    (EventType::ExitBlock, None)
                 ]
             )],
         },

@@ -15,7 +15,7 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
                     vec![
                         (EventType::EnterParagraph, None),
                         (EventType::Unparsed, Some("a")),
-                        (EventType::Exit, None)
+                        (EventType::ExitBlock, None)
                     ]
                 ),
                 case!(
@@ -23,7 +23,7 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
                     vec![
                         (EventType::EnterParagraph, None),
                         (EventType::Unparsed, Some("a ")),
-                        (EventType::Exit, None)
+                        (EventType::ExitBlock, None)
                     ]
                 ),
                 case!(
@@ -40,7 +40,7 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
                         (EventType::Unparsed, Some("a")),
                         (EventType::NewLine, None),
                         (EventType::Unparsed, Some("b")),
-                        (EventType::Exit, None)
+                        (EventType::ExitBlock, None)
                     ]
                 ),
                 case!(
@@ -57,10 +57,10 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
                     vec![
                         (EventType::EnterParagraph, None),
                         (EventType::Unparsed, Some("a")),
-                        (EventType::Exit, None),
+                        (EventType::ExitBlock, None),
                         (EventType::EnterParagraph, None),
                         (EventType::Unparsed, Some("b")),
-                        (EventType::Exit, None),
+                        (EventType::ExitBlock, None),
                     ]
                 ),
             ],
@@ -74,7 +74,7 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
                         (EventType::EnterParagraph, None),
                         (EventType::Unparsed, Some("a")),
                         (EventType::VerbatimEscaping, Some("c")),
-                        (EventType::Exit, None),
+                        (EventType::ExitBlock, None),
                     ]
                 ),
                 case!(
@@ -83,7 +83,7 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
                         (EventType::EnterParagraph, None),
                         (EventType::VerbatimEscaping, Some("c")),
                         (EventType::Unparsed, Some("b")),
-                        (EventType::Exit, None),
+                        (EventType::ExitBlock, None),
                     ]
                 ),
                 case!(
@@ -93,7 +93,7 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
                         (EventType::Unparsed, Some("a")),
                         (EventType::VerbatimEscaping, Some("c")),
                         (EventType::Unparsed, Some("b")),
-                        (EventType::Exit, None),
+                        (EventType::ExitBlock, None),
                     ]
                 ),
                 case!(
@@ -110,7 +110,7 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
                         (EventType::Unparsed, Some("a")),
                         (EventType::NewLine, None),
                         (EventType::VerbatimEscaping, Some("c")),
-                        (EventType::Exit, None),
+                        (EventType::ExitBlock, None),
                     ]
                 ),
             ],
@@ -128,7 +128,7 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
                         (EventType::Unparsed, Some("a")),
                         (EventType::NewLine, None),
                         (EventType::Unparsed, Some("---")),
-                        (EventType::Exit, None),
+                        (EventType::ExitBlock, None),
                     ]
                 ),
                 case!(
@@ -141,7 +141,7 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
                         (EventType::Unparsed, Some("a")),
                         (EventType::NewLine, None),
                         (EventType::Unparsed, Some("> b")),
-                        (EventType::Exit, None),
+                        (EventType::ExitBlock, None),
                     ]
                 ),
             ],

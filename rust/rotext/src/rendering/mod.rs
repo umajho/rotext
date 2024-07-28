@@ -40,14 +40,14 @@ pub mod using_string {
                 | BlendEvent::VerbatimEscaping(VerbatimEscaping { content, .. }) => {
                     write_escaped_html_text(&mut result, content.content(input));
                 }
-                BlendEvent::Exit => {
+                BlendEvent::ExitBlock(_) => {
                     result.push_str("</");
                     result.push_str(stack.pop().unwrap());
                     result.push('>');
                 }
                 BlendEvent::Separator => unreachable!(),
                 BlendEvent::EnterParagraph => push_simple(&mut result, &mut stack, "p"),
-                BlendEvent::ThematicBreak => result.push_str("<hr>"),
+                BlendEvent::ThematicBreak(_) => result.push_str("<hr>"),
                 BlendEvent::EnterHeading1 => push_simple(&mut result, &mut stack, "h1"),
                 BlendEvent::EnterHeading2 => push_simple(&mut result, &mut stack, "h2"),
                 BlendEvent::EnterHeading3 => push_simple(&mut result, &mut stack, "h3"),
@@ -137,14 +137,14 @@ pub mod using_vec_u8 {
                 | BlendEvent::VerbatimEscaping(VerbatimEscaping { content, .. }) => {
                     write_escaped_html_text(&mut result, content.content_in_u8_array(input));
                 }
-                BlendEvent::Exit => {
+                BlendEvent::ExitBlock(_) => {
                     result.extend(b"</");
                     result.extend(stack.pop().unwrap());
                     result.push(b'>');
                 }
                 BlendEvent::Separator => unreachable!(),
                 BlendEvent::EnterParagraph => push_simple(&mut result, &mut stack, b"p"),
-                BlendEvent::ThematicBreak => result.extend(b"<hr>"),
+                BlendEvent::ThematicBreak(_) => result.extend(b"<hr>"),
                 BlendEvent::EnterHeading1 => push_simple(&mut result, &mut stack, b"h1"),
                 BlendEvent::EnterHeading2 => push_simple(&mut result, &mut stack, b"h2"),
                 BlendEvent::EnterHeading3 => push_simple(&mut result, &mut stack, b"h3"),

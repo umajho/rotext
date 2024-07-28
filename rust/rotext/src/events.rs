@@ -14,7 +14,6 @@ pub enum EventType {
 
     // 在块级阶段与行内阶段产出。
     Text = 203,
-    Exit = 251,
     Separator = 252,
 
     // 在块级阶段产出。
@@ -34,6 +33,7 @@ pub enum EventType {
     EnterDescriptionTerm = 16,
     EnterDescriptionDetails = 17,
     EnterCodeBlock = 21,
+    ExitBlock = 99,
 }
 
 #[cfg(test)]
@@ -83,9 +83,6 @@ pub enum Event {
     /// 文本。
     #[subenum(BlockEvent, InlineLevelParseInputEvent, InlineEvent, BlendEvent)]
     Text(Range) = EventType::Text as u8,
-    /// 退出一层 “进入…”。
-    #[subenum(BlockEvent, InlineEvent, BlendEvent)]
-    Exit = EventType::Exit as u8,
     /// 分隔符。出现于块级嵌入包含、块级扩展与代码块的内容中。其中代码块会用它来
     /// 隔开 info string 与实际代码内容。
     #[subenum(BlockEvent, InlineEvent, BlendEvent)]
@@ -96,7 +93,7 @@ pub enum Event {
     EnterParagraph = EventType::EnterParagraph as u8,
     /// 分割线。
     #[subenum(BlockEvent, BlendEvent)]
-    ThematicBreak = EventType::ThematicBreak as u8,
+    ThematicBreak(ThematicBreak) = EventType::ThematicBreak as u8,
     /// 进入一级标题。
     #[subenum(BlockEvent, BlendEvent)]
     EnterHeading1 = EventType::EnterHeading1 as u8,
@@ -139,6 +136,9 @@ pub enum Event {
     /// 进入代码块。
     #[subenum(BlockEvent, BlendEvent)]
     EnterCodeBlock = EventType::EnterCodeBlock as u8,
+    /// 退出一层块级的 “进入…”。
+    #[subenum(BlockEvent, InlineEvent, BlendEvent)]
+    ExitBlock(ExitBlock) = EventType::ExitBlock as u8,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -155,6 +155,20 @@ pub struct NewLine {
     pub line_number_after: usize,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ThematicBreak {
+    #[cfg(feature = "line-number")]
+    pub line_number: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExitBlock {
+    #[cfg(feature = "line-number")]
+    pub start_line_number: usize,
+    #[cfg(feature = "line-number")]
+    pub end_line_number: usize,
+}
+
 impl Event {
     #[cfg(test)]
     pub fn discriminant(&self) -> u8 {
@@ -166,11 +180,11 @@ impl Event {
             Event::Unparsed(content)
             | Event::VerbatimEscaping(VerbatimEscaping { content, .. })
             | Event::Text(content) => content.content(input),
-            Event::NewLine { .. }
-            | Event::Exit
+            Event::NewLine(_)
+            | Event::ExitBlock(_)
             | Event::Separator
             | Event::EnterParagraph
-            | Event::ThematicBreak
+            | Event::ThematicBreak(_)
             | Event::EnterHeading1
             | Event::EnterHeading2
             | Event::EnterHeading3
@@ -241,6 +255,6 @@ impl BlockEvent {
     }
 
     pub fn closes_inline_phase(&self) -> bool {
-        matches!(self, BlockEvent::Exit | BlockEvent::Separator)
+        matches!(self, BlockEvent::ExitBlock(_) | BlockEvent::Separator)
     }
 }

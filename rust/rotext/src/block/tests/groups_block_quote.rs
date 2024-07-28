@@ -16,8 +16,8 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
                         (EventType::EnterBlockQuote, None),
                         (EventType::EnterParagraph, None),
                         (EventType::Unparsed, Some("foo")),
-                        (EventType::Exit, None),
-                        (EventType::Exit, None)
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None)
                     ]
                 ),
                 case!(
@@ -35,8 +35,8 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
                         (EventType::Unparsed, Some("foo")),
                         (EventType::NewLine, None),
                         (EventType::Unparsed, Some("bar")),
-                        (EventType::Exit, None),
-                        (EventType::Exit, None)
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None)
                     ]
                 ),
                 case!(
@@ -52,11 +52,11 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
                         (EventType::EnterBlockQuote, None),
                         (EventType::EnterParagraph, None),
                         (EventType::Unparsed, Some("foo")),
-                        (EventType::Exit, None),
-                        (EventType::Exit, None),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
                         (EventType::EnterParagraph, None),
                         (EventType::Unparsed, Some("bar")),
-                        (EventType::Exit, None)
+                        (EventType::ExitBlock, None)
                     ]
                 ),
                 case!(
@@ -74,13 +74,13 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
                         (EventType::EnterBlockQuote, None),
                         (EventType::EnterParagraph, None),
                         (EventType::Unparsed, Some("foo")),
-                        (EventType::Exit, None),
-                        (EventType::Exit, None),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
                         (EventType::EnterBlockQuote, None),
                         (EventType::EnterParagraph, None),
                         (EventType::Unparsed, Some("bar")),
-                        (EventType::Exit, None),
-                        (EventType::Exit, None)
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None)
                     ]
                 ),
                 case!(
@@ -90,9 +90,9 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
                         (EventType::EnterBlockQuote, None),
                         (EventType::EnterParagraph, None),
                         (EventType::Unparsed, Some("foo")),
-                        (EventType::Exit, None),
-                        (EventType::Exit, None),
-                        (EventType::Exit, None)
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None)
                     ]
                 ),
                 case!(
@@ -109,12 +109,12 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
                         (EventType::EnterBlockQuote, None),
                         (EventType::EnterParagraph, None),
                         (EventType::Unparsed, Some("foo")),
-                        (EventType::Exit, None),
-                        (EventType::Exit, None),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
                         (EventType::EnterParagraph, None),
                         (EventType::Unparsed, Some("bar")),
-                        (EventType::Exit, None),
-                        (EventType::Exit, None)
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None)
                     ]
                 ),
                 case!(
@@ -127,8 +127,8 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
                         (EventType::Unparsed, Some("foo")),
                         (EventType::NewLine, None),
                         (EventType::Unparsed, Some("> bar")),
-                        (EventType::Exit, None),
-                        (EventType::Exit, None)
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None)
                     ]
                 ),
             ],
@@ -141,7 +141,7 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
                     vec![
                         (EventType::EnterBlockQuote, None),
                         (EventType::ThematicBreak, None),
-                        (EventType::Exit, None)
+                        (EventType::ExitBlock, None)
                     ]
                 ),
                 case!(
@@ -151,7 +151,7 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
                     vec![
                         (EventType::EnterBlockQuote, None),
                         (EventType::ThematicBreak, None),
-                        (EventType::Exit, None),
+                        (EventType::ExitBlock, None),
                         (EventType::ThematicBreak, None)
                     ]
                 ),
@@ -161,8 +161,8 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
                         (EventType::EnterBlockQuote, None),
                         (EventType::EnterHeading2, None),
                         (EventType::Unparsed, Some("a")),
-                        (EventType::Exit, None),
-                        (EventType::Exit, None)
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None)
                     ]
                 ),
                 case!(
@@ -173,11 +173,11 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
                         (EventType::EnterBlockQuote, None),
                         (EventType::EnterHeading2, None),
                         (EventType::Unparsed, Some("a")),
-                        (EventType::Exit, None),
-                        (EventType::Exit, None),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
                         (EventType::EnterHeading3, None),
                         (EventType::Unparsed, Some("b")),
-                        (EventType::Exit, None)
+                        (EventType::ExitBlock, None)
                     ]
                 ),
             ],

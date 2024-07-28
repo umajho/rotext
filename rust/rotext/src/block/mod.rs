@@ -10,7 +10,7 @@ use context::Context;
 use root_parser::ExitingDiscontinuedItemLikesState;
 
 use crate::{
-    events::{BlockEvent, NewLine},
+    events::{BlockEvent, ExitBlock, NewLine},
     global,
 };
 use global_mapper::GlobalEventStreamMapper;
@@ -43,12 +43,18 @@ pub struct Nesting {
     is_exiting_discontinued_item_likes: Option<ExitingDiscontinuedItemLikesState>,
 }
 
-enum StackEntry {
+struct StackEntry {
+    block: BlockInStack,
+    #[cfg(feature = "line-number")]
+    start_line_number: usize,
+}
+
+enum BlockInStack {
     BlockQuote,
     ItemLike(ItemLikeType),
     Container,
 }
-impl From<ItemLikeType> for StackEntry {
+impl From<ItemLikeType> for BlockInStack {
     fn from(value: ItemLikeType) -> Self {
         Self::ItemLike(value)
     }
@@ -96,9 +102,15 @@ impl<'a> Parser<'a> {
     pub fn next(&mut self) -> Option<BlockEvent> {
         let next = loop {
             if self.is_cleaning_up {
-                // 若栈中还有内容，出栈并返回 `Some(Event::Exit)`；若栈已空，返
-                // 回 `None`。
-                break self.stack.pop().map(|_| BlockEvent::Exit);
+                // 若栈中还有内容，出栈并返回 `Some(Event::Exit)`；若栈已空，返回 `None`。
+                break self.stack.pop().map(|#[allow(unused_variables)] entry| {
+                    BlockEvent::ExitBlock(ExitBlock {
+                        #[cfg(feature = "line-number")]
+                        start_line_number: entry.start_line_number,
+                        #[cfg(feature = "line-number")]
+                        end_line_number: self.context.current_line_number,
+                    })
+                });
             }
 
             let to_break: Option<BlockEvent>;

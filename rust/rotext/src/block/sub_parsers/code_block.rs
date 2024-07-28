@@ -1,6 +1,6 @@
 use crate::{
     block::{context::Context, sub_parsers},
-    events::{BlockEvent, NewLine},
+    events::{BlockEvent, ExitBlock, NewLine},
 };
 
 enum State {
@@ -23,15 +23,25 @@ enum State {
 }
 
 pub struct Parser {
+    #[cfg(feature = "line-number")]
+    start_line_number: usize,
     leading_backticks: usize,
 
     state: State,
 }
 
+pub struct NewParserOptions {
+    #[cfg(feature = "line-number")]
+    pub start_line_number: usize,
+    pub leading_backticks: usize,
+}
+
 impl Parser {
-    pub fn new(leading_backticks: usize) -> Self {
+    pub fn new(opts: NewParserOptions) -> Self {
         Self {
-            leading_backticks,
+            #[cfg(feature = "line-number")]
+            start_line_number: opts.start_line_number,
+            leading_backticks: opts.leading_backticks,
 
             state: State::Initial,
         }
@@ -106,7 +116,12 @@ impl Parser {
                         State::Paused(code_content_parser),
                     ),
                     sub_parsers::Result::Done => (
-                        sub_parsers::Result::ToYield(BlockEvent::Exit),
+                        sub_parsers::Result::ToYield(BlockEvent::ExitBlock(ExitBlock {
+                            #[cfg(feature = "line-number")]
+                            start_line_number: self.start_line_number,
+                            #[cfg(feature = "line-number")]
+                            end_line_number: ctx.current_line_number,
+                        })),
                         State::Exiting,
                     ),
                 }
@@ -118,7 +133,12 @@ impl Parser {
             // drop 掉。
             State::Exited | State::Paused(_) | State::Invalid => unreachable!(),
             State::ToExit => (
-                sub_parsers::Result::ToYield(BlockEvent::Exit),
+                sub_parsers::Result::ToYield(BlockEvent::ExitBlock(ExitBlock {
+                    #[cfg(feature = "line-number")]
+                    start_line_number: self.start_line_number,
+                    #[cfg(feature = "line-number")]
+                    end_line_number: ctx.current_line_number,
+                })),
                 State::Exiting,
             ),
         };

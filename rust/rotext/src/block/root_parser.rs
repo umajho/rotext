@@ -1,12 +1,12 @@
 use derivative::Derivative;
 
 use super::{
-    context::Context, global_mapper::Mapped, sub_parsers, utils::ArrayQueue, ItemLikeType, Nesting,
-    StackEntry,
+    context::Context, global_mapper::Mapped, sub_parsers, utils::ArrayQueue, BlockInStack,
+    ItemLikeType, Nesting, StackEntry,
 };
 use crate::{
     common::Range,
-    events::{BlockEvent, NewLine},
+    events::{BlockEvent, ExitBlock, NewLine, ThematicBreak},
 };
 
 pub struct Parser<'a> {
@@ -92,9 +92,8 @@ impl<'a> Parser<'a> {
                     self.process_in_expecting_container_state(ctx, stack, nesting)
                 }
                 State::ExpectingLeaf => self.process_in_expecting_leaf_state(ctx),
-                State::ExitingDiscontinuedItemLikes(state) => {
-                    self.process_in_exiting_discontinued_item_likes_state(stack, nesting, state)
-                }
+                State::ExitingDiscontinuedItemLikes(state) => self
+                    .process_in_exiting_discontinued_item_likes_state(ctx, stack, nesting, state),
                 State::Invalid => unreachable!(),
             };
 
@@ -191,7 +190,11 @@ impl<'a> Parser<'a> {
                 ScanParagraphOrItemLikeResult::BlockQuoteLine => {
                     nesting.processed_item_likes += 1;
                     if is_expecting_deeper {
-                        stack.push(StackEntry::BlockQuote);
+                        stack.push(StackEntry {
+                            block: BlockInStack::BlockQuote,
+                            #[cfg(feature = "line-number")]
+                            start_line_number: ctx.current_line_number,
+                        });
                         nesting.item_likes_in_stack += 1;
                         self.to_yield.push_back(BlockEvent::EnterBlockQuote);
                         return InternalResult::ToContinue(State::ExpectingContainer);
@@ -201,7 +204,7 @@ impl<'a> Parser<'a> {
                 }
                 ScanParagraphOrItemLikeResult::ItemLike(item_like_type) => {
                     if is_expecting_deeper {
-                        self.enter_item_like(stack, nesting, item_like_type, true);
+                        self.enter_item_like(ctx, stack, nesting, item_like_type, true);
                         return InternalResult::ToContinue(State::ExpectingContainer);
                     } else {
                         let last_item_like_type = self.get_nth_item_like_or_paragraph_in_stack(
@@ -242,24 +245,43 @@ impl<'a> Parser<'a> {
         match scan_leaf(ctx) {
             LeafType::ThematicBreak => {
                 let new_state = State::Start { new_line: None };
-                self.to_yield.push_back(BlockEvent::ThematicBreak);
+                self.to_yield
+                    .push_back(BlockEvent::ThematicBreak(ThematicBreak {
+                        #[cfg(feature = "line-number")]
+                        line_number: ctx.current_line_number,
+                    }));
                 InternalResult::ToContinue(new_state)
             }
             LeafType::Heading { leading_signs } => InternalResult::ToSwitchToSubParser(Box::new(
-                sub_parsers::heading::Parser::new(leading_signs),
+                sub_parsers::heading::Parser::new(sub_parsers::heading::NewParserOptions {
+                    #[cfg(feature = "line-number")]
+                    start_line_number: ctx.current_line_number,
+                    leading_signs,
+                }),
             )),
             LeafType::CodeBlock { backticks } => InternalResult::ToSwitchToSubParser(Box::new(
-                sub_parsers::code_block::Parser::new(backticks),
+                sub_parsers::code_block::Parser::new(sub_parsers::code_block::NewParserOptions {
+                    #[cfg(feature = "line-number")]
+                    start_line_number: ctx.current_line_number,
+                    leading_backticks: backticks,
+                }),
             )),
-            LeafType::Paragraph { content_before } => InternalResult::ToSwitchToSubParser(
-                Box::new(sub_parsers::paragraph::Parser::new(content_before)),
-            ),
+            LeafType::Paragraph { content_before } => {
+                InternalResult::ToSwitchToSubParser(Box::new(sub_parsers::paragraph::Parser::new(
+                    sub_parsers::paragraph::NewParserOptions {
+                        #[cfg(feature = "line-number")]
+                        start_line_number: ctx.current_line_number,
+                        content_before,
+                    },
+                )))
+            }
         }
     }
 
     #[inline(always)]
     fn process_in_exiting_discontinued_item_likes_state(
         &mut self,
+        ctx: &mut Context<'a>,
         stack: &mut Vec<StackEntry>,
         nesting: &mut Nesting,
         state: ExitingDiscontinuedItemLikesState,
@@ -275,16 +297,30 @@ impl<'a> Parser<'a> {
         }
 
         let top = stack.pop().unwrap();
-        if matches!(top, StackEntry::ItemLike(_) | StackEntry::BlockQuote) {
+        if matches!(
+            top.block,
+            BlockInStack::ItemLike(_) | BlockInStack::BlockQuote
+        ) {
             nesting.item_likes_in_stack -= 1;
             if nesting.processed_item_likes == nesting.item_likes_in_stack {
-                self.to_yield.push_back(BlockEvent::Exit);
-                if matches!(top, StackEntry::ItemLike(_)) && !state.should_keep_container {
+                self.to_yield.push_back(BlockEvent::ExitBlock(ExitBlock {
+                    #[cfg(feature = "line-number")]
+                    start_line_number: top.start_line_number,
+                    #[cfg(feature = "line-number")]
+                    end_line_number: ctx.current_line_number,
+                }));
+                if matches!(top.block, BlockInStack::ItemLike(_)) && !state.should_keep_container {
                     stack.pop().unwrap();
-                    self.to_yield.push_back(BlockEvent::Exit);
+                    self.to_yield.push_back(BlockEvent::ExitBlock(ExitBlock {
+                        #[cfg(feature = "line-number")]
+                        start_line_number: top.start_line_number,
+                        #[cfg(feature = "line-number")]
+                        end_line_number: ctx.current_line_number,
+                    }));
                 }
                 if let Some(item_like_type_to_enter) = state.and_then_enter_item_like {
                     self.enter_item_like(
+                        ctx,
                         stack,
                         nesting,
                         item_like_type_to_enter,
@@ -294,7 +330,12 @@ impl<'a> Parser<'a> {
                 return InternalResult::ToContinue(State::ExpectingContainer);
             }
         }
-        self.to_yield.push_back(BlockEvent::Exit);
+        self.to_yield.push_back(BlockEvent::ExitBlock(ExitBlock {
+            #[cfg(feature = "line-number")]
+            start_line_number: top.start_line_number,
+            #[cfg(feature = "line-number")]
+            end_line_number: ctx.current_line_number,
+        }));
         InternalResult::ToContinue(State::ExitingDiscontinuedItemLikes(state))
     }
 
@@ -315,9 +356,9 @@ impl<'a> Parser<'a> {
 
         for (delta_index, entry) in stack.iter().skip(memo.last_index).enumerate() {
             let mut item_like_type: Option<ItemLikeType> = None;
-            if let StackEntry::ItemLike(item_like_type_) = entry {
-                item_like_type = Some(*item_like_type_);
-            } else if !matches!(entry, StackEntry::BlockQuote) {
+            if let BlockInStack::ItemLike(item_like_type_) = entry.block {
+                item_like_type = Some(item_like_type_);
+            } else if !matches!(entry.block, BlockInStack::BlockQuote) {
                 continue;
             }
 
@@ -335,6 +376,7 @@ impl<'a> Parser<'a> {
 
     fn enter_item_like(
         &mut self,
+        #[allow(unused_variables)] ctx: &mut Context<'a>,
         stack: &mut Vec<StackEntry>,
         nesting: &mut Nesting,
         item_like_type: ItemLikeType,
@@ -352,9 +394,17 @@ impl<'a> Parser<'a> {
 
         nesting.processed_item_likes += 1;
         if should_enter_container {
-            stack.push(StackEntry::Container);
+            stack.push(StackEntry {
+                block: BlockInStack::Container,
+                #[cfg(feature = "line-number")]
+                start_line_number: ctx.current_line_number,
+            });
         }
-        stack.push(item_like_type.into());
+        stack.push(StackEntry {
+            block: item_like_type.into(),
+            #[cfg(feature = "line-number")]
+            start_line_number: ctx.current_line_number,
+        });
         nesting.item_likes_in_stack += 1;
 
         if should_enter_container {

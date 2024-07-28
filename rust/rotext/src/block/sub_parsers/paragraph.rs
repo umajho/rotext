@@ -1,7 +1,7 @@
 use crate::{
     block::{context::Context, sub_parsers},
     common::Range,
-    events::{BlockEvent, NewLine},
+    events::{BlockEvent, ExitBlock, NewLine},
 };
 
 enum State {
@@ -20,14 +20,27 @@ enum State {
 }
 
 pub struct Parser {
+    #[cfg(feature = "line-number")]
+    start_line_number: usize,
+
     state: State,
+}
+
+pub struct NewParserOptions {
+    #[cfg(feature = "line-number")]
+    pub start_line_number: usize,
+
+    pub content_before: Option<Range>,
 }
 
 impl Parser {
     /// XXX: 不会尝试解析 `content_before` 中的内容，而是直接把这些内容当成文本。
-    pub fn new(content_before: Option<Range>) -> Self {
+    pub fn new(opts: NewParserOptions) -> Self {
         Self {
-            state: State::Initial(content_before),
+            #[cfg(feature = "line-number")]
+            start_line_number: opts.start_line_number,
+
+            state: State::Initial(opts.content_before),
         }
     }
 
@@ -69,7 +82,12 @@ impl Parser {
                         State::Paused(content_parser),
                     ),
                     sub_parsers::Result::Done => (
-                        sub_parsers::Result::ToYield(BlockEvent::Exit),
+                        sub_parsers::Result::ToYield(BlockEvent::ExitBlock(ExitBlock {
+                            #[cfg(feature = "line-number")]
+                            start_line_number: self.start_line_number,
+                            #[cfg(feature = "line-number")]
+                            end_line_number: ctx.current_line_number,
+                        })),
                         State::Exiting,
                     ),
                 }
@@ -81,7 +99,12 @@ impl Parser {
             // drop 掉。
             State::Exited | State::Paused(_) | State::Invalid => unreachable!(),
             State::ToExit => (
-                sub_parsers::Result::ToYield(BlockEvent::Exit),
+                sub_parsers::Result::ToYield(BlockEvent::ExitBlock(ExitBlock {
+                    #[cfg(feature = "line-number")]
+                    start_line_number: self.start_line_number,
+                    #[cfg(feature = "line-number")]
+                    end_line_number: ctx.current_line_number,
+                })),
                 State::Exiting,
             ),
         };
