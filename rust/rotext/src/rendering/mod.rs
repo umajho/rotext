@@ -54,7 +54,7 @@ impl<'a> HtmlRenderer<'a> {
                     {
                         if self.with_block_id {
                             self.result.extend(br#"<hr data-block-id=""#);
-                            self.result.extend(data.id.to_string().as_bytes());
+                            self.write_usize(data.id);
                             self.result.extend(br#"">"#);
                         } else {
                             self.result.extend(b"<hr>")
@@ -96,7 +96,7 @@ impl<'a> HtmlRenderer<'a> {
                     {
                         if self.with_block_id {
                             self.result.extend(br#"" data-block-id=""#);
-                            self.result.extend(data.id.to_string().as_bytes());
+                            self.write_usize(data.id);
                         }
                     }
 
@@ -118,7 +118,7 @@ impl<'a> HtmlRenderer<'a> {
             {
                 if self.with_block_id {
                     self.result.extend(br#" data-block-id=""#);
-                    self.result.extend(data.id.to_string().as_bytes());
+                    self.write_usize(data.id);
                     self.result.extend(br#"">"#);
                 } else {
                     self.result.push(b'>');
@@ -151,5 +151,10 @@ impl<'a> HtmlRenderer<'a> {
                 char => self.result.push(char),
             }
         }
+    }
+
+    fn write_usize(&mut self, n: usize) {
+        let mut buffer = itoa::Buffer::new();
+        self.result.extend(buffer.format(n).as_bytes());
     }
 }
