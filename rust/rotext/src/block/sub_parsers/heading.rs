@@ -47,8 +47,8 @@ impl Parser {
     }
 
     #[inline(always)]
-    fn next(&mut self, ctx: &mut Context) -> sub_parsers::Result {
-        let ret: sub_parsers::Result;
+    fn next(&mut self, ctx: &mut Context) -> sub_parsers::Output {
+        let ret: sub_parsers::Output;
 
         let state = std::mem::replace(&mut self.state, State::Invalid);
         (ret, self.state) = match state {
@@ -74,7 +74,7 @@ impl Parser {
                     ctx,
                     Some(id) => {
                         (
-                            sub_parsers::Result::ToYield(self.make_enter_heading_event(id)),
+                            sub_parsers::Output::ToYield(self.make_enter_heading_event(id)),
                             State::Content {
                                 id,
                                 content_parser: Box::new(content_parser),
@@ -83,7 +83,7 @@ impl Parser {
                     },
                     None => {
                         (
-                            sub_parsers::Result::ToYield(self.make_enter_heading_event()),
+                            sub_parsers::Output::ToYield(self.make_enter_heading_event()),
                             State::Content {
                                 content_parser: Box::new(content_parser),
                             },
@@ -98,17 +98,17 @@ impl Parser {
             } => {
                 let next = content_parser.next(ctx);
                 match next {
-                    sub_parsers::Result::ToYield(ev) => (
-                        sub_parsers::Result::ToYield(ev),
+                    sub_parsers::Output::ToYield(ev) => (
+                        sub_parsers::Output::ToYield(ev),
                         State::Content {
                             #[cfg(feature = "block-id")]
                             id,
                             content_parser,
                         },
                     ),
-                    sub_parsers::Result::ToPauseForNewLine => unreachable!(),
-                    sub_parsers::Result::Done => (
-                        sub_parsers::Result::ToYield(BlockEvent::ExitBlock(ExitBlock {
+                    sub_parsers::Output::ToPauseForNewLine => unreachable!(),
+                    sub_parsers::Output::Done => (
+                        sub_parsers::Output::ToYield(BlockEvent::ExitBlock(ExitBlock {
                             #[cfg(feature = "block-id")]
                             id,
                             #[cfg(feature = "line-number")]
@@ -120,7 +120,7 @@ impl Parser {
                     ),
                 }
             }
-            State::Exiting => (sub_parsers::Result::Done, State::Exited),
+            State::Exiting => (sub_parsers::Output::Done, State::Exited),
             // 当解析器作为迭代器被耗尽而返回 `None` 时，解析器进入状态
             // [State::Exited]。此后，不应该再调用 `next` 方法，否则就会执行到
             // 这里。正确的做法是 `take_context` 取回 [Context]，并将解析器
@@ -149,7 +149,7 @@ impl Parser {
 }
 
 impl<'a> sub_parsers::SubParser<'a> for Parser {
-    fn next(&mut self, ctx: &mut Context<'a>) -> sub_parsers::Result {
+    fn next(&mut self, ctx: &mut Context<'a>) -> sub_parsers::Output {
         self.next(ctx)
     }
 

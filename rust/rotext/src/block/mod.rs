@@ -208,14 +208,14 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
 
                     let sub_parser_unchecked = unsafe { sub_parser.as_mut().unwrap_unchecked() };
                     match sub_parser_unchecked.next(&mut self.context) {
-                        sub_parsers::Result::ToYield(ev) => break Some(Ok(ev)),
-                        sub_parsers::Result::ToPauseForNewLine => {
+                        sub_parsers::Output::ToYield(ev) => break Some(Ok(ev)),
+                        sub_parsers::Output::ToPauseForNewLine => {
                             self.state = State::InRootParser(root_parser::Parser::new(
                                 None,
                                 Some(unsafe { sub_parser.take().unwrap_unchecked() }),
                             ));
                         }
-                        sub_parsers::Result::Done => {
+                        sub_parsers::Output::Done => {
                             self.state = State::InRootParser(root_parser::Parser::new(None, None));
                         }
                     }

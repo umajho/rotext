@@ -96,7 +96,7 @@ impl Parser {
         }
     }
 
-    pub fn next(&mut self, ctx: &mut Context) -> sub_parsers::Result {
+    pub fn next(&mut self, ctx: &mut Context) -> sub_parsers::Output {
         let mut state = std::mem::replace(&mut self.next_initial_step_state, StepState::Initial);
 
         loop {
@@ -119,12 +119,12 @@ impl Parser {
                 InternalResult::ToContinueIn(new_state) => {
                     state = new_state;
                 }
-                InternalResult::ToYield(ev) => break sub_parsers::Result::ToYield(ev),
+                InternalResult::ToYield(ev) => break sub_parsers::Output::ToYield(ev),
                 InternalResult::ToPauseForNewLine => {
                     self.is_at_first_line = false;
-                    break sub_parsers::Result::ToPauseForNewLine;
+                    break sub_parsers::Output::ToPauseForNewLine;
                 }
-                InternalResult::Done => break sub_parsers::Result::Done,
+                InternalResult::Done => break sub_parsers::Output::Done,
             }
         }
     }

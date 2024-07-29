@@ -73,8 +73,8 @@ impl Parser {
     }
 
     #[inline(always)]
-    fn next(&mut self, ctx: &mut Context) -> sub_parsers::Result {
-        let ret: sub_parsers::Result;
+    fn next(&mut self, ctx: &mut Context) -> sub_parsers::Output {
+        let ret: sub_parsers::Output;
 
         let state = std::mem::replace(&mut self.state, State::Invalid);
         (ret, self.state) = match state {
@@ -93,7 +93,7 @@ impl Parser {
                     Some(id) => {
                         let code_block = BlockEvent::EnterCodeBlock(BlockWithID { id });
                         (
-                            sub_parsers::Result::ToYield(code_block),
+                            sub_parsers::Output::ToYield(code_block),
                             State::InfoStringContent {
                                 code_block_id: id,
                                 info_string_content_parser: Box::new(info_string_content_parser),
@@ -103,7 +103,7 @@ impl Parser {
                     None => {
                          let code_block = BlockEvent::EnterCodeBlock(BlockWithID {});
                         (
-                            sub_parsers::Result::ToYield(code_block),
+                            sub_parsers::Output::ToYield(code_block),
                             State::InfoStringContent {
                                 info_string_content_parser: Box::new(info_string_content_parser),
                             },
@@ -118,16 +118,16 @@ impl Parser {
             } => {
                 let next = info_string_content_parser.next(ctx);
                 match next {
-                    sub_parsers::Result::ToYield(ev) => (
-                        sub_parsers::Result::ToYield(ev),
+                    sub_parsers::Output::ToYield(ev) => (
+                        sub_parsers::Output::ToYield(ev),
                         State::InfoStringContent {
                             #[cfg(feature = "block-id")]
                             code_block_id,
                             info_string_content_parser,
                         },
                     ),
-                    sub_parsers::Result::ToPauseForNewLine => unreachable!(),
-                    sub_parsers::Result::Done => {
+                    sub_parsers::Output::ToPauseForNewLine => unreachable!(),
+                    sub_parsers::Output::Done => {
                         let opts = sub_parsers::content::Options {
                             initial_step_state: sub_parsers::content::StepState::Invalid,
                             mode: sub_parsers::content::Mode::Verbatim,
@@ -145,7 +145,7 @@ impl Parser {
                         };
                         let code_content_parser = sub_parsers::content::Parser::new(opts);
                         (
-                            sub_parsers::Result::ToYield(BlockEvent::Separator),
+                            sub_parsers::Output::ToYield(BlockEvent::Separator),
                             State::BeforeCodeContent {
                                 #[cfg(feature = "block-id")]
                                 code_block_id,
@@ -160,7 +160,7 @@ impl Parser {
                 code_block_id,
                 code_content_parser,
             } => (
-                sub_parsers::Result::ToPauseForNewLine,
+                sub_parsers::Output::ToPauseForNewLine,
                 State::Paused {
                     #[cfg(feature = "block-id")]
                     code_block_id,
@@ -174,24 +174,24 @@ impl Parser {
             } => {
                 let next = code_content_parser.next(ctx);
                 match next {
-                    sub_parsers::Result::ToYield(ev) => (
-                        sub_parsers::Result::ToYield(ev),
+                    sub_parsers::Output::ToYield(ev) => (
+                        sub_parsers::Output::ToYield(ev),
                         State::CodeContent {
                             #[cfg(feature = "block-id")]
                             code_block_id,
                             code_content_parser,
                         },
                     ),
-                    sub_parsers::Result::ToPauseForNewLine => (
-                        sub_parsers::Result::ToPauseForNewLine,
+                    sub_parsers::Output::ToPauseForNewLine => (
+                        sub_parsers::Output::ToPauseForNewLine,
                         State::Paused {
                             #[cfg(feature = "block-id")]
                             code_block_id,
                             code_content_parser,
                         },
                     ),
-                    sub_parsers::Result::Done => (
-                        sub_parsers::Result::ToYield(BlockEvent::ExitBlock(ExitBlock {
+                    sub_parsers::Output::Done => (
+                        sub_parsers::Output::ToYield(BlockEvent::ExitBlock(ExitBlock {
                             #[cfg(feature = "block-id")]
                             id: code_block_id,
                             #[cfg(feature = "line-number")]
@@ -203,7 +203,7 @@ impl Parser {
                     ),
                 }
             }
-            State::Exiting => (sub_parsers::Result::Done, State::Exited),
+            State::Exiting => (sub_parsers::Output::Done, State::Exited),
             // 当解析器作为迭代器被耗尽而返回 `None` 时，解析器进入状态
             // [State::Exited]。此后，不应该再调用 `next` 方法，否则就会执行到
             // 这里。正确的做法是 `take_context` 取回 [Context]，并将解析器
@@ -213,7 +213,7 @@ impl Parser {
                 #[cfg(feature = "block-id")]
                 code_block_id,
             } => (
-                sub_parsers::Result::ToYield(BlockEvent::ExitBlock(ExitBlock {
+                sub_parsers::Output::ToYield(BlockEvent::ExitBlock(ExitBlock {
                     #[cfg(feature = "block-id")]
                     id: code_block_id,
                     #[cfg(feature = "line-number")]
@@ -230,7 +230,7 @@ impl Parser {
 }
 
 impl<'a> sub_parsers::SubParser<'a> for Parser {
-    fn next(&mut self, ctx: &mut Context<'a>) -> sub_parsers::Result {
+    fn next(&mut self, ctx: &mut Context<'a>) -> sub_parsers::Output {
         self.next(ctx)
     }
 

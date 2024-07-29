@@ -9,14 +9,14 @@ mod content;
 mod utils;
 
 #[derive(Debug)]
-pub enum Result {
+pub enum Output {
     ToYield(BlockEvent),
     ToPauseForNewLine,
     Done,
 }
 
 pub trait SubParser<'a> {
-    fn next(&mut self, ctx: &mut Context<'a>) -> Result;
+    fn next(&mut self, ctx: &mut Context<'a>) -> Output;
 
     fn resume_from_pause_for_new_line_and_continue(&mut self, new_line: NewLine);
     fn resume_from_pause_for_new_line_and_exit(&mut self);
