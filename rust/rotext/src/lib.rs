@@ -1,7 +1,6 @@
 mod blend;
 mod block;
 mod common;
-mod errors;
 mod events;
 mod global;
 mod inline;
@@ -13,10 +12,11 @@ pub mod utils;
 #[cfg(test)]
 pub(crate) mod test_utils;
 
-use block::StackEntry;
-pub use errors::{Error, Result};
 pub use events::{BlendEvent, BlockEvent, Event};
 pub use rendering::{HtmlRenderer, NewHtmlRendererOptoins};
+pub use types::{Error, Result};
+
+use block::StackEntry;
 use utils::stack::{Stack, VecStack};
 
 pub fn parse(
