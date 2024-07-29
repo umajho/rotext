@@ -90,7 +90,7 @@ export function createPreviewParts(
           </Index>
         </Tabs>
         <BadgeBar>
-          <Show when={processResult()?.parsingTimeMs}>
+          <Show when={typeof processResult()?.parsingTimeMs === "number"}>
             <Badge>
               解析时间：{`${processResult()!.parsingTimeMs!.toFixed(3)}ms`}
             </Badge>
