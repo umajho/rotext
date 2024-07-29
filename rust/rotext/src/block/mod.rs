@@ -14,17 +14,18 @@ use crate::types::BlockID;
 use crate::{
     events::{BlockEvent, BlockWithID, ExitBlock, NewLine},
     global,
+    utils::stack::Stack,
 };
 use global_mapper::GlobalEventStreamMapper;
 use utils::Peekable;
 
-pub struct Parser<'a> {
+pub struct Parser<'a, TStack: Stack<StackEntry>> {
     context: Context<'a>,
 
     /// 如果为 true，代表没有后续输入了，要清理栈中余留的内容。
     is_cleaning_up: bool,
     state: State<'a>,
-    stack: Vec<StackEntry>,
+    stack: TStack,
     nesting: Nesting,
 }
 
@@ -45,7 +46,7 @@ pub struct Nesting {
     is_exiting_discontinued_item_likes: Option<ExitingDiscontinuedItemLikesState>,
 }
 
-struct StackEntry {
+pub struct StackEntry {
     block: BlockInStack,
 
     #[cfg(feature = "block-id")]
@@ -136,8 +137,8 @@ impl ItemLikeType {
     }
 }
 
-impl<'a> Parser<'a> {
-    pub fn new(input: &'a [u8], global_stream: global::Parser<'a>) -> Parser<'a> {
+impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
+    pub fn new(input: &'a [u8], global_stream: global::Parser<'a>) -> Self {
         let context = Context {
             input,
             mapper: Peekable::new(GlobalEventStreamMapper::new(input, global_stream)),
@@ -161,7 +162,7 @@ impl<'a> Parser<'a> {
 
             is_cleaning_up: false,
             state: State::InRootParser(root_parser::Parser::new(Some(new_line), None)),
-            stack: vec![],
+            stack: TStack::new(),
             nesting: Nesting {
                 item_likes_in_stack: 0,
                 processed_item_likes: 0,
@@ -170,27 +171,30 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn next(&mut self) -> Option<BlockEvent> {
+    pub fn next(&mut self) -> Option<crate::Result<BlockEvent>> {
         let next = loop {
             if self.is_cleaning_up {
                 // 若栈中还有内容，出栈并返回 `Some(Event::Exit)`；若栈已空，返回 `None`。
                 break self.stack.pop().map(|#[allow(unused_variables)] entry| {
-                    BlockEvent::ExitBlock(entry.into_exit_block(
+                    Ok(BlockEvent::ExitBlock(entry.into_exit_block(
                         #[cfg(feature = "line-number")]
                         self.context.current_line_number,
-                    ))
+                    )))
                 });
             }
 
             let to_break: Option<BlockEvent>;
             (to_break, self.state) = match std::mem::replace(&mut self.state, State::Invalid) {
-                State::InRootParser(parser) => self.process_in_root_parser_state(parser),
+                State::InRootParser(parser) => match self.process_in_root_parser_state(parser) {
+                    Ok(x) => x,
+                    Err(err) => return Some(Err(err)),
+                },
                 State::InSubParser(sub_parser) => self.process_in_sub_parser_state(sub_parser),
                 State::Invalid => unreachable!(),
             };
 
             if to_break.is_some() {
-                break to_break;
+                break to_break.map(|x| Ok(x));
             }
         };
 
@@ -204,17 +208,19 @@ impl<'a> Parser<'a> {
     fn process_in_root_parser_state(
         &mut self,
         mut parser: root_parser::Parser<'a>,
-    ) -> (Option<BlockEvent>, State<'a>) {
-        match parser.parse(&mut self.context, &mut self.stack, &mut self.nesting) {
-            root_parser::Result::ToYield(ev) => (Some(ev), State::InRootParser(parser)),
-            root_parser::Result::ToSwitchToSubParser(sub_parser) => {
+    ) -> crate::Result<(Option<BlockEvent>, State<'a>)> {
+        let ret = match parser.parse(&mut self.context, &mut self.stack, &mut self.nesting)? {
+            root_parser::ParseStepOutput::ToYield(ev) => (Some(ev), State::InRootParser(parser)),
+            root_parser::ParseStepOutput::ToSwitchToSubParser(sub_parser) => {
                 (None, State::InSubParser(sub_parser))
             }
-            root_parser::Result::Done => {
+            root_parser::ParseStepOutput::Done => {
                 self.is_cleaning_up = true;
                 (None, State::Invalid)
             }
-        }
+        };
+
+        Ok(ret)
     }
 
     #[inline(always)]
@@ -241,8 +247,8 @@ impl<'a> Parser<'a> {
     }
 }
 
-impl<'a> Iterator for Parser<'a> {
-    type Item = BlockEvent;
+impl<'a, TStack: Stack<StackEntry>> Iterator for Parser<'a, TStack> {
+    type Item = crate::Result<BlockEvent>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.next()

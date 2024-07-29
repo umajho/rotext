@@ -111,17 +111,15 @@ impl<const N: usize, T> ArrayQueue<N, T> {
 
 macro_rules! match_pop_block_id {
     ($ctx:expr, Some($id_ident:ident) => $some:block, None => $none:block,) => {
-        let result;
         #[cfg(feature = "block-id")]
         {
             let $id_ident = $ctx.pop_block_id();
-            result = $some;
+            $some
         }
         #[cfg(not(feature = "block-id"))]
         {
-            result = $none;
+            $none
         }
-        result
     };
 }
 

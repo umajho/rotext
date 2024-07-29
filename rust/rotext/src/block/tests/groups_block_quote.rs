@@ -1,7 +1,7 @@
 use indoc::indoc;
 
 use crate::{
-    block::tests::{utils::case, GroupedCases},
+    block::tests::utils::{case, GroupedCases},
     events::EventType,
 };
 

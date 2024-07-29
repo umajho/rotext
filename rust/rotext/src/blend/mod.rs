@@ -1,27 +1,30 @@
 use std::{cell::RefCell, iter::Peekable, rc::Rc};
 
 use crate::{
-    block,
-    events::{BlendEvent, Event, InlineLevelParseInputEvent},
+    events::{BlendEvent, BlockEvent, Event, InlineLevelParseInputEvent},
     inline::{self},
 };
 
-enum State<'a> {
-    Normal(Box<Peekable<block::Parser<'a>>>),
-    TakenOver(inline::Parser<'a>),
+enum State<TBlockParser: Iterator<Item = crate::Result<BlockEvent>>> {
+    Normal(Box<Peekable<TBlockParser>>),
+    TakenOver(inline::Parser<WhileInlineSegment<TBlockParser>>),
 
     Invalid,
 }
 
 /// 用于将 “产出 [BlockEvent] 的流” 中每段 “留给行内阶段解析器处理的、连续产出
 /// 的事件” 截取为单独的流提供给使用者。使用者需要将提供的那些流映射为新的流。
-pub struct BlockEventStreamInlineSegmentMapper<'a> {
-    state: State<'a>,
-    input_stream_returner: Rc<RefCell<Option<Box<Peekable<block::Parser<'a>>>>>>,
+pub struct BlockEventStreamInlineSegmentMapper<
+    TBlockParser: Iterator<Item = crate::Result<BlockEvent>>,
+> {
+    state: State<TBlockParser>,
+    input_stream_returner: Rc<RefCell<Option<Box<Peekable<TBlockParser>>>>>,
 }
 
-impl<'a> BlockEventStreamInlineSegmentMapper<'a> {
-    pub fn new(input_stream: block::Parser<'a>) -> Self {
+impl<'a, TBlockParser: Iterator<Item = crate::Result<BlockEvent>>>
+    BlockEventStreamInlineSegmentMapper<TBlockParser>
+{
+    pub fn new(input_stream: TBlockParser) -> Self {
         Self {
             state: State::Normal(Box::new(input_stream.peekable())),
             input_stream_returner: Rc::new(RefCell::new(None)),
@@ -29,13 +32,17 @@ impl<'a> BlockEventStreamInlineSegmentMapper<'a> {
     }
 
     #[inline(always)]
-    fn next(&mut self) -> Option<BlendEvent> {
-        loop {
+    fn next(&mut self) -> Option<crate::Result<BlendEvent>> {
+        let ret = loop {
             let to_break: Option<BlendEvent>;
 
             (to_break, self.state) = match std::mem::replace(&mut self.state, State::Invalid) {
                 State::Normal(mut input_stream) => {
-                    let next = input_stream.next()?;
+                    let next = match input_stream.next() {
+                        Some(Ok(x)) => x,
+                        Some(Err(err)) => return Some(Err(err)),
+                        None => break None,
+                    };
                     if next.opens_inline_phase() {
                         let segment_stream = WhileInlineSegment::new(
                             input_stream,
@@ -70,27 +77,34 @@ impl<'a> BlockEventStreamInlineSegmentMapper<'a> {
             if let Some(to_break) = to_break {
                 break Some(to_break);
             }
+        };
+
+        match ret {
+            Some(x) => Some(Ok(x)),
+            None => None,
         }
     }
 }
 
-impl<'a> Iterator for BlockEventStreamInlineSegmentMapper<'a> {
-    type Item = BlendEvent;
+impl<TBlockParser: Iterator<Item = crate::Result<BlockEvent>>> Iterator
+    for BlockEventStreamInlineSegmentMapper<TBlockParser>
+{
+    type Item = crate::Result<BlendEvent>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.next()
     }
 }
 
-pub struct WhileInlineSegment<'a> {
-    inner: Option<Box<Peekable<block::Parser<'a>>>>,
-    input_stream_returner: Rc<RefCell<Option<Box<Peekable<block::Parser<'a>>>>>>,
+pub struct WhileInlineSegment<TBlockParser: Iterator<Item = crate::Result<BlockEvent>>> {
+    inner: Option<Box<Peekable<TBlockParser>>>,
+    input_stream_returner: Rc<RefCell<Option<Box<Peekable<TBlockParser>>>>>,
 }
 
-impl<'a> WhileInlineSegment<'a> {
+impl<TBlockParser: Iterator<Item = crate::Result<BlockEvent>>> WhileInlineSegment<TBlockParser> {
     fn new(
-        inner: Box<Peekable<block::Parser<'a>>>,
-        input_stream_returner: Rc<RefCell<Option<Box<Peekable<block::Parser<'a>>>>>>,
+        inner: Box<Peekable<TBlockParser>>,
+        input_stream_returner: Rc<RefCell<Option<Box<Peekable<TBlockParser>>>>>,
     ) -> Self {
         Self {
             inner: Some(inner),
@@ -101,17 +115,23 @@ impl<'a> WhileInlineSegment<'a> {
     #[inline(always)]
     fn next(&mut self) -> Option<InlineLevelParseInputEvent> {
         let peeked = self.inner.as_mut().unwrap().peek();
-        if peeked.is_some_and(|p| p.closes_inline_phase()) {
+        let Some(Ok(peeked)) = peeked else {
+            self.inner.as_mut().unwrap().next();
+            return None;
+        };
+        if peeked.closes_inline_phase() {
             *self.input_stream_returner.borrow_mut() = self.inner.take();
             None
         } else {
-            let next = self.inner.as_mut().unwrap().next();
-            next.map(|ev| InlineLevelParseInputEvent::try_from(Event::from(ev)).unwrap())
+            let next = self.inner.as_mut().unwrap().next().unwrap().unwrap();
+            Some(InlineLevelParseInputEvent::try_from(Event::from(next)).unwrap())
         }
     }
 }
 
-impl<'a> Iterator for WhileInlineSegment<'a> {
+impl<TBlockParser: Iterator<Item = crate::Result<BlockEvent>>> Iterator
+    for WhileInlineSegment<TBlockParser>
+{
     type Item = InlineLevelParseInputEvent;
 
     fn next(&mut self) -> Option<Self::Item> {

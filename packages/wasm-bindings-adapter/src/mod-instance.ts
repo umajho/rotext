@@ -12,23 +12,31 @@ export interface ParseAndRenderResult {
 
 export function parseAndRender(
   input: string,
-): ParseAndRenderResult {
+): ["ok", ParseAndRenderResult] | ["error", string] {
   const result = bindings.parse_and_render(textEncoder.encode(input));
 
+  const error = result.clone_error();
+  if (error) {
+    return ["error", error];
+  }
+
+  const output = result.clone_ok()!;
+
   const blockIDToLinesMap = deserializeBlockIDToLinesMap(
-    result.clone_block_id_to_lines_map(),
+    output.clone_block_id_to_lines_map(),
   );
 
-  return {
-    html: result.clone_html(),
+  const ret = {
+    html: output.clone_html(),
     blockIDAndLinesPairs: blockIDToLinesMap,
-    ...("clone_dev_events_in_debug_format" in result
+    ...("clone_dev_events_in_debug_format" in output
       ? {
         devEventsInDebugFormat:
-          (result.clone_dev_events_in_debug_format as () => string)(),
+          (output.clone_dev_events_in_debug_format as () => string)(),
       }
       : {}),
   };
+  return ["ok", ret];
 }
 
 function deserializeBlockIDToLinesMap(input: string): BlockIDAndLinesPair[] {

@@ -20,24 +20,36 @@ export class RustRotextProcessor implements RotextProcessor {
 
       const result = rotextAdapter.parseAndRender(input);
 
+      if (result[0] === "error") {
+        return {
+          html: null,
+          error: new Error(result[1]),
+          parsingTimeMs: null,
+          extraInfos: [],
+          lookupListRawCollector: null,
+        };
+      }
+
+      const output = result[1];
+
       console.timeEnd("rotext RS (dev)");
       const parsingTimeMs = performance.now() - parsingStart;
 
       return {
-        html: result.html,
+        html: output.html,
         error: null,
         parsingTimeMs,
         extraInfos: [
-          ...(result.devEventsInDebugFormat
+          ...(output.devEventsInDebugFormat
             ? [{
               name: "事件",
-              content: result.devEventsInDebugFormat,
+              content: output.devEventsInDebugFormat,
             }]
             : []),
         ],
         lookupListRawCollector: (targetEl: HTMLElement) => {
           const lookupListRaw: LookupListRaw = [];
-          for (const [id, { start, end }] of result.blockIDAndLinesPairs) {
+          for (const [id, { start, end }] of output.blockIDAndLinesPairs) {
             let element = targetEl.querySelector(
               `[data-block-id="${id}"]`,
             )! as HTMLElement;

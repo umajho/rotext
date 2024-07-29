@@ -1,14 +1,11 @@
-use crate::{
-    blend,
-    events::{InlineEvent, InlineLevelParseInputEvent},
-};
+use crate::events::{InlineEvent, InlineLevelParseInputEvent};
 
-pub struct Parser<'a> {
-    input_stream: blend::WhileInlineSegment<'a>,
+pub struct Parser<TInput: Iterator<Item = InlineLevelParseInputEvent>> {
+    input_stream: TInput,
 }
 
-impl<'a> Parser<'a> {
-    pub fn new(input_stream: blend::WhileInlineSegment<'a>) -> Self {
+impl<TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<TInput> {
+    pub fn new(input_stream: TInput) -> Self {
         Self { input_stream }
     }
 
@@ -29,7 +26,7 @@ impl<'a> Parser<'a> {
     }
 }
 
-impl<'a> Iterator for Parser<'a> {
+impl<TInput: Iterator<Item = InlineLevelParseInputEvent>> Iterator for Parser<TInput> {
     type Item = InlineEvent;
 
     fn next(&mut self) -> Option<Self::Item> {

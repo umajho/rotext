@@ -24,6 +24,7 @@ fn rendering(bencher: divan::Bencher) {
             rotext::parse(file_content.as_bytes())
                 .collect::<Vec<_>>()
                 .into_iter()
+                .map(Result::unwrap)
         })
         .bench_refs(|events| {
             let renderer = rotext::HtmlRenderer::new(
@@ -43,7 +44,7 @@ fn parsing_and_rendering(bencher: divan::Bencher) {
     let file_content = CONTENT.clone();
 
     bencher.bench(|| {
-        let events = rotext::parse(file_content.as_bytes());
+        let events = rotext::parse(file_content.as_bytes()).map(Result::unwrap);
         let renderer = rotext::HtmlRenderer::new(
             file_content.as_bytes(),
             rotext::NewHtmlRendererOptoins {

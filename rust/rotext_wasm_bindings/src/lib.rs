@@ -15,8 +15,23 @@ use std::sync::Once;
 static INIT: Once = Once::new();
 
 #[wasm_bindgen]
-#[derive(Default)]
 pub struct ParseAndRenderResult {
+    ok: Option<ParseAndRenderOutput>,
+    error: Option<String>,
+}
+#[wasm_bindgen]
+impl ParseAndRenderResult {
+    pub fn clone_ok(&self) -> Option<ParseAndRenderOutput> {
+        self.ok.clone()
+    }
+    pub fn clone_error(&self) -> Option<String> {
+        self.error.clone()
+    }
+}
+
+#[wasm_bindgen]
+#[derive(Default, Clone)]
+pub struct ParseAndRenderOutput {
     html: String,
     block_id_to_lines_map: String,
 
@@ -24,7 +39,7 @@ pub struct ParseAndRenderResult {
     dev_events_in_debug_format: String,
 }
 #[wasm_bindgen]
-impl ParseAndRenderResult {
+impl ParseAndRenderOutput {
     pub fn clone_html(&self) -> String {
         self.html.clone()
     }
@@ -47,7 +62,16 @@ pub fn parse_and_render(input: &[u8]) -> ParseAndRenderResult {
         });
     }
 
-    let all_events: Vec<_> = rotext::parse(input).collect();
+    let all_events: Result<Vec<_>, _> = rotext::parse(input).collect();
+    let all_events = match all_events {
+        Ok(all_events) => all_events,
+        Err(error) => {
+            return ParseAndRenderResult {
+                ok: None,
+                error: Some(error.name().to_string()),
+            }
+        }
+    };
 
     let renderer = rotext::HtmlRenderer::new(
         input,
@@ -61,7 +85,7 @@ pub fn parse_and_render(input: &[u8]) -> ParseAndRenderResult {
     let block_id_to_lines_map = create_block_id_to_lines_map(&all_events);
 
     #[allow(unused_mut)]
-    let mut result = ParseAndRenderResult {
+    let mut output = ParseAndRenderOutput {
         html,
         block_id_to_lines_map,
         ..Default::default()
@@ -69,10 +93,13 @@ pub fn parse_and_render(input: &[u8]) -> ParseAndRenderResult {
 
     #[cfg(debug_assertions)]
     {
-        result.dev_events_in_debug_format = render_events_in_debug_format(input, &all_events);
+        output.dev_events_in_debug_format = render_events_in_debug_format(input, &all_events);
     }
 
-    result
+    ParseAndRenderResult {
+        ok: Some(output),
+        error: None,
+    }
 }
 
 fn create_block_id_to_lines_map(all_events: &[rotext::BlendEvent]) -> String {
