@@ -161,9 +161,19 @@ const Preview: Component<
         scrollHandler()!(ev);
       }}
     >
-      <Show when={props.processResult.error}>
-        {(err) => <ErrorAlert message={err().message} stack={err().stack} />}
-      </Show>
+      <div class={props.processResult.error ? "" : "hidden"}>
+        {
+          /*
+            temporary workaround for: “Attempting to access a stale value from
+            <Show> that could possibly be undefined.”
+            FIXME!
+          */
+        }
+        <ErrorAlert
+          message={props.processResult.error?.message}
+          stack={props.processResult.error?.stack}
+        />
+      </div>
 
       {/* highlight anchor */}
       <div class="relative">{highlightElement()}</div>
