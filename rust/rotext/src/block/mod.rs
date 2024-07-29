@@ -31,7 +31,7 @@ pub struct Parser<'a, TStack: Stack<StackEntry>> {
 
 enum State<'a> {
     InRootParser(root_parser::Parser<'a>),
-    InSubParser(Box<dyn sub_parsers::SubParser<'a> + 'a>),
+    InSubParser(Option<Box<dyn sub_parsers::SubParser<'a> + 'a>>),
 
     Invalid,
 }
@@ -183,13 +183,47 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                 });
             }
 
-            let to_break: Option<BlockEvent>;
-            (to_break, self.state) = match std::mem::replace(&mut self.state, State::Invalid) {
-                State::InRootParser(parser) => match self.process_in_root_parser_state(parser) {
-                    Ok(x) => x,
-                    Err(err) => return Some(Err(err)),
-                },
-                State::InSubParser(sub_parser) => self.process_in_sub_parser_state(sub_parser),
+            let to_break = match self.state {
+                State::InRootParser(ref mut parser) => {
+                    // 原先是：`fn process_in_root_parser_state`。
+
+                    let result =
+                        parser.parse(&mut self.context, &mut self.stack, &mut self.nesting);
+                    match result {
+                        Ok(output) => match output {
+                            root_parser::ParseStepOutput::ToYield(ev) => Some(ev),
+                            root_parser::ParseStepOutput::ToSwitchToSubParser(sub_parser) => {
+                                self.state = State::InSubParser(Some(sub_parser));
+                                None
+                            }
+                            root_parser::ParseStepOutput::Done => {
+                                self.is_cleaning_up = true;
+                                self.state = State::Invalid;
+                                None
+                            }
+                        },
+                        Err(err) => return Some(Err(err)),
+                    }
+                }
+                State::InSubParser(ref mut sub_parser) => {
+                    // 原先是：`fn process_in_sub_parser_state`。
+
+                    let sub_parser_unchecked = unsafe { sub_parser.as_mut().unwrap_unchecked() };
+                    match sub_parser_unchecked.next(&mut self.context) {
+                        sub_parsers::Result::ToYield(ev) => Some(ev),
+                        sub_parsers::Result::ToPauseForNewLine => {
+                            self.state = State::InRootParser(root_parser::Parser::new(
+                                None,
+                                Some(unsafe { sub_parser.take().unwrap_unchecked() }),
+                            ));
+                            None
+                        }
+                        sub_parsers::Result::Done => {
+                            self.state = State::InRootParser(root_parser::Parser::new(None, None));
+                            None
+                        }
+                    }
+                }
                 State::Invalid => unreachable!(),
             };
 
@@ -202,48 +236,6 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
         log::debug!("NEXT {:?}", next);
 
         next
-    }
-
-    #[inline(always)]
-    fn process_in_root_parser_state(
-        &mut self,
-        mut parser: root_parser::Parser<'a>,
-    ) -> crate::Result<(Option<BlockEvent>, State<'a>)> {
-        let ret = match parser.parse(&mut self.context, &mut self.stack, &mut self.nesting)? {
-            root_parser::ParseStepOutput::ToYield(ev) => (Some(ev), State::InRootParser(parser)),
-            root_parser::ParseStepOutput::ToSwitchToSubParser(sub_parser) => {
-                (None, State::InSubParser(sub_parser))
-            }
-            root_parser::ParseStepOutput::Done => {
-                self.is_cleaning_up = true;
-                (None, State::Invalid)
-            }
-        };
-
-        Ok(ret)
-    }
-
-    #[inline(always)]
-    fn process_in_sub_parser_state(
-        &mut self,
-        mut sub_parser: Box<dyn sub_parsers::SubParser<'a> + 'a>,
-    ) -> (Option<BlockEvent>, State<'a>) {
-        match sub_parser.next(&mut self.context) {
-            sub_parsers::Result::ToYield(ev) => (Some(ev), State::InSubParser(sub_parser)),
-            sub_parsers::Result::ToPauseForNewLine => {
-                // TODO: 搞明白为什么如果在这里 take 走 LF，然后在构造 Parser 时以
-                // `Some(true)` 作为 `is_certain_is_new_line` 的值，解析的结果就会
-                // 变得不正确。明明这么做和现在的做法应该没有区别。
-                // self.context.must_take_from_mapper_and_apply_to_cursor(1);
-                let new_state =
-                    State::InRootParser(root_parser::Parser::new(None, Some(sub_parser)));
-                (None, new_state)
-            }
-            sub_parsers::Result::Done => {
-                let new_state = State::InRootParser(root_parser::Parser::new(None, None));
-                (None, new_state)
-            }
-        }
     }
 }
 
