@@ -183,7 +183,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                 });
             }
 
-            let to_break = match self.state {
+            match self.state {
                 State::InRootParser(ref mut parser) => {
                     // 原先是：`fn process_in_root_parser_state`。
 
@@ -191,15 +191,13 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                         parser.parse(&mut self.context, &mut self.stack, &mut self.nesting);
                     match result {
                         Ok(output) => match output {
-                            root_parser::ParseStepOutput::ToYield(ev) => Some(ev),
+                            root_parser::ParseStepOutput::ToYield(ev) => break Some(Ok(ev)),
                             root_parser::ParseStepOutput::ToSwitchToSubParser(sub_parser) => {
                                 self.state = State::InSubParser(Some(sub_parser));
-                                None
                             }
                             root_parser::ParseStepOutput::Done => {
                                 self.is_cleaning_up = true;
                                 self.state = State::Invalid;
-                                None
                             }
                         },
                         Err(err) => return Some(Err(err)),
@@ -210,26 +208,20 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
 
                     let sub_parser_unchecked = unsafe { sub_parser.as_mut().unwrap_unchecked() };
                     match sub_parser_unchecked.next(&mut self.context) {
-                        sub_parsers::Result::ToYield(ev) => Some(ev),
+                        sub_parsers::Result::ToYield(ev) => break Some(Ok(ev)),
                         sub_parsers::Result::ToPauseForNewLine => {
                             self.state = State::InRootParser(root_parser::Parser::new(
                                 None,
                                 Some(unsafe { sub_parser.take().unwrap_unchecked() }),
                             ));
-                            None
                         }
                         sub_parsers::Result::Done => {
                             self.state = State::InRootParser(root_parser::Parser::new(None, None));
-                            None
                         }
                     }
                 }
                 State::Invalid => unreachable!(),
             };
-
-            if to_break.is_some() {
-                break to_break.map(Ok);
-            }
         };
 
         #[cfg(debug_assertions)]
