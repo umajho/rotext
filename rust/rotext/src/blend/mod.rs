@@ -6,10 +6,8 @@ use crate::{
 };
 
 enum State<TBlockParser: Iterator<Item = crate::Result<BlockEvent>>> {
-    Normal(Box<Peekable<TBlockParser>>),
+    Normal(Option<Box<Peekable<TBlockParser>>>),
     TakenOver(inline::Parser<WhileInlineSegment<TBlockParser>>),
-
-    Invalid,
 }
 
 /// 用于将 “产出 [BlockEvent] 的流” 中每段 “留给行内阶段解析器处理的、连续产出
@@ -26,7 +24,7 @@ impl<TBlockParser: Iterator<Item = crate::Result<BlockEvent>>>
 {
     pub fn new(input_stream: TBlockParser) -> Self {
         Self {
-            state: State::Normal(Box::new(input_stream.peekable())),
+            state: State::Normal(Some(Box::new(input_stream.peekable()))),
             input_stream_returner: Rc::new(RefCell::new(None)),
         }
     }
@@ -34,52 +32,39 @@ impl<TBlockParser: Iterator<Item = crate::Result<BlockEvent>>>
     #[inline(always)]
     fn next(&mut self) -> Option<crate::Result<BlendEvent>> {
         let ret = loop {
-            let to_break: Option<BlendEvent>;
-
-            (to_break, self.state) = match std::mem::replace(&mut self.state, State::Invalid) {
-                State::Normal(mut input_stream) => {
-                    let next = match input_stream.next() {
+            match self.state {
+                State::Normal(ref mut input_stream) => {
+                    let input_stream_unchecked =
+                        unsafe { input_stream.as_mut().unwrap_unchecked() };
+                    let next = match input_stream_unchecked.next() {
                         Some(Ok(x)) => x,
                         Some(Err(err)) => return Some(Err(err)),
-                        None => break None,
+                        None => return None,
                     };
                     if next.opens_inline_phase() {
                         let segment_stream = WhileInlineSegment::new(
-                            input_stream,
+                            unsafe { input_stream.take().unwrap_unchecked() },
                             self.input_stream_returner.clone(),
                         );
                         let inline_parser = inline::Parser::new(segment_stream);
-                        (
-                            Some(BlendEvent::try_from(Event::from(next)).unwrap()),
-                            State::TakenOver(inline_parser),
-                        )
+                        self.state = State::TakenOver(inline_parser);
+                        break Ok(BlendEvent::try_from(Event::from(next)).unwrap());
                     } else {
-                        (
-                            Some(BlendEvent::try_from(Event::from(next)).unwrap()),
-                            State::Normal(input_stream),
-                        )
+                        break Ok(BlendEvent::try_from(Event::from(next)).unwrap());
                     }
                 }
-                State::TakenOver(mut inline_parser) => {
+                State::TakenOver(ref mut inline_parser) => {
                     if let Some(next) = inline_parser.next() {
-                        (
-                            Some(BlendEvent::try_from(Event::from(next)).unwrap()),
-                            State::TakenOver(inline_parser),
-                        )
+                        break Ok(BlendEvent::try_from(Event::from(next)).unwrap());
                     } else {
                         let input_stream = self.input_stream_returner.borrow_mut().take().unwrap();
-                        (None, State::Normal(input_stream))
+                        self.state = State::Normal(Some(input_stream));
                     }
                 }
-                State::Invalid => unreachable!(),
             };
-
-            if let Some(to_break) = to_break {
-                break Some(to_break);
-            }
         };
 
-        ret.map(Ok)
+        Some(ret)
     }
 }
 
