@@ -194,7 +194,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
             };
 
             if to_break.is_some() {
-                break to_break.map(|x| Ok(x));
+                break to_break.map(Ok);
             }
         };
 

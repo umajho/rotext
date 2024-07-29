@@ -21,7 +21,7 @@ pub struct BlockEventStreamInlineSegmentMapper<
     input_stream_returner: Rc<RefCell<Option<Box<Peekable<TBlockParser>>>>>,
 }
 
-impl<'a, TBlockParser: Iterator<Item = crate::Result<BlockEvent>>>
+impl<TBlockParser: Iterator<Item = crate::Result<BlockEvent>>>
     BlockEventStreamInlineSegmentMapper<TBlockParser>
 {
     pub fn new(input_stream: TBlockParser) -> Self {
@@ -79,10 +79,7 @@ impl<'a, TBlockParser: Iterator<Item = crate::Result<BlockEvent>>>
             }
         };
 
-        match ret {
-            Some(x) => Some(Ok(x)),
-            None => None,
-        }
+        ret.map(Ok)
     }
 }
 
