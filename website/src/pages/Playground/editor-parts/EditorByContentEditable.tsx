@@ -124,11 +124,8 @@ const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
       </div>
       <div
         ref={contentContainerEl}
-        class={
-          "editor-ce-content-container" +
-          " relative one-dark focus:!outline-none mx-4" +
-          " whitespace-pre-wrap" /* 若不加上这个，contenteditable 会插入 `&nbsp;` */
-        }
+        class={"editor-ce-content-container" +
+          " relative one-dark focus:!outline-none mx-4"}
         contentEditable
         onInput={handleChange}
         onBeforeInput={beforeInputHandler}
@@ -226,7 +223,13 @@ function createBasicEditorFunctionalities(containerEl: () => HTMLElement) {
 function nodesToText(nodes: Node[]): string {
   return nodes
     .map((node) => {
-      if (node.nodeType === Node.TEXT_NODE) return node.nodeValue;
+      if (node.nodeType === Node.TEXT_NODE) {
+        // contenteditable 会将一些空格变成 nbsp，在此将这些 nbsp 恢复为普通的空
+        // 格。为 contenteditable 加上 `white-space: pre-wrap;` 也可以防止这一行
+        // 为，但那样会导致换行不再对应 `<br>`，现有的计算每行高度（用于高亮）的
+        // 方法就会失效了。
+        return node.nodeValue?.replace(/\xa0/g, " ");
+      }
       if (node.nodeType === Node.ELEMENT_NODE) {
         if ((node as Element).tagName === "BR") return "\n";
       }
