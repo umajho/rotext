@@ -17,23 +17,21 @@ export class RustRotextProcessor implements RotextProcessor {
     try {
       const parsingStart = performance.now();
       console.time("rotext RS (dev)");
-
       const result = rotextAdapter.parseAndRender(input);
+      console.timeEnd("rotext RS (dev)");
+      const parsingTimeMs = performance.now() - parsingStart;
 
       if (result[0] === "error") {
         return {
           html: null,
           error: new Error(result[1]),
-          parsingTimeMs: null,
+          parsingTimeMs,
           extraInfos: [],
           lookupListRawCollector: null,
         };
       }
 
       const output = result[1];
-
-      console.timeEnd("rotext RS (dev)");
-      const parsingTimeMs = performance.now() - parsingStart;
 
       return {
         html: output.html,
