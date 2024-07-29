@@ -176,79 +176,93 @@ impl<'a> Parser<'a> {
 
         _ = ctx.scan_blank_text();
         if self.is_new_line {
-            match scan_paragraph_or_item_like(ctx) {
-                ScanParagraphOrItemLikeResult::None => {
-                    if is_expecting_deeper {
-                        return Ok(InternalOutput::ToContinue(State::ExpectingLeaf));
-                    } else {
-                        return Ok(InternalOutput::ToContinue(
-                            State::ExitingDiscontinuedItemLikes(
-                                ExitingDiscontinuedItemLikesState {
-                                    should_keep_container: false,
-                                    and_then_enter_item_like: None,
-                                },
-                            ),
-                        ));
-                    }
-                }
-                ScanParagraphOrItemLikeResult::BlockQuoteLine => {
-                    nesting.processed_item_likes += 1;
-                    if is_expecting_deeper {
-                        match_pop_block_id! {
-                            ctx,
-                            Some(id) => {
-                                let ev = BlockEvent::EnterBlockQuote(BlockWithID { id });
-                                self.to_yield.push_back(ev);
-                                stack.try_push(StackEntry {
-                                    block: BlockInStack::BlockQuote,
-                                    block_id: id,
-                                    #[cfg(feature = "line-number")]
-                                    start_line_number: ctx.current_line_number,
-                                })?;
-                            },
-                            None => {
-                                let ev = BlockEvent::EnterBlockQuote(BlockWithID {});
-                                self.to_yield.push_back(ev);
-                                stack.try_push(StackEntry {
-                                    block: BlockInStack::BlockQuote,
-                                    #[cfg(feature = "line-number")]
-                                    start_line_number: ctx.current_line_number,
-                                })?;
-                            },
-                        }
-                        nesting.item_likes_in_stack += 1;
-                        return Ok(InternalOutput::ToContinue(State::ExpectingContainer));
-                    } else {
-                        return Ok(InternalOutput::ToContinue(State::ExpectingContainer));
-                    }
-                }
-                ScanParagraphOrItemLikeResult::ItemLike(item_like_type) => {
-                    if is_expecting_deeper {
-                        self.enter_item_like(ctx, stack, nesting, item_like_type, true)
-                            .unwrap();
-                        return Ok(InternalOutput::ToContinue(State::ExpectingContainer));
-                    } else {
-                        let last_item_like_type = self.get_nth_item_like_or_paragraph_in_stack(
-                            stack.as_slice(),
-                            nesting.processed_item_likes,
-                        );
-                        return Ok(InternalOutput::ToContinue(
-                            State::ExitingDiscontinuedItemLikes(
-                                ExitingDiscontinuedItemLikesState {
-                                    should_keep_container: are_item_likes_in_same_group(
-                                        item_like_type,
-                                        last_item_like_type,
-                                    ),
-                                    and_then_enter_item_like: Some(item_like_type),
-                                },
-                            ),
-                        ));
-                    }
-                }
-            };
+            if let Some(result) =
+                self.process_possible_item_like(ctx, stack, nesting, is_expecting_deeper)
+            {
+                return result;
+            }
         }
 
         Ok(InternalOutput::ToContinue(State::ExpectingLeaf))
+    }
+
+    #[inline(always)]
+    fn process_possible_item_like<TStack: Stack<StackEntry>>(
+        &mut self,
+        ctx: &mut Context<'a>,
+        stack: &mut TStack,
+        nesting: &mut Nesting,
+        is_expecting_deeper: bool,
+    ) -> Option<crate::Result<InternalOutput<'a>>> {
+        let output = match scan_paragraph_or_item_like(ctx) {
+            ScanParagraphOrItemLikeResult::None => {
+                if is_expecting_deeper {
+                    return None;
+                } else {
+                    InternalOutput::ToContinue(State::ExitingDiscontinuedItemLikes(
+                        ExitingDiscontinuedItemLikesState {
+                            should_keep_container: false,
+                            and_then_enter_item_like: None,
+                        },
+                    ))
+                }
+            }
+            ScanParagraphOrItemLikeResult::BlockQuoteLine => {
+                nesting.processed_item_likes += 1;
+                if is_expecting_deeper {
+                    let result = match_pop_block_id! {
+                        ctx,
+                        Some(id) => {
+                            let ev = BlockEvent::EnterBlockQuote(BlockWithID { id });
+                            self.to_yield.push_back(ev);
+                            stack.try_push(StackEntry {
+                                block: BlockInStack::BlockQuote,
+                                block_id: id,
+                                #[cfg(feature = "line-number")]
+                                start_line_number: ctx.current_line_number,
+                            })
+                        },
+                        None => {
+                            let ev = BlockEvent::EnterBlockQuote(BlockWithID {});
+                            self.to_yield.push_back(ev);
+                            stack.try_push(StackEntry {
+                                block: BlockInStack::BlockQuote,
+                                #[cfg(feature = "line-number")]
+                                start_line_number: ctx.current_line_number,
+                            })
+                        },
+                    };
+                    if let Err(err) = result {
+                        return Some(Err(err));
+                    }
+                    nesting.item_likes_in_stack += 1;
+                }
+                InternalOutput::ToContinue(State::ExpectingContainer)
+            }
+            ScanParagraphOrItemLikeResult::ItemLike(item_like_type) => {
+                if is_expecting_deeper {
+                    self.enter_item_like(ctx, stack, nesting, item_like_type, true)
+                        .unwrap();
+                    InternalOutput::ToContinue(State::ExpectingContainer)
+                } else {
+                    let last_item_like_type = self.get_nth_item_like_or_paragraph_in_stack(
+                        stack.as_slice(),
+                        nesting.processed_item_likes,
+                    );
+                    InternalOutput::ToContinue(State::ExitingDiscontinuedItemLikes(
+                        ExitingDiscontinuedItemLikesState {
+                            should_keep_container: are_item_likes_in_same_group(
+                                item_like_type,
+                                last_item_like_type,
+                            ),
+                            and_then_enter_item_like: Some(item_like_type),
+                        },
+                    ))
+                }
+            }
+        };
+
+        Some(Ok(output))
     }
 
     #[inline(always)]
