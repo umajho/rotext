@@ -124,8 +124,11 @@ const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
       </div>
       <div
         ref={contentContainerEl}
-        class={"editor-ce-content-container" +
-          " relative one-dark focus:!outline-none mx-4"}
+        class={
+          "editor-ce-content-container" +
+          " relative one-dark focus:!outline-none mx-4" +
+          " whitespace-pre-wrap" /* 若不加上这个，contenteditable 会插入 `&nbsp;` */
+        }
         contentEditable
         onInput={handleChange}
         onBeforeInput={beforeInputHandler}
