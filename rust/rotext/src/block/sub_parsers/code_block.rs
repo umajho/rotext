@@ -1,23 +1,48 @@
+#[cfg(feature = "block-id")]
+use crate::types::BlockID;
 use crate::{
-    block::{context::Context, sub_parsers, utils::b_w_id},
-    events::{BlockEvent, ExitBlock, NewLine},
+    block::{context::Context, sub_parsers, utils::match_pop_block_id},
+    events::{BlockEvent, BlockWithID, ExitBlock, NewLine},
 };
 
 enum State {
     /// 构造解析器后，解析器所处的初始状态。此时，其所解析语法的开启部分应已经被
     /// 消耗。
     Initial,
-    InfoStringContent(Box<sub_parsers::content::Parser>),
-    BeforeCodeContent(Box<sub_parsers::content::Parser>),
-    CodeContent(Box<sub_parsers::content::Parser>),
+    InfoStringContent {
+        #[cfg(feature = "block-id")]
+        code_block_id: BlockID,
+
+        info_string_content_parser: Box<sub_parsers::content::Parser>,
+    },
+    BeforeCodeContent {
+        #[cfg(feature = "block-id")]
+        code_block_id: BlockID,
+
+        code_content_parser: Box<sub_parsers::content::Parser>,
+    },
+    CodeContent {
+        #[cfg(feature = "block-id")]
+        code_block_id: BlockID,
+
+        code_content_parser: Box<sub_parsers::content::Parser>,
+    },
     Exiting,
     Exited,
 
-    Paused(Box<sub_parsers::content::Parser>),
+    Paused {
+        #[cfg(feature = "block-id")]
+        code_block_id: BlockID,
+
+        code_content_parser: Box<sub_parsers::content::Parser>,
+    },
     /// 此状态仅在实现
     /// [sub_parsers::SubParser::resume_from_pause_for_new_line_and_exit] 时设置。
     /// 其他情况下会直接进入 [State::Exiting]。
-    ToExit,
+    ToExit {
+        #[cfg(feature = "block-id")]
+        code_block_id: BlockID,
+    },
 
     Invalid,
 }
@@ -62,18 +87,44 @@ impl Parser {
                     },
                     ..Default::default()
                 };
-                let info_string_parser = sub_parsers::content::Parser::new(opts);
-                (
-                    sub_parsers::Result::ToYield(BlockEvent::EnterCodeBlock(b_w_id!(ctx))),
-                    State::InfoStringContent(Box::new(info_string_parser)),
-                )
+                let info_string_content_parser = sub_parsers::content::Parser::new(opts);
+                match_pop_block_id! {
+                    ctx,
+                    Some(id) => {
+                        let code_block = BlockEvent::EnterCodeBlock(BlockWithID { id });
+                        (
+                            sub_parsers::Result::ToYield(code_block),
+                            State::InfoStringContent {
+                                code_block_id: id,
+                                info_string_content_parser: Box::new(info_string_content_parser),
+                            },
+                        )
+                    },
+                    None => {
+                         let code_block = BlockEvent::EnterCodeBlock(BlockWithID {});
+                        (
+                            sub_parsers::Result::ToYield(code_block),
+                            State::InfoStringContent {
+                                info_string_content_parser: Box::new(info_string_content_parser),
+                            },
+                        )
+                    },
+                }
             }
-            State::InfoStringContent(mut info_string_content_parser) => {
+            State::InfoStringContent {
+                #[cfg(feature = "block-id")]
+                code_block_id,
+                mut info_string_content_parser,
+            } => {
                 let next = info_string_content_parser.next(ctx);
                 match next {
                     sub_parsers::Result::ToYield(ev) => (
                         sub_parsers::Result::ToYield(ev),
-                        State::InfoStringContent(info_string_content_parser),
+                        State::InfoStringContent {
+                            #[cfg(feature = "block-id")]
+                            code_block_id,
+                            info_string_content_parser,
+                        },
                     ),
                     sub_parsers::Result::ToPauseForNewLine => unreachable!(),
                     sub_parsers::Result::Done => {
@@ -95,28 +146,54 @@ impl Parser {
                         let code_content_parser = sub_parsers::content::Parser::new(opts);
                         (
                             sub_parsers::Result::ToYield(BlockEvent::Separator),
-                            State::BeforeCodeContent(Box::new(code_content_parser)),
+                            State::BeforeCodeContent {
+                                #[cfg(feature = "block-id")]
+                                code_block_id,
+                                code_content_parser: Box::new(code_content_parser),
+                            },
                         )
                     }
                 }
             }
-            State::BeforeCodeContent(code_content_parser) => (
+            State::BeforeCodeContent {
+                #[cfg(feature = "block-id")]
+                code_block_id,
+                code_content_parser,
+            } => (
                 sub_parsers::Result::ToPauseForNewLine,
-                State::Paused(code_content_parser),
+                State::Paused {
+                    #[cfg(feature = "block-id")]
+                    code_block_id,
+                    code_content_parser,
+                },
             ),
-            State::CodeContent(mut code_content_parser) => {
+            State::CodeContent {
+                #[cfg(feature = "block-id")]
+                code_block_id,
+                mut code_content_parser,
+            } => {
                 let next = code_content_parser.next(ctx);
                 match next {
                     sub_parsers::Result::ToYield(ev) => (
                         sub_parsers::Result::ToYield(ev),
-                        State::CodeContent(code_content_parser),
+                        State::CodeContent {
+                            #[cfg(feature = "block-id")]
+                            code_block_id,
+                            code_content_parser,
+                        },
                     ),
                     sub_parsers::Result::ToPauseForNewLine => (
                         sub_parsers::Result::ToPauseForNewLine,
-                        State::Paused(code_content_parser),
+                        State::Paused {
+                            #[cfg(feature = "block-id")]
+                            code_block_id,
+                            code_content_parser,
+                        },
                     ),
                     sub_parsers::Result::Done => (
                         sub_parsers::Result::ToYield(BlockEvent::ExitBlock(ExitBlock {
+                            #[cfg(feature = "block-id")]
+                            id: code_block_id,
                             #[cfg(feature = "line-number")]
                             start_line_number: self.start_line_number,
                             #[cfg(feature = "line-number")]
@@ -131,9 +208,14 @@ impl Parser {
             // [State::Exited]。此后，不应该再调用 `next` 方法，否则就会执行到
             // 这里。正确的做法是 `take_context` 取回 [Context]，并将解析器
             // drop 掉。
-            State::Exited | State::Paused(_) | State::Invalid => unreachable!(),
-            State::ToExit => (
+            State::Exited | State::Paused { .. } | State::Invalid => unreachable!(),
+            State::ToExit {
+                #[cfg(feature = "block-id")]
+                code_block_id,
+            } => (
                 sub_parsers::Result::ToYield(BlockEvent::ExitBlock(ExitBlock {
+                    #[cfg(feature = "block-id")]
+                    id: code_block_id,
                     #[cfg(feature = "line-number")]
                     start_line_number: self.start_line_number,
                     #[cfg(feature = "line-number")]
@@ -154,16 +236,34 @@ impl<'a> sub_parsers::SubParser<'a> for Parser {
 
     fn resume_from_pause_for_new_line_and_continue(&mut self, new_line: NewLine) {
         let state = std::mem::replace(&mut self.state, State::Invalid);
-        let State::Paused(mut content_parser) = state else {
+        if let State::Paused {
+            #[cfg(feature = "block-id")]
+            code_block_id,
+            mut code_content_parser,
+        } = state
+        {
+            code_content_parser.resume_from_pause_for_new_line_and_continue(new_line);
+            self.state = State::CodeContent {
+                #[cfg(feature = "block-id")]
+                code_block_id,
+                code_content_parser,
+            };
+        } else {
             unreachable!()
         };
-        content_parser.resume_from_pause_for_new_line_and_continue(new_line);
-        self.state = State::CodeContent(content_parser);
     }
 
     fn resume_from_pause_for_new_line_and_exit(&mut self) {
-        if matches!(self.state, State::Paused(_)) {
-            self.state = State::ToExit;
+        if let State::Paused {
+            #[cfg(feature = "block-id")]
+            code_block_id,
+            ..
+        } = self.state
+        {
+            self.state = State::ToExit {
+                #[cfg(feature = "block-id")]
+                code_block_id,
+            };
         } else {
             unreachable!()
         }

@@ -1,6 +1,8 @@
 use subenum::subenum;
 
 use crate::common::Range;
+#[cfg(feature = "block-id")]
+use crate::types::BlockID;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
@@ -158,19 +160,21 @@ pub struct NewLine {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BlockWithID {
     #[cfg(feature = "block-id")]
-    pub id: usize,
+    pub id: BlockID,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ThematicBreak {
     #[cfg(feature = "block-id")]
-    pub id: usize,
+    pub id: BlockID,
     #[cfg(feature = "line-number")]
     pub line_number: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExitBlock {
+    #[cfg(feature = "block-id")]
+    pub id: BlockID,
     #[cfg(feature = "line-number")]
     pub start_line_number: usize,
     #[cfg(feature = "line-number")]

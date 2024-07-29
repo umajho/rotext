@@ -1,4 +1,6 @@
 use crate::common::Range;
+#[cfg(feature = "block-id")]
+use crate::types::BlockID;
 
 use super::{
     global_mapper::GlobalEventStreamMapper,
@@ -19,10 +21,10 @@ pub struct Context<'a> {
 
 impl<'a> Context<'a> {
     #[cfg(feature = "block-id")]
-    pub fn pop_block_id(&mut self) -> usize {
+    pub fn pop_block_id(&mut self) -> BlockID {
         let id = self.next_block_id;
         self.next_block_id += 1;
-        id
+        BlockID::new(id)
     }
 
     pub fn take_from_mapper_and_apply_to_cursor_if_applied_cursor_satisfies<

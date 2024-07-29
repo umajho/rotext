@@ -9,8 +9,10 @@ mod tests;
 use context::Context;
 use root_parser::ExitingDiscontinuedItemLikesState;
 
+#[cfg(feature = "block-id")]
+use crate::types::BlockID;
 use crate::{
-    events::{BlockEvent, ExitBlock, NewLine},
+    events::{BlockEvent, BlockWithID, ExitBlock, NewLine},
     global,
 };
 use global_mapper::GlobalEventStreamMapper;
@@ -46,14 +48,37 @@ pub struct Nesting {
 struct StackEntry {
     block: BlockInStack,
 
+    #[cfg(feature = "block-id")]
+    block_id: BlockID,
+
     #[cfg(feature = "line-number")]
     start_line_number: usize,
+}
+impl StackEntry {
+    pub fn into_exit_block(
+        self,
+        #[cfg(feature = "line-number")] end_line_number: usize,
+    ) -> ExitBlock {
+        ExitBlock {
+            #[cfg(feature = "block-id")]
+            id: self.block_id,
+            #[cfg(feature = "line-number")]
+            start_line_number: self.start_line_number,
+            #[cfg(feature = "line-number")]
+            end_line_number,
+        }
+    }
 }
 
 enum BlockInStack {
     BlockQuote,
     ItemLike { typ: ItemLikeType },
     Container,
+}
+impl BlockInStack {
+    pub fn is_item_like(&self) -> bool {
+        matches!(self, BlockInStack::ItemLike { .. })
+    }
 }
 impl From<ItemLikeType> for BlockInStack {
     fn from(value: ItemLikeType) -> Self {
@@ -67,6 +92,48 @@ enum ItemLikeType {
     UnorderedListItem,
     DescriptionTerm,
     DescriptionDetails,
+}
+impl ItemLikeType {
+    pub fn into_enter_container_block_event(
+        self,
+        #[cfg(feature = "block-id")] id: BlockID,
+    ) -> BlockEvent {
+        match self {
+            ItemLikeType::OrderedListItem => BlockEvent::EnterOrderedList(BlockWithID {
+                #[cfg(feature = "block-id")]
+                id,
+            }),
+            ItemLikeType::UnorderedListItem => BlockEvent::EnterUnorderedList(BlockWithID {
+                #[cfg(feature = "block-id")]
+                id,
+            }),
+            ItemLikeType::DescriptionTerm | ItemLikeType::DescriptionDetails => {
+                BlockEvent::EnterDescriptionList(BlockWithID {
+                    #[cfg(feature = "block-id")]
+                    id,
+                })
+            }
+        }
+    }
+
+    pub fn into_enter_block_event(self, #[cfg(feature = "block-id")] id: BlockID) -> BlockEvent {
+        match self {
+            ItemLikeType::OrderedListItem | ItemLikeType::UnorderedListItem => {
+                BlockEvent::EnterListItem(BlockWithID {
+                    #[cfg(feature = "block-id")]
+                    id,
+                })
+            }
+            ItemLikeType::DescriptionTerm => BlockEvent::EnterDescriptionTerm(BlockWithID {
+                #[cfg(feature = "block-id")]
+                id,
+            }),
+            ItemLikeType::DescriptionDetails => BlockEvent::EnterDescriptionDetails(BlockWithID {
+                #[cfg(feature = "block-id")]
+                id,
+            }),
+        }
+    }
 }
 
 impl<'a> Parser<'a> {
@@ -108,12 +175,10 @@ impl<'a> Parser<'a> {
             if self.is_cleaning_up {
                 // 若栈中还有内容，出栈并返回 `Some(Event::Exit)`；若栈已空，返回 `None`。
                 break self.stack.pop().map(|#[allow(unused_variables)] entry| {
-                    BlockEvent::ExitBlock(ExitBlock {
+                    BlockEvent::ExitBlock(entry.into_exit_block(
                         #[cfg(feature = "line-number")]
-                        start_line_number: entry.start_line_number,
-                        #[cfg(feature = "line-number")]
-                        end_line_number: self.context.current_line_number,
-                    })
+                        self.context.current_line_number,
+                    ))
                 });
             }
 

@@ -1,13 +1,20 @@
+#[cfg(feature = "block-id")]
+use crate::types::BlockID;
 use crate::{
-    block::{context::Context, sub_parsers, utils::b_w_id},
-    events::{BlockEvent, ExitBlock, NewLine},
+    block::{context::Context, sub_parsers, utils::match_pop_block_id},
+    events::{BlockEvent, BlockWithID, ExitBlock, NewLine},
 };
 
 enum State {
     /// 构造解析器后，解析器所处的初始状态。此时，其所解析语法的开启部分应已经被
     /// 消耗。
     Initial,
-    Content(Box<sub_parsers::content::Parser>),
+    Content {
+        #[cfg(feature = "block-id")]
+        id: BlockID,
+
+        content_parser: Box<sub_parsers::content::Parser>,
+    },
     Exiting,
     Exited,
 
@@ -63,29 +70,47 @@ impl Parser {
                     ..Default::default()
                 };
                 let content_parser = sub_parsers::content::Parser::new(opts);
-                (
-                    sub_parsers::Result::ToYield(match self.leading_signs {
-                        1 => BlockEvent::EnterHeading1(b_w_id!(ctx)),
-                        2 => BlockEvent::EnterHeading2(b_w_id!(ctx)),
-                        3 => BlockEvent::EnterHeading3(b_w_id!(ctx)),
-                        4 => BlockEvent::EnterHeading4(b_w_id!(ctx)),
-                        5 => BlockEvent::EnterHeading5(b_w_id!(ctx)),
-                        6 => BlockEvent::EnterHeading6(b_w_id!(ctx)),
-                        _ => unreachable!(),
-                    }),
-                    State::Content(Box::new(content_parser)),
-                )
+                match_pop_block_id! {
+                    ctx,
+                    Some(id) => {
+                        (
+                            sub_parsers::Result::ToYield(self.make_enter_heading_event(id)),
+                            State::Content {
+                                id,
+                                content_parser: Box::new(content_parser),
+                            },
+                        )
+                    },
+                    None => {
+                        (
+                            sub_parsers::Result::ToYield(self.make_enter_heading_event()),
+                            State::Content {
+                                content_parser: Box::new(content_parser),
+                            },
+                        )
+                    },
+                }
             }
-            State::Content(mut content_parser) => {
+            State::Content {
+                #[cfg(feature = "block-id")]
+                id,
+                mut content_parser,
+            } => {
                 let next = content_parser.next(ctx);
                 match next {
                     sub_parsers::Result::ToYield(ev) => (
                         sub_parsers::Result::ToYield(ev),
-                        State::Content(content_parser),
+                        State::Content {
+                            #[cfg(feature = "block-id")]
+                            id,
+                            content_parser,
+                        },
                     ),
                     sub_parsers::Result::ToPauseForNewLine => unreachable!(),
                     sub_parsers::Result::Done => (
                         sub_parsers::Result::ToYield(BlockEvent::ExitBlock(ExitBlock {
+                            #[cfg(feature = "block-id")]
+                            id,
                             #[cfg(feature = "line-number")]
                             start_line_number: self.start_line_number,
                             #[cfg(feature = "line-number")]
@@ -104,6 +129,22 @@ impl Parser {
         };
 
         ret
+    }
+
+    fn make_enter_heading_event(&self, #[cfg(feature = "block-id")] id: BlockID) -> BlockEvent {
+        let data = BlockWithID {
+            #[cfg(feature = "block-id")]
+            id,
+        };
+        match self.leading_signs {
+            1 => BlockEvent::EnterHeading1(data),
+            2 => BlockEvent::EnterHeading2(data),
+            3 => BlockEvent::EnterHeading3(data),
+            4 => BlockEvent::EnterHeading4(data),
+            5 => BlockEvent::EnterHeading5(data),
+            6 => BlockEvent::EnterHeading6(data),
+            _ => unreachable!(),
+        }
     }
 }
 

@@ -23,6 +23,7 @@ impl<'a> HtmlRenderer<'a> {
     pub fn new(input: &'a [u8], opts: NewHtmlRendererOptoins) -> Self {
         Self {
             input,
+            #[cfg(feature = "block-id")]
             with_block_id: opts.with_block_id,
             result: Vec::with_capacity(opts.initial_output_string_capacity),
             stack: vec![],
@@ -54,7 +55,7 @@ impl<'a> HtmlRenderer<'a> {
                     {
                         if self.with_block_id {
                             self.result.extend(br#"<hr data-block-id=""#);
-                            self.write_usize(data.id);
+                            self.write_usize(data.id.value());
                             self.result.extend(br#"">"#);
                         } else {
                             self.result.extend(b"<hr>")
@@ -96,7 +97,7 @@ impl<'a> HtmlRenderer<'a> {
                     {
                         if self.with_block_id {
                             self.result.extend(br#"" data-block-id=""#);
-                            self.write_usize(data.id);
+                            self.write_usize(data.id.value());
                         }
                     }
 
@@ -122,7 +123,7 @@ impl<'a> HtmlRenderer<'a> {
             {
                 if self.with_block_id {
                     self.result.extend(br#" data-block-id=""#);
-                    self.write_usize(data.id);
+                    self.write_usize(data.id.value());
                     self.result.extend(br#"">"#);
                 } else {
                     self.result.push(b'>');
@@ -157,6 +158,7 @@ impl<'a> HtmlRenderer<'a> {
         }
     }
 
+    #[cfg(feature = "block-id")]
     fn write_usize(&mut self, n: usize) {
         let mut buffer = itoa::Buffer::new();
         self.result.extend(buffer.format(n).as_bytes());

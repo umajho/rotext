@@ -3,6 +3,8 @@ import {
 } from "@rotext/wasm-bindings-adapter";
 import initRotextWASM, * as rotextBindings from "rotext_wasm_bindings";
 
+import { LookupListRaw } from "../pages/Playground/preview-parts/Preview/internal-types";
+
 import { RotextProcessor, RotextProcessResult } from "./mod";
 
 const rotextAdapter = await (async () => {
@@ -33,7 +35,22 @@ export class RustRotextProcessor implements RotextProcessor {
             }]
             : []),
         ],
-        lookupListRawCollector: () => [],
+        lookupListRawCollector: (targetEl: HTMLElement) => {
+          const lookupListRaw: LookupListRaw = [];
+          for (const [id, { start, end }] of result.blockIDAndLinesPairs) {
+            let element = targetEl.querySelector(
+              `[data-block-id="${id}"]`,
+            )! as HTMLElement;
+            lookupListRaw.push({
+              element,
+              location: {
+                start: { line: start },
+                end: { line: end },
+              },
+            });
+          }
+          return lookupListRaw;
+        },
       };
     } catch (e) {
       console.timeEnd("rotext JS");

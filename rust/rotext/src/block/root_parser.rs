@@ -1,15 +1,13 @@
 use derivative::Derivative;
 
 use super::{
-    context::Context,
-    global_mapper::Mapped,
-    sub_parsers,
-    utils::{b_w_id, ArrayQueue},
-    BlockInStack, ItemLikeType, Nesting, StackEntry,
+    context::Context, global_mapper::Mapped, sub_parsers, utils::ArrayQueue, BlockInStack,
+    ItemLikeType, Nesting, StackEntry,
 };
 use crate::{
+    block::utils::match_pop_block_id,
     common::Range,
-    events::{BlockEvent, ExitBlock, NewLine, ThematicBreak},
+    events::{BlockEvent, BlockWithID, NewLine, ThematicBreak},
 };
 
 pub struct Parser<'a> {
@@ -193,14 +191,29 @@ impl<'a> Parser<'a> {
                 ScanParagraphOrItemLikeResult::BlockQuoteLine => {
                     nesting.processed_item_likes += 1;
                     if is_expecting_deeper {
-                        stack.push(StackEntry {
-                            block: BlockInStack::BlockQuote,
-                            #[cfg(feature = "line-number")]
-                            start_line_number: ctx.current_line_number,
-                        });
+                        match_pop_block_id! {
+                            ctx,
+                            Some(id) => {
+                                let ev = BlockEvent::EnterBlockQuote(BlockWithID { id });
+                                self.to_yield.push_back(ev);
+                                stack.push(StackEntry {
+                                    block: BlockInStack::BlockQuote,
+                                    block_id: id,
+                                    #[cfg(feature = "line-number")]
+                                    start_line_number: ctx.current_line_number,
+                                });
+                            },
+                            None => {
+                                let ev = BlockEvent::EnterBlockQuote(BlockWithID {});
+                                self.to_yield.push_back(ev);
+                                stack.push(StackEntry {
+                                    block: BlockInStack::BlockQuote,
+                                    #[cfg(feature = "line-number")]
+                                    start_line_number: ctx.current_line_number,
+                                });
+                            },
+                        }
                         nesting.item_likes_in_stack += 1;
-                        self.to_yield
-                            .push_back(BlockEvent::EnterBlockQuote(b_w_id!(ctx)));
                         return InternalResult::ToContinue(State::ExpectingContainer);
                     } else {
                         return InternalResult::ToContinue(State::ExpectingContainer);
@@ -305,26 +318,23 @@ impl<'a> Parser<'a> {
         let top = stack.pop().unwrap();
         if matches!(
             top.block,
-            BlockInStack::ItemLike { .. } | BlockInStack::BlockQuote
+            BlockInStack::ItemLike { .. } | BlockInStack::BlockQuote { .. }
         ) {
             nesting.item_likes_in_stack -= 1;
             if nesting.processed_item_likes == nesting.item_likes_in_stack {
-                self.to_yield.push_back(BlockEvent::ExitBlock(ExitBlock {
-                    #[cfg(feature = "line-number")]
-                    start_line_number: top.start_line_number,
-                    #[cfg(feature = "line-number")]
-                    end_line_number: ctx.current_line_number,
-                }));
-                if matches!(top.block, BlockInStack::ItemLike { .. })
-                    && !state.should_keep_container
-                {
-                    stack.pop().unwrap();
-                    self.to_yield.push_back(BlockEvent::ExitBlock(ExitBlock {
+                let is_item_like = top.block.is_item_like();
+                self.to_yield
+                    .push_back(BlockEvent::ExitBlock(top.into_exit_block(
                         #[cfg(feature = "line-number")]
-                        start_line_number: top.start_line_number,
-                        #[cfg(feature = "line-number")]
-                        end_line_number: ctx.current_line_number,
-                    }));
+                        ctx.current_line_number,
+                    )));
+                if is_item_like && !state.should_keep_container {
+                    let top = stack.pop().unwrap();
+                    self.to_yield
+                        .push_back(BlockEvent::ExitBlock(top.into_exit_block(
+                            #[cfg(feature = "line-number")]
+                            ctx.current_line_number,
+                        )));
                 }
                 if let Some(item_like_type_to_enter) = state.and_then_enter_item_like {
                     self.enter_item_like(
@@ -338,12 +348,11 @@ impl<'a> Parser<'a> {
                 return InternalResult::ToContinue(State::ExpectingContainer);
             }
         }
-        self.to_yield.push_back(BlockEvent::ExitBlock(ExitBlock {
-            #[cfg(feature = "line-number")]
-            start_line_number: top.start_line_number,
-            #[cfg(feature = "line-number")]
-            end_line_number: ctx.current_line_number,
-        }));
+        self.to_yield
+            .push_back(BlockEvent::ExitBlock(top.into_exit_block(
+                #[cfg(feature = "line-number")]
+                ctx.current_line_number,
+            )));
         InternalResult::ToContinue(State::ExitingDiscontinuedItemLikes(state))
     }
 
@@ -364,9 +373,9 @@ impl<'a> Parser<'a> {
 
         for (delta_index, entry) in stack.iter().skip(memo.last_index).enumerate() {
             let mut item_like_type: Option<ItemLikeType> = None;
-            if let BlockInStack::ItemLike { typ } = entry.block {
+            if let BlockInStack::ItemLike { typ, .. } = entry.block {
                 item_like_type = Some(typ);
-            } else if !matches!(entry.block, BlockInStack::BlockQuote) {
+            } else if !matches!(entry.block, BlockInStack::BlockQuote { .. }) {
                 continue;
             }
 
@@ -402,35 +411,49 @@ impl<'a> Parser<'a> {
 
         nesting.processed_item_likes += 1;
         if should_enter_container {
-            stack.push(StackEntry {
-                block: BlockInStack::Container,
-                #[cfg(feature = "line-number")]
-                start_line_number: ctx.current_line_number,
-            });
-        }
-        stack.push(StackEntry {
-            block: item_like_type.into(),
-            #[cfg(feature = "line-number")]
-            start_line_number: ctx.current_line_number,
-        });
-        nesting.item_likes_in_stack += 1;
-
-        if should_enter_container {
-            self.to_yield.push_back(match item_like_type {
-                ItemLikeType::OrderedListItem => BlockEvent::EnterOrderedList(b_w_id!(ctx)),
-                ItemLikeType::UnorderedListItem => BlockEvent::EnterUnorderedList(b_w_id!(ctx)),
-                ItemLikeType::DescriptionTerm | ItemLikeType::DescriptionDetails => {
-                    BlockEvent::EnterDescriptionList(b_w_id!(ctx))
-                }
-            });
-        }
-        self.to_yield.push_back(match item_like_type {
-            ItemLikeType::OrderedListItem | ItemLikeType::UnorderedListItem => {
-                BlockEvent::EnterListItem(b_w_id!(ctx))
+            match_pop_block_id! {
+                ctx,
+                Some(id) => {
+                    stack.push(StackEntry {
+                        block: BlockInStack::Container,
+                        block_id: id,
+                        #[cfg(feature = "line-number")]
+                        start_line_number: ctx.current_line_number,
+                    });
+                    self.to_yield.push_back(item_like_type.into_enter_container_block_event(id));
+                },
+                None => {
+                    stack.push(StackEntry {
+                        block: BlockInStack::Container,
+                        #[cfg(feature = "line-number")]
+                        start_line_number: ctx.current_line_number,
+                    });
+                    self.to_yield.push_back(item_like_type.into_enter_container_block_event());
+                },
             }
-            ItemLikeType::DescriptionTerm => BlockEvent::EnterDescriptionTerm(b_w_id!(ctx)),
-            ItemLikeType::DescriptionDetails => BlockEvent::EnterDescriptionDetails(b_w_id!(ctx)),
-        });
+        }
+
+        nesting.item_likes_in_stack += 1;
+        match_pop_block_id! {
+            ctx,
+            Some(id) => {
+                stack.push(StackEntry {
+                    block: item_like_type.into(),
+                    block_id: id,
+                    #[cfg(feature = "line-number")]
+                    start_line_number: ctx.current_line_number,
+                });
+                self.to_yield.push_back(item_like_type.into_enter_block_event(id));
+            },
+            None => {
+                stack.push(StackEntry {
+                    block: item_like_type.into(),
+                    #[cfg(feature = "line-number")]
+                    start_line_number: ctx.current_line_number,
+                });
+                self.to_yield.push_back(item_like_type.into_enter_block_event());
+            },
+        }
     }
 }
 

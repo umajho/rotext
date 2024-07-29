@@ -4,6 +4,8 @@ mod common;
 mod events;
 mod global;
 mod inline;
+mod types;
+
 pub mod rendering;
 
 #[cfg(test)]
