@@ -194,8 +194,8 @@ impl<'a> Parser<'a> {
         nesting: &mut Nesting,
         is_expecting_deeper: bool,
     ) -> Option<crate::Result<InternalOutput<'a>>> {
-        let output = match scan_paragraph_or_item_like(ctx) {
-            ScanParagraphOrItemLikeResult::None => {
+        let output = match try_scan_item_like(ctx) {
+            TryScanItemLikeResult::None => {
                 if is_expecting_deeper {
                     return None;
                 } else {
@@ -207,7 +207,7 @@ impl<'a> Parser<'a> {
                     ))
                 }
             }
-            ScanParagraphOrItemLikeResult::BlockQuoteLine => {
+            TryScanItemLikeResult::BlockQuoteLine => {
                 nesting.processed_item_likes += 1;
                 if is_expecting_deeper {
                     let result = match_pop_block_id! {
@@ -239,7 +239,7 @@ impl<'a> Parser<'a> {
                 }
                 InternalOutput::ToContinue(State::ExpectingContainer)
             }
-            ScanParagraphOrItemLikeResult::ItemLike(item_like_type) => {
+            TryScanItemLikeResult::ItemLike(item_like_type) => {
                 if is_expecting_deeper {
                     self.enter_item_like(ctx, stack, nesting, item_like_type, true)
                         .unwrap();
@@ -480,32 +480,32 @@ impl<'a> Parser<'a> {
     }
 }
 
-enum ScanParagraphOrItemLikeResult {
+enum TryScanItemLikeResult {
     BlockQuoteLine,
     ItemLike(ItemLikeType),
     None,
 }
 #[inline(always)]
-fn scan_paragraph_or_item_like(ctx: &mut Context) -> ScanParagraphOrItemLikeResult {
+fn try_scan_item_like(ctx: &mut Context) -> TryScanItemLikeResult {
     match ctx.peek_next_three_chars() {
         [Some(b'>'), ref second_char, ..] if check_is_indeed_item_like(ctx, second_char) => {
-            return ScanParagraphOrItemLikeResult::BlockQuoteLine;
+            return TryScanItemLikeResult::BlockQuoteLine;
         }
         [Some(b'#'), ref second_char, ..] if check_is_indeed_item_like(ctx, second_char) => {
-            return ScanParagraphOrItemLikeResult::ItemLike(ItemLikeType::OrderedListItem);
+            return TryScanItemLikeResult::ItemLike(ItemLikeType::OrderedListItem);
         }
         [Some(b'*'), ref second_char, ..] if check_is_indeed_item_like(ctx, second_char) => {
-            return ScanParagraphOrItemLikeResult::ItemLike(ItemLikeType::UnorderedListItem);
+            return TryScanItemLikeResult::ItemLike(ItemLikeType::UnorderedListItem);
         }
         [Some(b';'), ref second_char, ..] if check_is_indeed_item_like(ctx, second_char) => {
-            return ScanParagraphOrItemLikeResult::ItemLike(ItemLikeType::DescriptionTerm);
+            return TryScanItemLikeResult::ItemLike(ItemLikeType::DescriptionTerm);
         }
         [Some(b':'), ref second_char, ..] if check_is_indeed_item_like(ctx, second_char) => {
-            return ScanParagraphOrItemLikeResult::ItemLike(ItemLikeType::DescriptionDetails);
+            return TryScanItemLikeResult::ItemLike(ItemLikeType::DescriptionDetails);
         }
         _ => {}
     };
-    ScanParagraphOrItemLikeResult::None
+    TryScanItemLikeResult::None
 }
 
 fn check_is_indeed_item_like(ctx: &mut Context, second_char: &Option<u8>) -> bool {
