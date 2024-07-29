@@ -11,6 +11,13 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
             group: "块引用与其延续",
             cases: vec![
                 case!(
+                    vec![">", ">␠"],
+                    vec![
+                        (EventType::EnterBlockQuote, None),
+                        (EventType::ExitBlock, None)
+                    ]
+                ),
+                case!(
                     vec!["> foo", " > foo", ">  foo"],
                     vec![
                         (EventType::EnterBlockQuote, None),
@@ -127,6 +134,23 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
                         (EventType::Unparsed, Some("foo")),
                         (EventType::NewLine, None),
                         (EventType::Unparsed, Some("> bar")),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None)
+                    ]
+                ),
+                case!(
+                    vec![
+                        indoc! {"
+                        >
+                        > foo"},
+                        indoc! {"
+                        >␠
+                        > foo"}
+                    ],
+                    vec![
+                        (EventType::EnterBlockQuote, None),
+                        (EventType::EnterParagraph, None),
+                        (EventType::Unparsed, Some("foo")),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None)
                     ]
