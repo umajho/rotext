@@ -4,6 +4,9 @@ use crate::events::BlendEvent;
 use crate::events::BlockWithID;
 use crate::events::VerbatimEscaping;
 
+const TABLE_TR_TH: &[u8] = b"table tr th";
+const TABLE_TR_TD: &[u8] = b"table tr td";
+
 pub struct NewHtmlRendererOptoins {
     pub initial_output_string_capacity: usize,
 
@@ -19,6 +22,9 @@ pub struct HtmlRenderer<'a> {
 
     result: Vec<u8>,
     stack: Vec<&'static [u8]>,
+
+    should_enter_table_row: bool,
+    should_enter_table_cell: bool,
 }
 
 impl<'a> HtmlRenderer<'a> {
@@ -29,6 +35,8 @@ impl<'a> HtmlRenderer<'a> {
             with_block_id: opts.with_block_id,
             result: Vec::with_capacity(opts.initial_output_string_capacity),
             stack: vec![],
+            should_enter_table_row: false,
+            should_enter_table_cell: false,
         }
     }
 
@@ -37,6 +45,34 @@ impl<'a> HtmlRenderer<'a> {
             let Some(ev) = input_stream.next() else {
                 break;
             };
+
+            if self.should_enter_table_row {
+                self.should_enter_table_row = false;
+                self.result.extend(b"<tr>");
+                self.should_enter_table_cell = true;
+                if matches!(ev, BlendEvent::IndicateTableRow) {
+                    continue;
+                }
+            }
+
+            if self.should_enter_table_cell {
+                self.should_enter_table_cell = false;
+                let (is_th, should_continue) = match &ev {
+                    BlendEvent::IndicateTableHeaderCell => (true, true),
+                    BlendEvent::IndicateTableDataCell => (false, true),
+                    _ => (false, false),
+                };
+                if is_th {
+                    self.result.extend(b"<th>");
+                    self.stack.push(TABLE_TR_TH)
+                } else {
+                    self.result.extend(b"<td>");
+                    self.stack.push(TABLE_TR_TD)
+                }
+                if should_continue {
+                    continue;
+                }
+            }
 
             match ev {
                 BlendEvent::NewLine(_) => self.result.extend(b"<br>"),
@@ -63,9 +99,16 @@ impl<'a> HtmlRenderer<'a> {
                 }
 
                 BlendEvent::ExitBlock(_) => {
-                    self.result.extend(b"</");
-                    self.result.extend(self.stack.pop().unwrap());
-                    self.result.push(b'>');
+                    let top = self.stack.pop().unwrap();
+                    match top {
+                        TABLE_TR_TH => self.result.extend(b"</th></tr></table>"),
+                        TABLE_TR_TD => self.result.extend(b"</td></tr></table>"),
+                        _ => {
+                            self.result.extend(b"</");
+                            self.result.extend(top);
+                            self.result.push(b'>');
+                        }
+                    }
                 }
 
                 BlendEvent::EnterParagraph(data) => self.push_simple(b"p", &data),
@@ -107,8 +150,27 @@ impl<'a> HtmlRenderer<'a> {
                     self.result.extend(br#"">"#);
                     self.stack.push(b"x-code-block");
                 }
+                BlendEvent::EnterTable(_) => {
+                    self.result.extend(b"<table>");
+                    self.should_enter_table_row = true;
+                }
 
                 BlendEvent::IndicateCodeBlockCode => unreachable!(),
+                BlendEvent::IndicateTableRow => {
+                    self.pop_stack_and_write_table_cell_closing();
+                    self.result.extend(b"</tr><tr>");
+                    self.should_enter_table_cell = true;
+                }
+                BlendEvent::IndicateTableHeaderCell => {
+                    self.pop_stack_and_write_table_cell_closing();
+                    self.result.extend(b"<th>");
+                    self.stack.push(TABLE_TR_TH);
+                }
+                BlendEvent::IndicateTableDataCell => {
+                    self.pop_stack_and_write_table_cell_closing();
+                    self.result.extend(b"<td>");
+                    self.stack.push(TABLE_TR_TD);
+                }
             };
         }
 
@@ -141,6 +203,14 @@ impl<'a> HtmlRenderer<'a> {
         }
 
         self.stack.push(tag_name);
+    }
+
+    fn pop_stack_and_write_table_cell_closing(&mut self) {
+        match self.stack.pop().unwrap() {
+            TABLE_TR_TH => self.result.extend(b"</th>"),
+            TABLE_TR_TD => self.result.extend(b"</td>"),
+            _ => unreachable!(),
+        }
     }
 
     fn write_escaped_html_text(&mut self, input: &[u8]) {

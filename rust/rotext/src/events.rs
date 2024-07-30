@@ -34,7 +34,11 @@ pub enum EventType {
     EnterDescriptionTerm = 16,
     EnterDescriptionDetails = 17,
     EnterCodeBlock = 21,
-    IndicateCodeBlockCode = 91,
+    EnterTable = 31,
+    IndicateCodeBlockCode = 22,
+    IndicateTableRow = 32,
+    IndicateTableHeaderCell = 33,
+    IndicateTableDataCell = 34,
     ExitBlock = 99,
 }
 
@@ -135,10 +139,23 @@ pub enum Event {
     /// 进入代码块。
     #[subenum(BlockEvent, BlendEvent)]
     EnterCodeBlock(BlockWithID) = EventType::EnterCodeBlock as u8,
+    /// 进入表格。
+    #[subenum(BlockEvent, BlendEvent)]
+    EnterTable(BlockWithID) = EventType::EnterTable as u8,
 
     /// 指示到达代码块的代码部分。
     #[subenum(BlockEvent, BlendEvent)]
     IndicateCodeBlockCode = EventType::IndicateCodeBlockCode as u8,
+    // TODO: IndicateTableCaption 指示到达表格标题。
+    /// 指示到达（新）表格行。
+    #[subenum(BlockEvent, BlendEvent)]
+    IndicateTableRow = EventType::IndicateTableRow as u8,
+    /// 指示到达（新）表格头部单元格。
+    #[subenum(BlockEvent, BlendEvent)]
+    IndicateTableHeaderCell = EventType::IndicateTableHeaderCell as u8,
+    /// 指示到达（新）表格数据单元格。
+    #[subenum(BlockEvent, BlendEvent)]
+    IndicateTableDataCell = EventType::IndicateTableDataCell as u8,
 
     /// 退出一层块级的 “进入…”。
     #[subenum(BlockEvent, InlineEvent, BlendEvent)]
@@ -211,7 +228,11 @@ impl Event {
             | Event::EnterDescriptionTerm(_)
             | Event::EnterDescriptionDetails(_)
             | Event::EnterCodeBlock(_)
+            | Event::EnterTable(_)
             | Event::IndicateCodeBlockCode
+            | Event::IndicateTableRow
+            | Event::IndicateTableHeaderCell
+            | Event::IndicateTableDataCell
             | Event::ExitBlock(_) => return None,
         };
 

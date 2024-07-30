@@ -34,6 +34,15 @@ macro_rules! case {
     (_input_event, IndicateCodeBlockCode ()) => {
         BlendEvent::IndicateCodeBlockCode
     };
+    (_input_event, IndicateTableRow ()) => {
+        BlendEvent::IndicateTableRow
+    };
+    (_input_event, IndicateTableHeaderCell ()) => {
+        BlendEvent::IndicateTableHeaderCell
+    };
+    (_input_event, IndicateTableDataCell ()) => {
+        BlendEvent::IndicateTableDataCell
+    };
     (_input_event, ExitBlock (..)) => {
         BlendEvent::ExitBlock($crate::events::ExitBlock {})
     };
@@ -211,6 +220,142 @@ fn it_works_in_block_phase() {
                 ),
             ],
         },
+        GroupedCases {
+            group: "表格",
+            cases: vec![
+                case!(
+                    "",
+                    [
+                        (EnterTable(..)),
+                        (ExitBlock(..)),
+                    ],
+                    "<table><tr><td></td></tr></table>",
+                ),
+                case!(
+                    "",
+                    [
+                        (EnterTable(..)),
+                        (IndicateTableRow()),
+                        (ExitBlock(..)),
+                    ],
+                    "<table><tr><td></td></tr></table>",
+                ),
+                case!(
+                    "",
+                    [
+                        (EnterTable(..)),
+                        (IndicateTableDataCell()),
+                        (ExitBlock(..)),
+                    ],
+                    "<table><tr><td></td></tr></table>",
+                ),
+                case!(
+                    "",
+                    [
+                        (EnterTable(..)),
+                        (IndicateTableRow()),
+                        (IndicateTableDataCell()),
+                        (ExitBlock(..)),
+                    ],
+                    "<table><tr><td></td></tr></table>",
+                ),
+                case!(
+                    "",
+                    [
+                        (EnterTable(..)),
+                        (IndicateTableHeaderCell()),
+                        (ExitBlock(..)),
+                    ],
+                    "<table><tr><th></th></tr></table>",
+                ),
+                case!(
+                    "",
+                    [
+                        (EnterTable(..)),
+                        (IndicateTableRow()),
+                        (IndicateTableHeaderCell()),
+                        (ExitBlock(..)),
+                    ],
+                    "<table><tr><th></th></tr></table>",
+                ),
+                case!(
+                    "",
+                    [
+                        (EnterTable(..)),
+                        (IndicateTableRow()),
+                        (IndicateTableRow()),
+                        (ExitBlock(..)),
+                    ],
+                    concat!(
+                        "<table><tr><td></td></tr><tr><td></td></tr></table>",
+                    ),
+                ),
+                case!(
+                    "",
+                    [
+                        (EnterTable(..)),
+                        (IndicateTableDataCell()),
+                        (IndicateTableDataCell()),
+                        (ExitBlock(..)),
+                    ],
+                    concat!(
+                        "<table><tr><td></td><td></td></tr></table>",
+                    ),
+                ),
+                case!(
+                    "data",
+                    [
+                        (EnterTable(..)),
+                        (EnterParagraph(..)),
+                        (Text(0..4)),
+                        (ExitBlock(..)),
+                        (ExitBlock(..)),
+                    ],
+                    "<table><tr><td><p>data</p></td></tr></table>",
+                ),
+                case!(
+                    "data",
+                    [
+                        (EnterTable(..)),
+                        (IndicateTableHeaderCell()),
+                        (EnterParagraph(..)),
+                        (Text(0..4)),
+                        (ExitBlock(..)),
+                        (ExitBlock(..)),
+                    ],
+                    "<table><tr><th><p>data</p></th></tr></table>",
+                ),
+                case!(
+                    "ABCD",
+                    [
+                        (EnterTable(..)),
+                        (IndicateTableHeaderCell()),
+                        (EnterParagraph(..)),
+                        (Text(0..1)),
+                        (ExitBlock(..)),
+                        (IndicateTableHeaderCell()),
+                        (EnterParagraph(..)),
+                        (Text(1..2)),
+                        (ExitBlock(..)),
+                        (IndicateTableRow()),
+                        (EnterParagraph(..)),
+                        (Text(2..3)),
+                        (ExitBlock(..)),
+                        (IndicateTableDataCell()),
+                        (EnterParagraph(..)),
+                        (Text(3..4)),
+                        (ExitBlock(..)),
+                        (ExitBlock(..)),
+                    ],
+                    concat!(
+                        "<table>",
+                        "<tr><th><p>A</p></th><th><p>B</p></th></tr>",
+                        "<tr><td><p>C</p></td><td><p>D</p></td></tr>",
+                        "</table>",
+                    ),
+                ),
+            ]
+        }
     ];
 
     let failed_cases: Vec<_> = table
