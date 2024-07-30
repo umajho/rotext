@@ -27,7 +27,7 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                     ],
                     vec![
                         (EventType::EnterCodeBlock, None),
-                        (EventType::Separator, None),
+                        (EventType::IndicateCodeBlockCode, None),
                         (EventType::Text, Some("code")),
                         (EventType::ExitBlock, None)
                     ]
@@ -64,7 +64,7 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                     ],
                     vec![
                         (EventType::EnterCodeBlock, None),
-                        (EventType::Separator, None),
+                        (EventType::IndicateCodeBlockCode, None),
                         (EventType::Text, Some("  code  ")),
                         (EventType::ExitBlock, None)
                     ]
@@ -83,7 +83,7 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                     ],
                     vec![
                         (EventType::EnterCodeBlock, None),
-                        (EventType::Separator, None),
+                        (EventType::IndicateCodeBlockCode, None),
                         (EventType::ExitBlock, None)
                     ]
                 ),
@@ -94,7 +94,7 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                         ```"},],
                     vec![
                         (EventType::EnterCodeBlock, None),
-                        (EventType::Separator, None),
+                        (EventType::IndicateCodeBlockCode, None),
                         (EventType::NewLine, None),
                         (EventType::ExitBlock, None)
                     ]
@@ -106,7 +106,7 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                         ````"},],
                     vec![
                         (EventType::EnterCodeBlock, None),
-                        (EventType::Separator, None),
+                        (EventType::IndicateCodeBlockCode, None),
                         (EventType::Text, Some("```")),
                         (EventType::ExitBlock, None)
                     ]
@@ -119,7 +119,7 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                     vec![
                         (EventType::EnterCodeBlock, None),
                         (EventType::Text, Some("info")),
-                        (EventType::Separator, None),
+                        (EventType::IndicateCodeBlockCode, None),
                         (EventType::Text, Some("code")),
                         (EventType::ExitBlock, None)
                     ]
@@ -132,7 +132,7 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                         ```"},],
                     vec![
                         (EventType::EnterCodeBlock, None),
-                        (EventType::Separator, None),
+                        (EventType::IndicateCodeBlockCode, None),
                         (EventType::Text, Some("code")),
                         (EventType::NewLine, None),
                         (EventType::ExitBlock, None)
@@ -147,7 +147,7 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                         ```"},],
                     vec![
                         (EventType::EnterCodeBlock, None),
-                        (EventType::Separator, None),
+                        (EventType::IndicateCodeBlockCode, None),
                         (EventType::Text, Some("code")),
                         (EventType::NewLine, None),
                         (EventType::NewLine, None),
@@ -162,7 +162,7 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                         ```"},],
                     vec![
                         (EventType::EnterCodeBlock, None),
-                        (EventType::Separator, None),
+                        (EventType::IndicateCodeBlockCode, None),
                         (EventType::Text, Some("code")),
                         (EventType::NewLine, None),
                         (EventType::Text, Some("line 2")),
@@ -178,7 +178,7 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                         ```"},],
                     vec![
                         (EventType::EnterCodeBlock, None),
-                        (EventType::Separator, None),
+                        (EventType::IndicateCodeBlockCode, None),
                         (EventType::Text, Some("code")),
                         (EventType::NewLine, None),
                         (EventType::NewLine, None),
@@ -195,7 +195,7 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                         ```"},],
                     vec![
                         (EventType::EnterCodeBlock, None),
-                        (EventType::Separator, None),
+                        (EventType::IndicateCodeBlockCode, None),
                         (EventType::Text, Some("code")),
                         (EventType::NewLine, None),
                         (EventType::Text, Some("    ")),
@@ -216,7 +216,7 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                         ```"},],
                     vec![
                         (EventType::EnterCodeBlock, None),
-                        (EventType::Separator, None),
+                        (EventType::IndicateCodeBlockCode, None),
                         (EventType::VerbatimEscaping, Some("```")),
                         (EventType::ExitBlock, None)
                     ]
@@ -230,7 +230,7 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                         (EventType::EnterCodeBlock, None),
                         (EventType::Text, Some("info")),
                         (EventType::VerbatimEscaping, Some("\ninfo line 2")),
-                        (EventType::Separator, None),
+                        (EventType::IndicateCodeBlockCode, None),
                         (EventType::ExitBlock, None)
                     ]
                 ),
@@ -241,7 +241,7 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                             ```"},],
                     vec![
                         (EventType::EnterCodeBlock, None),
-                        (EventType::Separator, None),
+                        (EventType::IndicateCodeBlockCode, None),
                         (EventType::VerbatimEscaping, Some("```")),
                         (EventType::ExitBlock, None)
                     ]
@@ -255,7 +255,7 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                         (EventType::EnterCodeBlock, None),
                         (EventType::Text, Some("info")),
                         (EventType::VerbatimEscaping, Some("\ninfo line 2")),
-                        (EventType::Separator, None),
+                        (EventType::IndicateCodeBlockCode, None),
                         (EventType::ExitBlock, None)
                     ]
                 ),
@@ -278,7 +278,7 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                         (EventType::EnterBlockQuote, None),
                         (EventType::EnterCodeBlock, None),
                         (EventType::Text, Some("info")),
-                        (EventType::Separator, None),
+                        (EventType::IndicateCodeBlockCode, None),
                         (EventType::Text, Some("code")),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None)
@@ -293,7 +293,7 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                         (EventType::EnterBlockQuote, None),
                         (EventType::EnterCodeBlock, None),
                         (EventType::Text, Some("info")),
-                        (EventType::Separator, None),
+                        (EventType::IndicateCodeBlockCode, None),
                         (EventType::Text, Some(" code")),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None)
@@ -308,12 +308,12 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                         (EventType::EnterBlockQuote, None),
                         (EventType::EnterCodeBlock, None),
                         (EventType::Text, Some("info")),
-                        (EventType::Separator, None),
+                        (EventType::IndicateCodeBlockCode, None),
                         (EventType::Text, Some(" code")),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
                         (EventType::EnterCodeBlock, None),
-                        (EventType::Separator, None),
+                        (EventType::IndicateCodeBlockCode, None),
                         (EventType::ExitBlock, None)
                     ]
                 ),

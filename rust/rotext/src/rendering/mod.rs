@@ -44,13 +44,6 @@ impl<'a> HtmlRenderer<'a> {
                 | BlendEvent::VerbatimEscaping(VerbatimEscaping { content, .. }) => {
                     self.write_escaped_html_text(content.content_in_u8_array(self.input));
                 }
-                BlendEvent::ExitBlock(_) => {
-                    self.result.extend(b"</");
-                    self.result.extend(self.stack.pop().unwrap());
-                    self.result.push(b'>');
-                }
-                BlendEvent::Separator => unreachable!(),
-                BlendEvent::EnterParagraph(data) => self.push_simple(b"p", &data),
                 #[allow(unused_variables)]
                 BlendEvent::ThematicBreak(data) => {
                     #[cfg(feature = "block-id")]
@@ -68,6 +61,14 @@ impl<'a> HtmlRenderer<'a> {
                         self.result.extend(b"<hr>")
                     }
                 }
+
+                BlendEvent::ExitBlock(_) => {
+                    self.result.extend(b"</");
+                    self.result.extend(self.stack.pop().unwrap());
+                    self.result.push(b'>');
+                }
+
+                BlendEvent::EnterParagraph(data) => self.push_simple(b"p", &data),
                 BlendEvent::EnterHeading1(data) => self.push_simple(b"h1", &data),
                 BlendEvent::EnterHeading2(data) => self.push_simple(b"h2", &data),
                 BlendEvent::EnterHeading3(data) => self.push_simple(b"h3", &data),
@@ -90,7 +91,7 @@ impl<'a> HtmlRenderer<'a> {
                                 .write_escaped_double_quoted_attribute_value(
                                     content.content_in_u8_array(self.input),
                                 ),
-                            BlendEvent::Separator => break,
+                            BlendEvent::IndicateCodeBlockCode => break,
                             _ => unreachable!(),
                         }
                     }
@@ -106,6 +107,8 @@ impl<'a> HtmlRenderer<'a> {
                     self.result.extend(br#"">"#);
                     self.stack.push(b"x-code-block");
                 }
+
+                BlendEvent::IndicateCodeBlockCode => unreachable!(),
             };
         }
 

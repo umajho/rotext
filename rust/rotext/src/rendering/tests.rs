@@ -31,8 +31,8 @@ macro_rules! case {
     (_input_event, Text ($start:literal..$end:literal)) => {
         BlendEvent::Text(case!(_range, $start..$end))
     };
-    (_input_event, Separator ()) => {
-        BlendEvent::Separator
+    (_input_event, IndicateCodeBlockCode ()) => {
+        BlendEvent::IndicateCodeBlockCode
     };
     (_input_event, ExitBlock (..)) => {
         BlendEvent::ExitBlock($crate::events::ExitBlock {})
@@ -203,7 +203,7 @@ fn it_works_in_block_phase() {
                     [
                         (EnterCodeBlock(..)),
                         (Text(0..4)),
-                        (Separator()),
+                        (IndicateCodeBlockCode()),
                         (Text(7..11)),
                         (ExitBlock(..)),
                     ],

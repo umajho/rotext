@@ -145,7 +145,7 @@ impl Parser {
                         };
                         let code_content_parser = sub_parsers::content::Parser::new(opts);
                         (
-                            sub_parsers::Output::ToYield(BlockEvent::Separator),
+                            sub_parsers::Output::ToYield(BlockEvent::IndicateCodeBlockCode),
                             State::BeforeCodeContent {
                                 #[cfg(feature = "block-id")]
                                 code_block_id,
