@@ -1,8 +1,8 @@
 #![cfg(test)]
 
-use std::{panic::catch_unwind, vec};
+use std::vec;
 
-use crate::test_utils::{report_failed_cases, FaildCase};
+use crate::test_utils::{self, report_failed_cases, FaildCase, GroupedCases};
 
 use super::*;
 
@@ -46,7 +46,7 @@ macro_rules! case {
 fn it_works() {
     use Mapped::{CharAt, NextChar};
 
-    let table: Vec<GroupedCases> = vec![
+    let table: Vec<GroupedCases<_>> = vec![
         GroupedCases {
             group: "无特殊语法",
             cases: vec![
@@ -157,35 +157,11 @@ fn it_works() {
     panic!("{} cases failed!", faild_case_count);
 }
 
-struct GroupedCases {
-    group: &'static str,
-    cases: Vec<Case>,
-}
-impl GroupedCases {
-    fn collect_failed(&self) -> Vec<FaildCase> {
-        self.cases
-            .iter()
-            .enumerate()
-            .filter_map(|(i, case)| -> Option<FaildCase> {
-                let panic = catch_unwind(|| case.assert_ok()).err()?;
-                Some(FaildCase {
-                    group: self.group,
-                    nth_case_in_group: i + 1,
-                    nth_case_variant_in_case: None,
-                    auto_variant: None,
-                    input: case.input.to_string(),
-                    panic,
-                })
-            })
-            .collect()
-    }
-}
-
 struct Case {
     input: &'static str,
     expected: Vec<Mapped>,
 }
-impl Case {
+impl test_utils::Case for Case {
     fn assert_ok(&self) {
         let global_parser =
             global::Parser::new(self.input.as_bytes(), global::NewParserOptions::default());
@@ -194,5 +170,9 @@ impl Case {
         let actual: Vec<_> = global_mapper.collect();
 
         assert_eq!(self.expected, actual);
+    }
+
+    fn input(&self) -> String {
+        self.input.to_string()
     }
 }

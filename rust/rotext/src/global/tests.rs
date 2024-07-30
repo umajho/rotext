@@ -2,11 +2,11 @@
 
 use super::*;
 
-use std::{collections::HashSet, panic::catch_unwind};
+use std::collections::HashSet;
 
 use crate::{
     events::{Event, EventType},
-    test_utils::{report_failed_cases, FaildCase},
+    test_utils::{self, report_failed_cases, FaildCase, GroupedCases},
 };
 
 /// event matcher
@@ -40,7 +40,7 @@ macro_rules! case {
 fn it_works() {
     use EventType::*;
 
-    let table: Vec<GroupedCases> = vec![
+    let table: Vec<GroupedCases<_>> = vec![
         GroupedCases {
             group: "无特殊语法",
             cases: vec![
@@ -173,35 +173,11 @@ fn it_works() {
     panic!("{} cases failed!", faild_case_count);
 }
 
-struct GroupedCases {
-    group: &'static str,
-    cases: Vec<Case>,
-}
-impl GroupedCases {
-    fn collect_failed(&self) -> Vec<FaildCase> {
-        self.cases
-            .iter()
-            .enumerate()
-            .filter_map(|(i, case)| -> Option<FaildCase> {
-                let panic = catch_unwind(|| case.assert_ok()).err()?;
-                Some(FaildCase {
-                    group: self.group,
-                    auto_variant: None,
-                    nth_case_in_group: i + 1,
-                    nth_case_variant_in_case: None,
-                    input: case.input.to_string(),
-                    panic,
-                })
-            })
-            .collect()
-    }
-}
-
 struct Case {
     input: &'static str,
     expected: Vec<EventMatcher>,
 }
-impl Case {
+impl test_utils::Case for Case {
     fn assert_ok(&self) {
         let expected: Vec<EventMatcher> = if cfg!(not(feature = "line-number")) {
             self.expected
@@ -239,6 +215,10 @@ impl Case {
             .collect();
 
         assert_eq!(expected, actual);
+    }
+
+    fn input(&self) -> String {
+        self.input.to_string()
     }
 }
 

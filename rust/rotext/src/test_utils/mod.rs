@@ -1,4 +1,33 @@
-use std::any::Any;
+use std::{any::Any, panic::RefUnwindSafe};
+
+pub struct GroupedCases<TCase: Case> {
+    pub group: &'static str,
+    pub cases: Vec<TCase>,
+}
+impl<TCase: Case + RefUnwindSafe> GroupedCases<TCase> {
+    pub fn collect_failed(&self) -> Vec<FaildCase> {
+        self.cases
+            .iter()
+            .enumerate()
+            .filter_map(|(i, case)| -> Option<FaildCase> {
+                let panic = std::panic::catch_unwind(|| case.assert_ok()).err()?;
+                Some(FaildCase {
+                    group: self.group,
+                    nth_case_in_group: i + 1,
+                    nth_case_variant_in_case: None,
+                    auto_variant: None,
+                    input: case.input().to_string(),
+                    panic,
+                })
+            })
+            .collect()
+    }
+}
+
+pub trait Case {
+    fn input(&self) -> String;
+    fn assert_ok(&self);
+}
 
 pub struct FaildCase {
     pub group: &'static str,
