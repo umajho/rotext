@@ -1,7 +1,11 @@
 #[cfg(feature = "block-id")]
 use crate::types::BlockID;
 use crate::{
-    block::{context::Context, sub_parsers, utils::match_pop_block_id},
+    block::{
+        context::Context,
+        sub_parsers::{self, HaveMet},
+        utils::match_pop_block_id,
+    },
     events::{BlockEvent, BlockWithID, ExitBlock, NewLine},
 };
 
@@ -127,7 +131,8 @@ impl Parser {
                         },
                     ),
                     sub_parsers::Output::ToPauseForNewLine => unreachable!(),
-                    sub_parsers::Output::Done => {
+                    sub_parsers::Output::Done(have_met) => {
+                        debug_assert!(matches!(have_met, HaveMet::None));
                         let opts = sub_parsers::content::Options {
                             initial_step_state: sub_parsers::content::StepState::Invalid,
                             mode: sub_parsers::content::Mode::Verbatim,
@@ -190,20 +195,22 @@ impl Parser {
                             code_content_parser,
                         },
                     ),
-                    sub_parsers::Output::Done => (
-                        sub_parsers::Output::ToYield(BlockEvent::ExitBlock(ExitBlock {
-                            #[cfg(feature = "block-id")]
-                            id: code_block_id,
-                            #[cfg(feature = "line-number")]
-                            start_line_number: self.start_line_number,
-                            #[cfg(feature = "line-number")]
-                            end_line_number: ctx.current_line_number,
-                        })),
-                        State::Exiting,
-                    ),
+                    sub_parsers::Output::Done(have_met) => {
+                        debug_assert!(matches!(have_met, HaveMet::None));
+                        let output =
+                            sub_parsers::Output::ToYield(BlockEvent::ExitBlock(ExitBlock {
+                                #[cfg(feature = "block-id")]
+                                id: code_block_id,
+                                #[cfg(feature = "line-number")]
+                                start_line_number: self.start_line_number,
+                                #[cfg(feature = "line-number")]
+                                end_line_number: ctx.current_line_number,
+                            }));
+                        (output, State::Exiting)
+                    }
                 }
             }
-            State::Exiting => (sub_parsers::Output::Done, State::Exited),
+            State::Exiting => (sub_parsers::Output::Done(HaveMet::None), State::Exited),
             // 当解析器作为迭代器被耗尽而返回 `None` 时，解析器进入状态
             // [State::Exited]。此后，不应该再调用 `next` 方法，否则就会执行到
             // 这里。正确的做法是 `take_context` 取回 [Context]，并将解析器

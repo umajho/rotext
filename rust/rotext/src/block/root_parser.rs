@@ -1,8 +1,11 @@
 use derivative::Derivative;
 
 use super::{
-    context::Context, global_mapper::Mapped, sub_parsers, utils::ArrayQueue, BlockInStack,
-    ItemLikeType, Nesting, StackEntry,
+    context::Context,
+    global_mapper::Mapped,
+    sub_parsers::{self, HaveMet},
+    utils::ArrayQueue,
+    BlockInStack, ItemLikeType, Nesting, StackEntry,
 };
 use crate::{
     block::utils::match_pop_block_id,
@@ -30,6 +33,15 @@ enum State {
 
     Invalid,
 }
+impl From<InitialState> for State {
+    fn from(value: InitialState) -> Self {
+        match value {
+            InitialState::Start { new_line } => Self::Start { new_line },
+            InitialState::ExitingUntil(exiting_until) => Self::ExitingUntil(exiting_until),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum ExitingUntil {
     ExitedItemLike {
@@ -38,6 +50,42 @@ pub enum ExitingUntil {
         /// 若存在，则在完成 exit 后 enter 指定 item-like。
         and_then_enter_item_like: Option<ItemLikeType>,
     },
+    /// 栈顶是 table。
+    TopIsTable {
+        should_exit_table: bool,
+        /// 在完成 exit 后 yield 指定事件。
+        and_then_yield: Option<BlockEvent>,
+    },
+    /// 栈顶知晓 “||”。目前知晓 “||” 的包括 table。
+    TopKnownsDoublePipesAndThenYieldSomething,
+}
+
+#[derive(Debug)]
+pub enum InitialState {
+    Start { new_line: Option<NewLine> },
+    ExitingUntil(ExitingUntil),
+}
+impl From<HaveMet> for InitialState {
+    fn from(value: HaveMet) -> Self {
+        match value {
+            HaveMet::None => Self::Start { new_line: None },
+            HaveMet::TableClosing => Self::ExitingUntil(ExitingUntil::TopIsTable {
+                should_exit_table: true,
+                and_then_yield: None,
+            }),
+            HaveMet::TableRowIndicator => Self::ExitingUntil(ExitingUntil::TopIsTable {
+                should_exit_table: false,
+                and_then_yield: Some(BlockEvent::IndicateTableRow),
+            }),
+            HaveMet::TableHeaderCellIndicator => Self::ExitingUntil(ExitingUntil::TopIsTable {
+                should_exit_table: false,
+                and_then_yield: Some(BlockEvent::IndicateTableHeaderCell),
+            }),
+            HaveMet::DoublePipes => {
+                Self::ExitingUntil(ExitingUntil::TopKnownsDoublePipesAndThenYieldSomething)
+            }
+        }
+    }
 }
 
 #[derive(Default)]
@@ -62,7 +110,7 @@ enum InternalOutput<'a> {
 }
 
 pub struct NewParserOptions<'a> {
-    pub new_line: Option<NewLine>,
+    pub initial_state: InitialState,
     pub paused_sub_parser: Option<Box<dyn sub_parsers::SubParser<'a> + 'a>>,
 }
 
@@ -70,9 +118,7 @@ impl<'a> Parser<'a> {
     pub fn new(opts: NewParserOptions<'a>) -> Self {
         Self {
             paused_sub_parser: opts.paused_sub_parser,
-            state: State::Start {
-                new_line: opts.new_line,
-            },
+            state: opts.initial_state.into(),
             // 这里只是随便初始化一下，实际在 [State::Start] 中决定。
             is_new_line: false,
             to_yield: ArrayQueue::new(),
@@ -99,7 +145,7 @@ impl<'a> Parser<'a> {
                 State::ExpectingContainer => {
                     self.process_in_expecting_container_state(ctx, stack, nesting)?
                 }
-                State::ExpectingLeaf => self.process_in_expecting_leaf_state(ctx),
+                State::ExpectingLeaf => self.process_in_expecting_leaf_state(ctx, nesting),
                 State::ExitingUntil(state) => {
                     self.process_in_exiting_until_state(ctx, stack, nesting, state)
                 }
@@ -182,12 +228,43 @@ impl<'a> Parser<'a> {
         }
 
         _ = ctx.scan_blank_text();
+        let peeked_3 = ctx.peek_next_three_chars();
+
         if self.is_new_line {
             if let Some(result) =
-                self.process_possible_item_like(ctx, stack, nesting, is_expecting_deeper)
+                self.process_possible_item_like(ctx, stack, nesting, is_expecting_deeper, &peeked_3)
             {
                 return result;
             }
+        }
+
+        match try_scan_surrounded_opening(ctx, &peeked_3) {
+            TryScanSurroundedResult::TableOpening => {
+                nesting.tables_in_stack += 1;
+                match_pop_block_id! {
+                    ctx,
+                    Some(id) => {
+                        let ev = BlockEvent::EnterTable(BlockWithID { id });
+                        self.to_yield.push_back(ev);
+                        stack.try_push(StackEntry {
+                            block: BlockInStack::Table,
+                            block_id: id,
+                            #[cfg(feature = "line-number")]
+                            start_line_number: ctx.current_line_number,
+                        })?;
+                    },
+                    None => {
+                        let ev = BlockEvent::EnterTable(BlockWithID {});
+                        self.to_yield.push_back(ev);
+                        stack.try_push(StackEntry {
+                            block: BlockInStack::Table,
+                            #[cfg(feature = "line-number")]
+                            start_line_number: ctx.current_line_number,
+                        })?;
+                    },
+                }
+            }
+            TryScanSurroundedResult::None => {}
         }
 
         Ok(InternalOutput::ToContinue(State::ExpectingLeaf))
@@ -200,8 +277,9 @@ impl<'a> Parser<'a> {
         stack: &mut TStack,
         nesting: &mut Nesting,
         is_expecting_deeper: bool,
+        peeked_3: &[Option<u8>; 3],
     ) -> Option<crate::Result<InternalOutput<'a>>> {
-        let output = match try_scan_item_like(ctx) {
+        let output = match try_scan_item_like(ctx, peeked_3) {
             TryScanItemLikeResult::None => {
                 if is_expecting_deeper {
                     return None;
@@ -269,7 +347,11 @@ impl<'a> Parser<'a> {
     }
 
     #[inline(always)]
-    fn process_in_expecting_leaf_state(&mut self, ctx: &mut Context<'a>) -> InternalOutput<'a> {
+    fn process_in_expecting_leaf_state(
+        &mut self,
+        ctx: &mut Context<'a>,
+        nesting: &mut Nesting,
+    ) -> InternalOutput<'a> {
         // XXX: 由于在状态转移到 [State::ExpectingLeaf] 之前一定调用过
         // `ctx.scan_blank_text`，因此 `ctx.mapper.peek_1()` 一定不对应空白字符（
         // “空白字符” 不包含换行。）。
@@ -299,6 +381,7 @@ impl<'a> Parser<'a> {
                     #[cfg(feature = "line-number")]
                     start_line_number: ctx.current_line_number,
                     leading_signs,
+                    is_in_table: nesting.tables_in_stack > 0,
                 }),
             )),
             LeafType::CodeBlock { backticks } => InternalOutput::ToSwitchToSubParser(Box::new(
@@ -314,6 +397,7 @@ impl<'a> Parser<'a> {
                         #[cfg(feature = "line-number")]
                         start_line_number: ctx.current_line_number,
                         content_before,
+                        is_in_table: nesting.tables_in_stack > 0,
                     },
                 )))
             }
@@ -328,10 +412,6 @@ impl<'a> Parser<'a> {
         nesting: &mut Nesting,
         state: ExitingUntil,
     ) -> InternalOutput<'a> {
-        if nesting.processed_item_likes == nesting.item_likes_in_stack {
-            unreachable!();
-        }
-
         if let Some(mut sub_parser) = self.paused_sub_parser.take() {
             nesting.exiting = Some(state);
             sub_parser.resume_from_pause_for_new_line_and_exit();
@@ -376,6 +456,35 @@ impl<'a> Parser<'a> {
                     }
                 }
             }
+            BlockInStack::Table => match state {
+                ExitingUntil::ExitedItemLike { .. } => {
+                    nesting.tables_in_stack -= 1;
+                }
+                ExitingUntil::TopIsTable {
+                    should_exit_table,
+                    and_then_yield,
+                } => {
+                    if let Some(to_yield) = and_then_yield {
+                        self.to_yield.push_back(to_yield);
+                    }
+                    if should_exit_table {
+                        nesting.tables_in_stack -= 1;
+                        self.to_yield
+                            .push_back(BlockEvent::ExitBlock(top.into_exit_block(
+                                #[cfg(feature = "line-number")]
+                                ctx.current_line_number,
+                            )));
+                    } else {
+                        stack.try_push(top).unwrap();
+                    }
+                    return InternalOutput::ToContinue(State::ExpectingContainer);
+                }
+                ExitingUntil::TopKnownsDoublePipesAndThenYieldSomething => {
+                    stack.try_push(top).unwrap();
+                    self.to_yield.push_back(BlockEvent::IndicateTableDataCell);
+                    return InternalOutput::ToContinue(State::ExpectingContainer);
+                }
+            },
             BlockInStack::Container => {}
         }
         self.to_yield
@@ -495,8 +604,8 @@ enum TryScanItemLikeResult {
     None,
 }
 #[inline(always)]
-fn try_scan_item_like(ctx: &mut Context) -> TryScanItemLikeResult {
-    match ctx.peek_next_three_chars() {
+fn try_scan_item_like(ctx: &mut Context, peeked_3: &[Option<u8>; 3]) -> TryScanItemLikeResult {
+    match peeked_3 {
         [Some(b'>'), ref second_char, ..] if check_is_indeed_item_like(ctx, second_char) => {
             return TryScanItemLikeResult::BlockQuoteLine;
         }
@@ -515,6 +624,25 @@ fn try_scan_item_like(ctx: &mut Context) -> TryScanItemLikeResult {
         _ => {}
     };
     TryScanItemLikeResult::None
+}
+
+enum TryScanSurroundedResult {
+    TableOpening,
+    None,
+}
+#[inline(always)]
+fn try_scan_surrounded_opening(
+    ctx: &mut Context,
+    peeked_3: &[Option<u8>; 3],
+) -> TryScanSurroundedResult {
+    match peeked_3 {
+        [Some(b'{'), Some(b'|'), ..] => {
+            ctx.must_take_from_mapper_and_apply_to_cursor(2);
+            return TryScanSurroundedResult::TableOpening;
+        }
+        _ => {}
+    };
+    TryScanSurroundedResult::None
 }
 
 fn check_is_indeed_item_like(ctx: &mut Context, second_char: &Option<u8>) -> bool {

@@ -6,6 +6,8 @@ use crate::{
     events::{BlockEvent, BlockWithID, ExitBlock, NewLine},
 };
 
+use super::HaveMet;
+
 enum State {
     Initial {
         content_before: Option<Range>,
@@ -15,7 +17,7 @@ enum State {
         id: BlockID,
         content_parser: Box<sub_parsers::content::Parser>,
     },
-    Exiting,
+    Exiting(HaveMet),
     Exited,
 
     Paused {
@@ -38,6 +40,8 @@ pub struct Parser {
     #[cfg(feature = "line-number")]
     start_line_number: usize,
 
+    is_in_table: bool,
+
     state: State,
 }
 
@@ -46,6 +50,8 @@ pub struct NewParserOptions {
     pub start_line_number: usize,
 
     pub content_before: Option<Range>,
+
+    pub is_in_table: bool,
 }
 
 impl Parser {
@@ -54,7 +60,7 @@ impl Parser {
         Self {
             #[cfg(feature = "line-number")]
             start_line_number: opts.start_line_number,
-
+            is_in_table: opts.is_in_table,
             state: State::Initial {
                 content_before: opts.content_before,
             },
@@ -77,6 +83,7 @@ impl Parser {
                     },
                     end_conditions: sub_parsers::content::EndConditions {
                         before_blank_line: true,
+                        on_table_related: self.is_in_table,
                         ..Default::default()
                     },
                     ..Default::default()
@@ -128,7 +135,7 @@ impl Parser {
                             content_parser,
                         },
                     ),
-                    sub_parsers::Output::Done => (
+                    sub_parsers::Output::Done(have_met) => (
                         sub_parsers::Output::ToYield(BlockEvent::ExitBlock(ExitBlock {
                             #[cfg(feature = "block-id")]
                             id,
@@ -137,11 +144,11 @@ impl Parser {
                             #[cfg(feature = "line-number")]
                             end_line_number: ctx.current_line_number,
                         })),
-                        State::Exiting,
+                        State::Exiting(have_met),
                     ),
                 }
             }
-            State::Exiting => (sub_parsers::Output::Done, State::Exited),
+            State::Exiting(have_met) => (sub_parsers::Output::Done(have_met), State::Exited),
             // 当解析器作为迭代器被耗尽而返回 `None` 时，解析器进入状态
             // [State::Exited]。此后，不应该再调用 `next` 方法，否则就会执行到
             // 这里。正确的做法是 `take_context` 取回 [Context]，并将解析器
@@ -159,7 +166,7 @@ impl Parser {
                     #[cfg(feature = "line-number")]
                     end_line_number: ctx.current_line_number,
                 })),
-                State::Exiting,
+                State::Exiting(HaveMet::None),
             ),
         };
 

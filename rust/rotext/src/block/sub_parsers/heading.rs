@@ -5,6 +5,8 @@ use crate::{
     events::{BlockEvent, BlockWithID, ExitBlock, NewLine},
 };
 
+use super::HaveMet;
+
 enum State {
     /// 构造解析器后，解析器所处的初始状态。此时，其所解析语法的开启部分应已经被
     /// 消耗。
@@ -15,7 +17,7 @@ enum State {
 
         content_parser: Box<sub_parsers::content::Parser>,
     },
-    Exiting,
+    Exiting(HaveMet),
     Exited,
 
     Invalid,
@@ -26,6 +28,8 @@ pub struct Parser {
     start_line_number: usize,
     leading_signs: usize,
 
+    is_in_table: bool,
+
     state: State,
 }
 
@@ -33,6 +37,8 @@ pub struct NewParserOptions {
     #[cfg(feature = "line-number")]
     pub start_line_number: usize,
     pub leading_signs: usize,
+
+    pub is_in_table: bool,
 }
 
 impl Parser {
@@ -41,7 +47,7 @@ impl Parser {
             #[cfg(feature = "line-number")]
             start_line_number: opts.start_line_number,
             leading_signs: opts.leading_signs,
-
+            is_in_table: opts.is_in_table,
             state: State::Initial,
         }
     }
@@ -65,6 +71,7 @@ impl Parser {
                                 minimal_count: self.leading_signs,
                             },
                         ),
+                        on_table_related: self.is_in_table,
                         ..Default::default()
                     },
                     ..Default::default()
@@ -107,7 +114,7 @@ impl Parser {
                         },
                     ),
                     sub_parsers::Output::ToPauseForNewLine => unreachable!(),
-                    sub_parsers::Output::Done => (
+                    sub_parsers::Output::Done(have_met) => (
                         sub_parsers::Output::ToYield(BlockEvent::ExitBlock(ExitBlock {
                             #[cfg(feature = "block-id")]
                             id,
@@ -116,11 +123,11 @@ impl Parser {
                             #[cfg(feature = "line-number")]
                             end_line_number: ctx.current_line_number,
                         })),
-                        State::Exiting,
+                        State::Exiting(have_met),
                     ),
                 }
             }
-            State::Exiting => (sub_parsers::Output::Done, State::Exited),
+            State::Exiting(have_met) => (sub_parsers::Output::Done(have_met), State::Exited),
             // 当解析器作为迭代器被耗尽而返回 `None` 时，解析器进入状态
             // [State::Exited]。此后，不应该再调用 `next` 方法，否则就会执行到
             // 这里。正确的做法是 `take_context` 取回 [Context]，并将解析器

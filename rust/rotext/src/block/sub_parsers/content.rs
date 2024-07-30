@@ -1,18 +1,22 @@
 use crate::{
     block::{
         context::Context,
-        global_mapper::{self},
+        global_mapper,
         sub_parsers::{self, utils::consume_peeked},
     },
     common::Range,
     events::{BlockEvent, NewLine},
 };
 
+use super::HaveMet;
+
 #[derive(Debug)]
 pub enum StepState {
     Initial,
     Normal(Range),
     IsAfterLineBreak(NewLine),
+
+    ToOutputDone(HaveMet),
 
     Invalid,
 }
@@ -37,7 +41,9 @@ enum InternalResult {
     /// `true`。
     ToPauseForNewLine,
     /// 打破 next 中的循环，并向外部表明本解析器的解析到此为止。不产出任何事件。
-    Done,
+    Done(HaveMet),
+
+    ToYieldAndDone(BlockEvent, HaveMet),
 }
 
 pub struct Parser {
@@ -72,6 +78,8 @@ pub struct EndConditions {
     pub before_new_line: bool,
     pub before_blank_line: bool,
     pub after_repetitive_characters: Option<RepetitiveCharactersCondition>,
+
+    pub on_table_related: bool,
 }
 
 pub struct RepetitiveCharactersCondition {
@@ -109,6 +117,10 @@ impl Parser {
                 StepState::IsAfterLineBreak(new_line) => {
                     self.process_in_is_after_line_feed_state(ctx, new_line.clone())
                 }
+                StepState::ToOutputDone(have_met) => {
+                    self.next_initial_step_state = StepState::Invalid;
+                    return sub_parsers::Output::Done(have_met.clone());
+                }
                 StepState::Invalid => unreachable!(),
             };
 
@@ -124,7 +136,11 @@ impl Parser {
                     self.is_at_first_line = false;
                     break sub_parsers::Output::ToPauseForNewLine;
                 }
-                InternalResult::Done => break sub_parsers::Output::Done,
+                InternalResult::Done(have_met) => break sub_parsers::Output::Done(have_met),
+                InternalResult::ToYieldAndDone(ev, have_met) => {
+                    self.next_initial_step_state = StepState::ToOutputDone(have_met);
+                    break sub_parsers::Output::ToYield(ev);
+                }
             }
         }
     }
@@ -132,7 +148,7 @@ impl Parser {
     #[inline(always)]
     fn process_in_initial_state(&mut self, ctx: &mut Context) -> InternalResult {
         let Some(peeked) = ctx.mapper.peek(0) else {
-            return InternalResult::Done;
+            return InternalResult::Done(HaveMet::None);
         };
         let peeked = peeked.clone();
 
@@ -141,30 +157,36 @@ impl Parser {
                 // NOTE: 初始状态也可能遇到 `NextChar`，比如在一个并非结束与换行的块
                 // 级元素（最简单的，如分割线）后面存在文本时。
 
-                let Some(condition) = self
+                if let Some(condition) = self
                     .end_conditions
                     .after_repetitive_characters
                     .as_ref()
                     .filter(|c| {
                         c.at_line_end_and_with_space_before && ctx.peek_next_char() == Some(b' ')
                     })
-                else {
+                {
+                    process_potential_closing_part_at_line_end_and_with_space_before(
+                        ctx,
+                        condition,
+                        Range::new(ctx.cursor.applying(&peeked).value().unwrap(), 0),
+                        peeked,
+                    )
+                } else if self.end_conditions.on_table_related {
+                    process_potential_table_related(
+                        ctx,
+                        Range::new(ctx.cursor.applying(&peeked).value().unwrap(), 0),
+                        peeked,
+                    )
+                } else {
                     consume_peeked!(ctx, &peeked);
                     let content = Range::new(ctx.cursor.value().unwrap(), 1);
-                    return InternalResult::ToContinueIn(StepState::Normal(content));
-                };
-
-                process_potential_closing_part_at_line_end_and_with_space_before(
-                    ctx,
-                    condition,
-                    Range::new(ctx.cursor.applying(&peeked).value().unwrap(), 0),
-                    peeked,
-                )
+                    InternalResult::ToContinueIn(StepState::Normal(content))
+                }
             }
             global_mapper::Mapped::NewLine(_) => {
                 // consume_peeked!(ctx, &peeked);
                 if self.end_conditions.before_new_line {
-                    InternalResult::Done
+                    InternalResult::Done(HaveMet::None)
                 } else {
                     InternalResult::ToPauseForNewLine
                 }
@@ -194,25 +216,27 @@ impl Parser {
                 InternalResult::ToYield(self.make_content_event(*state_content))
             }
             global_mapper::Mapped::NextChar => {
-                let Some(condition) = self
+                if let Some(condition) = self
                     .end_conditions
                     .after_repetitive_characters
                     .as_ref()
                     .filter(|c| {
                         c.at_line_end_and_with_space_before && ctx.peek_next_char() == Some(b' ')
                     })
-                else {
+                {
+                    process_potential_closing_part_at_line_end_and_with_space_before(
+                        ctx,
+                        condition,
+                        *state_content,
+                        peeked,
+                    )
+                } else if self.end_conditions.on_table_related {
+                    process_potential_table_related(ctx, *state_content, peeked)
+                } else {
                     consume_peeked!(ctx, &peeked);
                     state_content.increase_length(1);
-                    return InternalResult::ToContinue;
-                };
-
-                process_potential_closing_part_at_line_end_and_with_space_before(
-                    ctx,
-                    condition,
-                    *state_content,
-                    peeked,
-                )
+                    InternalResult::ToContinue
+                }
             }
         }
     }
@@ -228,41 +252,42 @@ impl Parser {
         }
 
         let Some(peeked) = ctx.mapper.peek(0) else {
-            return InternalResult::Done;
+            return InternalResult::Done(HaveMet::None);
         };
+        let peeked = peeked.clone();
 
         match peeked {
             global_mapper::Mapped::CharAt(_) | global_mapper::Mapped::NextChar => {
-                let index = ctx.cursor.applying(peeked).value().unwrap();
+                let index = ctx.cursor.applying(&peeked).value().unwrap();
 
-                let Some(condition) = self
+                if let Some(condition) = self
                     .end_conditions
                     .after_repetitive_characters
                     .as_ref()
                     .filter(|c| c.at_line_beginning && c.character == ctx.input[index])
-                else {
-                    if self.is_at_first_line {
-                        return InternalResult::ToContinueIn(StepState::Initial);
+                {
+                    consume_peeked!(ctx, &peeked);
+                    let mut potential_closing_part = Range::new(index, 1);
+
+                    let dropped = ctx.drop_from_mapper_while_char(condition.character);
+                    if 1 + dropped >= condition.minimal_count {
+                        InternalResult::Done(HaveMet::None)
                     } else {
-                        return InternalResult::ToYield(BlockEvent::NewLine(new_line));
+                        // XXX: 被 drop 的那些不会重新尝试解析，而是直接当成文本。
+                        potential_closing_part.set_length(1 + dropped);
+                        InternalResult::ToContinueIn(StepState::Normal(potential_closing_part))
                     }
-                };
-
-                consume_peeked!(ctx, peeked);
-                let mut potential_closing_part = Range::new(index, 1);
-
-                let dropped = ctx.drop_from_mapper_while_char(condition.character);
-                if 1 + dropped >= condition.minimal_count {
-                    InternalResult::Done
+                } else if self.end_conditions.on_table_related {
+                    process_potential_table_related(ctx, Range::new(index, 0), peeked)
+                } else if self.is_at_first_line {
+                    InternalResult::ToContinueIn(StepState::Initial)
                 } else {
-                    // XXX: 被 drop 的那些不会重新尝试解析，而是直接当成文本。
-                    potential_closing_part.set_length(1 + dropped);
-                    InternalResult::ToContinueIn(StepState::Normal(potential_closing_part))
+                    InternalResult::ToYield(BlockEvent::NewLine(new_line))
                 }
             }
             global_mapper::Mapped::NewLine(new_line) => {
                 if self.end_conditions.before_blank_line {
-                    InternalResult::Done
+                    InternalResult::Done(HaveMet::None)
                 } else {
                     InternalResult::ToYield(BlockEvent::NewLine(new_line.clone()))
                 }
@@ -298,10 +323,8 @@ fn process_potential_closing_part_at_line_end_and_with_space_before(
 ) -> InternalResult {
     let mut potential_closing_part_length = 0;
 
-    if condition.at_line_end_and_with_space_before {
-        consume_peeked!(ctx, &peeked);
-        potential_closing_part_length += 1;
-    }
+    consume_peeked!(ctx, &peeked);
+    potential_closing_part_length += 1;
 
     if ctx.peek_next_char() != Some(condition.character) {
         confirmed_content.increase_length(potential_closing_part_length);
@@ -331,5 +354,41 @@ fn process_potential_closing_part_at_line_end_and_with_space_before(
     } else {
         confirmed_content.increase_length(potential_closing_part_length);
         InternalResult::ToContinueIn(StepState::Normal(confirmed_content))
+    }
+}
+
+fn process_potential_table_related(
+    ctx: &mut Context,
+    mut confirmed_content: Range,
+    peeked: global_mapper::Mapped,
+) -> InternalResult {
+    let have_met = match ctx.peek_next_three_chars() {
+        [Some(b'|'), Some(b'}'), ..] => {
+            ctx.must_take_from_mapper_and_apply_to_cursor(2);
+            HaveMet::TableClosing
+        }
+        [Some(b'|'), Some(b'-'), ..] => {
+            ctx.must_take_from_mapper_and_apply_to_cursor(2);
+            HaveMet::TableRowIndicator
+        }
+        [Some(b'|'), Some(b'|'), ..] => {
+            ctx.must_take_from_mapper_and_apply_to_cursor(2);
+            HaveMet::DoublePipes
+        }
+        [Some(b'!'), Some(b'!'), ..] => {
+            ctx.must_take_from_mapper_and_apply_to_cursor(2);
+            HaveMet::TableHeaderCellIndicator
+        }
+        _ => {
+            consume_peeked!(ctx, &peeked);
+            confirmed_content.increase_length(1);
+            return InternalResult::ToContinueIn(StepState::Normal(confirmed_content));
+        }
+    };
+
+    if confirmed_content.length() > 0 {
+        InternalResult::ToYieldAndDone(BlockEvent::Unparsed(confirmed_content), have_met)
+    } else {
+        InternalResult::Done(have_met)
     }
 }

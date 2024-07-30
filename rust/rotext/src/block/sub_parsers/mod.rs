@@ -12,7 +12,17 @@ mod utils;
 pub enum Output {
     ToYield(BlockEvent),
     ToPauseForNewLine,
-    Done,
+    Done(HaveMet),
+}
+
+#[derive(Debug, Clone)]
+pub enum HaveMet {
+    None,
+
+    TableClosing,
+    TableRowIndicator,
+    TableHeaderCellIndicator,
+    DoublePipes,
 }
 
 pub trait SubParser<'a> {

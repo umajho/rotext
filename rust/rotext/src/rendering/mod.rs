@@ -7,6 +7,17 @@ use crate::events::VerbatimEscaping;
 const TABLE_TR_TH: &[u8] = b"table tr th";
 const TABLE_TR_TD: &[u8] = b"table tr td";
 
+macro_rules! write_data_block_id_attribute_if_applicable {
+    ($self:ident, $data:ident) => {
+        #[cfg(feature = "block-id")]
+        {
+            if $self.with_block_id {
+                $self.write_data_block_id_attribute($data.id.value());
+            }
+        }
+    };
+}
+
 pub struct NewHtmlRendererOptoins {
     pub initial_output_string_capacity: usize,
 
@@ -82,20 +93,9 @@ impl<'a> HtmlRenderer<'a> {
                 }
                 #[allow(unused_variables)]
                 BlendEvent::ThematicBreak(data) => {
-                    #[cfg(feature = "block-id")]
-                    {
-                        if self.with_block_id {
-                            self.result.extend(br#"<hr data-block-id=""#);
-                            self.write_usize(data.id.value());
-                            self.result.extend(br#"">"#);
-                        } else {
-                            self.result.extend(b"<hr>")
-                        }
-                    }
-                    #[cfg(not(feature = "block-id"))]
-                    {
-                        self.result.extend(b"<hr>")
-                    }
+                    self.result.extend(b"<hr");
+                    write_data_block_id_attribute_if_applicable!(self, data);
+                    self.result.push(b'>');
                 }
 
                 BlendEvent::ExitBlock(_) => {
@@ -138,20 +138,19 @@ impl<'a> HtmlRenderer<'a> {
                             _ => unreachable!(),
                         }
                     }
+                    self.result.push(b'"');
 
-                    #[cfg(feature = "block-id")]
-                    {
-                        if self.with_block_id {
-                            self.result.extend(br#"" data-block-id=""#);
-                            self.write_usize(data.id.value());
-                        }
-                    }
+                    write_data_block_id_attribute_if_applicable!(self, data);
 
-                    self.result.extend(br#"">"#);
+                    self.result.push(b'>');
                     self.stack.push(b"x-code-block");
                 }
-                BlendEvent::EnterTable(_) => {
-                    self.result.extend(b"<table>");
+                #[allow(unused_variables)]
+                BlendEvent::EnterTable(data) => {
+                    self.result.push(b'<');
+                    self.result.extend(b"table");
+                    write_data_block_id_attribute_if_applicable!(self, data);
+                    self.result.push(b'>');
                     self.should_enter_table_row = true;
                 }
 
@@ -184,23 +183,8 @@ impl<'a> HtmlRenderer<'a> {
     ) {
         self.result.push(b'<');
         self.result.extend(tag_name);
-
-        {
-            #[cfg(feature = "block-id")]
-            {
-                if self.with_block_id {
-                    self.result.extend(br#" data-block-id=""#);
-                    self.write_usize(data.id.value());
-                    self.result.extend(br#"">"#);
-                } else {
-                    self.result.push(b'>');
-                }
-            }
-            #[cfg(not(feature = "block-id"))]
-            {
-                self.result.push(b'>');
-            }
-        }
+        write_data_block_id_attribute_if_applicable!(self, data);
+        self.result.push(b'>');
 
         self.stack.push(tag_name);
     }
@@ -231,6 +215,13 @@ impl<'a> HtmlRenderer<'a> {
                 char => self.result.push(char),
             }
         }
+    }
+
+    #[cfg(feature = "block-id")]
+    fn write_data_block_id_attribute(&mut self, id: usize) {
+        self.result.extend(br#" data-block-id=""#);
+        self.write_usize(id);
+        self.result.push(b'"');
     }
 
     #[cfg(feature = "block-id")]

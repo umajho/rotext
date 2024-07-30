@@ -44,6 +44,8 @@ pub struct Nesting {
     processed_item_likes: usize,
 
     exiting: Option<ExitingUntil>,
+
+    tables_in_stack: usize,
 }
 
 pub struct StackEntry {
@@ -74,6 +76,7 @@ impl StackEntry {
 enum BlockInStack {
     BlockQuote,
     ItemLike { typ: ItemLikeType },
+    Table,
     Container,
 }
 impl BlockInStack {
@@ -162,7 +165,9 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
 
             is_cleaning_up: false,
             state: State::InRootParser(root_parser::Parser::new(root_parser::NewParserOptions {
-                new_line: Some(new_line),
+                initial_state: root_parser::InitialState::Start {
+                    new_line: Some(new_line),
+                },
                 paused_sub_parser: None,
             })),
             stack: TStack::new(),
@@ -170,6 +175,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                 item_likes_in_stack: 0,
                 processed_item_likes: 0,
                 exiting: None,
+                tables_in_stack: 0,
             },
         }
     }
@@ -215,17 +221,19 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                         sub_parsers::Output::ToPauseForNewLine => {
                             self.state = State::InRootParser(root_parser::Parser::new(
                                 root_parser::NewParserOptions {
-                                    new_line: None,
+                                    initial_state: root_parser::InitialState::Start {
+                                        new_line: None,
+                                    },
                                     paused_sub_parser: Some(unsafe {
                                         sub_parser.take().unwrap_unchecked()
                                     }),
                                 },
                             ));
                         }
-                        sub_parsers::Output::Done => {
+                        sub_parsers::Output::Done(have_met) => {
                             self.state = State::InRootParser(root_parser::Parser::new(
                                 root_parser::NewParserOptions {
-                                    new_line: None,
+                                    initial_state: have_met.into(),
                                     paused_sub_parser: None,
                                 },
                             ));
