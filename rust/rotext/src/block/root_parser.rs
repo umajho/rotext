@@ -26,16 +26,18 @@ enum State {
     Start { new_line: Option<NewLine> },
     ExpectingContainer,
     ExpectingLeaf,
-    ExitingDiscontinuedItemLikes(ExitingDiscontinuedItemLikesState),
+    ExitingUntil(ExitingUntil),
 
     Invalid,
 }
 #[derive(Debug)]
-pub struct ExitingDiscontinuedItemLikesState {
-    /// 决定是否一同 exit 最后被 exit 掉的那个 item-like 的容器。为 `true` 代表决定要。
-    should_keep_container: bool,
-    /// 若存在，则在完成 exit 后 enter 指定 item-like。
-    and_then_enter_item_like: Option<ItemLikeType>,
+pub enum ExitingUntil {
+    ExitedItemLike {
+        /// 决定是否一同 exit 最后被 exit 掉的那个 item-like 的容器。为 `true` 代表决定要。
+        should_also_exit_container: bool,
+        /// 若存在，则在完成 exit 后 enter 指定 item-like。
+        and_then_enter_item_like: Option<ItemLikeType>,
+    },
 }
 
 #[derive(Default)]
@@ -98,8 +100,9 @@ impl<'a> Parser<'a> {
                     self.process_in_expecting_container_state(ctx, stack, nesting)?
                 }
                 State::ExpectingLeaf => self.process_in_expecting_leaf_state(ctx),
-                State::ExitingDiscontinuedItemLikes(state) => self
-                    .process_in_exiting_discontinued_item_likes_state(ctx, stack, nesting, state),
+                State::ExitingUntil(state) => {
+                    self.process_in_exiting_until_state(ctx, stack, nesting, state)
+                }
                 State::Invalid => unreachable!(),
             };
 
@@ -127,9 +130,9 @@ impl<'a> Parser<'a> {
         nesting: &mut Nesting,
         new_line: Option<NewLine>,
     ) -> InternalOutput<'a> {
-        if let Some(state) = nesting.is_exiting_discontinued_item_likes.take() {
+        if let Some(state) = nesting.exiting.take() {
             self.is_new_line = true;
-            return InternalOutput::ToContinue(State::ExitingDiscontinuedItemLikes(state));
+            return InternalOutput::ToContinue(State::ExitingUntil(state));
         }
 
         #[allow(unused_variables)]
@@ -203,12 +206,10 @@ impl<'a> Parser<'a> {
                 if is_expecting_deeper {
                     return None;
                 } else {
-                    InternalOutput::ToContinue(State::ExitingDiscontinuedItemLikes(
-                        ExitingDiscontinuedItemLikesState {
-                            should_keep_container: false,
-                            and_then_enter_item_like: None,
-                        },
-                    ))
+                    InternalOutput::ToContinue(State::ExitingUntil(ExitingUntil::ExitedItemLike {
+                        should_also_exit_container: true,
+                        and_then_enter_item_like: None,
+                    }))
                 }
             }
             TryScanItemLikeResult::BlockQuoteLine => {
@@ -253,15 +254,13 @@ impl<'a> Parser<'a> {
                         stack.as_slice(),
                         nesting.processed_item_likes,
                     );
-                    InternalOutput::ToContinue(State::ExitingDiscontinuedItemLikes(
-                        ExitingDiscontinuedItemLikesState {
-                            should_keep_container: are_item_likes_in_same_group(
-                                item_like_type,
-                                last_item_like_type,
-                            ),
-                            and_then_enter_item_like: Some(item_like_type),
-                        },
-                    ))
+                    InternalOutput::ToContinue(State::ExitingUntil(ExitingUntil::ExitedItemLike {
+                        should_also_exit_container: !are_item_likes_in_same_group(
+                            item_like_type,
+                            last_item_like_type,
+                        ),
+                        and_then_enter_item_like: Some(item_like_type),
+                    }))
                 }
             }
         };
@@ -322,63 +321,69 @@ impl<'a> Parser<'a> {
     }
 
     #[inline(always)]
-    fn process_in_exiting_discontinued_item_likes_state<TStack: Stack<StackEntry>>(
+    fn process_in_exiting_until_state<TStack: Stack<StackEntry>>(
         &mut self,
         ctx: &mut Context<'a>,
         stack: &mut TStack,
         nesting: &mut Nesting,
-        state: ExitingDiscontinuedItemLikesState,
+        state: ExitingUntil,
     ) -> InternalOutput<'a> {
         if nesting.processed_item_likes == nesting.item_likes_in_stack {
             unreachable!();
         }
 
         if let Some(mut sub_parser) = self.paused_sub_parser.take() {
-            nesting.is_exiting_discontinued_item_likes = Some(state);
+            nesting.exiting = Some(state);
             sub_parser.resume_from_pause_for_new_line_and_exit();
             return InternalOutput::ToSwitchToSubParser(sub_parser);
         }
 
         let top = stack.pop().unwrap();
-        if matches!(
-            top.block,
-            BlockInStack::ItemLike { .. } | BlockInStack::BlockQuote { .. }
-        ) {
-            nesting.item_likes_in_stack -= 1;
-            if nesting.processed_item_likes == nesting.item_likes_in_stack {
-                let is_item_like = top.block.is_item_like();
-                self.to_yield
-                    .push_back(BlockEvent::ExitBlock(top.into_exit_block(
-                        #[cfg(feature = "line-number")]
-                        ctx.current_line_number,
-                    )));
-                if is_item_like && !state.should_keep_container {
-                    let top = stack.pop().unwrap();
-                    self.to_yield
-                        .push_back(BlockEvent::ExitBlock(top.into_exit_block(
-                            #[cfg(feature = "line-number")]
-                            ctx.current_line_number,
-                        )));
+        match top.block {
+            BlockInStack::ItemLike { .. } | BlockInStack::BlockQuote { .. } => {
+                nesting.item_likes_in_stack -= 1;
+                if nesting.processed_item_likes == nesting.item_likes_in_stack {
+                    let is_item_like = top.block.is_item_like();
+                    if let ExitingUntil::ExitedItemLike {
+                        should_also_exit_container,
+                        and_then_enter_item_like,
+                    } = state
+                    {
+                        self.to_yield
+                            .push_back(BlockEvent::ExitBlock(top.into_exit_block(
+                                #[cfg(feature = "line-number")]
+                                ctx.current_line_number,
+                            )));
+                        if is_item_like && should_also_exit_container {
+                            let top = stack.pop().unwrap();
+                            self.to_yield
+                                .push_back(BlockEvent::ExitBlock(top.into_exit_block(
+                                    #[cfg(feature = "line-number")]
+                                    ctx.current_line_number,
+                                )));
+                        }
+                        if let Some(item_like_type_to_enter) = and_then_enter_item_like {
+                            self.enter_item_like(
+                                ctx,
+                                stack,
+                                nesting,
+                                item_like_type_to_enter,
+                                should_also_exit_container,
+                            )
+                            .unwrap();
+                        }
+                        return InternalOutput::ToContinue(State::ExpectingContainer);
+                    }
                 }
-                if let Some(item_like_type_to_enter) = state.and_then_enter_item_like {
-                    self.enter_item_like(
-                        ctx,
-                        stack,
-                        nesting,
-                        item_like_type_to_enter,
-                        !state.should_keep_container,
-                    )
-                    .unwrap();
-                }
-                return InternalOutput::ToContinue(State::ExpectingContainer);
             }
+            BlockInStack::Container => {}
         }
         self.to_yield
             .push_back(BlockEvent::ExitBlock(top.into_exit_block(
                 #[cfg(feature = "line-number")]
                 ctx.current_line_number,
             )));
-        InternalOutput::ToContinue(State::ExitingDiscontinuedItemLikes(state))
+        InternalOutput::ToContinue(State::ExitingUntil(state))
     }
 
     /// `n` 基于 0。

@@ -7,7 +7,7 @@ mod utils;
 mod tests;
 
 use context::Context;
-use root_parser::ExitingDiscontinuedItemLikesState;
+use root_parser::ExitingUntil;
 
 #[cfg(feature = "block-id")]
 use crate::types::BlockID;
@@ -43,7 +43,7 @@ pub struct Nesting {
     /// 当前行目前已处理了多少 item-likes。（每次换行后重置。）
     processed_item_likes: usize,
 
-    is_exiting_discontinued_item_likes: Option<ExitingDiscontinuedItemLikesState>,
+    exiting: Option<ExitingUntil>,
 }
 
 pub struct StackEntry {
@@ -169,7 +169,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
             nesting: Nesting {
                 item_likes_in_stack: 0,
                 processed_item_likes: 0,
-                is_exiting_discontinued_item_likes: None,
+                exiting: None,
             },
         }
     }
