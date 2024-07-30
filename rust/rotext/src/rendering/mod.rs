@@ -1,3 +1,5 @@
+mod tests;
+
 use crate::events::BlendEvent;
 use crate::events::BlockWithID;
 use crate::events::VerbatimEscaping;
