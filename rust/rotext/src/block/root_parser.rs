@@ -59,14 +59,18 @@ enum InternalOutput<'a> {
     Done,
 }
 
+pub struct NewParserOptions<'a> {
+    pub new_line: Option<NewLine>,
+    pub paused_sub_parser: Option<Box<dyn sub_parsers::SubParser<'a> + 'a>>,
+}
+
 impl<'a> Parser<'a> {
-    pub fn new(
-        new_line: Option<NewLine>,
-        paused_sub_parser: Option<Box<dyn sub_parsers::SubParser<'a> + 'a>>,
-    ) -> Self {
+    pub fn new(opts: NewParserOptions<'a>) -> Self {
         Self {
-            paused_sub_parser,
-            state: State::Start { new_line },
+            paused_sub_parser: opts.paused_sub_parser,
+            state: State::Start {
+                new_line: opts.new_line,
+            },
             // 这里只是随便初始化一下，实际在 [State::Start] 中决定。
             is_new_line: false,
             to_yield: ArrayQueue::new(),

@@ -161,7 +161,10 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
             context,
 
             is_cleaning_up: false,
-            state: State::InRootParser(root_parser::Parser::new(Some(new_line), None)),
+            state: State::InRootParser(root_parser::Parser::new(root_parser::NewParserOptions {
+                new_line: Some(new_line),
+                paused_sub_parser: None,
+            })),
             stack: TStack::new(),
             nesting: Nesting {
                 item_likes_in_stack: 0,
@@ -211,12 +214,21 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                         sub_parsers::Output::ToYield(ev) => break Some(Ok(ev)),
                         sub_parsers::Output::ToPauseForNewLine => {
                             self.state = State::InRootParser(root_parser::Parser::new(
-                                None,
-                                Some(unsafe { sub_parser.take().unwrap_unchecked() }),
+                                root_parser::NewParserOptions {
+                                    new_line: None,
+                                    paused_sub_parser: Some(unsafe {
+                                        sub_parser.take().unwrap_unchecked()
+                                    }),
+                                },
                             ));
                         }
                         sub_parsers::Output::Done => {
-                            self.state = State::InRootParser(root_parser::Parser::new(None, None));
+                            self.state = State::InRootParser(root_parser::Parser::new(
+                                root_parser::NewParserOptions {
+                                    new_line: None,
+                                    paused_sub_parser: None,
+                                },
+                            ));
                         }
                     }
                 }
