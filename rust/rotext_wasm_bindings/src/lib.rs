@@ -1,4 +1,11 @@
+mod data_exchange;
+
 extern crate alloc;
+
+use data_exchange::block_id_to_lines_map::create_block_id_to_lines_map;
+
+#[cfg(debug_assertions)]
+use data_exchange::events_in_debug_format::render_events_in_debug_format;
 
 use wasm_bindgen::prelude::*;
 
@@ -100,67 +107,4 @@ pub fn parse_and_render(input: &[u8]) -> ParseAndRenderResult {
         ok: Some(output),
         error: None,
     }
-}
-
-fn create_block_id_to_lines_map(all_events: &[rotext::BlendEvent]) -> String {
-    let mut result = String::new();
-
-    for ev in all_events.iter() {
-        match ev {
-            rotext::BlendEvent::ThematicBreak(data) => {
-                write_id_and_line_range(
-                    &mut result,
-                    data.id.value(),
-                    data.line_number,
-                    data.line_number,
-                );
-            }
-            rotext::BlendEvent::ExitBlock(data) => {
-                write_id_and_line_range(
-                    &mut result,
-                    data.id.value(),
-                    data.start_line_number,
-                    data.end_line_number,
-                );
-            }
-            _ => continue,
-        }
-
-        result.push(';');
-    }
-
-    if !result.is_empty() {
-        result.pop().unwrap();
-    }
-
-    result
-}
-
-fn write_id_and_line_range(target: &mut String, id: usize, range_start: usize, range_end: usize) {
-    write_usize(target, id);
-    target.push(':');
-    write_usize(target, range_start);
-    target.push('-');
-    write_usize(target, range_end);
-}
-
-fn write_usize(target: &mut String, n: usize) {
-    let mut buffer = itoa::Buffer::new();
-    target.push_str(buffer.format(n));
-}
-
-#[cfg(debug_assertions)]
-fn render_events_in_debug_format(input: &[u8], all_events: &Vec<rotext::BlendEvent>) -> String {
-    let mut output = "".to_string();
-
-    for event in all_events {
-        // output.push_str(&format!("{:?}\n", event));
-        output.push_str(&format!(
-            "{:?} {:?}\n",
-            event,
-            rotext::Event::from(event.clone()).content(input)
-        ));
-    }
-
-    output
 }
