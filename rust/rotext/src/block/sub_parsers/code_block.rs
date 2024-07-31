@@ -134,7 +134,7 @@ impl Parser {
                     sub_parsers::Output::Done(have_met) => {
                         debug_assert!(matches!(have_met, HaveMet::None));
                         let opts = sub_parsers::content::Options {
-                            initial_step_state: sub_parsers::content::StepState::Invalid,
+                            initial_state: sub_parsers::content::State::Invalid,
                             mode: sub_parsers::content::Mode::Verbatim,
                             end_conditions: sub_parsers::content::EndConditions {
                                 after_repetitive_characters: Some(

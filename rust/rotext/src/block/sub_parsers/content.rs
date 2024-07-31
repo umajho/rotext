@@ -11,18 +11,18 @@ use crate::{
 use super::HaveMet;
 
 #[derive(Debug)]
-pub enum StepState {
-    Initial,
-    Normal(Range),
-    IsAfterLineBreak(NewLine),
+pub enum State {
+    ExpectingNewContent,
+    ExpectingContentNextChar(Range),
+    ToProcessNewLine(NewLine),
 
     ToOutputDone(HaveMet),
 
     Invalid,
 }
-impl Default for StepState {
+impl Default for State {
     fn default() -> Self {
-        Self::Initial
+        Self::ExpectingNewContent
     }
 }
 
@@ -31,7 +31,7 @@ enum InternalResult {
     /// 继续 next 中的循环。
     ToContinue,
     /// 改变 next 内部的状态，并继续循环。
-    ToContinueIn(StepState),
+    ToContinueIn(State),
 
     /// 打破 next 中的循环，产出 [BlockEvent]。
     ToYield(BlockEvent),
@@ -50,13 +50,13 @@ pub struct Parser {
     mode: Mode,
     end_conditions: EndConditions,
 
-    next_initial_step_state: StepState,
+    state: State,
     is_at_first_line: bool,
 }
 
 #[derive(Default)]
 pub struct Options {
-    pub initial_step_state: StepState,
+    pub initial_state: State,
     pub mode: Mode,
     pub end_conditions: EndConditions,
 }
@@ -99,29 +99,31 @@ impl Parser {
         Self {
             mode: options.mode,
             end_conditions: options.end_conditions,
-            next_initial_step_state: options.initial_step_state,
+            state: options.initial_state,
             is_at_first_line: true,
         }
     }
 
     pub fn next(&mut self, ctx: &mut Context) -> sub_parsers::Output {
-        let mut state = std::mem::replace(&mut self.next_initial_step_state, StepState::Initial);
+        let mut state = std::mem::replace(&mut self.state, State::ExpectingNewContent);
 
         loop {
             // log::debug!("CONTENT step_state={:?}", state);
 
             let internal_result = match &mut state {
-                StepState::Initial => self.process_in_initial_state(ctx),
+                State::ExpectingNewContent => self.process_in_expecting_new_content_state(ctx),
 
-                StepState::Normal(content) => self.process_in_normal_state(ctx, content),
-                StepState::IsAfterLineBreak(new_line) => {
-                    self.process_in_is_after_line_feed_state(ctx, new_line.clone())
+                State::ExpectingContentNextChar(content) => {
+                    self.process_in_expecting_content_next_char_state(ctx, content)
                 }
-                StepState::ToOutputDone(have_met) => {
-                    self.next_initial_step_state = StepState::Invalid;
+                State::ToProcessNewLine(new_line) => {
+                    self.process_in_to_process_new_line_state(ctx, new_line.clone())
+                }
+                State::ToOutputDone(have_met) => {
+                    self.state = State::Invalid;
                     return sub_parsers::Output::Done(*have_met);
                 }
-                StepState::Invalid => unreachable!(),
+                State::Invalid => unreachable!(),
             };
 
             // log::debug!("CONTENT internal_result={:?}", internal_result);
@@ -138,7 +140,7 @@ impl Parser {
                 }
                 InternalResult::Done(have_met) => break sub_parsers::Output::Done(have_met),
                 InternalResult::ToYieldAndDone(ev, have_met) => {
-                    self.next_initial_step_state = StepState::ToOutputDone(have_met);
+                    self.state = State::ToOutputDone(have_met);
                     break sub_parsers::Output::ToYield(ev);
                 }
             }
@@ -146,7 +148,7 @@ impl Parser {
     }
 
     #[inline(always)]
-    fn process_in_initial_state(&mut self, ctx: &mut Context) -> InternalResult {
+    fn process_in_expecting_new_content_state(&mut self, ctx: &mut Context) -> InternalResult {
         let Some(peeked) = ctx.mapper.peek(0) else {
             return InternalResult::Done(HaveMet::None);
         };
@@ -180,7 +182,7 @@ impl Parser {
                 } else {
                     consume_peeked!(ctx, &peeked);
                     let content = Range::new(ctx.cursor.value().unwrap(), 1);
-                    InternalResult::ToContinueIn(StepState::Normal(content))
+                    InternalResult::ToContinueIn(State::ExpectingContentNextChar(content))
                 }
             }
             global_mapper::Mapped::NewLine(_) => {
@@ -199,7 +201,7 @@ impl Parser {
     }
 
     #[inline(always)]
-    fn process_in_normal_state(
+    fn process_in_expecting_content_next_char_state(
         &mut self,
         ctx: &mut Context,
         state_content: &mut Range,
@@ -242,7 +244,7 @@ impl Parser {
     }
 
     #[inline(always)]
-    fn process_in_is_after_line_feed_state(
+    fn process_in_to_process_new_line_state(
         &mut self,
         ctx: &mut Context,
         new_line: NewLine,
@@ -275,12 +277,14 @@ impl Parser {
                     } else {
                         // XXX: 被 drop 的那些不会重新尝试解析，而是直接当成文本。
                         potential_closing_part.set_length(1 + dropped);
-                        InternalResult::ToContinueIn(StepState::Normal(potential_closing_part))
+                        InternalResult::ToContinueIn(State::ExpectingContentNextChar(
+                            potential_closing_part,
+                        ))
                     }
                 } else if self.end_conditions.on_table_related {
                     process_potential_table_related(ctx, Range::new(index, 0), peeked)
                 } else if self.is_at_first_line {
-                    InternalResult::ToContinueIn(StepState::Initial)
+                    InternalResult::ToContinueIn(State::ExpectingNewContent)
                 } else {
                     InternalResult::ToYield(BlockEvent::NewLine(new_line))
                 }
@@ -294,7 +298,7 @@ impl Parser {
             }
             global_mapper::Mapped::VerbatimEscaping(_) => {
                 if self.is_at_first_line {
-                    InternalResult::ToContinueIn(StepState::Initial)
+                    InternalResult::ToContinueIn(State::ExpectingNewContent)
                 } else {
                     InternalResult::ToYield(BlockEvent::NewLine(new_line))
                 }
@@ -303,7 +307,7 @@ impl Parser {
     }
 
     pub fn resume_from_pause_for_new_line_and_continue(&mut self, new_line: NewLine) {
-        self.next_initial_step_state = StepState::IsAfterLineBreak(new_line);
+        self.state = State::ToProcessNewLine(new_line);
     }
 
     #[inline(always)]
@@ -328,7 +332,7 @@ fn process_potential_closing_part_at_line_end_and_with_space_before(
 
     if ctx.peek_next_char() != Some(condition.character) {
         confirmed_content.increase_length(potential_closing_part_length);
-        return InternalResult::ToContinueIn(StepState::Normal(confirmed_content));
+        return InternalResult::ToContinueIn(State::ExpectingContentNextChar(confirmed_content));
     }
     ctx.must_take_from_mapper_and_apply_to_cursor(1);
     potential_closing_part_length += 1;
@@ -341,7 +345,9 @@ fn process_potential_closing_part_at_line_end_and_with_space_before(
         let peeked = ctx.mapper.peek(0);
         if peeked.is_some_and(|p| !p.is_new_line()) {
             confirmed_content.increase_length(potential_closing_part_length);
-            return InternalResult::ToContinueIn(StepState::Normal(confirmed_content));
+            return InternalResult::ToContinueIn(State::ExpectingContentNextChar(
+                confirmed_content,
+            ));
         };
 
         if confirmed_content.length() == 0 {
@@ -353,7 +359,7 @@ fn process_potential_closing_part_at_line_end_and_with_space_before(
         }
     } else {
         confirmed_content.increase_length(potential_closing_part_length);
-        InternalResult::ToContinueIn(StepState::Normal(confirmed_content))
+        InternalResult::ToContinueIn(State::ExpectingContentNextChar(confirmed_content))
     }
 }
 
@@ -382,7 +388,9 @@ fn process_potential_table_related(
         _ => {
             consume_peeked!(ctx, &peeked);
             confirmed_content.increase_length(1);
-            return InternalResult::ToContinueIn(StepState::Normal(confirmed_content));
+            return InternalResult::ToContinueIn(State::ExpectingContentNextChar(
+                confirmed_content,
+            ));
         }
     };
 
