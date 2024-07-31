@@ -2,7 +2,7 @@
 
 mod support;
 
-use support::case;
+use support::{case, run_cases};
 
 #[allow(unused_imports)]
 use crate::test_support::{self, report_failed_cases, FaildCase, GroupedCases};
@@ -307,19 +307,55 @@ fn it_works_in_block_phase() {
         }
     ];
 
-    let failed_cases: Vec<_> = table
-        .iter()
-        .flat_map(|row| -> Vec<FaildCase> { row.collect_failed() })
-        .collect();
-
-    if failed_cases.is_empty() {
-        return;
-    }
-    let faild_case_count = failed_cases.len();
-
-    report_failed_cases(failed_cases);
-
-    panic!("{} cases failed!", faild_case_count);
+    run_cases(table);
 }
 
-// TODO: test for feature "block-id".
+#[cfg(all(feature = "block-id", feature = "line-number"))]
+#[test]
+fn it_works_with_block_id() {
+    let table: Vec<GroupedCases<_>> = vec![GroupedCases {
+        group: "基础",
+        cases: vec![
+            case!(
+                (id),
+                "",
+                [(ThematicBreak(.., id = 1, ln = 1)),],
+                r#"<hr data-block-id="1">"#,
+            ),
+            case!(
+                (id),
+                "foo",
+                [
+                    (EnterParagraph(.., id = 1)),
+                    (Text(0..3)),
+                    (ExitBlock(.., id = 1, lns = 1..1)),
+                ],
+                r#"<p data-block-id="1">foo</p>"#,
+            ),
+            case!(
+                (id),
+                "foo:0/bar:6",
+                [
+                    (EnterTable(.., id = 1)),
+                    (IndicateTableHeaderCell()),
+                    (EnterParagraph(.., id = 2)),
+                    (Text(0..3)),
+                    (ExitBlock(.., id = 2, lns = 1..1)),
+                    (IndicateTableRow()),
+                    (EnterParagraph(.., id = 3)),
+                    (Text(6..9)),
+                    (ExitBlock(.., id = 3, lns = 1..1)),
+                    (ExitBlock(.., id = 1, lns = 1..1)),
+                ],
+                concat!(
+                    r#"<table data-block-id="1">"#,
+                    r#"<tr><th><p data-block-id="2">foo</p></th></tr>"#,
+                    r#"<tr><td><p data-block-id="3">bar</p></td></tr>"#,
+                    "</table>"
+                ),
+            ),
+        ],
+    }];
+
+    run_cases(table);
+}
