@@ -1,5 +1,5 @@
 #[cfg(feature = "block-id")]
-use crate::types::BlockID;
+use crate::types::BlockId;
 use crate::{
     block::{
         context::Context,
@@ -15,19 +15,19 @@ enum State {
     Initial,
     InfoStringContent {
         #[cfg(feature = "block-id")]
-        code_block_id: BlockID,
+        code_block_id: BlockId,
 
         info_string_content_parser: Box<sub_parsers::content::Parser>,
     },
     BeforeCodeContent {
         #[cfg(feature = "block-id")]
-        code_block_id: BlockID,
+        code_block_id: BlockId,
 
         code_content_parser: Box<sub_parsers::content::Parser>,
     },
     CodeContent {
         #[cfg(feature = "block-id")]
-        code_block_id: BlockID,
+        code_block_id: BlockId,
 
         code_content_parser: Box<sub_parsers::content::Parser>,
     },
@@ -36,7 +36,7 @@ enum State {
 
     Paused {
         #[cfg(feature = "block-id")]
-        code_block_id: BlockID,
+        code_block_id: BlockId,
 
         code_content_parser: Box<sub_parsers::content::Parser>,
     },
@@ -45,7 +45,7 @@ enum State {
     /// 其他情况下会直接进入 [State::Exiting]。
     ToExit {
         #[cfg(feature = "block-id")]
-        code_block_id: BlockID,
+        code_block_id: BlockId,
     },
 
     Invalid,

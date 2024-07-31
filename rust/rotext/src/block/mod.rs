@@ -10,7 +10,7 @@ use context::Context;
 use root_parser::ExitingUntil;
 
 #[cfg(feature = "block-id")]
-use crate::types::BlockID;
+use crate::types::BlockId;
 use crate::{
     events::{BlockEvent, BlockWithID, ExitBlock, NewLine},
     global,
@@ -52,7 +52,7 @@ pub struct StackEntry {
     block: BlockInStack,
 
     #[cfg(feature = "block-id")]
-    block_id: BlockID,
+    block_id: BlockId,
 
     #[cfg(feature = "line-number")]
     start_line_number: usize,
@@ -100,7 +100,7 @@ enum ItemLikeType {
 impl ItemLikeType {
     pub fn into_enter_container_block_event(
         self,
-        #[cfg(feature = "block-id")] id: BlockID,
+        #[cfg(feature = "block-id")] id: BlockId,
     ) -> BlockEvent {
         match self {
             ItemLikeType::OrderedListItem => BlockEvent::EnterOrderedList(BlockWithID {
@@ -120,7 +120,7 @@ impl ItemLikeType {
         }
     }
 
-    pub fn into_enter_block_event(self, #[cfg(feature = "block-id")] id: BlockID) -> BlockEvent {
+    pub fn into_enter_block_event(self, #[cfg(feature = "block-id")] id: BlockId) -> BlockEvent {
         match self {
             ItemLikeType::OrderedListItem | ItemLikeType::UnorderedListItem => {
                 BlockEvent::EnterListItem(BlockWithID {

@@ -1,5 +1,5 @@
 #[cfg(feature = "block-id")]
-use crate::types::BlockID;
+use crate::types::BlockId;
 use crate::{
     block::{context::Context, sub_parsers, utils::match_pop_block_id},
     common::Range,
@@ -22,7 +22,7 @@ enum State {
     /// 其他情况下会直接进入 [State::Exiting]。
     ToExit {
         #[cfg(feature = "block-id")]
-        id: BlockID,
+        id: BlockId,
     },
 
     Invalid,
@@ -32,7 +32,7 @@ struct StateInitial {
 }
 struct StateContent {
     #[cfg(feature = "block-id")]
-    id: BlockID,
+    id: BlockId,
     content_parser: Box<sub_parsers::content::Parser>,
 }
 

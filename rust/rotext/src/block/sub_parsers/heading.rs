@@ -1,5 +1,5 @@
 #[cfg(feature = "block-id")]
-use crate::types::BlockID;
+use crate::types::BlockId;
 use crate::{
     block::{context::Context, sub_parsers, utils::match_pop_block_id},
     events::{BlockEvent, BlockWithID, ExitBlock, NewLine},
@@ -13,7 +13,7 @@ enum State {
     Initial,
     Content {
         #[cfg(feature = "block-id")]
-        id: BlockID,
+        id: BlockId,
 
         content_parser: Box<sub_parsers::content::Parser>,
     },
@@ -138,7 +138,7 @@ impl Parser {
         ret
     }
 
-    fn make_enter_heading_event(&self, #[cfg(feature = "block-id")] id: BlockID) -> BlockEvent {
+    fn make_enter_heading_event(&self, #[cfg(feature = "block-id")] id: BlockId) -> BlockEvent {
         let data = BlockWithID {
             #[cfg(feature = "block-id")]
             id,

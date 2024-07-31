@@ -15,9 +15,9 @@ impl Error {
 
 #[cfg(feature = "block-id")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct BlockID(usize);
+pub struct BlockId(usize);
 #[cfg(feature = "block-id")]
-impl BlockID {
+impl BlockId {
     pub fn new(id: usize) -> Self {
         Self(id)
     }
