@@ -15,7 +15,7 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
                     vec![
                         (EventType::EnterParagraph, None),
                         (EventType::Unparsed, Some("a")),
-                        (EventType::ExitBlock, None)
+                        (EventType::ExitBlock, None),
                     ]
                 ),
                 case!(
@@ -23,7 +23,7 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
                     vec![
                         (EventType::EnterParagraph, None),
                         (EventType::Unparsed, Some("a ")),
-                        (EventType::ExitBlock, None)
+                        (EventType::ExitBlock, None),
                     ]
                 ),
                 case!(
@@ -40,7 +40,7 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
                         (EventType::Unparsed, Some("a")),
                         (EventType::NewLine, None),
                         (EventType::Unparsed, Some("b")),
-                        (EventType::ExitBlock, None)
+                        (EventType::ExitBlock, None),
                     ]
                 ),
                 case!(

@@ -18,7 +18,7 @@ pub fn groups_description_list() -> Vec<GroupedCases> {
                     (EventType::Unparsed, Some("term")),
                     (EventType::ExitBlock, None),
                     (EventType::ExitBlock, None),
-                    (EventType::ExitBlock, None)
+                    (EventType::ExitBlock, None),
                 ]
             ),
             case!(
@@ -30,7 +30,7 @@ pub fn groups_description_list() -> Vec<GroupedCases> {
                     (EventType::Unparsed, Some("details")),
                     (EventType::ExitBlock, None),
                     (EventType::ExitBlock, None),
-                    (EventType::ExitBlock, None)
+                    (EventType::ExitBlock, None),
                 ]
             ),
             case!(
@@ -49,7 +49,7 @@ pub fn groups_description_list() -> Vec<GroupedCases> {
                     (EventType::Unparsed, Some("details")),
                     (EventType::ExitBlock, None),
                     (EventType::ExitBlock, None),
-                    (EventType::ExitBlock, None)
+                    (EventType::ExitBlock, None),
                 ]
             ),
             case!(
@@ -86,7 +86,7 @@ pub fn groups_description_list() -> Vec<GroupedCases> {
                     (EventType::Unparsed, Some("details 2.2")),
                     (EventType::ExitBlock, None),
                     (EventType::ExitBlock, None),
-                    (EventType::ExitBlock, None)
+                    (EventType::ExitBlock, None),
                 ]
             ),
             case!(
@@ -119,7 +119,7 @@ pub fn groups_description_list() -> Vec<GroupedCases> {
                     (EventType::ExitBlock, None),
                     (EventType::ExitBlock, None),
                     (EventType::ExitBlock, None),
-                    (EventType::ExitBlock, None)
+                    (EventType::ExitBlock, None),
                 ]
             ),
             case!(
@@ -147,7 +147,7 @@ pub fn groups_description_list() -> Vec<GroupedCases> {
                     (EventType::ExitBlock, None),
                     (EventType::ExitBlock, None),
                     (EventType::ExitBlock, None),
-                    (EventType::ExitBlock, None)
+                    (EventType::ExitBlock, None),
                 ]
             ),
         ],

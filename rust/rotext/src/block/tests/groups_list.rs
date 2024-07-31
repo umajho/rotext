@@ -19,7 +19,7 @@ pub fn groups_list() -> Vec<GroupedCases> {
                         (EventType::Unparsed, Some("1")),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None)
+                        (EventType::ExitBlock, None),
                     ]
                 ),
                 case!(
@@ -31,7 +31,7 @@ pub fn groups_list() -> Vec<GroupedCases> {
                         (EventType::Unparsed, Some("1")),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None)
+                        (EventType::ExitBlock, None),
                     ]
                 ),
                 case!(
@@ -50,7 +50,7 @@ pub fn groups_list() -> Vec<GroupedCases> {
                         (EventType::Unparsed, Some("2")),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None)
+                        (EventType::ExitBlock, None),
                     ]
                 ),
                 case!(
@@ -75,7 +75,7 @@ pub fn groups_list() -> Vec<GroupedCases> {
                         (EventType::Unparsed, Some("c")),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None)
+                        (EventType::ExitBlock, None),
                     ]
                 ),
                 case!(
@@ -97,7 +97,7 @@ pub fn groups_list() -> Vec<GroupedCases> {
                         (EventType::Unparsed, Some("2")),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None)
+                        (EventType::ExitBlock, None),
                     ]
                 ),
                 case!(
@@ -113,7 +113,7 @@ pub fn groups_list() -> Vec<GroupedCases> {
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None)
+                        (EventType::ExitBlock, None),
                     ]
                 ),
                 case!(
@@ -136,7 +136,7 @@ pub fn groups_list() -> Vec<GroupedCases> {
                         (EventType::Unparsed, Some("2")),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None)
+                        (EventType::ExitBlock, None),
                     ]
                 ),
                 case!(
@@ -162,7 +162,7 @@ pub fn groups_list() -> Vec<GroupedCases> {
                         (EventType::Unparsed, Some("2")),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None)
+                        (EventType::ExitBlock, None),
                     ]
                 ),
                 case!(
@@ -185,7 +185,7 @@ pub fn groups_list() -> Vec<GroupedCases> {
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None)
+                        (EventType::ExitBlock, None),
                     ]
                 ),
                 case!(
@@ -211,7 +211,7 @@ pub fn groups_list() -> Vec<GroupedCases> {
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None)
+                        (EventType::ExitBlock, None),
                     ]
                 ),
                 case!(
@@ -240,7 +240,7 @@ pub fn groups_list() -> Vec<GroupedCases> {
                         (EventType::Unparsed, Some("3")),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None)
+                        (EventType::ExitBlock, None),
                     ]
                 ),
                 case!(
@@ -273,7 +273,7 @@ pub fn groups_list() -> Vec<GroupedCases> {
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None)
+                        (EventType::ExitBlock, None),
                     ]
                 ),
             ],
@@ -304,7 +304,7 @@ pub fn groups_list() -> Vec<GroupedCases> {
                     (EventType::Unparsed, Some("a")),
                     (EventType::ExitBlock, None),
                     (EventType::ExitBlock, None),
-                    (EventType::ExitBlock, None)
+                    (EventType::ExitBlock, None),
                 ]
             )],
         },
@@ -324,7 +324,7 @@ pub fn groups_list() -> Vec<GroupedCases> {
                         (EventType::Unparsed, Some("b")),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None)
+                        (EventType::ExitBlock, None),
                     ]
                 ),
                 case!(
@@ -342,7 +342,7 @@ pub fn groups_list() -> Vec<GroupedCases> {
                         (EventType::Unparsed, Some("b")),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None)
+                        (EventType::ExitBlock, None),
                     ]
                 ),
                 case!(
@@ -365,7 +365,7 @@ pub fn groups_list() -> Vec<GroupedCases> {
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None)
+                        (EventType::ExitBlock, None),
                     ]
                 ),
                 case!(
@@ -385,7 +385,7 @@ pub fn groups_list() -> Vec<GroupedCases> {
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None)
+                        (EventType::ExitBlock, None),
                     ]
                 ),
             ],
@@ -407,7 +407,7 @@ pub fn groups_list() -> Vec<GroupedCases> {
                         (EventType::Unparsed, Some("1")),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None)
+                        (EventType::ExitBlock, None),
                     ]
                 ),
                 case!(
@@ -420,7 +420,7 @@ pub fn groups_list() -> Vec<GroupedCases> {
                         (EventType::Unparsed, Some("a")),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None)
+                        (EventType::ExitBlock, None),
                     ]
                 ),
                 case!(
@@ -437,7 +437,7 @@ pub fn groups_list() -> Vec<GroupedCases> {
                         (EventType::Unparsed, Some("b")),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None)
+                        (EventType::ExitBlock, None),
                     ]
                 ),
                 case!(
@@ -456,7 +456,7 @@ pub fn groups_list() -> Vec<GroupedCases> {
                         (EventType::Unparsed, Some("b")),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None)
+                        (EventType::ExitBlock, None),
                     ]
                 ),
                 case!(
@@ -475,7 +475,7 @@ pub fn groups_list() -> Vec<GroupedCases> {
                         (EventType::Unparsed, Some("1")),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None)
+                        (EventType::ExitBlock, None),
                     ]
                 ),
                 case!(
@@ -506,7 +506,7 @@ pub fn groups_list() -> Vec<GroupedCases> {
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None)
+                        (EventType::ExitBlock, None),
                     ]
                 ),
                 case!(
@@ -530,7 +530,7 @@ pub fn groups_list() -> Vec<GroupedCases> {
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None)
+                        (EventType::ExitBlock, None),
                     ]
                 ),
             ],
