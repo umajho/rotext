@@ -198,23 +198,23 @@ impl Parser {
                         c.at_line_end_and_with_space_before && ctx.peek_next_char() == Some(b' ')
                     })
                 {
-                    process_potential_closing_part_at_line_end_and_with_space_before(
+                    return process_potential_closing_part_at_line_end_and_with_space_before(
                         ctx,
                         condition,
                         Range::new(ctx.cursor.applying(&peeked).value().unwrap(), 0),
                         peeked,
-                    )
-                } else if inner.end_conditions.on_table_related {
-                    process_potential_table_related(
-                        ctx,
-                        Range::new(ctx.cursor.applying(&peeked).value().unwrap(), 0),
-                        peeked,
-                    )
-                } else {
-                    consume_peeked!(ctx, &peeked);
-                    let content = Range::new(ctx.cursor.value().unwrap(), 1);
-                    InternalOutput::ToContinueIn(State::ExpectingContentNextChar(content))
+                    );
                 }
+
+                if inner.end_conditions.on_table_related {
+                    if let Some(have_met) = try_parse_potential_table_related(ctx) {
+                        return done!(have_met);
+                    }
+                }
+
+                consume_peeked!(ctx, &peeked);
+                let content = Range::new(ctx.cursor.value().unwrap(), 1);
+                InternalOutput::ToContinueIn(State::ExpectingContentNextChar(content))
             }
             global_mapper::Mapped::NewLine(_) => {
                 // consume_peeked!(ctx, &peeked);
@@ -257,19 +257,30 @@ impl Parser {
                         c.at_line_end_and_with_space_before && ctx.peek_next_char() == Some(b' ')
                     })
                 {
-                    process_potential_closing_part_at_line_end_and_with_space_before(
+                    return process_potential_closing_part_at_line_end_and_with_space_before(
                         ctx,
                         condition,
                         *state_content,
                         peeked,
-                    )
-                } else if inner.end_conditions.on_table_related {
-                    process_potential_table_related(ctx, *state_content, peeked)
-                } else {
-                    consume_peeked!(ctx, &peeked);
-                    state_content.increase_length(1);
-                    InternalOutput::ToContinue
+                    );
                 }
+
+                if inner.end_conditions.on_table_related {
+                    if let Some(have_met) = try_parse_potential_table_related(ctx) {
+                        if state_content.length() > 0 {
+                            return InternalOutput::ToYieldAndBeDone(
+                                BlockEvent::Unparsed(*state_content),
+                                have_met,
+                            );
+                        } else {
+                            return done!(have_met);
+                        }
+                    }
+                }
+
+                consume_peeked!(ctx, &peeked);
+                state_content.increase_length(1);
+                InternalOutput::ToContinue
             }
         }
     }
@@ -304,17 +315,23 @@ impl Parser {
 
                     let dropped = ctx.drop_from_mapper_while_char(condition.character);
                     if 1 + dropped >= condition.minimal_count {
-                        done!()
+                        return done!();
                     } else {
                         // XXX: 被 drop 的那些不会重新尝试解析，而是直接当成文本。
                         potential_closing_part.set_length(1 + dropped);
-                        InternalOutput::ToContinueIn(State::ExpectingContentNextChar(
+                        return InternalOutput::ToContinueIn(State::ExpectingContentNextChar(
                             potential_closing_part,
-                        ))
+                        ));
                     }
-                } else if inner.end_conditions.on_table_related {
-                    process_potential_table_related(ctx, Range::new(index, 0), peeked)
-                } else if inner.is_at_first_line {
+                }
+
+                if inner.end_conditions.on_table_related {
+                    if let Some(have_met) = try_parse_potential_table_related(ctx) {
+                        return done!(have_met);
+                    }
+                }
+
+                if inner.is_at_first_line {
                     InternalOutput::ToContinueIn(State::ExpectingNewContent)
                 } else {
                     InternalOutput::ToYield(BlockEvent::NewLine(new_line))
@@ -395,40 +412,24 @@ fn process_potential_closing_part_at_line_end_and_with_space_before(
     }
 }
 
-fn process_potential_table_related(
-    ctx: &mut Context,
-    mut confirmed_content: Range,
-    peeked: global_mapper::Mapped,
-) -> InternalOutput {
-    let have_met = match ctx.peek_next_three_chars() {
+fn try_parse_potential_table_related(ctx: &mut Context) -> Option<HaveMet> {
+    match ctx.peek_next_three_chars() {
         [Some(b'|'), Some(b'}'), ..] => {
             ctx.must_take_from_mapper_and_apply_to_cursor(2);
-            HaveMet::TableClosing
+            Some(HaveMet::TableClosing)
         }
         [Some(b'|'), Some(b'-'), ..] => {
             ctx.must_take_from_mapper_and_apply_to_cursor(2);
-            HaveMet::TableRowIndicator
+            Some(HaveMet::TableRowIndicator)
         }
         [Some(b'|'), Some(b'|'), ..] => {
             ctx.must_take_from_mapper_and_apply_to_cursor(2);
-            HaveMet::DoublePipes
+            Some(HaveMet::DoublePipes)
         }
         [Some(b'!'), Some(b'!'), ..] => {
             ctx.must_take_from_mapper_and_apply_to_cursor(2);
-            HaveMet::TableHeaderCellIndicator
+            Some(HaveMet::TableHeaderCellIndicator)
         }
-        _ => {
-            consume_peeked!(ctx, &peeked);
-            confirmed_content.increase_length(1);
-            return InternalOutput::ToContinueIn(State::ExpectingContentNextChar(
-                confirmed_content,
-            ));
-        }
-    };
-
-    if confirmed_content.length() > 0 {
-        InternalOutput::ToYieldAndBeDone(BlockEvent::Unparsed(confirmed_content), have_met)
-    } else {
-        done!(have_met)
+        _ => None,
     }
 }
