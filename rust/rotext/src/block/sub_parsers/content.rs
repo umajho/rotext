@@ -47,10 +47,14 @@ enum InternalResult {
 }
 
 pub struct Parser {
+    inner: ParserInner,
+
+    state: State,
+}
+struct ParserInner {
     mode: Mode,
     end_conditions: EndConditions,
 
-    state: State,
     is_at_first_line: bool,
 }
 
@@ -97,10 +101,12 @@ pub struct RepetitiveCharactersCondition {
 impl Parser {
     pub fn new(options: Options) -> Self {
         Self {
-            mode: options.mode,
-            end_conditions: options.end_conditions,
+            inner: ParserInner {
+                mode: options.mode,
+                end_conditions: options.end_conditions,
+                is_at_first_line: true,
+            },
             state: options.initial_state,
-            is_at_first_line: true,
         }
     }
 
@@ -111,13 +117,15 @@ impl Parser {
             // log::debug!("CONTENT step_state={:?}", state);
 
             let internal_result = match &mut state {
-                State::ExpectingNewContent => self.process_in_expecting_new_content_state(ctx),
+                State::ExpectingNewContent => {
+                    Self::process_in_expecting_new_content_state(ctx, &self.inner)
+                }
 
                 State::ExpectingContentNextChar(content) => {
-                    self.process_in_expecting_content_next_char_state(ctx, content)
+                    Self::process_in_expecting_content_next_char_state(ctx, &self.inner, content)
                 }
                 State::ToProcessNewLine(new_line) => {
-                    self.process_in_to_process_new_line_state(ctx, new_line.clone())
+                    Self::process_in_to_process_new_line_state(ctx, &self.inner, new_line.clone())
                 }
                 State::ToOutputDone(have_met) => {
                     self.state = State::Invalid;
@@ -135,7 +143,7 @@ impl Parser {
                 }
                 InternalResult::ToYield(ev) => break sub_parsers::Output::ToYield(ev),
                 InternalResult::ToPauseForNewLine => {
-                    self.is_at_first_line = false;
+                    self.inner.is_at_first_line = false;
                     break sub_parsers::Output::ToPauseForNewLine;
                 }
                 InternalResult::Done(have_met) => break sub_parsers::Output::Done(have_met),
@@ -148,7 +156,10 @@ impl Parser {
     }
 
     #[inline(always)]
-    fn process_in_expecting_new_content_state(&mut self, ctx: &mut Context) -> InternalResult {
+    fn process_in_expecting_new_content_state(
+        ctx: &mut Context,
+        inner: &ParserInner,
+    ) -> InternalResult {
         let Some(peeked) = ctx.mapper.peek(0) else {
             return InternalResult::Done(HaveMet::None);
         };
@@ -159,7 +170,7 @@ impl Parser {
                 // NOTE: 初始状态也可能遇到 `NextChar`，比如在一个并非结束与换行的块
                 // 级元素（最简单的，如分割线）后面存在文本时。
 
-                if let Some(condition) = self
+                if let Some(condition) = inner
                     .end_conditions
                     .after_repetitive_characters
                     .as_ref()
@@ -173,7 +184,7 @@ impl Parser {
                         Range::new(ctx.cursor.applying(&peeked).value().unwrap(), 0),
                         peeked,
                     )
-                } else if self.end_conditions.on_table_related {
+                } else if inner.end_conditions.on_table_related {
                     process_potential_table_related(
                         ctx,
                         Range::new(ctx.cursor.applying(&peeked).value().unwrap(), 0),
@@ -187,7 +198,7 @@ impl Parser {
             }
             global_mapper::Mapped::NewLine(_) => {
                 // consume_peeked!(ctx, &peeked);
-                if self.end_conditions.before_new_line {
+                if inner.end_conditions.before_new_line {
                     InternalResult::Done(HaveMet::None)
                 } else {
                     InternalResult::ToPauseForNewLine
@@ -202,12 +213,12 @@ impl Parser {
 
     #[inline(always)]
     fn process_in_expecting_content_next_char_state(
-        &mut self,
         ctx: &mut Context,
+        inner: &ParserInner,
         state_content: &mut Range,
     ) -> InternalResult {
         let Some(peeked) = ctx.mapper.peek(0) else {
-            return InternalResult::ToYield(self.make_content_event(*state_content));
+            return InternalResult::ToYield(make_content_event(&inner.mode, *state_content));
         };
         let peeked = peeked.clone();
 
@@ -215,10 +226,10 @@ impl Parser {
             global_mapper::Mapped::CharAt(_)
             | global_mapper::Mapped::NewLine(_)
             | global_mapper::Mapped::VerbatimEscaping(_) => {
-                InternalResult::ToYield(self.make_content_event(*state_content))
+                InternalResult::ToYield(make_content_event(&inner.mode, *state_content))
             }
             global_mapper::Mapped::NextChar => {
-                if let Some(condition) = self
+                if let Some(condition) = inner
                     .end_conditions
                     .after_repetitive_characters
                     .as_ref()
@@ -232,7 +243,7 @@ impl Parser {
                         *state_content,
                         peeked,
                     )
-                } else if self.end_conditions.on_table_related {
+                } else if inner.end_conditions.on_table_related {
                     process_potential_table_related(ctx, *state_content, peeked)
                 } else {
                     consume_peeked!(ctx, &peeked);
@@ -245,11 +256,11 @@ impl Parser {
 
     #[inline(always)]
     fn process_in_to_process_new_line_state(
-        &mut self,
         ctx: &mut Context,
+        inner: &ParserInner,
         new_line: NewLine,
     ) -> InternalResult {
-        if matches!(self.mode, Mode::Inline) {
+        if matches!(inner.mode, Mode::Inline) {
             _ = ctx.scan_blank_text();
         }
 
@@ -262,7 +273,7 @@ impl Parser {
             global_mapper::Mapped::CharAt(_) | global_mapper::Mapped::NextChar => {
                 let index = ctx.cursor.applying(&peeked).value().unwrap();
 
-                if let Some(condition) = self
+                if let Some(condition) = inner
                     .end_conditions
                     .after_repetitive_characters
                     .as_ref()
@@ -281,23 +292,23 @@ impl Parser {
                             potential_closing_part,
                         ))
                     }
-                } else if self.end_conditions.on_table_related {
+                } else if inner.end_conditions.on_table_related {
                     process_potential_table_related(ctx, Range::new(index, 0), peeked)
-                } else if self.is_at_first_line {
+                } else if inner.is_at_first_line {
                     InternalResult::ToContinueIn(State::ExpectingNewContent)
                 } else {
                     InternalResult::ToYield(BlockEvent::NewLine(new_line))
                 }
             }
             global_mapper::Mapped::NewLine(new_line) => {
-                if self.end_conditions.before_blank_line {
+                if inner.end_conditions.before_blank_line {
                     InternalResult::Done(HaveMet::None)
                 } else {
                     InternalResult::ToYield(BlockEvent::NewLine(new_line.clone()))
                 }
             }
             global_mapper::Mapped::VerbatimEscaping(_) => {
-                if self.is_at_first_line {
+                if inner.is_at_first_line {
                     InternalResult::ToContinueIn(State::ExpectingNewContent)
                 } else {
                     InternalResult::ToYield(BlockEvent::NewLine(new_line))
@@ -309,13 +320,13 @@ impl Parser {
     pub fn resume_from_pause_for_new_line_and_continue(&mut self, new_line: NewLine) {
         self.state = State::ToProcessNewLine(new_line);
     }
+}
 
-    #[inline(always)]
-    fn make_content_event(&self, content: Range) -> BlockEvent {
-        match self.mode {
-            Mode::Inline => BlockEvent::Unparsed(content),
-            Mode::Verbatim => BlockEvent::Text(content),
-        }
+#[inline(always)]
+fn make_content_event(mode: &Mode, content: Range) -> BlockEvent {
+    match mode {
+        Mode::Inline => BlockEvent::Unparsed(content),
+        Mode::Verbatim => BlockEvent::Text(content),
     }
 }
 
