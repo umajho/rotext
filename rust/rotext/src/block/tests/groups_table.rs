@@ -79,7 +79,7 @@ pub fn groups_table() -> Vec<GroupedCases> {
             cases: vec![
                 case!(
                     vec![
-                        "{||-!!FOO!!BAR|-||BAZ||QUX|}",
+                        "{||-!!FOO!!BAR|-||baz||qux|}",
                         indoc! {"
                         {|
                         |-
@@ -135,7 +135,7 @@ pub fn groups_table() -> Vec<GroupedCases> {
                 ),
                 case!(
                     vec![
-                        "{|!!FOO!!BAR|-BAZ||QUX|}",
+                        "{|!!FOO!!BAR|-baz||qux|}",
                         indoc! {"
                         {|
                         !! FOO !! BAR
@@ -280,10 +280,10 @@ pub fn groups_table() -> Vec<GroupedCases> {
                         (EventType::Unparsed, Some("FOO")),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
                         (EventType::EnterListItem, None),
                         (EventType::EnterParagraph, None),
                         (EventType::Unparsed, Some("|}")),
-                        (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
@@ -326,9 +326,7 @@ pub fn groups_table() -> Vec<GroupedCases> {
                         (EventType::EnterTable, None),
                         (EventType::IndicateTableDataCell, None),
                         (EventType::EnterHeading2, None),
-                        (EventType::EnterParagraph, None),
                         (EventType::Unparsed, Some("foo")),
-                        (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
                         (EventType::IndicateTableDataCell, None),
                         (EventType::EnterParagraph, None),
