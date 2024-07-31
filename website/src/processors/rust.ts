@@ -5,7 +5,11 @@ import initRotextWASM, * as rotextBindings from "rotext_wasm_bindings";
 
 import { LookupListRaw } from "../pages/Playground/preview-parts/Preview/internal-types";
 
-import { RotextProcessor, RotextProcessResult } from "./mod";
+import {
+  RotextProcessor,
+  RotextProcessorProcessOptions,
+  RotextProcessResult,
+} from "./mod";
 
 const rotextAdapter = await (async () => {
   await initRotextWASM();
@@ -13,11 +17,16 @@ const rotextAdapter = await (async () => {
 })();
 
 export class RustRotextProcessor implements RotextProcessor {
-  process(input: string): RotextProcessResult {
+  process(
+    input: string,
+    opts: RotextProcessorProcessOptions,
+  ): RotextProcessResult {
     try {
       const parsingStart = performance.now();
       console.time("rotext RS (dev)");
-      const result = rotextAdapter.parseAndRender(input);
+      const result = rotextAdapter.parseAndRender(input, {
+        tagNameMap: opts.tagNameMap,
+      });
       console.timeEnd("rotext RS (dev)");
       const parsingTimeMs = performance.now() - parsingStart;
 

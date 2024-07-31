@@ -7,6 +7,7 @@ macro_rules! case {
             expected: $expected,
 
             options: $crate::rendering::tests::support::CaseOptions {
+                tag_name_map: Default::default(),
                 #[cfg(feature = "block-id")]
                 with_block_id: false,
             },
@@ -58,23 +59,25 @@ pub(super) use case;
 use super::*;
 
 #[allow(dead_code)]
-pub(super) struct CaseOptions {
+pub(super) struct CaseOptions<'a> {
+    pub tag_name_map: TagNameMap<'a>,
     #[cfg(feature = "block-id")]
     pub with_block_id: bool,
 }
 
 #[allow(dead_code)]
-pub(super) struct Case {
+pub(super) struct Case<'a> {
     pub input: &'static str,
     pub input_events: Vec<BlendEvent>,
     pub expected: &'static str,
 
     #[allow(dead_code)]
-    pub options: CaseOptions,
+    pub options: CaseOptions<'a>,
 }
-impl test_support::Case for Case {
+impl<'a> test_support::Case for Case<'a> {
     fn assert_ok(&self) {
         let opts = NewHtmlRendererOptoins {
+            tag_name_map: self.options.tag_name_map.clone(),
             initial_output_string_capacity: 0,
             #[cfg(feature = "block-id")]
             with_block_id: self.options.with_block_id,

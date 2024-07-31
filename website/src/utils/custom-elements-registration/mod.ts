@@ -26,6 +26,7 @@ export const TAG_NAME_MAP = {
   "ref-link": "x-ref-link",
   "dicexp-preview": "x-dicexp-preview",
   "collapse": "x-collapse",
+  "code-block": "x-code-block",
 };
 
 export const WIDGET_OWNER_CLASS = "widget-owner";

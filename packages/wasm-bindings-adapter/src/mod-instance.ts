@@ -10,10 +10,22 @@ export interface ParseAndRenderResult {
   devEventsInDebugFormat?: string;
 }
 
+export interface ParseAndRenderOptions {
+  tagNameMap: TagNameMap;
+}
+
+export interface TagNameMap {
+  "code-block": string;
+}
+
 export function parseAndRender(
   input: string,
+  opts: ParseAndRenderOptions,
 ): ["ok", ParseAndRenderResult] | ["error", string] {
-  const result = bindings.parse_and_render(textEncoder.encode(input));
+  const result = bindings.parse_and_render(
+    textEncoder.encode(input),
+    serializeTagNameMap(opts.tagNameMap),
+  );
 
   const error = result.clone_error();
   if (error) {
@@ -37,6 +49,12 @@ export function parseAndRender(
       : {}),
   };
   return ["ok", ret];
+}
+
+function serializeTagNameMap(tagNameMap: TagNameMap): string {
+  return [
+    tagNameMap["code-block"],
+  ].join("\0");
 }
 
 function deserializeBlockIDToLinesMap(input: string): BlockIDAndLinesPair[] {

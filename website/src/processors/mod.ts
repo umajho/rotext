@@ -2,6 +2,11 @@ import { LookupListRaw } from "../pages/Playground/preview-parts/Preview/interna
 
 export interface RotextProcessorProcessOptions {
   requiresLookupListRaw: boolean;
+  tagNameMap: TagNameMap;
+}
+
+export interface TagNameMap {
+  "code-block": string;
 }
 
 export interface RotextProcessor {

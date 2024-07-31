@@ -23,6 +23,7 @@ import {
 import { EditorStore } from "../../../hooks/editor-store";
 import { RotextProcessResult } from "../../../processors/mod";
 import { useRotextProcessorsStore } from "../../../contexts/rotext-processors-store";
+import { TAG_NAME_MAP } from "../../../utils/custom-elements-registration/mod";
 
 const Preview = lazy(() => import("./Preview/mod"));
 
@@ -56,7 +57,10 @@ export function createPreviewParts(
         const processor = processorProvider();
 
         setProcessResult(
-          processor.process(text, { requiresLookupListRaw: true }),
+          processor.process(text, {
+            requiresLookupListRaw: true,
+            tagNameMap: TAG_NAME_MAP,
+          }),
         );
       },
     ),

@@ -2,7 +2,9 @@ mod data_exchange;
 
 extern crate alloc;
 
-use data_exchange::block_id_to_lines_map::create_block_id_to_lines_map;
+use data_exchange::{
+    block_id_to_lines_map::create_block_id_to_lines_map, tag_name_map::new_tag_name_map_from_str,
+};
 
 #[cfg(debug_assertions)]
 use data_exchange::events_in_debug_format::render_events_in_debug_format;
@@ -60,7 +62,7 @@ impl ParseAndRenderOutput {
 }
 
 #[wasm_bindgen]
-pub fn parse_and_render(input: &[u8]) -> ParseAndRenderResult {
+pub fn parse_and_render(input: &[u8], tag_name_map: String) -> ParseAndRenderResult {
     #[cfg(debug_assertions)]
     {
         console_error_panic_hook::set_once();
@@ -68,6 +70,8 @@ pub fn parse_and_render(input: &[u8]) -> ParseAndRenderResult {
             console_log::init_with_level(log::Level::Debug).unwrap();
         });
     }
+
+    let tag_name_map = new_tag_name_map_from_str(&tag_name_map);
 
     let all_events: Result<Vec<_>, _> = rotext::parse(input).collect();
     let all_events = match all_events {
@@ -83,6 +87,7 @@ pub fn parse_and_render(input: &[u8]) -> ParseAndRenderResult {
     let renderer = rotext::HtmlRenderer::new(
         input,
         rotext::NewHtmlRendererOptoins {
+            tag_name_map,
             initial_output_string_capacity: input.len() * 3,
             with_block_id: true,
         },

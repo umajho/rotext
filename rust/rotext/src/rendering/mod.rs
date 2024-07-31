@@ -18,40 +18,57 @@ macro_rules! write_data_block_id_attribute_if_applicable {
     };
 }
 
-pub struct NewHtmlRendererOptoins {
+pub struct NewHtmlRendererOptoins<'a> {
+    pub tag_name_map: TagNameMap<'a>,
+
     pub initial_output_string_capacity: usize,
 
     #[cfg(feature = "block-id")]
     pub with_block_id: bool,
 }
 
+#[derive(Clone)]
+pub struct TagNameMap<'a> {
+    pub code_block: &'a [u8],
+}
+impl<'a> Default for TagNameMap<'a> {
+    fn default() -> Self {
+        Self {
+            code_block: b"x-code-block",
+        }
+    }
+}
+
 pub struct HtmlRenderer<'a> {
+    tag_name_map: TagNameMap<'a>,
+
     input: &'a [u8],
 
     #[cfg(feature = "block-id")]
     with_block_id: bool,
 
     result: Vec<u8>,
-    stack: Vec<&'static [u8]>,
 
     should_enter_table_row: bool,
     should_enter_table_cell: bool,
 }
 
 impl<'a> HtmlRenderer<'a> {
-    pub fn new(input: &'a [u8], opts: NewHtmlRendererOptoins) -> Self {
+    pub fn new(input: &'a [u8], opts: NewHtmlRendererOptoins<'a>) -> Self {
         Self {
+            tag_name_map: opts.tag_name_map,
             input,
             #[cfg(feature = "block-id")]
             with_block_id: opts.with_block_id,
             result: Vec::with_capacity(opts.initial_output_string_capacity),
-            stack: vec![],
             should_enter_table_row: false,
             should_enter_table_cell: false,
         }
     }
 
     pub fn render(mut self, mut input_stream: impl Iterator<Item = BlendEvent>) -> String {
+        let mut stack: Vec<&[u8]> = vec![];
+
         loop {
             let Some(ev) = input_stream.next() else {
                 break;
@@ -75,10 +92,10 @@ impl<'a> HtmlRenderer<'a> {
                 };
                 if is_th {
                     self.result.extend(b"<th>");
-                    self.stack.push(TABLE_TR_TH)
+                    stack.push(TABLE_TR_TH)
                 } else {
                     self.result.extend(b"<td>");
-                    self.stack.push(TABLE_TR_TD)
+                    stack.push(TABLE_TR_TD)
                 }
                 if should_continue {
                     continue;
@@ -99,7 +116,7 @@ impl<'a> HtmlRenderer<'a> {
                 }
 
                 BlendEvent::ExitBlock(_) => {
-                    let top = self.stack.pop().unwrap();
+                    let top = stack.pop().unwrap();
                     match top {
                         TABLE_TR_TH => self.result.extend(b"</th></tr></table>"),
                         TABLE_TR_TD => self.result.extend(b"</td></tr></table>"),
@@ -111,23 +128,33 @@ impl<'a> HtmlRenderer<'a> {
                     }
                 }
 
-                BlendEvent::EnterParagraph(data) => self.push_simple(b"p", &data),
-                BlendEvent::EnterHeading1(data) => self.push_simple(b"h1", &data),
-                BlendEvent::EnterHeading2(data) => self.push_simple(b"h2", &data),
-                BlendEvent::EnterHeading3(data) => self.push_simple(b"h3", &data),
-                BlendEvent::EnterHeading4(data) => self.push_simple(b"h4", &data),
-                BlendEvent::EnterHeading5(data) => self.push_simple(b"h5", &data),
-                BlendEvent::EnterHeading6(data) => self.push_simple(b"h6", &data),
-                BlendEvent::EnterBlockQuote(data) => self.push_simple(b"blockquote", &data),
-                BlendEvent::EnterOrderedList(data) => self.push_simple(b"ol", &data),
-                BlendEvent::EnterUnorderedList(data) => self.push_simple(b"ul", &data),
-                BlendEvent::EnterListItem(data) => self.push_simple(b"li", &data),
-                BlendEvent::EnterDescriptionList(data) => self.push_simple(b"dl", &data),
-                BlendEvent::EnterDescriptionTerm(data) => self.push_simple(b"dt", &data),
-                BlendEvent::EnterDescriptionDetails(data) => self.push_simple(b"dd", &data),
+                BlendEvent::EnterParagraph(data) => self.push_simple(&mut stack, b"p", &data),
+                BlendEvent::EnterHeading1(data) => self.push_simple(&mut stack, b"h1", &data),
+                BlendEvent::EnterHeading2(data) => self.push_simple(&mut stack, b"h2", &data),
+                BlendEvent::EnterHeading3(data) => self.push_simple(&mut stack, b"h3", &data),
+                BlendEvent::EnterHeading4(data) => self.push_simple(&mut stack, b"h4", &data),
+                BlendEvent::EnterHeading5(data) => self.push_simple(&mut stack, b"h5", &data),
+                BlendEvent::EnterHeading6(data) => self.push_simple(&mut stack, b"h6", &data),
+                BlendEvent::EnterBlockQuote(data) => {
+                    self.push_simple(&mut stack, b"blockquote", &data)
+                }
+                BlendEvent::EnterOrderedList(data) => self.push_simple(&mut stack, b"ol", &data),
+                BlendEvent::EnterUnorderedList(data) => self.push_simple(&mut stack, b"ul", &data),
+                BlendEvent::EnterListItem(data) => self.push_simple(&mut stack, b"li", &data),
+                BlendEvent::EnterDescriptionList(data) => {
+                    self.push_simple(&mut stack, b"dl", &data)
+                }
+                BlendEvent::EnterDescriptionTerm(data) => {
+                    self.push_simple(&mut stack, b"dt", &data)
+                }
+                BlendEvent::EnterDescriptionDetails(data) => {
+                    self.push_simple(&mut stack, b"dd", &data)
+                }
                 #[allow(unused_variables)]
                 BlendEvent::EnterCodeBlock(data) => {
-                    self.result.extend(br#"<x-code-block info-string=""#);
+                    self.result.push(b'<');
+                    self.result.extend(self.tag_name_map.code_block);
+                    self.result.extend(br#" info-string=""#);
                     loop {
                         match input_stream.next().unwrap() {
                             BlendEvent::Text(content) => self
@@ -143,7 +170,7 @@ impl<'a> HtmlRenderer<'a> {
                     write_data_block_id_attribute_if_applicable!(self, data);
 
                     self.result.push(b'>');
-                    self.stack.push(b"x-code-block");
+                    stack.push(self.tag_name_map.code_block);
                 }
                 #[allow(unused_variables)]
                 BlendEvent::EnterTable(data) => {
@@ -156,19 +183,19 @@ impl<'a> HtmlRenderer<'a> {
 
                 BlendEvent::IndicateCodeBlockCode => unreachable!(),
                 BlendEvent::IndicateTableRow => {
-                    self.pop_stack_and_write_table_cell_closing();
+                    self.pop_stack_and_write_table_cell_closing(&mut stack);
                     self.result.extend(b"</tr><tr>");
                     self.should_enter_table_cell = true;
                 }
                 BlendEvent::IndicateTableHeaderCell => {
-                    self.pop_stack_and_write_table_cell_closing();
+                    self.pop_stack_and_write_table_cell_closing(&mut stack);
                     self.result.extend(b"<th>");
-                    self.stack.push(TABLE_TR_TH);
+                    stack.push(TABLE_TR_TH);
                 }
                 BlendEvent::IndicateTableDataCell => {
-                    self.pop_stack_and_write_table_cell_closing();
+                    self.pop_stack_and_write_table_cell_closing(&mut stack);
                     self.result.extend(b"<td>");
-                    self.stack.push(TABLE_TR_TD);
+                    stack.push(TABLE_TR_TD);
                 }
             };
         }
@@ -178,6 +205,7 @@ impl<'a> HtmlRenderer<'a> {
 
     fn push_simple(
         &mut self,
+        stack: &mut Vec<&[u8]>,
         tag_name: &'static [u8],
         #[allow(unused_variables)] data: &BlockWithID,
     ) {
@@ -186,11 +214,11 @@ impl<'a> HtmlRenderer<'a> {
         write_data_block_id_attribute_if_applicable!(self, data);
         self.result.push(b'>');
 
-        self.stack.push(tag_name);
+        stack.push(tag_name);
     }
 
-    fn pop_stack_and_write_table_cell_closing(&mut self) {
-        match self.stack.pop().unwrap() {
+    fn pop_stack_and_write_table_cell_closing(&mut self, stack: &mut Vec<&[u8]>) {
+        match stack.pop().unwrap() {
             TABLE_TR_TH => self.result.extend(b"</th>"),
             TABLE_TR_TD => self.result.extend(b"</td>"),
             _ => unreachable!(),
