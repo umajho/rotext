@@ -205,7 +205,7 @@ const NavMenu: Component<{
             value="rust"
             selected={rotextProcessors?.currentName === "rust"}
           >
-            新式
+            新式（WIP）
           </option>
         </select>
       </li>
@@ -224,7 +224,7 @@ const NavMenu: Component<{
       </li>
       <li>
         <details open>
-          <summary>语法参考</summary>
+          <summary>语法参考（WIP）</summary>
           <Show
             when={isSyntaxReferenceReady()}
             fallback={
