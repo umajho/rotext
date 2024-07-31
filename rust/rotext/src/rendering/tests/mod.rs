@@ -304,7 +304,31 @@ fn it_works_in_block_phase() {
                     ),
                 ),
             ]
-        }
+        },
+        GroupedCases {
+            group: "XSS",
+            cases: vec![
+                case!(
+                    r#"<script>"#,
+                    [
+                        (EnterParagraph(..)),
+                        (Text(0..8)),
+                        (ExitBlock(..)),
+                    ],
+                    r#"<p>&lt;script></p>"#,
+                ),
+                case!(
+                    r#"">"#,
+                    [
+                        (EnterCodeBlock(..)),
+                        (Text(0..2)),
+                        (IndicateCodeBlockCode()),
+                        (ExitBlock(..)),
+                    ],
+                    r#"<x-code-block info-string="&quot;>"></x-code-block>"#,
+                ),
+            ],
+        },
     ];
 
     run_cases(table);
