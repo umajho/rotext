@@ -26,6 +26,7 @@ export class RustRotextProcessor implements RotextProcessor {
       console.time("rotext RS (dev)");
       const result = rotextAdapter.parseAndRender(input, {
         tagNameMap: opts.tagNameMap,
+        shouldIncludeBlockIDs: opts.requiresLookupListRaw,
       });
       console.timeEnd("rotext RS (dev)");
       const parsingTimeMs = performance.now() - parsingStart;

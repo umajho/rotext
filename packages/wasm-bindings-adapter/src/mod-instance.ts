@@ -12,6 +12,7 @@ export interface ParseAndRenderResult {
 
 export interface ParseAndRenderOptions {
   tagNameMap: TagNameMap;
+  shouldIncludeBlockIDs: boolean;
 }
 
 export interface TagNameMap {
@@ -25,6 +26,7 @@ export function parseAndRender(
   const result = bindings.parse_and_render(
     textEncoder.encode(input),
     serializeTagNameMap(opts.tagNameMap),
+    opts.shouldIncludeBlockIDs,
   );
 
   const error = result.clone_error();

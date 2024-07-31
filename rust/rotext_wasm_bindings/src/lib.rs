@@ -62,7 +62,11 @@ impl ParseAndRenderOutput {
 }
 
 #[wasm_bindgen]
-pub fn parse_and_render(input: &[u8], tag_name_map: String) -> ParseAndRenderResult {
+pub fn parse_and_render(
+    input: &[u8],
+    tag_name_map: String,
+    should_include_block_ids: bool,
+) -> ParseAndRenderResult {
     #[cfg(debug_assertions)]
     {
         console_error_panic_hook::set_once();
@@ -89,7 +93,7 @@ pub fn parse_and_render(input: &[u8], tag_name_map: String) -> ParseAndRenderRes
         rotext::NewHtmlRendererOptoins {
             tag_name_map,
             initial_output_string_capacity: input.len() * 3,
-            with_block_id: true,
+            should_include_block_ids,
         },
     );
     let html: String = renderer.render(all_events.clone().into_iter());

@@ -80,7 +80,7 @@ impl<'a> test_support::Case for Case<'a> {
             tag_name_map: self.options.tag_name_map.clone(),
             initial_output_string_capacity: 0,
             #[cfg(feature = "block-id")]
-            with_block_id: self.options.with_block_id,
+            should_include_block_ids: self.options.with_block_id,
         };
         let renderer = HtmlRenderer::new(self.input.as_bytes(), opts);
         let actual = renderer.render(self.input_events.clone().into_iter());

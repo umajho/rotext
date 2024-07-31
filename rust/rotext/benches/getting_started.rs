@@ -33,7 +33,7 @@ fn rendering(bencher: divan::Bencher) {
                     tag_name_map: Default::default(),
                     initial_output_string_capacity: file_content.len() * 3,
                     #[cfg(feature = "block-id")]
-                    with_block_id: true,
+                    should_include_block_ids: true,
                 },
             );
             renderer.render(events);
@@ -52,7 +52,7 @@ fn parsing_and_rendering(bencher: divan::Bencher) {
                 tag_name_map: Default::default(),
                 initial_output_string_capacity: file_content.len() * 3,
                 #[cfg(feature = "block-id")]
-                with_block_id: true,
+                should_include_block_ids: true,
             },
         );
         renderer.render(events);

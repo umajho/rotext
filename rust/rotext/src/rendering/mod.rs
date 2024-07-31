@@ -24,7 +24,7 @@ pub struct NewHtmlRendererOptoins<'a> {
     pub initial_output_string_capacity: usize,
 
     #[cfg(feature = "block-id")]
-    pub with_block_id: bool,
+    pub should_include_block_ids: bool,
 }
 
 #[derive(Clone)]
@@ -59,7 +59,7 @@ impl<'a> HtmlRenderer<'a> {
             tag_name_map: opts.tag_name_map,
             input,
             #[cfg(feature = "block-id")]
-            with_block_id: opts.with_block_id,
+            with_block_id: opts.should_include_block_ids,
             result: Vec::with_capacity(opts.initial_output_string_capacity),
             should_enter_table_row: false,
             should_enter_table_cell: false,
