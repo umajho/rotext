@@ -55,6 +55,8 @@ struct ParserInner {
     end_conditions: EndConditions,
 
     is_at_first_line: bool,
+    has_ever_yielded: bool,
+    has_found_leading_spaces: bool,
 }
 
 #[derive(Default)]
@@ -113,6 +115,8 @@ impl Parser {
                 mode: options.mode,
                 end_conditions: options.end_conditions,
                 is_at_first_line: true,
+                has_ever_yielded: false,
+                has_found_leading_spaces: false,
             },
             state: options.initial_state,
         }
@@ -138,7 +142,10 @@ impl Parser {
             match result {
                 InternalOutput::ToContinue => {}
                 InternalOutput::ToContinueIn(state) => self.state = state,
-                InternalOutput::ToYield(to_yield) => break sub_parsers::Output::ToYield(to_yield),
+                InternalOutput::ToYield(to_yield) => {
+                    self.inner.has_ever_yielded = true;
+                    break sub_parsers::Output::ToYield(to_yield);
+                }
                 InternalOutput::ToPauseForNewLine => {
                     self.inner.is_at_first_line = false;
                     break sub_parsers::Output::ToPauseForNewLine;
@@ -173,6 +180,15 @@ impl Parser {
             global_mapper::Mapped::CharAt(_) | global_mapper::Mapped::NextChar => {
                 // NOTE: 初始状态也可能遇到 `NextChar`，比如在一个并非结束与换行的块
                 // 级元素（最简单的，如分割线）后面存在文本时。
+
+                if matches!(inner.mode, Mode::Inline)
+                    && !inner.has_ever_yielded
+                    && ctx.peek_next_char() == Some(b' ')
+                {
+                    inner.has_found_leading_spaces = true;
+                    consume_peeked!(ctx, &peeked);
+                    return InternalOutput::ToContinue;
+                }
 
                 if let Some(condition) = inner
                     .end_conditions
