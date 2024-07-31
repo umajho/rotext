@@ -29,6 +29,8 @@ pub struct Parser<'a, TStack: Stack<StackEntry>> {
     nesting: Nesting,
 }
 
+/// NOTE: 虽然各 variants 大小差别很大，但由于一个解析器只会有一个 [State]，因此不是问题。
+#[allow(clippy::large_enum_variant)]
 enum State<'a> {
     InRootParser(root_parser::Parser<'a>),
     InSubParser(Option<Box<dyn sub_parsers::SubParser<'a> + 'a>>),

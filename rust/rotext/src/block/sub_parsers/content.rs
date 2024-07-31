@@ -119,7 +119,7 @@ impl Parser {
                 }
                 StepState::ToOutputDone(have_met) => {
                     self.next_initial_step_state = StepState::Invalid;
-                    return sub_parsers::Output::Done(have_met.clone());
+                    return sub_parsers::Output::Done(*have_met);
                 }
                 StepState::Invalid => unreachable!(),
             };
