@@ -7,6 +7,7 @@ mod groups_heading;
 mod groups_horizontal_rule;
 mod groups_list;
 mod groups_paragraph;
+mod groups_table;
 mod support;
 
 use crate::{
@@ -35,6 +36,7 @@ fn it_works() {
         table.extend(groups_list::groups_list());
         table.extend(groups_description_list::groups_description_list());
         table.extend(groups_code_block::groups_code_block());
+        table.extend(groups_table::groups_table());
 
         table
     };
