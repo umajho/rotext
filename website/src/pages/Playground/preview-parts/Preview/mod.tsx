@@ -5,120 +5,52 @@ import {
   JSX,
   on,
   onMount,
-  Setter,
   Show,
 } from "solid-js";
 
-import {
-  Classes,
-  classModule,
-  h,
-  init,
-  Module,
-  propsModule,
-  styleModule,
-  VNode,
-} from "snabbdom";
-
-import { createStyleProviderFromCSSText } from "@rolludejo/web-internal";
-
-import { parse } from "@rotext/parsing";
-import { toSnabbdomChildren } from "@rotext/to-html";
+// @ts-ignore
+import { Idiomorph } from "idiomorph/dist/idiomorph.esm.js";
 
 import {
   ErrorAlert,
-  getDefaultDicexpStyleProviders,
-  getDefaultRefLinkStyleProviders,
   registerRoWidgetOwner,
 } from "@rotext/solid-components/internal";
 
-import {
-  getComputedColor,
-  getComputedCSSValueOfClass,
-} from "@rotext/web-utils";
-
-import { Loading } from "../../../../components/ui/mod";
-
 import { debounceEventHandler } from "../../../../utils/mod";
+import {
+  PROSE_CLASS,
+  registerCustomElementsOnce,
+  WIDGET_OWNER_CLASS,
+} from "../../../../utils/custom-elements-registration/mod";
 
 import {
   ActiveLines,
   EditorStore,
   TopLine,
 } from "../../../../hooks/editor-store";
+import { createAutoResetCounter } from "../../../../hooks/auto-reset-counter";
+import { RotextProcessResult } from "../../../../processors/mod";
 
 import { LookupList, LookupListRaw } from "./internal-types";
 import * as ScrollUtils from "./scroll-utils";
-import { createAutoResetCounter } from "../../../../hooks/auto-reset-counter";
 
-import { registerCustomElement as registerCustomElementForScratchOff } from "./ScratchOff";
-import {
-  registerCustomElementForRoWidgetDicexp,
-  registerCustomElementForRoWidgetRefLink,
-} from "@rotext/solid-components/internal";
-import { registerCustomElementForStepsRepresentation } from "@dicexp/solid-components";
-
-import { createDemoRefContentRenderer } from "./ref-content-demo";
-import { evaluatorProvider } from "./evaluator-provider";
-
-import stylesForTuanProse from "./tuan-prose.scss?inline";
-
-const styleProviderForTuanProse = (() => {
-  const styleEl = document.createElement("style");
-  styleEl.id = "tuan-prose";
-  styleEl.appendChild(document.createTextNode(stylesForTuanProse));
-  document.head.appendChild(styleEl);
-
-  return createStyleProviderFromCSSText(stylesForTuanProse);
-})();
+registerCustomElementsOnce();
 
 const CONTENT_ROOT_CLASS = "previewer-content-root";
-const PROSE_CLASS = "tuan-prose";
-const WIDGET_OWNER_CLASS = "widget-owner";
-const INNER_NO_AUTO_OPEN_CLASS = "inner-no-auto-open";
-
-const BACKGROUND_COLOR = getComputedColor(
-  getComputedCSSValueOfClass("background-color", "tuan-background"),
-)!;
-
-registerCustomElementForRoWidgetRefLink("ref-link", {
-  styleProviders: getDefaultRefLinkStyleProviders(),
-  backgroundColor: BACKGROUND_COLOR,
-  widgetOwnerClass: WIDGET_OWNER_CLASS,
-  innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,
-  refContentRenderer: createDemoRefContentRenderer({
-    proseClass: PROSE_CLASS,
-    proseStyleProvider: styleProviderForTuanProse,
-  }),
-});
-registerCustomElementForStepsRepresentation("steps-representation");
-registerCustomElementForRoWidgetDicexp("dicexp-preview", {
-  styleProviders: getDefaultDicexpStyleProviders(),
-  backgroundColor: BACKGROUND_COLOR,
-  widgetOwnerClass: WIDGET_OWNER_CLASS,
-  innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,
-  evaluatorProvider,
-  ErrorAlert,
-  Loading,
-  tagNameForStepsRepresentation: "steps-representation",
-});
-registerCustomElementForScratchOff("scratch-off", {
-  innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,
-});
 
 const Preview: Component<
   {
     store: EditorStore;
+    processResult: RotextProcessResult;
+
     class?: string;
-    setParsingTimeText: Setter<string | null>;
-    onThrowInParsing: (thrown: unknown) => void;
+    hidden: boolean;
   }
 > = (props) => {
   let scrollContainerEl!: HTMLDivElement;
   let widgetAnchorEl!: HTMLDivElement;
   let outputContainerEl!: HTMLDivElement;
-
-  const [err, setErr] = createSignal<Error | null>(null);
+  let outputEl!: HTMLElement;
 
   const [scrollHandler, setScrollHandler] = createSignal<(ev: Event) => void>();
 
@@ -130,19 +62,25 @@ const Preview: Component<
       outputContainer: outputContainerEl,
     });
 
-    //==== 文档渲染 ====
-    createRendering({
-      text: () => props.store.text,
-      setLookupListRaw,
-      setParsingTimeText: (v) => props.setParsingTimeText(v),
-      setErr,
-    }, {
-      outputContainer: outputContainerEl,
-    });
+    { //==== 文档渲染 ====
+      createEffect(on([() => props.processResult.html], ([html]) => {
+        if (!html) {
+          outputEl.innerText = "";
+          setLookupListRaw([]);
+          return;
+        }
+
+        Idiomorph.morph(outputEl, html, { morphStyle: "innerHTML" });
+
+        setLookupListRaw(
+          props.processResult.lookupListRawCollector?.(outputEl) ?? [],
+        );
+      }));
+    }
 
     //==== 滚动同步 ====
     const { handleScroll } = createScrollSyncing({
-      text: () => props.store.text,
+      inputChangeNotifier: () => props.processResult,
       topLine: () => props.store.topLine,
       setTopLine: (v) => props.store.topLine = v,
       lookupList,
@@ -153,7 +91,7 @@ const Preview: Component<
     setScrollHandler(() => debounceEventHandler(handleScroll));
 
     //==== 活动行对应元素高亮 ====
-    createHighlight({
+    setUpHighlight({
       activeLines: () => props.store.activeLines,
       lookupList: lookupList,
       setHighlightElement,
@@ -179,25 +117,68 @@ const Preview: Component<
     }
   });
 
+  const { fixScrollOutOfSyncAfterUnhide } = (() => {
+    // XXX: 在已经滚动了一段距离时，将预览部分的标签页切到并非 “预览” 的标签页，
+    // 再切回 “预览” 标签页，部分浏览器会有不正常的行为。观察如下：
+    // - Chrome (126)：预览会莫名其妙往上跳一小段距离，导致触发滚动事件。
+    // - Firefox (127): 有概率正常，有概率出现和 Chrome 类似的情况，且即使第一次
+    // 情况正常，只是切换标签页不进行其他额外操作，再切换几次还是能触发不正常的
+    // 情况。
+    // - Safari (16.5) 一切正常。
+    //
+    // 目前的解决方法就是在取消隐藏后第一次触发滚动事件时终止通常的处理（去让编
+    // 辑器部分同步），而是强制让编辑器部分同步原先的滚动位置以恢复同步。
+
+    const [hasScrolled, setHasScrolled] = createSignal(false);
+    createEffect(on([() => props.hidden], ([hidden]) => {
+      if (!hidden) setHasScrolled(false);
+    }));
+
+    function fixScrollOutOfSyncAfterUnhide(): "should_stop" | undefined {
+      if (!hasScrolled()) {
+        setHasScrolled(true);
+        props.store.triggerTopLineUpdateForcedly();
+        return "should_stop";
+      }
+      return undefined;
+    }
+
+    return { fixScrollOutOfSyncAfterUnhide };
+  })();
+
   //==== 组件 ====
   return (
     <div
       class={[
+        `${props.hidden ? "hidden" : ""}`,
         `previewer ${WIDGET_OWNER_CLASS}`,
         "relative tuan-background overflow-y-auto",
         props.class,
       ].join(" ")}
       ref={scrollContainerEl}
-      onScroll={(ev) => scrollHandler()!(ev)}
+      onScroll={(ev) => {
+        if (fixScrollOutOfSyncAfterUnhide() === "should_stop") return;
+        scrollHandler()!(ev);
+      }}
     >
-      <Show when={err()}>
-        {(err) => <ErrorAlert message={err().message} stack={err().stack} />}
-      </Show>
+      <div class={props.processResult.error ? "" : "hidden"}>
+        {
+          /*
+            temporary workaround for: “Attempting to access a stale value from
+            <Show> that could possibly be undefined.”
+            FIXME!
+          */
+        }
+        <ErrorAlert
+          message={props.processResult.error?.message}
+          stack={props.processResult.error?.stack}
+        />
+      </div>
 
       {/* highlight anchor */}
       <div class="relative">{highlightElement()}</div>
 
-      <div class="preview-widget-anchor relative z-10" ref={widgetAnchorEl} />
+      <div class="relative z-10" ref={widgetAnchorEl} />
 
       <div
         class={"" +
@@ -207,7 +188,9 @@ const Preview: Component<
           `${PROSE_CLASS} ` +
           ""}
       >
-        <div ref={outputContainerEl} />
+        <div ref={outputContainerEl}>
+          <article ref={outputEl} class={`relative ${CONTENT_ROOT_CLASS}`} />
+        </div>
       </div>
     </div>
   );
@@ -217,7 +200,7 @@ export default Preview;
 function createLookupList(
   els: { scrollContainer: HTMLElement; outputContainer: HTMLElement },
 ) {
-  const [lookupListRaw, setLookupListRaw] = createSignal<LookupList>([]);
+  const [lookupListRaw, setLookupListRaw] = createSignal<LookupListRaw>([]);
   const [lookupList, setLookupList] = createSignal<LookupList>([]);
   function roastLookupList() {
     const _raw = lookupListRaw();
@@ -235,101 +218,11 @@ function createLookupList(
 }
 
 /**
- * 用于处理文档渲染。
- */
-function createRendering(
-  props: {
-    text: () => string;
-    setLookupListRaw: (v: LookupListRaw) => void;
-    setParsingTimeText(v: string | null): void;
-    setErr: (v: Error | null) => void;
-  },
-  els: {
-    outputContainer: HTMLElement;
-  },
-) {
-  let patch: ReturnType<typeof init>;
-  let lastNode: HTMLElement | VNode;
-
-  const {
-    module: locationModule,
-  } = createLocationModule(props.setLookupListRaw);
-
-  onMount(() => {
-    const outputEl = document.createElement("div");
-    els.outputContainer.appendChild(outputEl);
-
-    patch = init(
-      [classModule, styleModule, propsModule, locationModule],
-      undefined,
-      { experimental: { fragments: true } },
-    );
-    lastNode = outputEl;
-  });
-
-  createEffect(on([props.text], () => {
-    props.setErr(null);
-    try {
-      const parsingStart = performance.now();
-      const doc = parse(props.text(), {
-        softBreakAs: "br",
-        recordsLocation: true,
-      });
-      const vChildren = toSnabbdomChildren(doc);
-      props.setParsingTimeText(
-        `${+(performance.now() - parsingStart).toFixed(3)}ms`,
-      );
-
-      const classMap: Classes = { "relative": true };
-      classMap[CONTENT_ROOT_CLASS] = true;
-      const vNode = h("article", { class: classMap }, vChildren);
-
-      patch(lastNode, vNode);
-      lastNode = vNode;
-    } catch (e) {
-      if (!(e instanceof Error)) {
-        e = new Error(`${e}`);
-      }
-      props.setErr(e as Error);
-    }
-  }));
-}
-
-function createLocationModule(
-  setLookupListRaw: (view: LookupListRaw) => void,
-): { module: Module } {
-  let loookupListRaw!: LookupListRaw;
-
-  const module = {
-    pre: () => {
-      loookupListRaw = [];
-    },
-    create: (_oldVNode: VNode, vnode: VNode) => {
-      if (vnode.data?.location) {
-        const el = vnode.elm as HTMLElement;
-        loookupListRaw.push({
-          element: el,
-          location: vnode.data.location,
-        });
-      }
-    },
-    update: (oldVNode: VNode, vnode: VNode) => {
-      module.create(oldVNode, vnode);
-    },
-    post: () => {
-      setLookupListRaw(loookupListRaw);
-    },
-  };
-
-  return { module };
-}
-
-/**
  * 用于处理滚动同步。
  */
 function createScrollSyncing(
   props: {
-    text: () => string;
+    inputChangeNotifier: () => void;
     topLine: () => TopLine;
     setTopLine: (v: TopLine) => void;
     lookupList: () => LookupList;
@@ -389,7 +282,10 @@ function createScrollSyncing(
     //       在使预览的高度增加而导致可以继续滚动的位置向下延伸时，预览可以同步位置。
     createEffect(on([props.topLine], () => scrollToTopLine()));
     createEffect(
-      on([props.text], () => scrollToTopLine({ triggeredBy: "text-changes" })),
+      on(
+        [props.inputChangeNotifier],
+        () => scrollToTopLine({ triggeredBy: "text-changes" }),
+      ),
     );
   }
 
@@ -435,7 +331,7 @@ function createScrollSyncing(
   return { handleScroll };
 }
 
-function createHighlight(
+function setUpHighlight(
   props: {
     activeLines: () => ActiveLines | null;
     lookupList: () => LookupList;

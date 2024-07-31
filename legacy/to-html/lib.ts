@@ -1,12 +1,26 @@
 import { Document, Element, MixedSlot, RawTextSlot } from "@rotext/nodes";
-import { h, VNode, VNodeChildren } from "snabbdom";
+import { Dataset, h, VNode, VNodeChildren } from "snabbdom";
 import { LocationRange } from "peggy";
 
 type LocMap = WeakMap<any, LocationRange>;
 
-export function toSnabbdomChildren(doc: Document): VNodeChildren {
+export interface CustomElementTagNameMap {
+  "scratch-off": string;
+  "ref-link": string;
+  "dicexp-preview": string;
+}
+
+export function toSnabbdomChildren(
+  doc: Document,
+  opts: {
+    customElementTagNameMap: CustomElementTagNameMap;
+  },
+): VNodeChildren {
   const locMap = doc.metadata?.locMap as LocMap | undefined;
-  return slotToChildren(doc.slot, locMap);
+  return slotToChildren(doc.slot, {
+    locMap,
+    customElementTagNameMap: opts.customElementTagNameMap,
+  });
 }
 /**
  * XXX: 应由调用者保障传入的元素符合规范（定义的类型）
@@ -14,15 +28,18 @@ export function toSnabbdomChildren(doc: Document): VNodeChildren {
  */
 export function elementToSnabbdom(
   el: Element,
-  locMap: LocMap | undefined,
+  opts: {
+    locMap: LocMap | undefined;
+    customElementTagNameMap: CustomElementTagNameMap;
+  },
 ): VNode {
   let children: VNodeChildren | undefined;
-  const location = getLocationData(locMap, el);
+  const dataset = makeDataset(opts.locMap, el);
 
   if ("slot" in el) {
     let sel: string;
     let classes: Record<string, boolean> | undefined;
-    let props: Record<string, string> | undefined;
+    let attrs: Record<string, string> | undefined;
     switch (el.type) {
       // case "em":
       // case "u":
@@ -37,23 +54,22 @@ export function elementToSnabbdom(
       //   classes = { "em-dotted": true };
       //   break;
       case "spoiler":
-        sel = "scratch-off";
+        sel = opts.customElementTagNameMap["scratch-off"];
+        children = h(
+          "span",
+          { attrs: { "slot": "content" } },
+          slotToChildren(el.slot, opts),
+        );
         break;
       case "code":
         sel = "code";
         break;
       case "ref-link":
-        sel = "ref-link";
-        // fallback
-        children = h(
-          "span",
-          { class: { "widget-prime": true } },
-          `>>${el.slot}`,
-        );
-        props = { address: el.slot };
+        sel = opts.customElementTagNameMap["ref-link"];
+        attrs = { address: el.slot };
         break;
       case "P":
-        sel = el.type;
+        sel = "p";
         break;
       case "QUOTE":
         sel = "blockquote";
@@ -63,9 +79,9 @@ export function elementToSnabbdom(
         break;
     }
 
-    children ??= slotToChildren(el.slot, locMap);
-    const data = (classes || location || props)
-      ? { class: classes, location, props }
+    children ??= slotToChildren(el.slot, opts);
+    const data = (classes || dataset || attrs)
+      ? { class: classes, dataset, attrs }
       : null;
 
     return h(sel, data, children);
@@ -73,18 +89,18 @@ export function elementToSnabbdom(
 
   switch (el.type) {
     case "br":
-      return h("br", location ? { location } : null);
+      return h("br", { dataset });
     case "ruby":
-      return h("ruby", location ? { location } : null, [
-        h("rb", slotToChildren(el.slots.base, locMap)),
+      return h("ruby", { dataset }, [
+        h("rb", slotToChildren(el.slots.base, opts)),
         h("rp", String(el.props.p[0])),
-        h("rt", slotToChildren(el.slots.text, locMap)),
+        h("rt", slotToChildren(el.slots.text, opts)),
         h("rp", String(el.props.p[1])),
       ]);
     case "hyperlink":
       if ("props" in el && "auto" in el.props && el.props.auto) {
         return h("a", {
-          props: {
+          attrs: {
             href: el.slots.href,
             target: "_blank",
             rel: "noopener noreferrer",
@@ -95,36 +111,27 @@ export function elementToSnabbdom(
         throw new Error("unreachable");
       }
     case "dicexp": {
-      const props = {
+      const attrs = {
         code: el.slots.code,
         ...(el.slots.assignTo ? { "assign-to": el.slots.assignTo } : {}),
       };
-      // fallback
-      const children: VNodeChildren = h(
-        "span",
-        { class: { "widget-prime": true } },
-        "[" +
-          `${el.slots.assignTo ? `@${el.slots.assignTo}` : ""}` +
-          `=${el.slots.code}` +
-          "]",
-      );
       // TODO: 根据附加数据决定标签名（`…-preview` vs `…-result`？）
-      return h("dicexp-preview", { props }, children);
+      return h(
+        opts.customElementTagNameMap["dicexp-preview"],
+        { attrs },
+        children,
+      );
     }
     case "THEMATIC-BREAK":
-      return h("hr", location ? { location } : null);
+      return h("hr", { dataset });
     case "OL":
     case "UL":
       return h(
         el.type === "OL" ? "ol" : "ul",
-        location ? { location } : null,
+        { dataset },
         el.items.map((item) => {
-          const itemLocation = getLocationData(locMap, item);
-          return h(
-            "li",
-            itemLocation ? { location: itemLocation } : null,
-            slotToChildren(item.slot, locMap),
-          );
+          const dataset = makeDataset(opts.locMap, item);
+          return h("li", { dataset }, slotToChildren(item.slot, opts));
         }),
       );
     case "DL":
@@ -132,13 +139,9 @@ export function elementToSnabbdom(
         "dl",
         location ? { location } : null,
         el.items.map((item) => {
-          const itemLocation = getLocationData(locMap, item);
-          const children = slotToChildren(item.slot, locMap);
-          return h(
-            item.type === "DL:T" ? "dt" : "dd",
-            itemLocation ? { location: itemLocation } : null,
-            children,
-          );
+          const dataset = makeDataset(opts.locMap, item);
+          const children = slotToChildren(item.slot, opts);
+          return h(item.type === "DL:T" ? "dt" : "dd", { dataset }, children);
         }),
       );
     case "TABLE": {
@@ -147,21 +150,21 @@ export function elementToSnabbdom(
       );
       let i = 0;
       if (el.slots?.caption) {
-        children[i] = h("caption", slotToChildren(el.slots.caption, locMap));
+        children[i] = //
+          h("caption", slotToChildren(el.slots.caption, opts));
         i++;
       }
       for (const row of el.cells) {
-        const rowLocation = getLocationData(locMap, row);
-
+        const dataset = makeDataset(opts.locMap, row);
         children[i] = h(
           "tr",
-          rowLocation ? { location: rowLocation } : null,
+          { dataset },
           row.map((cell) => {
-            const cellLocation = getLocationData(locMap, cell);
-            const children = slotToChildren(cell.slot, locMap);
+            const dataset = makeDataset(opts.locMap, cell);
+            const children = slotToChildren(cell.slot, opts);
             return h(
               cell.type === "TABLE:H" ? "th" : "td",
-              cellLocation ? { location: cellLocation } : null,
+              { dataset },
               children,
             );
           }),
@@ -178,30 +181,35 @@ export function elementToSnabbdom(
 
 function slotToChildren(
   slot: MixedSlot | RawTextSlot,
-  locMap: LocMap | undefined,
+  opts: {
+    locMap: LocMap | undefined;
+    customElementTagNameMap: CustomElementTagNameMap;
+  },
 ): VNodeChildren {
   if (typeof slot === "string") return slot;
   if (slot.length === 1 && typeof slot[0] === "string") return slot[0];
 
   return slot.map((node) =>
-    typeof node === "string" ? node : elementToSnabbdom(node, locMap)
+    typeof node === "string" ? node : elementToSnabbdom(node, opts)
   );
 }
 
-interface LocationData {
-  start: { line: number };
-  end: { line: number };
-}
-
-function getLocationData(
+function makeDataset(
   locMap: LocMap | undefined,
   key: any,
-): LocationData | undefined {
+): Dataset {
+  const dataSourceMap = generateDataSourceMap(locMap, key);
+  return {
+    ...(dataSourceMap ? { sourcemap: dataSourceMap } : {}),
+  };
+}
+
+function generateDataSourceMap(
+  locMap: LocMap | undefined,
+  key: any,
+): string | undefined {
   if (!locMap) return undefined;
   const location = locMap.get(key);
   if (!location) return undefined;
-  return {
-    start: { line: location.start.line },
-    end: { line: location.end.line },
-  };
+  return `${location.start.line}-${location.end.line}`;
 }

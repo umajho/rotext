@@ -1,4 +1,4 @@
-import "./one-dark.scss";
+import "../../../styles/one-dark";
 
 import { Component, createEffect, on } from "solid-js";
 

@@ -1,0 +1,18 @@
+[workspace]
+
+resolver = "2"
+
+members = ["rotext", "rotext_wasm_bindings"]
+
+[workspace.package]
+
+version = "0.1.0"
+license = "MIT"
+edition = "2021"
+authors = ["Umaĵo <umajho@proton.me>"]
+repository = "https://github.com/umajho/rotext"
+
+[workspace.dependencies]
+
+rotext = { path = "rotext" }
+rotext_wasm = { path = "rotext_wasm_bindings" }

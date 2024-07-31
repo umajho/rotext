@@ -1,0 +1,37 @@
+{
+  "name": "@rotext/wasm-bindings-adapter",
+  "version": "0.1.0",
+  "description": "The official adapter for `rotext_wasm_bindings` (the official low-level WASM bindings package for the rust crate `rotext`).",
+  "author": "Umaĵo",
+  "license": "MIT",
+  "keywords": [
+    "rotext"
+  ],
+  "homepage": "https://github.com/umajho/rotext/tree/main/packages/wasm-bindings-adapter#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/umajho/rotext/"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "module": "./dist/lib.js",
+  "types": "./dist/lib.d.ts",
+  "exports": {
+    ".": "./dist/lib.js",
+    "./internal": "./internal.ts"
+  },
+  "scripts": {
+    "build": "rollup -c"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-typescript": "^11.1.6",
+    "rollup": "^4.18.1",
+    "rollup-plugin-delete": "^2.0.0",
+    "rollup-plugin-dts": "^6.1.1",
+    "tslib": "^2.6.3"
+  },
+  "peerDependencies": {
+    "rotext_wasm_bindings": "^0.1.0"
+  }
+}
