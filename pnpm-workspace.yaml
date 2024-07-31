@@ -1,6 +1,7 @@
 packages:
   - internal/*
   - packages/*
+  - legacy/*
   - website
   - dev/*
   - rust/rotext_wasm_bindings/pkg
