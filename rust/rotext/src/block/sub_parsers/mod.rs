@@ -15,7 +15,7 @@ pub enum Output {
     Done(HaveMet),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum HaveMet {
     None,
 
