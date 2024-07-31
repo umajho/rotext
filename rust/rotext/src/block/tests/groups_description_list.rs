@@ -35,8 +35,8 @@ pub fn groups_description_list() -> Vec<GroupedCases> {
             ),
             case!(
                 vec![indoc! {"
-                        ; term
-                        : details"},],
+                    ; term
+                    : details"},],
                 vec![
                     (EventType::EnterDescriptionList, None),
                     (EventType::EnterDescriptionTerm, None),
@@ -54,11 +54,11 @@ pub fn groups_description_list() -> Vec<GroupedCases> {
             ),
             case!(
                 vec![indoc! {"
-                        ; term 1
-                        : details 1
-                        ; term 2
-                        : details 2.1
-                        : details 2.2"},],
+                    ; term 1
+                    : details 1
+                    ; term 2
+                    : details 2.1
+                    : details 2.2"},],
                 vec![
                     (EventType::EnterDescriptionList, None),
                     (EventType::EnterDescriptionTerm, None),
@@ -91,9 +91,9 @@ pub fn groups_description_list() -> Vec<GroupedCases> {
             ),
             case!(
                 vec![indoc! {"
-                        ; ; term 1
-                        > : details 1
-                        : ; term 2"},],
+                    ; ; term 1
+                    > : details 1
+                    : ; term 2"},],
                 vec![
                     (EventType::EnterDescriptionList, None),
                     (EventType::EnterDescriptionTerm, None),
@@ -124,9 +124,9 @@ pub fn groups_description_list() -> Vec<GroupedCases> {
             ),
             case!(
                 vec![indoc! {"
-                        ; # a
-                        > > b
-                        : > foo"},],
+                    ; # a
+                    > > b
+                    : > foo"},],
                 vec![
                     (EventType::EnterDescriptionList, None),
                     (EventType::EnterDescriptionTerm, None),

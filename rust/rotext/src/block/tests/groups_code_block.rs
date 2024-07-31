@@ -236,9 +236,9 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                 ),
                 case!(
                     vec![indoc! {"
-                            ```
-                            <` ``` `>
-                            ```"},],
+                        ```
+                        <` ``` `>
+                        ```"},],
                     vec![
                         (EventType::EnterCodeBlock, None),
                         (EventType::IndicateCodeBlockCode, None),
@@ -248,9 +248,9 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                 ),
                 case!(
                     vec![indoc! {"
-                            ```info<`
-                            info line 2`>
-                            ```"},],
+                        ```info<`
+                        info line 2`>
+                        ```"},],
                     vec![
                         (EventType::EnterCodeBlock, None),
                         (EventType::Text, Some("info")),

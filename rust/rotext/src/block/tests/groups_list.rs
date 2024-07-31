@@ -36,8 +36,8 @@ pub fn groups_list() -> Vec<GroupedCases> {
                 ),
                 case!(
                     vec![indoc! {"
-                                # 1
-                                # 2"},],
+                        # 1
+                        # 2"},],
                     vec![
                         (EventType::EnterOrderedList, None),
                         (EventType::EnterListItem, None),
@@ -55,9 +55,9 @@ pub fn groups_list() -> Vec<GroupedCases> {
                 ),
                 case!(
                     vec![indoc! {"
-                                * a
-                                * b
-                                * c"},],
+                        * a
+                        * b
+                        * c"},],
                     vec![
                         (EventType::EnterUnorderedList, None),
                         (EventType::EnterListItem, None),
@@ -80,9 +80,9 @@ pub fn groups_list() -> Vec<GroupedCases> {
                 ),
                 case!(
                     vec![indoc! {"
-                                # 1
+                        # 1
 
-                                # 2"},],
+                        # 2"},],
                     vec![
                         (EventType::EnterOrderedList, None),
                         (EventType::EnterListItem, None),
@@ -118,8 +118,8 @@ pub fn groups_list() -> Vec<GroupedCases> {
                 ),
                 case!(
                     vec![indoc! {"
-                                # # 1.1
-                                # 2"},],
+                        # # 1.1
+                        # 2"},],
                     vec![
                         (EventType::EnterOrderedList, None),
                         (EventType::EnterListItem, None),
@@ -141,9 +141,9 @@ pub fn groups_list() -> Vec<GroupedCases> {
                 ),
                 case!(
                     vec![indoc! {"
-                                # # 1.1
-                                #
-                                # 2"},],
+                        # # 1.1
+                        #
+                        # 2"},],
                     vec![
                         (EventType::EnterOrderedList, None),
                         (EventType::EnterListItem, None),
@@ -167,8 +167,8 @@ pub fn groups_list() -> Vec<GroupedCases> {
                 ),
                 case!(
                     vec![indoc! {"
-                                # 1
-                                # # 2.1"},],
+                        # 1
+                        # # 2.1"},],
                     vec![
                         (EventType::EnterOrderedList, None),
                         (EventType::EnterListItem, None),
@@ -190,9 +190,9 @@ pub fn groups_list() -> Vec<GroupedCases> {
                 ),
                 case!(
                     vec![indoc! {"
-                                # 1
-                                #
-                                # # 2.1"},],
+                        # 1
+                        #
+                        # # 2.1"},],
                     vec![
                         (EventType::EnterOrderedList, None),
                         (EventType::EnterListItem, None),
@@ -216,9 +216,9 @@ pub fn groups_list() -> Vec<GroupedCases> {
                 ),
                 case!(
                     vec![indoc! {"
-                                # 1
-                                # # 2.1
-                                # 3"},],
+                        # 1
+                        # # 2.1
+                        # 3"},],
                     vec![
                         (EventType::EnterOrderedList, None),
                         (EventType::EnterListItem, None),
@@ -245,9 +245,9 @@ pub fn groups_list() -> Vec<GroupedCases> {
                 ),
                 case!(
                     vec![indoc! {"
-                                # # 1.1
-                                # 2
-                                # # 3.1"},],
+                        # # 1.1
+                        # 2
+                        # # 3.1"},],
                     vec![
                         (EventType::EnterOrderedList, None),
                         (EventType::EnterListItem, None),
@@ -283,12 +283,12 @@ pub fn groups_list() -> Vec<GroupedCases> {
             cases: vec![case!(
                 vec![
                     indoc! {"
-                                # 1
-                                * a"},
+                        # 1
+                        * a"},
                     indoc! {"
-                                # 1
+                        # 1
 
-                                * a"},
+                        * a"},
                 ],
                 vec![
                     (EventType::EnterOrderedList, None),
@@ -313,8 +313,8 @@ pub fn groups_list() -> Vec<GroupedCases> {
             cases: vec![
                 case!(
                     vec![indoc! {"
-                                # a
-                                > b"},],
+                        # a
+                        > b"},],
                     vec![
                         (EventType::EnterOrderedList, None),
                         (EventType::EnterListItem, None),
@@ -329,9 +329,9 @@ pub fn groups_list() -> Vec<GroupedCases> {
                 ),
                 case!(
                     vec![indoc! {"
-                                # a
-                                >
-                                > b"},],
+                        # a
+                        >
+                        > b"},],
                     vec![
                         (EventType::EnterOrderedList, None),
                         (EventType::EnterListItem, None),
@@ -347,8 +347,8 @@ pub fn groups_list() -> Vec<GroupedCases> {
                 ),
                 case!(
                     vec![indoc! {"
-                                # # 1.1
-                                > # 1.2"},],
+                        # # 1.1
+                        > # 1.2"},],
                     vec![
                         (EventType::EnterOrderedList, None),
                         (EventType::EnterListItem, None),
@@ -370,8 +370,8 @@ pub fn groups_list() -> Vec<GroupedCases> {
                 ),
                 case!(
                     vec![indoc! {"
-                                # # a
-                                > > b"},],
+                        # # a
+                        > > b"},],
                     vec![
                         (EventType::EnterOrderedList, None),
                         (EventType::EnterListItem, None),
@@ -395,8 +395,8 @@ pub fn groups_list() -> Vec<GroupedCases> {
             cases: vec![
                 case!(
                     vec![indoc! {"
-                                == a ==
-                                # 1"},],
+                        == a ==
+                        # 1"},],
                     vec![
                         (EventType::EnterHeading2, None),
                         (EventType::Unparsed, Some("a")),
@@ -425,8 +425,8 @@ pub fn groups_list() -> Vec<GroupedCases> {
                 ),
                 case!(
                     vec![indoc! {"
-                                # == a ==
-                                > b"},],
+                        # == a ==
+                        > b"},],
                     vec![
                         (EventType::EnterOrderedList, None),
                         (EventType::EnterListItem, None),
@@ -442,8 +442,8 @@ pub fn groups_list() -> Vec<GroupedCases> {
                 ),
                 case!(
                     vec![indoc! {"
-                                # == a ==
-                                # b"},],
+                        # == a ==
+                        # b"},],
                     vec![
                         (EventType::EnterOrderedList, None),
                         (EventType::EnterListItem, None),
@@ -461,8 +461,8 @@ pub fn groups_list() -> Vec<GroupedCases> {
                 ),
                 case!(
                     vec![indoc! {"
-                                > foo
-                                # 1"},],
+                        > foo
+                        # 1"},],
                     vec![
                         (EventType::EnterBlockQuote, None),
                         (EventType::EnterParagraph, None),
@@ -480,9 +480,9 @@ pub fn groups_list() -> Vec<GroupedCases> {
                 ),
                 case!(
                     vec![indoc! {"
-                                # > foo
-                                # # 1.1
-                                > # 1.2"},],
+                        # > foo
+                        # # 1.1
+                        > # 1.2"},],
                     vec![
                         (EventType::EnterOrderedList, None),
                         (EventType::EnterListItem, None),
@@ -511,9 +511,9 @@ pub fn groups_list() -> Vec<GroupedCases> {
                 ),
                 case!(
                     vec![indoc! {"
-                                # # 1.1
-                                >
-                                > > foo"},],
+                        # # 1.1
+                        >
+                        > > foo"},],
                     vec![
                         (EventType::EnterOrderedList, None),
                         (EventType::EnterListItem, None),
