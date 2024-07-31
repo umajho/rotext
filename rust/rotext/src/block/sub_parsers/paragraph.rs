@@ -37,15 +37,18 @@ struct StateContent {
 }
 
 pub struct Parser {
-    consts: ParserConsts,
+    inner: ParserInner,
 
     state: State,
 }
-struct ParserConsts {
+struct ParserInner {
     #[cfg(feature = "line-number")]
     start_line_number: usize,
 
     is_in_table: bool,
+
+    have_ever_yielded: bool,
+    deferred: Option<BlockEvent>,
 }
 
 pub struct NewParserOptions {
@@ -61,10 +64,12 @@ impl Parser {
     /// XXX: 不会尝试解析 `content_before` 中的内容，而是直接把这些内容当成文本。
     pub fn new(opts: NewParserOptions) -> Self {
         Self {
-            consts: ParserConsts {
+            inner: ParserInner {
                 #[cfg(feature = "line-number")]
                 start_line_number: opts.start_line_number,
                 is_in_table: opts.is_in_table,
+                have_ever_yielded: false,
+                deferred: None,
             },
             state: State::Initial(StateInitial {
                 content_before: opts.content_before,
@@ -74,55 +79,59 @@ impl Parser {
 
     #[inline(always)]
     fn next(&mut self, ctx: &mut Context) -> sub_parsers::Output {
-        let ret: sub_parsers::Output = match &mut self.state {
-            State::Initial(state) => {
-                let (ret, state) = Self::process_in_initial_state(ctx, &self.consts, state);
-                self.state = state;
-                ret
-            }
-            State::Content(state) => {
-                let (ret, state) = Self::process_in_content_state(ctx, &self.consts, state);
-                if let Some(state) = state {
-                    self.state = state
-                }
-                ret
-            }
-            State::Exiting(have_met) => {
-                let have_met = *have_met;
-                self.state = State::Exited;
-                sub_parsers::Output::Done(have_met)
-            }
-            // 当解析器作为迭代器被耗尽而返回 `None` 时，解析器进入状态
-            // [State::Exited]。此后，不应该再调用 `next` 方法，否则就会执行到
-            // 这里。正确的做法是 `take_context` 取回 [Context]，并将解析器
-            // drop 掉。
-            State::Exited | State::Paused { .. } | State::Invalid => unreachable!(),
-            State::ToExit {
-                #[cfg(feature = "block-id")]
-                id,
-            } => {
-                let exit_block = ExitBlock {
-                    #[cfg(feature = "block-id")]
-                    id: *id,
-                    #[cfg(feature = "line-number")]
-                    start_line_number: self.consts.start_line_number,
-                    #[cfg(feature = "line-number")]
-                    end_line_number: ctx.current_line_number,
-                };
-                self.state = State::Exiting(HaveMet::None);
-                sub_parsers::Output::ToYield(BlockEvent::ExitBlock(exit_block))
-            }
-        };
+        if let Some(ev) = self.inner.deferred.take() {
+            return sub_parsers::Output::ToYield(ev);
+        }
 
-        ret
+        loop {
+            debug_assert!(self.inner.deferred.is_none());
+
+            match &mut self.state {
+                State::Initial(state) => {
+                    self.state = Self::process_in_initial_state(ctx, &self.inner, state);
+                }
+                State::Content(state) => {
+                    let (ret, state) = Self::process_in_content_state(ctx, &mut self.inner, state);
+                    if let Some(state) = state {
+                        self.state = state
+                    }
+                    break ret;
+                }
+                State::Exiting(have_met) => {
+                    let have_met = *have_met;
+                    self.state = State::Exited;
+                    break sub_parsers::Output::Done(have_met);
+                }
+                // 当解析器作为迭代器被耗尽而返回 `None` 时，解析器进入状态
+                // [State::Exited]。此后，不应该再调用 `next` 方法，否则就会执行到
+                // 这里。正确的做法是 `take_context` 取回 [Context]，并将解析器
+                // drop 掉。
+                State::Exited | State::Paused { .. } | State::Invalid => unreachable!(),
+                State::ToExit {
+                    #[cfg(feature = "block-id")]
+                    id,
+                } => {
+                    let exit_block = ExitBlock {
+                        #[cfg(feature = "block-id")]
+                        id: *id,
+                        #[cfg(feature = "line-number")]
+                        start_line_number: self.inner.start_line_number,
+                        #[cfg(feature = "line-number")]
+                        end_line_number: ctx.current_line_number,
+                    };
+                    self.state = State::Exiting(HaveMet::None);
+                    break sub_parsers::Output::ToYield(BlockEvent::ExitBlock(exit_block));
+                }
+            };
+        }
     }
 
     #[inline(always)]
     fn process_in_initial_state(
         #[allow(unused_variables)] ctx: &mut Context,
-        consts: &ParserConsts,
+        consts: &ParserInner,
         state: &StateInitial,
-    ) -> (sub_parsers::Output, State) {
+    ) -> State {
         let opts = sub_parsers::content::Options {
             initial_step_state: match state.content_before {
                 Some(content_before) => sub_parsers::content::StepState::Normal(content_before),
@@ -139,19 +148,15 @@ impl Parser {
         match_pop_block_id! {
             ctx,
             Some(id) => {
-                let state = State::Content(Some(StateContent {
+                State::Content(Some(StateContent {
                     id,
                     content_parser: Box::new(parser),
-                }));
-                let paragraph = BlockEvent::EnterParagraph(BlockWithID { id });
-                (sub_parsers::Output::ToYield(paragraph), state)
+                }))
             },
             None => {
-                let state = State::Content(Some(StateContent {
+                State::Content(Some(StateContent {
                     content_parser: Box::new(parser),
-                }));
-                let paragraph = BlockEvent::EnterParagraph(BlockWithID {});
-                (sub_parsers::Output::ToYield(paragraph), state)
+                }))
             },
         }
     }
@@ -159,30 +164,47 @@ impl Parser {
     #[inline(always)]
     fn process_in_content_state(
         ctx: &mut Context,
-        #[allow(unused_variables)] consts: &ParserConsts,
+        #[allow(unused_variables)] inner: &mut ParserInner,
         state: &mut Option<StateContent>,
     ) -> (sub_parsers::Output, Option<State>) {
         let state_unchecked = unsafe { state.as_mut().unwrap_unchecked() };
         let next = state_unchecked.content_parser.next(ctx);
         match next {
-            sub_parsers::Output::ToYield(ev) => (sub_parsers::Output::ToYield(ev), None),
+            sub_parsers::Output::ToYield(ev) => {
+                if !inner.have_ever_yielded {
+                    inner.have_ever_yielded = true;
+                    let paragraph = BlockEvent::EnterParagraph(BlockWithID {
+                        #[cfg(feature = "block-id")]
+                        id: state_unchecked.id,
+                    });
+                    debug_assert!(inner.deferred.is_none());
+                    inner.deferred = Some(ev);
+                    return (sub_parsers::Output::ToYield(paragraph), None);
+                }
+
+                (sub_parsers::Output::ToYield(ev), None)
+            }
             sub_parsers::Output::ToPauseForNewLine => {
                 let state = State::Paused(unsafe { state.take().unwrap_unchecked() });
                 (sub_parsers::Output::ToPauseForNewLine, Some(state))
             }
             sub_parsers::Output::Done(have_met) => {
-                let exit_block = BlockEvent::ExitBlock(ExitBlock {
-                    #[cfg(feature = "block-id")]
-                    id: state_unchecked.id,
-                    #[cfg(feature = "line-number")]
-                    start_line_number: consts.start_line_number,
-                    #[cfg(feature = "line-number")]
-                    end_line_number: ctx.current_line_number,
-                });
-                (
-                    sub_parsers::Output::ToYield(exit_block),
-                    Some(State::Exiting(have_met)),
-                )
+                if inner.have_ever_yielded {
+                    let exit_block = BlockEvent::ExitBlock(ExitBlock {
+                        #[cfg(feature = "block-id")]
+                        id: state_unchecked.id,
+                        #[cfg(feature = "line-number")]
+                        start_line_number: inner.start_line_number,
+                        #[cfg(feature = "line-number")]
+                        end_line_number: ctx.current_line_number,
+                    });
+                    (
+                        sub_parsers::Output::ToYield(exit_block),
+                        Some(State::Exiting(have_met)),
+                    )
+                } else {
+                    (sub_parsers::Output::Done(have_met), Some(State::Exited))
+                }
             }
         }
     }
