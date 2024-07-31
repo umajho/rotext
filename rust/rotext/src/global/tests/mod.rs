@@ -1,40 +1,17 @@
 #![cfg(test)]
 
+mod support;
+
+use support::{case, f, m};
+
 use super::*;
 
 use std::collections::HashSet;
 
 use crate::{
     events::{Event, EventType},
-    test_utils::{self, report_failed_cases, FaildCase, GroupedCases},
+    test_support::{self, report_failed_cases, FaildCase, GroupedCases},
 };
-
-/// event matcher
-macro_rules! m {
-    ($event_type:expr, $content:expr, $flags:expr) => {
-        EventMatcher {
-            event_type: $event_type,
-            content: $content,
-            flags: $flags,
-        }
-    };
-}
-
-/// flag
-macro_rules! f {
-    ($($flag:expr),*) => {
-        Some(HashSet::from([$($flag),*]))
-    };
-}
-
-macro_rules! case {
-    ($input:expr, $expected:expr) => {
-        Case {
-            input: $input,
-            expected: $expected,
-        }
-    };
-}
 
 #[test]
 fn it_works() {
@@ -171,60 +148,4 @@ fn it_works() {
     report_failed_cases(failed_cases);
 
     panic!("{} cases failed!", faild_case_count);
-}
-
-struct Case {
-    input: &'static str,
-    expected: Vec<EventMatcher>,
-}
-impl test_utils::Case for Case {
-    fn assert_ok(&self) {
-        let expected: Vec<EventMatcher> = if cfg!(not(feature = "line-number")) {
-            self.expected
-                .clone()
-                .into_iter()
-                .map(|mut m| {
-                    if let Some(flags) = m.flags {
-                        let new_flags: HashSet<&str> = flags
-                            .into_iter()
-                            .filter(|f| !f.starts_with(">ln:"))
-                            .collect();
-                        m.flags = if new_flags.is_empty() {
-                            None
-                        } else {
-                            Some(new_flags)
-                        };
-                    }
-                    m
-                })
-                .collect()
-        } else {
-            self.expected.clone()
-        };
-
-        let parser = Parser::new(self.input.as_bytes(), NewParserOptions::default());
-        let actual: Vec<_> = parser
-            .map(|ev| -> EventMatcher {
-                let ev: Event = ev.into();
-                EventMatcher {
-                    event_type: EventType::from(ev.discriminant()),
-                    content: ev.content(self.input.as_bytes()),
-                    flags: ev.assertion_flags(),
-                }
-            })
-            .collect();
-
-        assert_eq!(expected, actual);
-    }
-
-    fn input(&self) -> String {
-        self.input.to_string()
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct EventMatcher {
-    event_type: EventType,
-    content: Option<&'static str>,
-    flags: Option<HashSet<&'static str>>,
 }

@@ -10,7 +10,7 @@ pub mod rendering;
 pub mod utils;
 
 #[cfg(test)]
-pub(crate) mod test_utils;
+pub(crate) mod test_support;
 
 pub use events::{BlendEvent, BlockEvent, Event};
 pub use rendering::{HtmlRenderer, NewHtmlRendererOptoins};

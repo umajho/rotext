@@ -4,14 +4,14 @@ use crate::{
     block::{Parser, StackEntry},
     events::EventType,
     global,
-    test_utils::FaildCase,
+    test_support::FaildCase,
     utils::stack::{Stack, VecStack},
     Error, Event,
 };
 
 macro_rules! case {
     ($input_variants:expr, $expected:expr) => {
-        $crate::block::tests::utils::Case {
+        $crate::block::tests::support::Case {
             input_variants: $input_variants,
             expected: $expected,
         }

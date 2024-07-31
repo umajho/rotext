@@ -7,15 +7,15 @@ mod groups_heading;
 mod groups_horizontal_rule;
 mod groups_list;
 mod groups_paragraph;
-mod utils;
+mod support;
 
 use crate::{
     events::EventType,
-    test_utils::{report_failed_cases, FaildCase},
+    test_support::{report_failed_cases, FaildCase},
     utils::stack::ArrayStack,
     Error,
 };
-use utils::{
+use support::{
     assert_parse_error_with_stack, assert_parse_ok_and_output_maches_with_stack, case, GroupedCases,
 };
 

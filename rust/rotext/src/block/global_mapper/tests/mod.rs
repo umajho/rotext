@@ -1,46 +1,14 @@
 #![cfg(test)]
 
+mod support;
+
 use std::vec;
 
-use crate::test_utils::{self, report_failed_cases, FaildCase, GroupedCases};
+use support::{case, new_line, verbatim_escaping};
+
+use crate::test_support::{self, report_failed_cases, FaildCase, GroupedCases};
 
 use super::*;
-
-macro_rules! new_line {
-    ($line_number_after:expr) => {
-        Mapped::NewLine(NewLine {
-            #[cfg(feature = "line-number")]
-            line_number_after: $line_number_after,
-        })
-    };
-}
-macro_rules! verbatim_escaping {
-    (($content_start:expr, $content_length:expr), $line_number_after:expr) => {
-        Mapped::VerbatimEscaping(VerbatimEscaping {
-            content: Range::new($content_start, $content_length),
-            is_closed_forcedly: false,
-            #[cfg(feature = "line-number")]
-            line_number_after: $line_number_after,
-        })
-    };
-    (($content_start:expr, $content_length:expr), $line_number_after:expr, "F") => {
-        Mapped::VerbatimEscaping(VerbatimEscaping {
-            content: Range::new($content_start, $content_length),
-            is_closed_forcedly: true,
-            #[cfg(feature = "line-number")]
-            line_number_after: $line_number_after,
-        })
-    };
-}
-
-macro_rules! case {
-    ($input:expr, $expected:expr) => {
-        Case {
-            input: $input,
-            expected: $expected,
-        }
-    };
-}
 
 #[test]
 fn it_works() {
@@ -155,24 +123,4 @@ fn it_works() {
     report_failed_cases(failed_cases);
 
     panic!("{} cases failed!", faild_case_count);
-}
-
-struct Case {
-    input: &'static str,
-    expected: Vec<Mapped>,
-}
-impl test_utils::Case for Case {
-    fn assert_ok(&self) {
-        let global_parser =
-            global::Parser::new(self.input.as_bytes(), global::NewParserOptions::default());
-        let global_mapper = GlobalEventStreamMapper::new(self.input.as_bytes(), global_parser);
-
-        let actual: Vec<_> = global_mapper.collect();
-
-        assert_eq!(self.expected, actual);
-    }
-
-    fn input(&self) -> String {
-        self.input.to_string()
-    }
 }

@@ -1,64 +1,13 @@
 #![cfg(test)]
 
+mod support;
+
+use support::case;
+
 #[allow(unused_imports)]
-use crate::test_utils::{self, report_failed_cases, FaildCase, GroupedCases};
+use crate::test_support::{self, report_failed_cases, FaildCase, GroupedCases};
 
 use super::*;
-
-#[allow(unused_macros)]
-macro_rules! case {
-    ($input:expr, [$(($($ev:tt)*)),*,], $expected:expr,) => {
-        Case {
-            input_events: vec![$(case!(_input_event, $($ev)*)),*],
-            input: $input,
-            expected: $expected,
-
-            options: CaseOptions {
-                #[cfg(feature = "block-id")]
-                with_block_id: false,
-            },
-        }
-    };
-    (_input_event, VerbatimEscaping ($start:literal..$end:literal)) => {
-        BlendEvent::VerbatimEscaping($crate::events::VerbatimEscaping {
-            content: case!(_range, $start..$end),
-            is_closed_forcedly: false,
-        })
-    };
-    (_input_event, NewLine (..)) => {
-        BlendEvent::NewLine($crate::events::NewLine {})
-    };
-    (_input_event, Text ($start:literal..$end:literal)) => {
-        BlendEvent::Text(case!(_range, $start..$end))
-    };
-    (_input_event, IndicateCodeBlockCode ()) => {
-        BlendEvent::IndicateCodeBlockCode
-    };
-    (_input_event, IndicateTableRow ()) => {
-        BlendEvent::IndicateTableRow
-    };
-    (_input_event, IndicateTableHeaderCell ()) => {
-        BlendEvent::IndicateTableHeaderCell
-    };
-    (_input_event, IndicateTableDataCell ()) => {
-        BlendEvent::IndicateTableDataCell
-    };
-    (_input_event, ExitBlock (..)) => {
-        BlendEvent::ExitBlock($crate::events::ExitBlock {})
-    };
-    (_input_event, ThematicBreak (..)) => {
-        BlendEvent::ThematicBreak($crate::events::ThematicBreak {})
-    };
-    (_input_event, $v:tt (..)) => {
-        BlendEvent::$v($crate::events::BlockWithID {})
-    };
-    (_input_event, $v:path, $($tt:tt)*) => {
-        $v($($tt)*)
-    };
-    (_range, $start:literal..$end:literal) => {
-        $crate::common::Range::new($start, $end - $start)
-    }
-}
 
 #[cfg(not(any(feature = "block-id", feature = "line-number")))]
 #[test]
@@ -374,36 +323,3 @@ fn it_works_in_block_phase() {
 }
 
 // TODO: test for feature "block-id".
-
-#[allow(dead_code)]
-struct CaseOptions {
-    #[cfg(feature = "block-id")]
-    with_block_id: bool,
-}
-
-#[allow(dead_code)]
-struct Case {
-    input: &'static str,
-    input_events: Vec<BlendEvent>,
-    expected: &'static str,
-
-    #[allow(dead_code)]
-    options: CaseOptions,
-}
-impl test_utils::Case for Case {
-    fn assert_ok(&self) {
-        let opts = NewHtmlRendererOptoins {
-            initial_output_string_capacity: 0,
-            #[cfg(feature = "block-id")]
-            with_block_id: self.options.with_block_id,
-        };
-        let renderer = HtmlRenderer::new(self.input.as_bytes(), opts);
-        let actual = renderer.render(self.input_events.clone().into_iter());
-
-        assert_eq!(self.expected, actual);
-    }
-
-    fn input(&self) -> String {
-        format!("{:?}", self.input_events)
-    }
-}
