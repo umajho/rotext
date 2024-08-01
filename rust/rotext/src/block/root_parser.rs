@@ -644,11 +644,10 @@ fn try_scan_surrounded_opening(
     match peeked_3 {
         [Some(b'{'), Some(b'|'), ..] => {
             ctx.must_take_from_mapper_and_apply_to_cursor(2);
-            return TryScanSurroundedResult::TableOpening;
+            TryScanSurroundedResult::TableOpening
         }
-        _ => {}
-    };
-    TryScanSurroundedResult::None
+        _ => TryScanSurroundedResult::None,
+    }
 }
 
 fn check_is_indeed_item_like(ctx: &mut Context, second_char: &Option<u8>) -> bool {
