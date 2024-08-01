@@ -319,5 +319,64 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                 ),
             ],
         },
+        GroupedCases {
+            group: "代码块>缩进",
+            cases: vec![
+                case!(
+                    vec![
+                        indoc! {"
+                        ␠␠```
+                        ␠␠code
+                        ␠␠```"},
+                        indoc! {"
+                        ␠␠```
+                        ␠␠code
+                        ```"},
+                        indoc! {"
+                        ␠␠␠␠```
+                        ␠␠code
+                        ␠␠␠␠```"},
+                        indoc! {"
+                        ␠␠␠␠```
+                        ␠␠code
+                        ```"},
+                    ],
+                    vec![
+                        (EventType::EnterCodeBlock, None),
+                        (EventType::IndicateCodeBlockCode, None),
+                        (EventType::Text, Some("code")),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec![
+                        indoc! {"
+                        >   ```
+                        >   code
+                        >   ```"},
+                        indoc! {"
+                        >   ```
+                        >   code
+                        > ```"},
+                        indoc! {"
+                        >     ```
+                        >   code
+                        >     ```"},
+                        indoc! {"
+                        >     ```
+                        >   code
+                        > ```"},
+                    ],
+                    vec![
+                        (EventType::EnterBlockQuote, None),
+                        (EventType::EnterCodeBlock, None),
+                        (EventType::IndicateCodeBlockCode, None),
+                        (EventType::Text, Some("code")),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+            ],
+        },
     ]
 }

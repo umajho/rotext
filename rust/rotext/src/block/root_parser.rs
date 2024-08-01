@@ -28,7 +28,7 @@ pub struct Parser<'a> {
 enum State {
     Start { new_line: Option<NewLine> },
     ExpectingContainer,
-    ExpectingLeaf,
+    ExpectingLeaf { spaces_before: usize },
     ExitingUntil(ExitingUntil),
 
     Invalid,
@@ -145,7 +145,9 @@ impl<'a> Parser<'a> {
                 State::ExpectingContainer => {
                     self.process_in_expecting_container_state(ctx, stack, nesting)?
                 }
-                State::ExpectingLeaf => self.process_in_expecting_leaf_state(ctx, nesting),
+                State::ExpectingLeaf { spaces_before } => {
+                    self.process_in_expecting_leaf_state(ctx, nesting, spaces_before)
+                }
                 State::ExitingUntil(state) => {
                     self.process_in_exiting_until_state(ctx, stack, nesting, state)
                 }
@@ -227,7 +229,7 @@ impl<'a> Parser<'a> {
             }
         }
 
-        _ = ctx.scan_blank_text();
+        let spaces = ctx.scan_blank_text().map(|r| r.length()).unwrap_or(0);
         let peeked_3 = ctx.peek_next_three_chars();
 
         if self.is_new_line {
@@ -267,7 +269,9 @@ impl<'a> Parser<'a> {
             TryScanSurroundedResult::None => {}
         }
 
-        Ok(InternalOutput::ToContinue(State::ExpectingLeaf))
+        Ok(InternalOutput::ToContinue(State::ExpectingLeaf {
+            spaces_before: spaces,
+        }))
     }
 
     #[inline(always)]
@@ -351,6 +355,7 @@ impl<'a> Parser<'a> {
         &mut self,
         ctx: &mut Context<'a>,
         nesting: &mut Nesting,
+        spaces_before: usize,
     ) -> InternalOutput<'a> {
         // XXX: 由于在状态转移到 [State::ExpectingLeaf] 之前一定调用过
         // `ctx.scan_blank_text`，因此 `ctx.mapper.peek_1()` 一定不对应空白字符（
@@ -389,6 +394,7 @@ impl<'a> Parser<'a> {
                     #[cfg(feature = "line-number")]
                     start_line_number: ctx.current_line_number,
                     leading_backticks: backticks,
+                    indentation: spaces_before,
                 }),
             )),
             LeafType::Paragraph { content_before } => {

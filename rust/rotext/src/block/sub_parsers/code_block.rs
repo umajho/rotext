@@ -55,6 +55,7 @@ pub struct Parser {
     #[cfg(feature = "line-number")]
     start_line_number: usize,
     leading_backticks: usize,
+    indentation: usize,
 
     state: State,
 }
@@ -63,6 +64,8 @@ pub struct NewParserOptions {
     #[cfg(feature = "line-number")]
     pub start_line_number: usize,
     pub leading_backticks: usize,
+    /// 每行开头至多忽略此数量的空格。
+    pub indentation: usize,
 }
 
 impl Parser {
@@ -71,6 +74,7 @@ impl Parser {
             #[cfg(feature = "line-number")]
             start_line_number: opts.start_line_number,
             leading_backticks: opts.leading_backticks,
+            indentation: opts.indentation,
 
             state: State::Initial,
         }
@@ -147,6 +151,7 @@ impl Parser {
                                 ),
                                 ..Default::default()
                             },
+                            indentation: self.indentation,
                         };
                         let code_content_parser = sub_parsers::content::Parser::new(opts);
                         (

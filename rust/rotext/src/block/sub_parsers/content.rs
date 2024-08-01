@@ -53,6 +53,7 @@ pub struct Parser {
 struct ParserInner {
     mode: Mode,
     end_conditions: EndConditions,
+    indentation: usize,
 
     is_at_first_line: bool,
     has_yielded_at_current_line: bool,
@@ -63,12 +64,16 @@ pub struct Options {
     pub initial_state: State,
     pub mode: Mode,
     pub end_conditions: EndConditions,
+    /// 逐字模式下，每行开头至多忽略此数量的空格。
+    ///
+    /// 不应在行内模式下设置为非 0 值。
+    pub indentation: usize,
 }
 
 pub enum Mode {
-    /// 无视行首空白。
+    /// 行内模式，无视行首空白。
     Inline,
-    /// 保留行首空白。
+    /// 逐字模式，保留行首空白。
     Verbatim,
 }
 impl Default for Mode {
@@ -90,6 +95,8 @@ pub struct RepetitiveCharactersCondition {
     /// 如果是在行首，则满足条件。
     pub at_line_beginning: bool,
     /// 如果是在行尾，且之前有一个空白，则满足条件。
+    ///
+    /// XXX: 只应在模式为行内时启用，并非为逐字模式准备。
     pub at_line_end_and_with_space_before: bool,
 
     pub character: u8,
@@ -113,6 +120,7 @@ impl Parser {
             inner: ParserInner {
                 mode: options.mode,
                 end_conditions: options.end_conditions,
+                indentation: options.indentation,
                 is_at_first_line: true,
                 has_yielded_at_current_line: false,
             },
@@ -195,10 +203,17 @@ impl Parser {
                     debug_assert!(matches!(peeked, global_mapper::Mapped::NextChar))
                 }
 
-                if matches!(inner.mode, Mode::Inline) && ctx.peek_next_char() == Some(b' ') {
-                    *skipped_spaces += 1;
-                    consume_peeked!(ctx, &peeked);
-                    return InternalOutput::ToContinue;
+                if ctx.peek_next_char() == Some(b' ') {
+                    let should_skip_space = match inner.mode {
+                        Mode::Inline => true,
+                        Mode::Verbatim => *skipped_spaces < inner.indentation,
+                    };
+
+                    if should_skip_space {
+                        *skipped_spaces += 1;
+                        consume_peeked!(ctx, &peeked);
+                        return InternalOutput::ToContinue;
+                    }
                 }
 
                 if inner.end_conditions.on_table_related {
