@@ -22,7 +22,7 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
                     vec!["a "],
                     vec![
                         (EventType::EnterParagraph, None),
-                        (EventType::Unparsed, Some("a ")),
+                        (EventType::Unparsed, Some("a")),
                         (EventType::ExitBlock, None),
                     ]
                 ),

@@ -12,8 +12,8 @@ use super::HaveMet;
 
 #[derive(Debug)]
 pub enum State {
-    ExpectingNewContent,
-    ExpectingContentNextChar(Range),
+    ExpectingNewContent { skipped_spaces: usize },
+    ExpectingContentNextChar { content: Range, spaces_after: usize },
     ToProcessNewLine(NewLine),
 
     ToOutputDone(HaveMet),
@@ -22,7 +22,7 @@ pub enum State {
 }
 impl Default for State {
     fn default() -> Self {
-        Self::ExpectingNewContent
+        Self::ExpectingNewContent { skipped_spaces: 0 }
     }
 }
 
@@ -55,8 +55,7 @@ struct ParserInner {
     end_conditions: EndConditions,
 
     is_at_first_line: bool,
-    has_ever_yielded: bool,
-    has_found_leading_spaces: bool,
+    has_yielded_at_current_line: bool,
 }
 
 #[derive(Default)]
@@ -115,8 +114,7 @@ impl Parser {
                 mode: options.mode,
                 end_conditions: options.end_conditions,
                 is_at_first_line: true,
-                has_ever_yielded: false,
-                has_found_leading_spaces: false,
+                has_yielded_at_current_line: false,
             },
             state: options.initial_state,
         }
@@ -125,13 +123,23 @@ impl Parser {
     pub fn next(&mut self, ctx: &mut Context) -> sub_parsers::Output {
         let output = loop {
             let result = match &mut self.state {
-                State::ExpectingNewContent => {
-                    Self::process_in_expecting_new_content_state(ctx, &mut self.inner)
+                State::ExpectingNewContent { skipped_spaces } => {
+                    Self::process_in_expecting_new_content_state(
+                        ctx,
+                        &mut self.inner,
+                        skipped_spaces,
+                    )
                 }
 
-                State::ExpectingContentNextChar(content) => {
-                    Self::process_in_expecting_content_next_char_state(ctx, &self.inner, content)
-                }
+                State::ExpectingContentNextChar {
+                    content,
+                    spaces_after,
+                } => Self::process_in_expecting_content_next_char_state(
+                    ctx,
+                    &self.inner,
+                    content,
+                    spaces_after,
+                ),
                 State::ToProcessNewLine(new_line) => {
                     Self::process_in_to_process_new_line_state(ctx, &self.inner, new_line.clone())
                 }
@@ -143,11 +151,12 @@ impl Parser {
                 InternalOutput::ToContinue => {}
                 InternalOutput::ToContinueIn(state) => self.state = state,
                 InternalOutput::ToYield(to_yield) => {
-                    self.inner.has_ever_yielded = true;
+                    self.inner.has_yielded_at_current_line = true;
                     break sub_parsers::Output::ToYield(to_yield);
                 }
                 InternalOutput::ToPauseForNewLine => {
                     self.inner.is_at_first_line = false;
+                    self.inner.has_yielded_at_current_line = false;
                     break sub_parsers::Output::ToPauseForNewLine;
                 }
                 InternalOutput::ToBeDone(have_met) => {
@@ -161,7 +170,7 @@ impl Parser {
             }
         };
 
-        self.state = State::ExpectingNewContent;
+        self.state = State::default();
 
         output
     }
@@ -170,6 +179,7 @@ impl Parser {
     fn process_in_expecting_new_content_state(
         ctx: &mut Context,
         inner: &mut ParserInner,
+        skipped_spaces: &mut usize,
     ) -> InternalOutput {
         let Some(peeked) = ctx.mapper.peek(0) else {
             return done!();
@@ -181,29 +191,14 @@ impl Parser {
                 // NOTE: 初始状态也可能遇到 `NextChar`，比如在一个并非结束与换行的块
                 // 级元素（最简单的，如分割线）后面存在文本时。
 
-                if matches!(inner.mode, Mode::Inline)
-                    && !inner.has_ever_yielded
-                    && ctx.peek_next_char() == Some(b' ')
-                {
-                    inner.has_found_leading_spaces = true;
-                    consume_peeked!(ctx, &peeked);
-                    return InternalOutput::ToContinue;
+                if *skipped_spaces > 0 {
+                    debug_assert!(matches!(peeked, global_mapper::Mapped::NextChar))
                 }
 
-                if let Some(condition) = inner
-                    .end_conditions
-                    .after_repetitive_characters
-                    .as_ref()
-                    .filter(|c| {
-                        c.at_line_end_and_with_space_before && ctx.peek_next_char() == Some(b' ')
-                    })
-                {
-                    return process_potential_closing_part_at_line_end_and_with_space_before(
-                        ctx,
-                        condition,
-                        Range::new(ctx.cursor.applying(&peeked).value().unwrap(), 0),
-                        peeked,
-                    );
+                if matches!(inner.mode, Mode::Inline) && ctx.peek_next_char() == Some(b' ') {
+                    *skipped_spaces += 1;
+                    consume_peeked!(ctx, &peeked);
+                    return InternalOutput::ToContinue;
                 }
 
                 if inner.end_conditions.on_table_related {
@@ -212,9 +207,48 @@ impl Parser {
                     }
                 }
 
+                if *skipped_spaces > 0 {
+                    if let Some(condition) = inner
+                        .end_conditions
+                        .after_repetitive_characters
+                        .as_ref()
+                        .filter(|c| c.at_line_end_and_with_space_before)
+                    {
+                        match try_process_potential_repetitive_characters(ctx, condition) {
+                            TryProcessPotentialRepetitiveCharactersResult::Matched => {
+                                return InternalOutput::ToContinue;
+                            }
+                            TryProcessPotentialRepetitiveCharactersResult::Unmatched(consumed) => {
+                                if consumed > 0 {
+                                    return InternalOutput::ToContinueIn(
+                                        State::ExpectingContentNextChar {
+                                            content: Range::new(
+                                                ctx.cursor.value().unwrap() - consumed,
+                                                consumed,
+                                            ),
+                                            spaces_after: 0,
+                                        },
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+
                 consume_peeked!(ctx, &peeked);
-                let content = Range::new(ctx.cursor.value().unwrap(), 1);
-                InternalOutput::ToContinueIn(State::ExpectingContentNextChar(content))
+                let content = if inner.has_yielded_at_current_line {
+                    Range::new(
+                        ctx.cursor.value().unwrap() - *skipped_spaces,
+                        1 + *skipped_spaces,
+                    )
+                } else {
+                    inner.has_yielded_at_current_line = true;
+                    Range::new(ctx.cursor.value().unwrap(), 1)
+                };
+                InternalOutput::ToContinueIn(State::ExpectingContentNextChar {
+                    content,
+                    spaces_after: 0,
+                })
             }
             global_mapper::Mapped::NewLine(_) => {
                 // consume_peeked!(ctx, &peeked);
@@ -236,6 +270,7 @@ impl Parser {
         ctx: &mut Context,
         inner: &ParserInner,
         state_content: &mut Range,
+        spaces_after: &mut usize,
     ) -> InternalOutput {
         let Some(peeked) = ctx.mapper.peek(0) else {
             return InternalOutput::ToYield(make_content_event(&inner.mode, *state_content));
@@ -243,26 +278,19 @@ impl Parser {
         let peeked = peeked.clone();
 
         match peeked {
-            global_mapper::Mapped::CharAt(_)
-            | global_mapper::Mapped::NewLine(_)
-            | global_mapper::Mapped::VerbatimEscaping(_) => {
+            global_mapper::Mapped::CharAt(_) | global_mapper::Mapped::VerbatimEscaping(_) => {
+                state_content.increase_length(*spaces_after);
+                *spaces_after = 0;
+                InternalOutput::ToYield(make_content_event(&inner.mode, *state_content))
+            }
+            global_mapper::Mapped::NewLine(_) => {
                 InternalOutput::ToYield(make_content_event(&inner.mode, *state_content))
             }
             global_mapper::Mapped::NextChar => {
-                if let Some(condition) = inner
-                    .end_conditions
-                    .after_repetitive_characters
-                    .as_ref()
-                    .filter(|c| {
-                        c.at_line_end_and_with_space_before && ctx.peek_next_char() == Some(b' ')
-                    })
-                {
-                    return process_potential_closing_part_at_line_end_and_with_space_before(
-                        ctx,
-                        condition,
-                        *state_content,
-                        peeked,
-                    );
+                if matches!(inner.mode, Mode::Inline) && ctx.peek_next_char() == Some(b' ') {
+                    *spaces_after += 1;
+                    consume_peeked!(ctx, &peeked);
+                    return InternalOutput::ToContinue;
                 }
 
                 if inner.end_conditions.on_table_related {
@@ -278,8 +306,37 @@ impl Parser {
                     }
                 }
 
-                consume_peeked!(ctx, &peeked);
-                state_content.increase_length(1);
+                let mut has_already_consumed = false;
+                if *spaces_after > 0 {
+                    if let Some(condition) = inner
+                        .end_conditions
+                        .after_repetitive_characters
+                        .as_ref()
+                        .filter(|c| c.at_line_end_and_with_space_before)
+                    {
+                        match try_process_potential_repetitive_characters(ctx, condition) {
+                            TryProcessPotentialRepetitiveCharactersResult::Matched => {
+                                return InternalOutput::ToYield(BlockEvent::Unparsed(
+                                    *state_content,
+                                ));
+                            }
+                            TryProcessPotentialRepetitiveCharactersResult::Unmatched(consumed) => {
+                                if consumed > 0 {
+                                    state_content.increase_length(consumed);
+                                    has_already_consumed = true;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                state_content.increase_length(*spaces_after);
+                *spaces_after = 0;
+
+                if !has_already_consumed {
+                    consume_peeked!(ctx, &peeked);
+                    state_content.increase_length(1);
+                }
                 InternalOutput::ToContinue
             }
         }
@@ -319,9 +376,10 @@ impl Parser {
                     } else {
                         // XXX: 被 drop 的那些不会重新尝试解析，而是直接当成文本。
                         potential_closing_part.set_length(1 + dropped);
-                        return InternalOutput::ToContinueIn(State::ExpectingContentNextChar(
-                            potential_closing_part,
-                        ));
+                        return InternalOutput::ToContinueIn(State::ExpectingContentNextChar {
+                            content: potential_closing_part,
+                            spaces_after: 0,
+                        });
                     }
                 }
 
@@ -332,7 +390,7 @@ impl Parser {
                 }
 
                 if inner.is_at_first_line {
-                    InternalOutput::ToContinueIn(State::ExpectingNewContent)
+                    InternalOutput::ToContinueIn(State::default())
                 } else {
                     InternalOutput::ToYield(BlockEvent::NewLine(new_line))
                 }
@@ -346,7 +404,7 @@ impl Parser {
             }
             global_mapper::Mapped::VerbatimEscaping(_) => {
                 if inner.is_at_first_line {
-                    InternalOutput::ToContinueIn(State::ExpectingNewContent)
+                    InternalOutput::ToContinueIn(State::default())
                 } else {
                     InternalOutput::ToYield(BlockEvent::NewLine(new_line))
                 }
@@ -367,48 +425,22 @@ fn make_content_event(mode: &Mode, content: Range) -> BlockEvent {
     }
 }
 
-fn process_potential_closing_part_at_line_end_and_with_space_before(
+enum TryProcessPotentialRepetitiveCharactersResult {
+    Matched,
+    Unmatched(usize),
+}
+
+fn try_process_potential_repetitive_characters(
     ctx: &mut Context,
     condition: &RepetitiveCharactersCondition,
-    mut confirmed_content: Range,
-    peeked: global_mapper::Mapped,
-) -> InternalOutput {
-    let mut potential_closing_part_length = 0;
-
-    consume_peeked!(ctx, &peeked);
-    potential_closing_part_length += 1;
-
-    if ctx.peek_next_char() != Some(condition.character) {
-        confirmed_content.increase_length(potential_closing_part_length);
-        return InternalOutput::ToContinueIn(State::ExpectingContentNextChar(confirmed_content));
-    }
-    ctx.must_take_from_mapper_and_apply_to_cursor(1);
-    potential_closing_part_length += 1;
-
-    let dropped =
+) -> TryProcessPotentialRepetitiveCharactersResult {
+    let consumed =
         ctx.drop_from_mapper_while_char_with_maximum(condition.character, condition.minimal_count);
-    // XXX: 被 drop 的那些不会重新尝试解析，而是直接当成文本。
-    potential_closing_part_length += dropped;
-    if 1 + dropped == condition.minimal_count {
-        let peeked = ctx.mapper.peek(0);
-        if peeked.is_some_and(|p| !p.is_new_line()) {
-            confirmed_content.increase_length(potential_closing_part_length);
-            return InternalOutput::ToContinueIn(State::ExpectingContentNextChar(
-                confirmed_content,
-            ));
-        };
-
-        if confirmed_content.length() == 0 {
-            // XXX: 只有在 [State::ExpectingNewContent] 下（逐字文本转义后直接是闭合部
-            // 分）有可能走到这里。
-            //
-            InternalOutput::ToContinue
-        } else {
-            InternalOutput::ToYield(BlockEvent::Unparsed(confirmed_content))
-        }
+    if consumed == condition.minimal_count && !ctx.mapper.peek(0).is_some_and(|p| !p.is_new_line())
+    {
+        TryProcessPotentialRepetitiveCharactersResult::Matched
     } else {
-        confirmed_content.increase_length(potential_closing_part_length);
-        InternalOutput::ToContinueIn(State::ExpectingContentNextChar(confirmed_content))
+        TryProcessPotentialRepetitiveCharactersResult::Unmatched(consumed)
     }
 }
 

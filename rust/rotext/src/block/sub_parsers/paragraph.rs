@@ -134,10 +134,11 @@ impl Parser {
     ) -> State {
         let opts = sub_parsers::content::Options {
             initial_state: match state.content_before {
-                Some(content_before) => {
-                    sub_parsers::content::State::ExpectingContentNextChar(content_before)
-                }
-                None => sub_parsers::content::State::ExpectingNewContent,
+                Some(content_before) => sub_parsers::content::State::ExpectingContentNextChar {
+                    content: content_before,
+                    spaces_after: 0,
+                },
+                None => sub_parsers::content::State::default(),
             },
             end_conditions: sub_parsers::content::EndConditions {
                 before_blank_line: true,

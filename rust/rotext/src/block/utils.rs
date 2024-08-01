@@ -52,6 +52,7 @@ impl<const N: usize, I: Iterator> Peekable<N, I> {
 
     /// `i` 以 0 为起始。
     pub fn peek(&mut self, i: usize) -> Option<&I::Item> {
+        debug_assert!(i < N);
         if self.buffer[(self.start + i) % N].is_none() {
             if i > 0 {
                 self.peek(i - 1);

@@ -101,6 +101,13 @@ pub fn groups_table() -> Vec<GroupedCases> {
                         ||
                         qux
                         |}"},
+                        indoc! {"
+                        {|
+                        |-
+                        !! FOO !! BAR
+                        |-
+                        || baz || qux
+                        |}"}
                     ],
                     vec![
                         (EventType::EnterTable, None),
@@ -117,37 +124,6 @@ pub fn groups_table() -> Vec<GroupedCases> {
                         (EventType::IndicateTableDataCell, None),
                         (EventType::EnterParagraph, None),
                         (EventType::Unparsed, Some("baz")),
-                        (EventType::ExitBlock, None),
-                        (EventType::IndicateTableDataCell, None),
-                        (EventType::EnterParagraph, None),
-                        (EventType::Unparsed, Some("qux")),
-                        (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None),
-                    ]
-                ),
-                case!(
-                    vec![indoc! {"
-                        {|
-                        |-
-                        !! FOO !! BAR
-                        |-
-                        || baz || qux
-                        |}"},],
-                    vec![
-                        (EventType::EnterTable, None),
-                        (EventType::IndicateTableRow, None),
-                        (EventType::IndicateTableHeaderCell, None),
-                        (EventType::EnterParagraph, None),
-                        (EventType::Unparsed, Some("FOO ")),
-                        (EventType::ExitBlock, None),
-                        (EventType::IndicateTableHeaderCell, None),
-                        (EventType::EnterParagraph, None),
-                        (EventType::Unparsed, Some("BAR")),
-                        (EventType::ExitBlock, None),
-                        (EventType::IndicateTableRow, None),
-                        (EventType::IndicateTableDataCell, None),
-                        (EventType::EnterParagraph, None),
-                        (EventType::Unparsed, Some("baz ")),
                         (EventType::ExitBlock, None),
                         (EventType::IndicateTableDataCell, None),
                         (EventType::EnterParagraph, None),
@@ -178,6 +154,12 @@ pub fn groups_table() -> Vec<GroupedCases> {
                         ||
                         qux
                         |}"},
+                        indoc! {"
+                        {|
+                        !! FOO !! BAR
+                        |-
+                        baz || qux
+                        |}"},
                     ],
                     vec![
                         (EventType::EnterTable, None),
@@ -192,34 +174,6 @@ pub fn groups_table() -> Vec<GroupedCases> {
                         (EventType::IndicateTableRow, None),
                         (EventType::EnterParagraph, None),
                         (EventType::Unparsed, Some("baz")),
-                        (EventType::ExitBlock, None),
-                        (EventType::IndicateTableDataCell, None),
-                        (EventType::EnterParagraph, None),
-                        (EventType::Unparsed, Some("qux")),
-                        (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None),
-                    ]
-                ),
-                case!(
-                    vec![indoc! {"
-                        {|
-                        !! FOO !! BAR
-                        |-
-                        baz || qux
-                        |}"},],
-                    vec![
-                        (EventType::EnterTable, None),
-                        (EventType::IndicateTableHeaderCell, None),
-                        (EventType::EnterParagraph, None),
-                        (EventType::Unparsed, Some("FOO ")),
-                        (EventType::ExitBlock, None),
-                        (EventType::IndicateTableHeaderCell, None),
-                        (EventType::EnterParagraph, None),
-                        (EventType::Unparsed, Some("BAR")),
-                        (EventType::ExitBlock, None),
-                        (EventType::IndicateTableRow, None),
-                        (EventType::EnterParagraph, None),
-                        (EventType::Unparsed, Some("baz ")),
                         (EventType::ExitBlock, None),
                         (EventType::IndicateTableDataCell, None),
                         (EventType::EnterParagraph, None),
@@ -355,35 +309,23 @@ pub fn groups_table() -> Vec<GroupedCases> {
                     ]
                 ),
                 case!(
-                    vec![indoc! {"
+                    vec![
+                        indoc! {"
                         {|
                         ||
                         == foo
                         || bar ==
-                        |}"},],
+                        |}"},
+                        indoc! {"
+                        {|
+                        || == foo || bar ==
+                        |}"},
+                    ],
                     vec![
                         (EventType::EnterTable, None),
                         (EventType::IndicateTableDataCell, None),
                         (EventType::EnterHeading2, None),
                         (EventType::Unparsed, Some("foo")),
-                        (EventType::ExitBlock, None),
-                        (EventType::IndicateTableDataCell, None),
-                        (EventType::EnterParagraph, None),
-                        (EventType::Unparsed, Some("bar ==")),
-                        (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None),
-                    ]
-                ),
-                case!(
-                    vec![indoc! {"
-                        {|
-                        || == foo || bar ==
-                        |}"},],
-                    vec![
-                        (EventType::EnterTable, None),
-                        (EventType::IndicateTableDataCell, None),
-                        (EventType::EnterHeading2, None),
-                        (EventType::Unparsed, Some("foo ")),
                         (EventType::ExitBlock, None),
                         (EventType::IndicateTableDataCell, None),
                         (EventType::EnterParagraph, None),
