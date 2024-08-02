@@ -178,7 +178,7 @@ fn it_works_in_block_phase() {
                         (EnterTable(..)),
                         (ExitBlock(..)),
                     ],
-                    "<table><tr><td></td></tr></table>",
+                    "<table></table>",
                 ),
                 case!(
                     "",
@@ -187,7 +187,7 @@ fn it_works_in_block_phase() {
                         (IndicateTableRow()),
                         (ExitBlock(..)),
                     ],
-                    "<table><tr><td></td></tr></table>",
+                    "<table><tr></tr></table>",
                 ),
                 case!(
                     "",
@@ -236,7 +236,7 @@ fn it_works_in_block_phase() {
                         (ExitBlock(..)),
                     ],
                     concat!(
-                        "<table><tr><td></td></tr><tr><td></td></tr></table>",
+                        "<table><tr></tr><tr></tr></table>",
                     ),
                 ),
                 case!(

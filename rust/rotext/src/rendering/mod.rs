@@ -45,9 +45,6 @@ pub struct HtmlRenderer<'a> {
     with_block_id: bool,
 
     result: Vec<u8>,
-
-    should_enter_table_row: bool,
-    should_enter_table_cell: bool,
 }
 
 enum StackEntry<'a> {
@@ -55,6 +52,8 @@ enum StackEntry<'a> {
     Table(TableState),
 }
 enum TableState {
+    AtBeginning,
+    InRow,
     InHeaderCell,
     InDataCell,
 }
@@ -72,8 +71,6 @@ impl<'a> HtmlRenderer<'a> {
             #[cfg(feature = "block-id")]
             with_block_id: opts.should_include_block_ids,
             result: Vec::with_capacity(opts.initial_output_string_capacity),
-            should_enter_table_row: false,
-            should_enter_table_cell: false,
         }
     }
 
@@ -85,31 +82,72 @@ impl<'a> HtmlRenderer<'a> {
                 break;
             };
 
-            if self.should_enter_table_row {
-                self.should_enter_table_row = false;
-                self.result.extend(b"<tr>");
-                self.should_enter_table_cell = true;
-                if matches!(ev, BlendEvent::IndicateTableRow) {
-                    continue;
-                }
-            }
-
-            if self.should_enter_table_cell {
-                self.should_enter_table_cell = false;
-                let (is_th, should_continue) = match &ev {
-                    BlendEvent::IndicateTableHeaderCell => (true, true),
-                    BlendEvent::IndicateTableDataCell => (false, true),
-                    _ => (false, false),
-                };
-                if is_th {
-                    self.result.extend(b"<th>");
-                    stack.push(TableState::InHeaderCell.into())
-                } else {
-                    self.result.extend(b"<td>");
-                    stack.push(TableState::InDataCell.into())
-                }
-                if should_continue {
-                    continue;
+            if let Some(StackEntry::Table(table_state)) = stack.last_mut() {
+                match ev {
+                    BlendEvent::IndicateTableRow => {
+                        match table_state {
+                            TableState::AtBeginning => self.result.extend(b"<tr>"),
+                            TableState::InRow => self.result.extend(b"</tr><tr>"),
+                            TableState::InHeaderCell => self.result.extend(b"</th></tr><tr>"),
+                            TableState::InDataCell => self.result.extend(b"</td></tr><tr>"),
+                        }
+                        *table_state = TableState::InRow;
+                        continue;
+                    }
+                    BlendEvent::IndicateTableHeaderCell => {
+                        match table_state {
+                            TableState::AtBeginning => self.result.extend(b"<tr><th>"),
+                            TableState::InRow => self.result.extend(b"<th>"),
+                            TableState::InHeaderCell => self.result.extend(b"</th><th>"),
+                            TableState::InDataCell => self.result.extend(b"</td><th>"),
+                        }
+                        *table_state = TableState::InHeaderCell;
+                        continue;
+                    }
+                    BlendEvent::IndicateTableDataCell => {
+                        match table_state {
+                            TableState::AtBeginning => self.result.extend(b"<tr><td>"),
+                            TableState::InRow => self.result.extend(b"<td>"),
+                            TableState::InHeaderCell => self.result.extend(b"</th><td>"),
+                            TableState::InDataCell => self.result.extend(b"</td><td>"),
+                        };
+                        *table_state = TableState::InDataCell;
+                        continue;
+                    }
+                    BlendEvent::ExitBlock(_) => {
+                        let top = stack.pop().unwrap();
+                        match top {
+                            StackEntry::Table(TableState::AtBeginning) => {
+                                self.result.extend(b"</table>")
+                            }
+                            StackEntry::Table(TableState::InRow) => {
+                                self.result.extend(b"</tr></table>")
+                            }
+                            StackEntry::Table(TableState::InHeaderCell) => {
+                                self.result.extend(b"</th></tr></table>")
+                            }
+                            StackEntry::Table(TableState::InDataCell) => {
+                                self.result.extend(b"</td></tr></table>")
+                            }
+                            StackEntry::Normal(top) => {
+                                self.result.extend(b"</");
+                                self.result.extend(top);
+                                self.result.push(b'>');
+                            }
+                        }
+                        continue;
+                    }
+                    _ => match table_state {
+                        TableState::AtBeginning => {
+                            self.result.extend(b"<tr><td>");
+                            *table_state = TableState::InDataCell;
+                        }
+                        TableState::InRow => {
+                            self.result.extend(b"<td>");
+                            *table_state = TableState::InDataCell;
+                        }
+                        _ => {}
+                    },
                 }
             }
 
@@ -129,17 +167,12 @@ impl<'a> HtmlRenderer<'a> {
                 BlendEvent::ExitBlock(_) => {
                     let top = stack.pop().unwrap();
                     match top {
-                        StackEntry::Table(TableState::InHeaderCell) => {
-                            self.result.extend(b"</th></tr></table>")
-                        }
-                        StackEntry::Table(TableState::InDataCell) => {
-                            self.result.extend(b"</td></tr></table>")
-                        }
                         StackEntry::Normal(top) => {
                             self.result.extend(b"</");
                             self.result.extend(top);
                             self.result.push(b'>');
                         }
+                        _ => unreachable!(),
                     }
                 }
 
@@ -189,29 +222,16 @@ impl<'a> HtmlRenderer<'a> {
                 }
                 #[allow(unused_variables)]
                 BlendEvent::EnterTable(data) => {
-                    self.result.push(b'<');
-                    self.result.extend(b"table");
+                    self.result.extend(b"<table");
                     write_data_block_id_attribute_if_applicable!(self, data);
                     self.result.push(b'>');
-                    self.should_enter_table_row = true;
+                    stack.push(TableState::AtBeginning.into())
                 }
 
-                BlendEvent::IndicateCodeBlockCode => unreachable!(),
-                BlendEvent::IndicateTableRow => {
-                    self.pop_stack_and_write_table_cell_closing(&mut stack);
-                    self.result.extend(b"</tr><tr>");
-                    self.should_enter_table_cell = true;
-                }
-                BlendEvent::IndicateTableHeaderCell => {
-                    self.pop_stack_and_write_table_cell_closing(&mut stack);
-                    self.result.extend(b"<th>");
-                    stack.push(TableState::InHeaderCell.into());
-                }
-                BlendEvent::IndicateTableDataCell => {
-                    self.pop_stack_and_write_table_cell_closing(&mut stack);
-                    self.result.extend(b"<td>");
-                    stack.push(TableState::InDataCell.into());
-                }
+                BlendEvent::IndicateCodeBlockCode
+                | BlendEvent::IndicateTableRow
+                | BlendEvent::IndicateTableHeaderCell
+                | BlendEvent::IndicateTableDataCell => unreachable!(),
             };
         }
 
@@ -230,14 +250,6 @@ impl<'a> HtmlRenderer<'a> {
         self.result.push(b'>');
 
         stack.push(StackEntry::Normal(tag_name));
-    }
-
-    fn pop_stack_and_write_table_cell_closing(&mut self, stack: &mut Vec<StackEntry>) {
-        match stack.pop().unwrap() {
-            StackEntry::Table(TableState::InHeaderCell) => self.result.extend(b"</th>"),
-            StackEntry::Table(TableState::InDataCell) => self.result.extend(b"</td>"),
-            _ => unreachable!(),
-        }
     }
 
     fn write_escaped_html_text(&mut self, input: &[u8]) {
