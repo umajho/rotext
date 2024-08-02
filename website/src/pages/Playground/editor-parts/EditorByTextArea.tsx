@@ -2,7 +2,7 @@ import "../../../styles/one-dark";
 
 import { Component, createEffect, on } from "solid-js";
 
-import { EditorStore } from "../../../hooks/editor-store";
+import { EditorStore } from "../editor-store";
 
 const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
   props.store.activeLines = null;

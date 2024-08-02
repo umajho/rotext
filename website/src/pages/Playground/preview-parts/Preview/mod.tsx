@@ -23,11 +23,7 @@ import {
   WIDGET_OWNER_CLASS,
 } from "../../../../utils/custom-elements-registration/mod";
 
-import {
-  ActiveLines,
-  EditorStore,
-  TopLine,
-} from "../../../../hooks/editor-store";
+import { ActiveLines, EditorStore, TopLine } from "../../editor-store";
 import { createAutoResetCounter } from "../../../../hooks/auto-reset-counter";
 import { RotextProcessResult } from "../../../../processors/mod";
 

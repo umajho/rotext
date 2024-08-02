@@ -11,7 +11,7 @@ import { EditorView } from "codemirror";
 
 import { createCodeMirrorEditor } from "../../../components/code-mirror-editor";
 import { debounceEventHandler } from "../../../utils/mod";
-import { ActiveLines, EditorStore, TopLine } from "../../../hooks/editor-store";
+import { ActiveLines, EditorStore, TopLine } from "../editor-store";
 import { createAutoResetCounter } from "../../../hooks/auto-reset-counter";
 
 let nextEditorID = 1;

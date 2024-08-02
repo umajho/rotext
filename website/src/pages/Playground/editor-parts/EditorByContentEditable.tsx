@@ -11,7 +11,7 @@ import {
   Show,
 } from "solid-js";
 
-import { ActiveLines, EditorStore, TopLine } from "../../../hooks/editor-store";
+import { ActiveLines, EditorStore, TopLine } from "../editor-store";
 import { binarySearch } from "../../../utils/algorithm";
 import { debounceEventHandler } from "../../../utils/mod";
 import { createAutoResetCounter } from "../../../hooks/auto-reset-counter";

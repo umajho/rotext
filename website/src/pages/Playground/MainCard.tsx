@@ -4,10 +4,12 @@ import { SUPPORTS_DVH } from "@rotext/web-utils";
 
 import { Card } from "../../components/ui/mod";
 
-import { createEditorStore } from "../../hooks/editor-store";
+import { createEditorStore } from "./editor-store";
 
-import { createPreviewParts } from "./preview-parts/mod";
-import { createEditorParts } from "./editor-parts/mod";
+import { PreviewTopBar, PreviewWrapper } from "./preview-parts/mod";
+import { EditorTopBar, EditorWrapper } from "./editor-parts/mod";
+import { createEditorPartStore } from "./editor-parts/store";
+import { createPreviewPartStore } from "./preview-parts/store";
 
 const SIZE_OPTS = {
   widthClass: "w-full",
@@ -22,10 +24,9 @@ const DOC_INTRODUCTION = await (await fetch(
   .text();
 
 const MainCard: Component = () => {
-  const store = createEditorStore(DOC_INTRODUCTION);
-
-  const { EditorTopBar, Editor } = createEditorParts(store, SIZE_OPTS);
-  const { PreviewTopBar, Preview } = createPreviewParts(store, SIZE_OPTS);
+  const editorStore = createEditorStore(DOC_INTRODUCTION);
+  const editorPartStore = createEditorPartStore();
+  const previewPartStore = createPreviewPartStore();
 
   return (
     <Card
@@ -34,16 +35,24 @@ const MainCard: Component = () => {
     >
       <div class="grid grid-cols-1 xl:grid-cols-2">
         <div class="max-xl:order-1">
-          {EditorTopBar}
+          <EditorTopBar store={editorPartStore} editorStore={editorStore} />
         </div>
         <div class="max-xl:order-3">
-          {PreviewTopBar}
+          <PreviewTopBar store={previewPartStore} />
         </div>
         <div class="max-xl:order-2">
-          {Editor}
+          <EditorWrapper
+            store={editorPartStore}
+            editorStore={editorStore}
+            {...SIZE_OPTS}
+          />
         </div>
         <div class="max-xl:order-4">
-          {Preview}
+          <PreviewWrapper
+            store={previewPartStore}
+            editorStore={editorStore}
+            {...SIZE_OPTS}
+          />
         </div>
       </div>
     </Card>
