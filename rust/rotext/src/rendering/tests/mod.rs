@@ -376,6 +376,43 @@ fn it_works_in_block_phase() {
             ],
         },
         GroupedCases {
+            group: "表格>嵌套",
+            cases: vec![
+                case!(
+                    "CAPTION:0/DATA:10",
+                    [
+                        (EnterTable(..)),
+                        (IndicateTableCaption()),
+                        (EnterTable(..)),
+                        (IndicateTableCaption()),
+                        (EnterParagraph(..)),
+                        (Text(0..7)),
+                        (ExitBlock(..)),
+                        (IndicateTableDataCell()),
+                        (EnterParagraph(..)),
+                        (Text(10..14)),
+                        (ExitBlock(..)),
+                        (ExitBlock(..)),
+                        (IndicateTableDataCell()),
+                        (EnterTable(..)),
+                        (IndicateTableCaption()),
+                        (EnterParagraph(..)),
+                        (Text(0..7)),
+                        (ExitBlock(..)),
+                        (ExitBlock(..)),
+                        (ExitBlock(..)),
+                    ],
+                    concat!(
+                        "<table><caption>",
+                        "<table><caption><p>CAPTION</p></caption><tr><td><p>DATA</p></td></tr></table>",
+                        "</caption><tr><td>",
+                        "<table><caption><p>CAPTION</p></caption></table>",
+                        "</td></tr></table>",
+                    ),
+                ),
+            ],
+        },
+        GroupedCases {
             group: "XSS",
             cases: vec![
                 case!(
