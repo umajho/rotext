@@ -53,6 +53,7 @@ enum StackEntry<'a> {
 }
 enum TableState {
     AtBeginning,
+    InCaption,
     InRow,
     InHeaderCell,
     InDataCell,
@@ -87,6 +88,7 @@ impl<'a> HtmlRenderer<'a> {
                     BlendEvent::IndicateTableRow => {
                         match table_state {
                             TableState::AtBeginning => self.result.extend(b"<tr>"),
+                            TableState::InCaption => self.result.extend(b"</caption><tr>"),
                             TableState::InRow => self.result.extend(b"</tr><tr>"),
                             TableState::InHeaderCell => self.result.extend(b"</th></tr><tr>"),
                             TableState::InDataCell => self.result.extend(b"</td></tr><tr>"),
@@ -94,9 +96,18 @@ impl<'a> HtmlRenderer<'a> {
                         *table_state = TableState::InRow;
                         continue;
                     }
+                    BlendEvent::IndicateTableCaption => {
+                        match table_state {
+                            TableState::AtBeginning => self.result.extend(b"<caption>"),
+                            _ => unreachable!(),
+                        }
+                        *table_state = TableState::InCaption;
+                        continue;
+                    }
                     BlendEvent::IndicateTableHeaderCell => {
                         match table_state {
                             TableState::AtBeginning => self.result.extend(b"<tr><th>"),
+                            TableState::InCaption => self.result.extend(b"</caption><tr><th>"),
                             TableState::InRow => self.result.extend(b"<th>"),
                             TableState::InHeaderCell => self.result.extend(b"</th><th>"),
                             TableState::InDataCell => self.result.extend(b"</td><th>"),
@@ -107,6 +118,7 @@ impl<'a> HtmlRenderer<'a> {
                     BlendEvent::IndicateTableDataCell => {
                         match table_state {
                             TableState::AtBeginning => self.result.extend(b"<tr><td>"),
+                            TableState::InCaption => self.result.extend(b"</caption><tr><td>"),
                             TableState::InRow => self.result.extend(b"<td>"),
                             TableState::InHeaderCell => self.result.extend(b"</th><td>"),
                             TableState::InDataCell => self.result.extend(b"</td><td>"),
@@ -119,6 +131,9 @@ impl<'a> HtmlRenderer<'a> {
                         match top {
                             StackEntry::Table(TableState::AtBeginning) => {
                                 self.result.extend(b"</table>")
+                            }
+                            StackEntry::Table(TableState::InCaption) => {
+                                self.result.extend(b"</caption></table>")
                             }
                             StackEntry::Table(TableState::InRow) => {
                                 self.result.extend(b"</tr></table>")
@@ -229,6 +244,7 @@ impl<'a> HtmlRenderer<'a> {
                 }
 
                 BlendEvent::IndicateCodeBlockCode
+                | BlendEvent::IndicateTableCaption
                 | BlendEvent::IndicateTableRow
                 | BlendEvent::IndicateTableHeaderCell
                 | BlendEvent::IndicateTableDataCell => unreachable!(),

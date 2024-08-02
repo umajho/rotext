@@ -36,6 +36,7 @@ pub enum EventType {
     EnterCodeBlock = 21,
     EnterTable = 31,
     IndicateCodeBlockCode = 22,
+    IndicateTableCaption = 35,
     IndicateTableRow = 32,
     IndicateTableHeaderCell = 33,
     IndicateTableDataCell = 34,
@@ -146,7 +147,9 @@ pub enum Event {
     /// 指示到达代码块的代码部分。
     #[subenum(BlockEvent, BlendEvent)]
     IndicateCodeBlockCode = EventType::IndicateCodeBlockCode as u8,
-    // TODO: IndicateTableCaption 指示到达表格标题。
+    /// 指示到达表格标题。
+    #[subenum(BlockEvent, BlendEvent)]
+    IndicateTableCaption = EventType::IndicateTableCaption as u8,
     /// 指示到达（新）表格行。
     #[subenum(BlockEvent, BlendEvent)]
     IndicateTableRow = EventType::IndicateTableRow as u8,
@@ -230,6 +233,7 @@ impl Event {
             | Event::EnterCodeBlock(_)
             | Event::EnterTable(_)
             | Event::IndicateCodeBlockCode
+            | Event::IndicateTableCaption
             | Event::IndicateTableRow
             | Event::IndicateTableHeaderCell
             | Event::IndicateTableDataCell

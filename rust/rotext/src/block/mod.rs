@@ -48,6 +48,8 @@ pub struct Nesting {
     exiting: Option<ExitingUntil>,
 
     tables_in_stack: usize,
+    /// 只在 `tables_in_stack` 不为 0 时有效，记录是否在进入最新的表格后曾产出过事件。
+    has_yielded_since_entered_last_table: bool,
 }
 
 pub struct StackEntry {
@@ -178,6 +180,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                 processed_item_likes: 0,
                 exiting: None,
                 tables_in_stack: 0,
+                has_yielded_since_entered_last_table: false,
             },
         }
     }
@@ -248,6 +251,9 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
 
         #[cfg(debug_assertions)]
         log::debug!("NEXT {:?}", next);
+
+        self.nesting.has_yielded_since_entered_last_table =
+            !matches!(next, Some(Ok(BlockEvent::EnterTable(_))));
 
         next
     }

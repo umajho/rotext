@@ -42,6 +42,9 @@ macro_rules! event {
     (IndicateCodeBlockCode ()) => {
         $crate::events::BlendEvent::IndicateCodeBlockCode
     };
+    (IndicateTableCaption ()) => {
+        $crate::events::BlendEvent::IndicateTableCaption
+    };
     (IndicateTableRow ()) => {
         $crate::events::BlendEvent::IndicateTableRow
     };

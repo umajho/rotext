@@ -3,7 +3,7 @@ use derivative::Derivative;
 use super::{
     context::Context,
     global_mapper::Mapped,
-    sub_parsers::{self, HaveMet},
+    sub_parsers::{self, HaveMet, InTable},
     utils::ArrayQueue,
     BlockInStack, ItemLikeType, Nesting, StackEntry,
 };
@@ -72,6 +72,10 @@ impl From<HaveMet> for InitialState {
             HaveMet::TableClosing => Self::ExitingUntil(ExitingUntil::TopIsTable {
                 should_exit_table: true,
                 and_then_yield: None,
+            }),
+            HaveMet::TableCaptionIndicator => Self::ExitingUntil(ExitingUntil::TopIsTable {
+                should_exit_table: false,
+                and_then_yield: Some(BlockEvent::IndicateTableCaption),
             }),
             HaveMet::TableRowIndicator => Self::ExitingUntil(ExitingUntil::TopIsTable {
                 should_exit_table: false,
@@ -386,7 +390,13 @@ impl<'a> Parser<'a> {
                     #[cfg(feature = "line-number")]
                     start_line_number: ctx.current_line_number,
                     leading_signs,
-                    is_in_table: nesting.tables_in_stack > 0,
+                    in_table: if nesting.tables_in_stack > 0 {
+                        Some(InTable {
+                            has_yielded_since_entered: nesting.has_yielded_since_entered_last_table,
+                        })
+                    } else {
+                        None
+                    },
                 }),
             )),
             LeafType::CodeBlock { backticks } => InternalOutput::ToSwitchToSubParser(Box::new(
@@ -403,7 +413,14 @@ impl<'a> Parser<'a> {
                         #[cfg(feature = "line-number")]
                         start_line_number: ctx.current_line_number,
                         content_before,
-                        is_in_table: nesting.tables_in_stack > 0,
+                        in_table: if nesting.tables_in_stack > 0 {
+                            Some(InTable {
+                                has_yielded_since_entered: nesting
+                                    .has_yielded_since_entered_last_table,
+                            })
+                        } else {
+                            None
+                        },
                     },
                 )))
             }

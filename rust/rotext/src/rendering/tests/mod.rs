@@ -306,6 +306,76 @@ fn it_works_in_block_phase() {
             ]
         },
         GroupedCases {
+            group: "表格>captions",
+            cases: vec![
+                case!(
+                    "CAPTION",
+                    [
+                        (EnterTable(..)),
+                        (IndicateTableCaption()),
+                        (EnterParagraph(..)),
+                        (Text(0..7)),
+                        (ExitBlock(..)),
+                        (ExitBlock(..)),
+                    ],
+                    "<table><caption><p>CAPTION</p></caption></table>",
+                ),
+                case!(
+                    "CAPTION",
+                    [
+                        (EnterTable(..)),
+                        (IndicateTableCaption()),
+                        (EnterParagraph(..)),
+                        (Text(0..7)),
+                        (ExitBlock(..)),
+                        (IndicateTableRow()),
+                        (ExitBlock(..)),
+                    ],
+                    "<table><caption><p>CAPTION</p></caption><tr></tr></table>",
+                ),
+                case!(
+                    "CAPTION",
+                    [
+                        (EnterTable(..)),
+                        (IndicateTableCaption()),
+                        (EnterParagraph(..)),
+                        (Text(0..7)),
+                        (ExitBlock(..)),
+                        (IndicateTableRow()),
+                        (IndicateTableDataCell()),
+                        (ExitBlock(..)),
+                    ],
+                    "<table><caption><p>CAPTION</p></caption><tr><td></td></tr></table>",
+                ),
+                case!(
+                    "CAPTION",
+                    [
+                        (EnterTable(..)),
+                        (IndicateTableCaption()),
+                        (EnterParagraph(..)),
+                        (Text(0..7)),
+                        (ExitBlock(..)),
+                        (IndicateTableHeaderCell()),
+                        (ExitBlock(..)),
+                    ],
+                    "<table><caption><p>CAPTION</p></caption><tr><th></th></tr></table>",
+                ),
+                case!(
+                    "CAPTION",
+                    [
+                        (EnterTable(..)),
+                        (IndicateTableCaption()),
+                        (EnterParagraph(..)),
+                        (Text(0..7)),
+                        (ExitBlock(..)),
+                        (IndicateTableDataCell()),
+                        (ExitBlock(..)),
+                    ],
+                    "<table><caption><p>CAPTION</p></caption><tr><td></td></tr></table>",
+                ),
+            ],
+        },
+        GroupedCases {
             group: "XSS",
             cases: vec![
                 case!(

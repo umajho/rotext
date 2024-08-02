@@ -97,7 +97,7 @@ pub struct EndConditions {
     pub before_blank_line: bool,
     pub after_repetitive_characters: Option<RepetitiveCharactersCondition>,
 
-    pub on_table_related: bool,
+    pub on_table_related: Option<TableRelatedCondition>,
 }
 
 pub struct RepetitiveCharactersCondition {
@@ -112,6 +112,10 @@ pub struct RepetitiveCharactersCondition {
     /// 如果是对应于 `at_line_beginning` 的判断，则是最少需要的数量；如果对应于
     /// `at_line_end_and_with_space_before` 的判断，则是准确需要的数量。
     pub minimal_count: usize,
+}
+
+pub struct TableRelatedCondition {
+    pub is_caption_applicable: bool,
 }
 
 macro_rules! done {
@@ -180,6 +184,10 @@ impl Parser {
             }
         };
 
+        if let Some(on_table_related) = &mut self.inner.end_conditions.on_table_related {
+            on_table_related.is_caption_applicable = false;
+        }
+
         self.state = State::default();
 
         output
@@ -218,8 +226,8 @@ impl Parser {
                     }
                 }
 
-                if inner.end_conditions.on_table_related {
-                    if let Some(have_met) = try_parse_potential_table_related(ctx) {
+                if let Some(condition) = &inner.end_conditions.on_table_related {
+                    if let Some(have_met) = try_parse_potential_table_related(ctx, condition) {
                         return done!(have_met);
                     }
                 }
@@ -349,8 +357,8 @@ impl Parser {
                     return InternalOutput::ToContinue;
                 }
 
-                if inner.end_conditions.on_table_related {
-                    if let Some(have_met) = try_parse_potential_table_related(ctx) {
+                if let Some(condition) = &inner.end_conditions.on_table_related {
+                    if let Some(have_met) = try_parse_potential_table_related(ctx, condition) {
                         if state_content.length() > 0 {
                             return InternalOutput::ToYieldAndBeDone(
                                 BlockEvent::Unparsed(*state_content),
@@ -434,11 +442,18 @@ fn try_process_potential_repetitive_characters(
     }
 }
 
-fn try_parse_potential_table_related(ctx: &mut Context) -> Option<HaveMet> {
+fn try_parse_potential_table_related(
+    ctx: &mut Context,
+    condition: &TableRelatedCondition,
+) -> Option<HaveMet> {
     match ctx.peek_next_three_chars() {
         [Some(b'|'), Some(b'}'), ..] => {
             ctx.must_take_from_mapper_and_apply_to_cursor(2);
             Some(HaveMet::TableClosing)
+        }
+        [Some(b'|'), Some(b'+'), ..] if condition.is_caption_applicable => {
+            ctx.must_take_from_mapper_and_apply_to_cursor(2);
+            Some(HaveMet::TableCaptionIndicator)
         }
         [Some(b'|'), Some(b'-'), ..] => {
             ctx.must_take_from_mapper_and_apply_to_cursor(2);

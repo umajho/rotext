@@ -202,6 +202,76 @@ pub fn groups_table() -> Vec<GroupedCases> {
             ],
         },
         GroupedCases {
+            group: "表格>标题",
+            cases: vec![
+                case!(
+                    vec![
+                        indoc! {"
+                        {|
+                        |+ CAPTION
+                        |}"},
+                        "{| |+ CAPTION |}",
+                        "{||+CAPTION|}",
+                    ],
+                    vec![
+                        (EventType::EnterTable, None),
+                        (EventType::IndicateTableCaption, None),
+                        (EventType::EnterParagraph, None),
+                        (EventType::Unparsed, Some("CAPTION")),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec![indoc! {"
+                        {|
+                        |+ CAPTION
+                        |-
+                        |}"},],
+                    vec![
+                        (EventType::EnterTable, None),
+                        (EventType::IndicateTableCaption, None),
+                        (EventType::EnterParagraph, None),
+                        (EventType::Unparsed, Some("CAPTION")),
+                        (EventType::ExitBlock, None),
+                        (EventType::IndicateTableRow, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec![indoc! {"
+                        {|
+                        |+ CAPTION
+                        ||
+                        |}"},],
+                    vec![
+                        (EventType::EnterTable, None),
+                        (EventType::IndicateTableCaption, None),
+                        (EventType::EnterParagraph, None),
+                        (EventType::Unparsed, Some("CAPTION")),
+                        (EventType::ExitBlock, None),
+                        (EventType::IndicateTableDataCell, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec![indoc! {"
+                        {|
+                        ||
+                        |+ NOT CAPTION
+                        |}"},],
+                    vec![
+                        (EventType::EnterTable, None),
+                        (EventType::IndicateTableDataCell, None),
+                        (EventType::EnterParagraph, None),
+                        (EventType::Unparsed, Some("|+ NOT CAPTION")),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+            ],
+        },
+        GroupedCases {
             group: "表格>item-likes 中的表格",
             cases: vec![
                 case!(

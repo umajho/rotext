@@ -1,11 +1,15 @@
 #[cfg(feature = "block-id")]
 use crate::types::BlockId;
 use crate::{
-    block::{context::Context, sub_parsers, utils::match_pop_block_id},
+    block::{
+        context::Context,
+        sub_parsers::{self, content::TableRelatedCondition},
+        utils::match_pop_block_id,
+    },
     events::{BlockEvent, BlockWithID, ExitBlock, NewLine},
 };
 
-use super::HaveMet;
+use super::{HaveMet, InTable};
 
 enum State {
     /// 构造解析器后，解析器所处的初始状态。此时，其所解析语法的开启部分应已经被
@@ -28,7 +32,7 @@ pub struct Parser {
     start_line_number: usize,
     leading_signs: usize,
 
-    is_in_table: bool,
+    in_table: Option<InTable>,
 
     state: State,
 }
@@ -38,7 +42,7 @@ pub struct NewParserOptions {
     pub start_line_number: usize,
     pub leading_signs: usize,
 
-    pub is_in_table: bool,
+    pub in_table: Option<InTable>,
 }
 
 impl Parser {
@@ -47,7 +51,7 @@ impl Parser {
             #[cfg(feature = "line-number")]
             start_line_number: opts.start_line_number,
             leading_signs: opts.leading_signs,
-            is_in_table: opts.is_in_table,
+            in_table: opts.in_table,
             state: State::Initial,
         }
     }
@@ -71,7 +75,9 @@ impl Parser {
                                 minimal_count: self.leading_signs,
                             },
                         ),
-                        on_table_related: self.is_in_table,
+                        on_table_related: self.in_table.as_ref().map(|x| TableRelatedCondition {
+                            is_caption_applicable: !x.has_yielded_since_entered,
+                        }),
                         ..Default::default()
                     },
                     ..Default::default()

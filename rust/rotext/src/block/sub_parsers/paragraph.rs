@@ -1,12 +1,16 @@
 #[cfg(feature = "block-id")]
 use crate::types::BlockId;
 use crate::{
-    block::{context::Context, sub_parsers, utils::match_pop_block_id},
+    block::{
+        context::Context,
+        sub_parsers::{self, content::TableRelatedCondition},
+        utils::match_pop_block_id,
+    },
     common::Range,
     events::{BlockEvent, BlockWithID, ExitBlock, NewLine},
 };
 
-use super::HaveMet;
+use super::{HaveMet, InTable};
 
 enum State {
     Initial(StateInitial),
@@ -45,7 +49,7 @@ struct ParserInner {
     #[cfg(feature = "line-number")]
     start_line_number: usize,
 
-    is_in_table: bool,
+    in_table: Option<InTable>,
 
     have_ever_yielded: bool,
     deferred: Option<BlockEvent>,
@@ -57,7 +61,7 @@ pub struct NewParserOptions {
 
     pub content_before: Option<Range>,
 
-    pub is_in_table: bool,
+    pub in_table: Option<InTable>,
 }
 
 impl Parser {
@@ -67,7 +71,7 @@ impl Parser {
             inner: ParserInner {
                 #[cfg(feature = "line-number")]
                 start_line_number: opts.start_line_number,
-                is_in_table: opts.is_in_table,
+                in_table: opts.in_table,
                 have_ever_yielded: false,
                 deferred: None,
             },
@@ -142,7 +146,9 @@ impl Parser {
             },
             end_conditions: sub_parsers::content::EndConditions {
                 before_blank_line: true,
-                on_table_related: consts.is_in_table,
+                on_table_related: consts.in_table.as_ref().map(|x| TableRelatedCondition {
+                    is_caption_applicable: !x.has_yielded_since_entered,
+                }),
                 ..Default::default()
             },
             ..Default::default()

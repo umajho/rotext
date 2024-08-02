@@ -20,6 +20,7 @@ pub enum HaveMet {
     None,
 
     TableClosing,
+    TableCaptionIndicator,
     TableRowIndicator,
     TableHeaderCellIndicator,
     DoublePipes,
@@ -30,4 +31,8 @@ pub trait SubParser<'a> {
 
     fn resume_from_pause_for_new_line_and_continue(&mut self, new_line: NewLine);
     fn resume_from_pause_for_new_line_and_exit(&mut self);
+}
+
+pub struct InTable {
+    pub has_yielded_since_entered: bool,
 }
