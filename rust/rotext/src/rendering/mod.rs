@@ -4,9 +4,6 @@ use crate::events::BlendEvent;
 use crate::events::BlockWithID;
 use crate::events::VerbatimEscaping;
 
-const TABLE_TR_TH: &[u8] = b"table tr th";
-const TABLE_TR_TD: &[u8] = b"table tr td";
-
 macro_rules! write_data_block_id_attribute_if_applicable {
     ($self:ident, $data:ident) => {
         #[cfg(feature = "block-id")]
@@ -53,6 +50,20 @@ pub struct HtmlRenderer<'a> {
     should_enter_table_cell: bool,
 }
 
+enum StackEntry<'a> {
+    Normal(&'a [u8]),
+    Table(TableState),
+}
+enum TableState {
+    InHeaderCell,
+    InDataCell,
+}
+impl<'a> From<TableState> for StackEntry<'a> {
+    fn from(val: TableState) -> Self {
+        StackEntry::Table(val)
+    }
+}
+
 impl<'a> HtmlRenderer<'a> {
     pub fn new(input: &'a [u8], opts: NewHtmlRendererOptoins<'a>) -> Self {
         Self {
@@ -67,7 +78,7 @@ impl<'a> HtmlRenderer<'a> {
     }
 
     pub fn render(mut self, mut input_stream: impl Iterator<Item = BlendEvent>) -> String {
-        let mut stack: Vec<&[u8]> = vec![];
+        let mut stack: Vec<StackEntry> = vec![];
 
         loop {
             let Some(ev) = input_stream.next() else {
@@ -92,10 +103,10 @@ impl<'a> HtmlRenderer<'a> {
                 };
                 if is_th {
                     self.result.extend(b"<th>");
-                    stack.push(TABLE_TR_TH)
+                    stack.push(TableState::InHeaderCell.into())
                 } else {
                     self.result.extend(b"<td>");
-                    stack.push(TABLE_TR_TD)
+                    stack.push(TableState::InDataCell.into())
                 }
                 if should_continue {
                     continue;
@@ -118,9 +129,13 @@ impl<'a> HtmlRenderer<'a> {
                 BlendEvent::ExitBlock(_) => {
                     let top = stack.pop().unwrap();
                     match top {
-                        TABLE_TR_TH => self.result.extend(b"</th></tr></table>"),
-                        TABLE_TR_TD => self.result.extend(b"</td></tr></table>"),
-                        _ => {
+                        StackEntry::Table(TableState::InHeaderCell) => {
+                            self.result.extend(b"</th></tr></table>")
+                        }
+                        StackEntry::Table(TableState::InDataCell) => {
+                            self.result.extend(b"</td></tr></table>")
+                        }
+                        StackEntry::Normal(top) => {
                             self.result.extend(b"</");
                             self.result.extend(top);
                             self.result.push(b'>');
@@ -170,7 +185,7 @@ impl<'a> HtmlRenderer<'a> {
                     write_data_block_id_attribute_if_applicable!(self, data);
 
                     self.result.push(b'>');
-                    stack.push(self.tag_name_map.code_block);
+                    stack.push(StackEntry::Normal(self.tag_name_map.code_block));
                 }
                 #[allow(unused_variables)]
                 BlendEvent::EnterTable(data) => {
@@ -190,12 +205,12 @@ impl<'a> HtmlRenderer<'a> {
                 BlendEvent::IndicateTableHeaderCell => {
                     self.pop_stack_and_write_table_cell_closing(&mut stack);
                     self.result.extend(b"<th>");
-                    stack.push(TABLE_TR_TH);
+                    stack.push(TableState::InHeaderCell.into());
                 }
                 BlendEvent::IndicateTableDataCell => {
                     self.pop_stack_and_write_table_cell_closing(&mut stack);
                     self.result.extend(b"<td>");
-                    stack.push(TABLE_TR_TD);
+                    stack.push(TableState::InDataCell.into());
                 }
             };
         }
@@ -205,7 +220,7 @@ impl<'a> HtmlRenderer<'a> {
 
     fn push_simple(
         &mut self,
-        stack: &mut Vec<&[u8]>,
+        stack: &mut Vec<StackEntry>,
         tag_name: &'static [u8],
         #[allow(unused_variables)] data: &BlockWithID,
     ) {
@@ -214,13 +229,13 @@ impl<'a> HtmlRenderer<'a> {
         write_data_block_id_attribute_if_applicable!(self, data);
         self.result.push(b'>');
 
-        stack.push(tag_name);
+        stack.push(StackEntry::Normal(tag_name));
     }
 
-    fn pop_stack_and_write_table_cell_closing(&mut self, stack: &mut Vec<&[u8]>) {
+    fn pop_stack_and_write_table_cell_closing(&mut self, stack: &mut Vec<StackEntry>) {
         match stack.pop().unwrap() {
-            TABLE_TR_TH => self.result.extend(b"</th>"),
-            TABLE_TR_TD => self.result.extend(b"</td>"),
+            StackEntry::Table(TableState::InHeaderCell) => self.result.extend(b"</th>"),
+            StackEntry::Table(TableState::InDataCell) => self.result.extend(b"</td>"),
             _ => unreachable!(),
         }
     }
