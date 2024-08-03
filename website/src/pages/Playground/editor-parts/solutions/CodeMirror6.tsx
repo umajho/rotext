@@ -1,24 +1,17 @@
-import {
-  Component,
-  createEffect,
-  createMemo,
-  createSignal,
-  on,
-  onMount,
-} from "solid-js";
+import { createEffect, createMemo, createSignal, on, onMount } from "solid-js";
 import { Portal } from "solid-js/web";
 import { EditorView } from "codemirror";
 
-import { createCodeMirrorEditor } from "../../../components/code-mirror-editor";
-import { debounceEventHandler } from "../../../utils/mod";
-import { ActiveLines, EditorStore, TopLine } from "../editor-store";
-import { createAutoResetCounter } from "../../../hooks/auto-reset-counter";
+import { createCodeMirrorEditor } from "../../../../components/code-mirror-editor";
+import { debounceEventHandler } from "../../../../utils/mod";
+import { ActiveLines, TopLine } from "../../editor-store";
+import { createAutoResetCounter } from "../../../../hooks/auto-reset-counter";
+
+import { EditorSolution } from "./types";
 
 let nextEditorID = 1;
 
-const Editor: Component<
-  { store: EditorStore; class?: string }
-> = (props) => {
+const CodeMirror6: EditorSolution = (props) => {
   const editorID = nextEditorID++;
 
   const [blankHeightAtEnd, setBlankHeightAtEnd] = createSignal(0);
@@ -126,7 +119,7 @@ const Editor: Component<
     </>
   );
 };
-export default Editor;
+export default CodeMirror6;
 
 function createScrollHandler(
   opts: {

@@ -1,10 +1,10 @@
-import "../../../styles/one-dark";
+import "../../../../styles/one-dark";
 
-import { Component, createEffect, on } from "solid-js";
+import { createEffect, on } from "solid-js";
 
-import { EditorStore } from "../editor-store";
+import { EditorSolution } from "./types";
 
-const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
+const Editor: EditorSolution = (props) => {
   props.store.activeLines = null;
 
   function handleChange(ev: InputEvent) {

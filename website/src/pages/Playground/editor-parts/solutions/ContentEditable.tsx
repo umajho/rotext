@@ -1,7 +1,6 @@
-import "../../../styles/one-dark";
+import "../../../../styles/one-dark";
 
 import {
-  Component,
   createEffect,
   createSignal,
   JSX,
@@ -11,12 +10,14 @@ import {
   Show,
 } from "solid-js";
 
-import { ActiveLines, EditorStore, TopLine } from "../editor-store";
-import { binarySearch } from "../../../utils/algorithm";
-import { debounceEventHandler } from "../../../utils/mod";
-import { createAutoResetCounter } from "../../../hooks/auto-reset-counter";
+import { ActiveLines, TopLine } from "../../editor-store";
+import { binarySearch } from "../../../../utils/algorithm";
+import { debounceEventHandler } from "../../../../utils/mod";
+import { createAutoResetCounter } from "../../../../hooks/auto-reset-counter";
 
-const Editor: Component<{ store: EditorStore; class?: string }> = (props) => {
+import { EditorSolution } from "./types";
+
+const Editor: EditorSolution = (props) => {
   let scrollContainerEl!: HTMLDivElement,
     contentContainerEl!: HTMLDivElement;
 

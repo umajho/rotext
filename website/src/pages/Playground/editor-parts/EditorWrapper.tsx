@@ -1,17 +1,19 @@
-import { Component, lazy, Match, Suspense, Switch } from "solid-js";
+import { Component, createMemo, lazy, Suspense } from "solid-js";
 
 import { Loading } from "../../../components/ui/mod";
 
 import { EditorStore } from "../editor-store";
 
-import ContentEditable from "./EditorByContentEditable";
-import TextArea from "./EditorByTextArea";
 import { EditorPartStore } from "./store";
+
+import TextArea from "./solutions/TextArea";
+
+import ContentEditable from "./solutions/ContentEditable";
 
 export type Solution = "CM6" | "ce" | "ta";
 
 const EditorSolutions = {
-  CodeMirror6: lazy(() => import("./EditorByCodeMirror6")),
+  CodeMirror6: lazy(() => import("./solutions/CodeMirror6")),
   ContentEditable,
   TextArea,
 };
@@ -24,6 +26,21 @@ const EditorWrapper: Component<{
 }> = (props) => {
   const sizeClasses = () => `${props.heightClass} ${props.widthClass}`;
 
+  const currentSolution = createMemo(
+    () => {
+      switch (props.store.solution) {
+        case "CM6":
+          return EditorSolutions.CodeMirror6;
+        case "ce":
+          return EditorSolutions.ContentEditable;
+        case "ta":
+          return EditorSolutions.TextArea;
+        default:
+          throw new Error("unreachable");
+      }
+    },
+  );
+
   return (
     <Suspense
       fallback={
@@ -32,26 +49,10 @@ const EditorWrapper: Component<{
         </div>
       }
     >
-      <Switch>
-        <Match when={props.store.solution === "CM6"}>
-          <EditorSolutions.CodeMirror6
-            store={props.editorStore}
-            class={`${sizeClasses()} overflow-y-scroll`}
-          />
-        </Match>
-        <Match when={props.store.solution === "ce"}>
-          <EditorSolutions.ContentEditable
-            store={props.editorStore}
-            class={`${sizeClasses()} overflow-y-scroll`}
-          />
-        </Match>
-        <Match when={props.store.solution === "ta"}>
-          <EditorSolutions.TextArea
-            store={props.editorStore}
-            class={`${sizeClasses()} overflow-y-scroll`}
-          />
-        </Match>
-      </Switch>
+      {currentSolution()({
+        store: props.editorStore,
+        class: `${sizeClasses()} overflow-y-scroll`,
+      })}
     </Suspense>
   );
 };
