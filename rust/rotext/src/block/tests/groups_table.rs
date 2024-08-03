@@ -361,7 +361,7 @@ pub fn groups_table() -> Vec<GroupedCases> {
             ],
         },
         GroupedCases {
-            group: "表格>列表中的先前测试过的 item-likes 以外的块级元素",
+            group: "表格>表格中的先前测试过的 item-likes 以外的块级元素",
             cases: vec![
                 case!(
                     vec![indoc! {"
