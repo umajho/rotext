@@ -11,8 +11,25 @@ export interface TopLine {
 
 export type ActiveLines = [top: number, bottom: number];
 
-export function createEditorStore(initialText: string = "") {
-  const [text, setText] = createSignal(initialText);
+export function createEditorStore(initialText: string | Promise<string>) {
+  const [isLoadingText, setIsLoadingText] = createSignal(false);
+  const [text, setText] = createSignal("");
+  const loadText = (text: string | Promise<string>) => {
+    if (isLoadingText()) return;
+
+    if (typeof text === "string") {
+      setText(text);
+      return;
+    }
+
+    setIsLoadingText(true);
+    text.then((text) => {
+      setText(text);
+      setIsLoadingText(false);
+    });
+  };
+  loadText(initialText);
+
   const [topLine, setTopLine] = createSignal<TopLine>({
     number: 1,
     setFrom: null,
@@ -26,6 +43,10 @@ export function createEditorStore(initialText: string = "") {
     },
     set text(v: string) {
       setText(v);
+    },
+    loadText,
+    get isLoadingText() {
+      return isLoadingText();
     },
     get topLine() {
       return topLine();

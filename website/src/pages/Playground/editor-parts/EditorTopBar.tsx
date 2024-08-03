@@ -1,4 +1,4 @@
-import { Component, createMemo, on } from "solid-js";
+import { Component, createMemo, Index, on } from "solid-js";
 
 import {
   Button,
@@ -8,6 +8,8 @@ import {
 } from "../../../components/ui/mod";
 
 import { EditorStore } from "../editor-store";
+
+import examples from "../examples";
 
 import { Solution } from "./EditorWrapper";
 import { EditorPartStore } from "./store";
@@ -66,11 +68,32 @@ const EditorTopBar: Component<{
           </TabWithDropdown>
         </Tabs>
       </div>
-      <div class="flex items-center">
+      <div class="flex items-center gap-1">
         <span class="text-xs text-gray-500">{infoText()}</span>
-        <Button size="xs" onClick={() => props.editorStore.text = ""}>
-          清空
-        </Button>
+        <select
+          class="w-20 text-xs"
+          value="label"
+          onChange={(ev) => {
+            if (ev.currentTarget.value === "clear") {
+              props.editorStore.loadText("");
+            } else {
+              props.editorStore.loadText(
+                (examples as any)[ev.currentTarget.value],
+              );
+            }
+            ev.currentTarget.value = "label";
+          }}
+        >
+          <option value="label" disabled selected>
+            示例/清空
+          </option>
+          <option value="clear">
+            清空
+          </option>
+          <Index each={Object.keys(examples)}>
+            {(name) => <option value={name()}>示例：{name()}</option>}
+          </Index>
+        </select>
       </div>
     </div>
   );

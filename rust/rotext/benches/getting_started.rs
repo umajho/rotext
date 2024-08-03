@@ -4,7 +4,7 @@ fn main() {
     divan::main();
 }
 
-static CONTENT: LazyLock<String> = LazyLock::new(|| read_doc("rotext入门-new.rotext"));
+static CONTENT: LazyLock<String> = LazyLock::new(|| read_doc("rotext入门.rotext"));
 
 #[divan::bench(sample_size = 10)]
 fn parsing(bencher: divan::Bencher) {

@@ -1,4 +1,4 @@
-import { Component, createMemo, lazy, Suspense } from "solid-js";
+import { Component, createMemo, lazy, Show, Suspense } from "solid-js";
 
 import { Loading } from "../../../components/ui/mod";
 
@@ -43,18 +43,25 @@ const EditorWrapper: Component<{
 
   return (
     <Suspense
-      fallback={
-        <div class={`flex justify-center items-center ${sizeClasses()}`}>
-          <Loading />
-        </div>
-      }
+      fallback={<LocalLoading sizeClasses={sizeClasses()} />}
     >
-      {currentSolution()({
-        store: props.editorStore,
-        class: `${sizeClasses()} overflow-y-scroll`,
-      })}
+      <Show
+        when={!props.editorStore.isLoadingText}
+        fallback={<LocalLoading sizeClasses={sizeClasses()} />}
+      >
+        {currentSolution()({
+          store: props.editorStore,
+          class: `${sizeClasses()} overflow-y-scroll`,
+        })}
+      </Show>
     </Suspense>
   );
 };
+
+const LocalLoading: Component<{ sizeClasses: string }> = (props) => (
+  <div class={`flex justify-center items-center ${props.sizeClasses}`}>
+    <Loading />
+  </div>
+);
 
 export default EditorWrapper;

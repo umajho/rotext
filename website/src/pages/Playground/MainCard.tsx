@@ -11,6 +11,8 @@ import { EditorTopBar, EditorWrapper } from "./editor-parts/mod";
 import { createEditorPartStore } from "./editor-parts/store";
 import { createPreviewPartStore } from "./preview-parts/store";
 
+import examples from "./examples";
+
 const SIZE_OPTS = {
   widthClass: "w-full",
   heightClass: SUPPORTS_DVH
@@ -18,13 +20,8 @@ const SIZE_OPTS = {
     : `h-[calc(50vh-6rem)] sm:h-[calc(50vh-8rem)] xl:h-[calc(100vh-16rem)]`,
 };
 
-const DOC_INTRODUCTION = await (await fetch(
-  import.meta.env.BASE_URL + "static/docs/rotext入门.rotext",
-))
-  .text();
-
 const MainCard: Component = () => {
-  const editorStore = createEditorStore(DOC_INTRODUCTION);
+  const editorStore = createEditorStore(examples["入门"]);
   const editorPartStore = createEditorPartStore();
   const previewPartStore = createPreviewPartStore();
 
