@@ -86,7 +86,7 @@ fn assert_auto_variant_ok(variant: AutoVariant, input: String, expected: &Vec<Ev
     let input = match variant {
         AutoVariant::Normal => input.to_string(),
         AutoVariant::WithLeadingLineFeed => format!("\n{}", input),
-        AutoVariant::WithTrailingLIneFeed => format!("{}\n", input),
+        AutoVariant::WithTrailingLineFeed => format!("{}\n", input),
     };
 
     assert_parse_ok_and_output_maches(&input, expected)
@@ -96,14 +96,14 @@ fn assert_auto_variant_ok(variant: AutoVariant, input: String, expected: &Vec<Ev
 enum AutoVariant {
     Normal,
     WithLeadingLineFeed,
-    WithTrailingLIneFeed,
+    WithTrailingLineFeed,
 }
 impl AutoVariant {
     fn all() -> Vec<AutoVariant> {
         vec![
             AutoVariant::Normal,
             AutoVariant::WithLeadingLineFeed,
-            AutoVariant::WithTrailingLIneFeed,
+            AutoVariant::WithTrailingLineFeed,
         ]
     }
 
@@ -111,7 +111,7 @@ impl AutoVariant {
         match self {
             AutoVariant::Normal => "Normal",
             AutoVariant::WithLeadingLineFeed => "WithLeadingLineFeed",
-            AutoVariant::WithTrailingLIneFeed => "WithTrailingLIneFeed",
+            AutoVariant::WithTrailingLineFeed => "WithTrailingLIneFeed",
         }
     }
 }
