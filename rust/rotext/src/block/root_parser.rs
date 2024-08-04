@@ -57,7 +57,7 @@ pub enum ExitingUntil {
         and_then_yield: Option<BlockEvent>,
     },
     /// 栈顶知晓 “||”。目前知晓 “||” 的包括 table。
-    TopKnownsDoublePipesAndThenYieldSomething,
+    TopKnowsDoublePipesAndThenYieldSomething,
 }
 
 #[derive(Debug)]
@@ -86,7 +86,7 @@ impl From<HaveMet> for InitialState {
                 and_then_yield: Some(BlockEvent::IndicateTableHeaderCell),
             }),
             HaveMet::DoublePipes => {
-                Self::ExitingUntil(ExitingUntil::TopKnownsDoublePipesAndThenYieldSomething)
+                Self::ExitingUntil(ExitingUntil::TopKnowsDoublePipesAndThenYieldSomething)
             }
         }
     }
@@ -472,7 +472,7 @@ impl<'a> Parser<'a> {
                     }
                     return InternalOutput::ToContinue(State::ExpectingContainer);
                 }
-                ExitingUntil::TopKnownsDoublePipesAndThenYieldSomething => {
+                ExitingUntil::TopKnowsDoublePipesAndThenYieldSomething => {
                     stack.try_push(top).unwrap();
                     self.to_yield.push_back(BlockEvent::IndicateTableDataCell);
                     return InternalOutput::ToContinue(State::ExpectingContainer);
