@@ -12,6 +12,9 @@ pub struct GlobalEventStreamMapper<'a> {
     stream: global::Parser<'a>,
 
     remain: Option<RemainUnparsed>,
+
+    #[cfg(debug_assertions)]
+    is_last_unparsed: bool,
 }
 
 #[derive(Debug)]
@@ -44,6 +47,8 @@ impl<'a> GlobalEventStreamMapper<'a> {
             // input,
             stream,
             remain: None,
+            #[cfg(debug_assertions)]
+            is_last_unparsed: false,
         }
     }
 
@@ -76,7 +81,16 @@ impl<'a> GlobalEventStreamMapper<'a> {
                     content,
                     next_offset: 0,
                 });
+                #[cfg(debug_assertions)]
+                {
+                    assert!(!self.is_last_unparsed);
+                    self.is_last_unparsed = true;
+                }
                 continue;
+            }
+            #[cfg(debug_assertions)]
+            {
+                self.is_last_unparsed = false;
             }
 
             match next? {
