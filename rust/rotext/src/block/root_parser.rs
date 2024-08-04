@@ -9,7 +9,7 @@ use super::{
 };
 use crate::{
     block::utils::match_pop_block_id,
-    common::Range,
+    common::{m, Range},
     events::{BlockEvent, BlockWithID, NewLine, ThematicBreak},
     utils::stack::Stack,
 };
@@ -629,19 +629,19 @@ enum TryScanItemLikeResult {
 #[inline(always)]
 fn try_scan_item_like(ctx: &mut Context, peeked_3: &[Option<u8>; 3]) -> TryScanItemLikeResult {
     match peeked_3 {
-        [Some(b'>'), ref second_char, ..] if check_is_indeed_item_like(ctx, second_char) => {
+        [Some(m!('>')), ref second_char, ..] if check_is_indeed_item_like(ctx, second_char) => {
             return TryScanItemLikeResult::BlockQuoteLine;
         }
-        [Some(b'#'), ref second_char, ..] if check_is_indeed_item_like(ctx, second_char) => {
+        [Some(m!('#')), ref second_char, ..] if check_is_indeed_item_like(ctx, second_char) => {
             return TryScanItemLikeResult::ItemLike(ItemLikeType::OrderedListItem);
         }
-        [Some(b'*'), ref second_char, ..] if check_is_indeed_item_like(ctx, second_char) => {
+        [Some(m!('*')), ref second_char, ..] if check_is_indeed_item_like(ctx, second_char) => {
             return TryScanItemLikeResult::ItemLike(ItemLikeType::UnorderedListItem);
         }
-        [Some(b';'), ref second_char, ..] if check_is_indeed_item_like(ctx, second_char) => {
+        [Some(m!(';')), ref second_char, ..] if check_is_indeed_item_like(ctx, second_char) => {
             return TryScanItemLikeResult::ItemLike(ItemLikeType::DescriptionTerm);
         }
-        [Some(b':'), ref second_char, ..] if check_is_indeed_item_like(ctx, second_char) => {
+        [Some(m!(':')), ref second_char, ..] if check_is_indeed_item_like(ctx, second_char) => {
             return TryScanItemLikeResult::ItemLike(ItemLikeType::DescriptionDetails);
         }
         _ => {}
@@ -659,7 +659,7 @@ fn try_scan_surrounded_opening(
     peeked_3: &[Option<u8>; 3],
 ) -> TryScanSurroundedResult {
     match peeked_3 {
-        [Some(b'{'), Some(b'|'), ..] => {
+        [Some(m!('{')), Some(m!('|')), ..] => {
             ctx.must_take_from_mapper_and_apply_to_cursor(2);
             TryScanSurroundedResult::TableOpening
         }
@@ -691,15 +691,15 @@ enum LeafType {
 #[inline(always)]
 fn scan_leaf(ctx: &mut Context) -> LeafType {
     match ctx.peek_next_three_chars() {
-        [Some(b'-'), Some(b'-'), Some(b'-')] => {
+        [Some(m!('-')), Some(m!('-')), Some(m!('-'))] => {
             ctx.must_take_from_mapper_and_apply_to_cursor(3);
-            ctx.drop_from_mapper_while_char(b'-');
+            ctx.drop_from_mapper_while_char(m!('-'));
             LeafType::ThematicBreak
         }
-        [Some(b'='), ..] => {
+        [Some(m!('=')), ..] => {
             ctx.must_take_from_mapper_and_apply_to_cursor(1);
             let mut potential_opening_part = Range::new(ctx.cursor.value().unwrap(), 1);
-            let dropped = ctx.drop_from_mapper_while_char_with_maximum(b'=', 5);
+            let dropped = ctx.drop_from_mapper_while_char_with_maximum(m!('='), 5);
             potential_opening_part.increase_length(dropped);
 
             if ctx.peek_next_char() == Some(b' ') {
@@ -712,9 +712,9 @@ fn scan_leaf(ctx: &mut Context) -> LeafType {
                 }
             }
         }
-        [Some(b'`'), Some(b'`'), Some(b'`')] => {
+        [Some(m!('`')), Some(m!('`')), Some(m!('`'))] => {
             ctx.must_take_from_mapper_and_apply_to_cursor(3);
-            let extra_count = ctx.drop_from_mapper_while_char(b'`');
+            let extra_count = ctx.drop_from_mapper_while_char(m!('`'));
             LeafType::CodeBlock {
                 backticks: 3 + extra_count,
             }

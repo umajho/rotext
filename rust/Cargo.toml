@@ -2,7 +2,7 @@
 
 resolver = "2"
 
-members = ["rotext", "rotext_wasm_bindings"]
+members = ["rotext", "rotext_internal_macros", "rotext_wasm_bindings"]
 
 [workspace.package]
 
@@ -16,3 +16,4 @@ repository = "https://github.com/umajho/rotext"
 
 rotext = { path = "rotext" }
 rotext_wasm = { path = "rotext_wasm_bindings" }
+rotext_internal_macros = { path = "rotext_internal_macros" }

@@ -12,6 +12,8 @@ line-number = []
 block-id = []
 
 [dependencies]
+rotext_internal_macros = { workspace = true }
+
 derivative = "2.2.0"
 itoa = "1.0.11"
 log = "0.4.22"
