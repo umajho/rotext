@@ -15,5 +15,5 @@ repository = "https://github.com/umajho/rotext"
 [workspace.dependencies]
 
 rotext = { path = "rotext" }
-rotext_wasm = { path = "rotext_wasm_bindings" }
+rotext_wasm_bindings = { path = "rotext_wasm_bindings" }
 rotext_internal_macros = { path = "rotext_internal_macros" }
