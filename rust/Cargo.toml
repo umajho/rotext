@@ -6,6 +6,7 @@ members = ["rotext", "rotext_internal_macros", "rotext_wasm_bindings"]
 
 [workspace.package]
 
+rust-version = "1.80.0"
 version = "0.1.0"
 license = "MIT"
 edition = "2021"
