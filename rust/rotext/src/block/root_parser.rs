@@ -8,7 +8,6 @@ use super::{
     BlockInStack, ItemLikeType, Nesting, StackEntry,
 };
 use crate::{
-    block::utils::match_pop_block_id,
     common::{m, Range},
     events::{BlockEvent, BlockWithID, NewLine, ThematicBreak},
     utils::stack::Stack,
@@ -248,28 +247,15 @@ impl<'a> Parser<'a> {
         let output = match try_scan_surrounded_opening(ctx, &peeked_3) {
             TryScanSurroundedResult::TableOpening => {
                 nesting.tables_in_stack += 1;
-                match_pop_block_id! {
-                    ctx,
-                    Some(id) => {
-                        let ev = BlockEvent::EnterTable(BlockWithID { id });
-                        self.to_yield.push_back(ev);
-                        stack.try_push(StackEntry {
-                            block: BlockInStack::Table,
-                            block_id: id,
-                            #[cfg(feature = "line-number")]
-                            start_line_number: ctx.current_line_number,
-                        })?;
-                    },
-                    None => {
-                        let ev = BlockEvent::EnterTable(BlockWithID {});
-                        self.to_yield.push_back(ev);
-                        stack.try_push(StackEntry {
-                            block: BlockInStack::Table,
-                            #[cfg(feature = "line-number")]
-                            start_line_number: ctx.current_line_number,
-                        })?;
-                    },
-                }
+                let id = ctx.pop_block_id();
+                let ev = BlockEvent::EnterTable(BlockWithID { id });
+                self.to_yield.push_back(ev);
+                stack.try_push(StackEntry {
+                    block: BlockInStack::Table,
+                    block_id: id,
+                    #[cfg(feature = "line-number")]
+                    start_line_number: ctx.current_line_number,
+                })?;
 
                 InternalOutput::ToContinue(State::ExpectingContainer)
             }
@@ -304,28 +290,15 @@ impl<'a> Parser<'a> {
             TryScanItemLikeResult::BlockQuoteLine => {
                 nesting.processed_item_likes += 1;
                 if is_expecting_deeper {
-                    let result = match_pop_block_id! {
-                        ctx,
-                        Some(id) => {
-                            let ev = BlockEvent::EnterBlockQuote(BlockWithID { id });
-                            self.to_yield.push_back(ev);
-                            stack.try_push(StackEntry {
-                                block: BlockInStack::BlockQuote,
-                                block_id: id,
-                                #[cfg(feature = "line-number")]
-                                start_line_number: ctx.current_line_number,
-                            })
-                        },
-                        None => {
-                            let ev = BlockEvent::EnterBlockQuote(BlockWithID {});
-                            self.to_yield.push_back(ev);
-                            stack.try_push(StackEntry {
-                                block: BlockInStack::BlockQuote,
-                                #[cfg(feature = "line-number")]
-                                start_line_number: ctx.current_line_number,
-                            })
-                        },
-                    };
+                    let id = ctx.pop_block_id();
+                    let ev = BlockEvent::EnterBlockQuote(BlockWithID { id });
+                    self.to_yield.push_back(ev);
+                    let result = stack.try_push(StackEntry {
+                        block: BlockInStack::BlockQuote,
+                        block_id: id,
+                        #[cfg(feature = "line-number")]
+                        start_line_number: ctx.current_line_number,
+                    });
                     if let Err(err) = result {
                         return Some(Err(err));
                     }
@@ -381,7 +354,6 @@ impl<'a> Parser<'a> {
                 let new_state = State::Start { new_line: None };
                 self.to_yield
                     .push_back(BlockEvent::ThematicBreak(ThematicBreak {
-                        #[cfg(feature = "block-id")]
                         id: ctx.pop_block_id(),
                         #[cfg(feature = "line-number")]
                         line_number: ctx.current_line_number,
@@ -576,49 +548,29 @@ impl<'a> Parser<'a> {
 
         nesting.processed_item_likes += 1;
         if should_enter_container {
-            match_pop_block_id! {
-                ctx,
-                Some(id) => {
-                    stack.try_push(StackEntry {
-                        block: BlockInStack::Container,
-                        block_id: id,
-                        #[cfg(feature = "line-number")]
-                        start_line_number: ctx.current_line_number,
-                    })?;
-                    self.to_yield.push_back(item_like_type.into_enter_container_block_event(id));
-                },
-                None => {
-                    stack.try_push(StackEntry {
-                        block: BlockInStack::Container,
-                        #[cfg(feature = "line-number")]
-                        start_line_number: ctx.current_line_number,
-                    })?;
-                    self.to_yield.push_back(item_like_type.into_enter_container_block_event());
-                },
-            }
+            let id = ctx.pop_block_id();
+            stack.try_push(StackEntry {
+                block: BlockInStack::Container,
+                block_id: id,
+                #[cfg(feature = "line-number")]
+                start_line_number: ctx.current_line_number,
+            })?;
+            self.to_yield
+                .push_back(item_like_type.into_enter_container_block_event(id));
         }
 
         nesting.item_likes_in_stack += 1;
-        match_pop_block_id! {
-            ctx,
-            Some(id) => {
-                stack.try_push(StackEntry {
-                    block: item_like_type.into(),
-                    block_id: id,
-                    #[cfg(feature = "line-number")]
-                    start_line_number: ctx.current_line_number,
-                })?;
-                self.to_yield.push_back(item_like_type.into_enter_block_event(id));
-            },
-            None => {
-                stack.try_push(StackEntry {
-                    block: item_like_type.into(),
-                    #[cfg(feature = "line-number")]
-                    start_line_number: ctx.current_line_number,
-                })?;
-                self.to_yield.push_back(item_like_type.into_enter_block_event());
-            },
-        };
+        {
+            let id = ctx.pop_block_id();
+            stack.try_push(StackEntry {
+                block: item_like_type.into(),
+                block_id: id,
+                #[cfg(feature = "line-number")]
+                start_line_number: ctx.current_line_number,
+            })?;
+            self.to_yield
+                .push_back(item_like_type.into_enter_block_event(id));
+        }
 
         Ok(())
     }

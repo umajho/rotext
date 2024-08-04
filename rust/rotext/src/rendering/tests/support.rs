@@ -55,7 +55,9 @@ macro_rules! event {
         $crate::events::BlendEvent::IndicateTableDataCell
     };
     (ExitBlock (..)) => {
-        $crate::events::BlendEvent::ExitBlock($crate::events::ExitBlock {})
+        $crate::events::BlendEvent::ExitBlock($crate::events::ExitBlock {
+            id: $crate::types::BlockId::new(),
+        })
     };
     (ExitBlock (.., id = $id:literal, lns = $ln_s:literal..$ln_e:literal)) => {
         $crate::events::BlendEvent::ExitBlock($crate::events::ExitBlock {
@@ -65,7 +67,9 @@ macro_rules! event {
         })
     };
     (ThematicBreak (..)) => {
-        $crate::events::BlendEvent::ThematicBreak($crate::events::ThematicBreak {})
+        $crate::events::BlendEvent::ThematicBreak($crate::events::ThematicBreak {
+            id: $crate::types::BlockId::new(),
+        })
     };
     (ThematicBreak (.., id = $id:literal, ln = $ln:literal)) => {
         $crate::events::BlendEvent::ThematicBreak($crate::events::ThematicBreak {
@@ -74,7 +78,9 @@ macro_rules! event {
         })
     };
     ($v:tt (..)) => {
-        $crate::events::BlendEvent::$v($crate::events::BlockWithID {})
+        $crate::events::BlendEvent::$v($crate::events::BlockWithID {
+            id: $crate::types::BlockId::new(),
+        })
     };
     ($v:tt (.., id = $id:literal)) => {
         $crate::events::BlendEvent::$v($crate::events::BlockWithID {

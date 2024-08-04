@@ -1,12 +1,10 @@
-#[cfg(feature = "block-id")]
-use crate::types::BlockId;
 use crate::{
     block::{
         context::Context,
         sub_parsers::{self, content::TableRelatedCondition},
-        utils::match_pop_block_id,
     },
     events::{BlockEvent, BlockWithID, ExitBlock, NewLine},
+    types::BlockId,
 };
 
 use super::{HaveMet, InTable};
@@ -16,7 +14,6 @@ enum State {
     /// 消耗。
     Initial,
     Content {
-        #[cfg(feature = "block-id")]
         id: BlockId,
 
         content_parser: Box<sub_parsers::content::Parser>,
@@ -83,29 +80,16 @@ impl Parser {
                     ..Default::default()
                 };
                 let content_parser = sub_parsers::content::Parser::new(opts);
-                match_pop_block_id! {
-                    ctx,
-                    Some(id) => {
-                        (
-                            sub_parsers::Output::ToYield(self.make_enter_heading_event(id)),
-                            State::Content {
-                                id,
-                                content_parser: Box::new(content_parser),
-                            },
-                        )
+                let id = ctx.pop_block_id();
+                (
+                    sub_parsers::Output::ToYield(self.make_enter_heading_event(id)),
+                    State::Content {
+                        id,
+                        content_parser: Box::new(content_parser),
                     },
-                    None => {
-                        (
-                            sub_parsers::Output::ToYield(self.make_enter_heading_event()),
-                            State::Content {
-                                content_parser: Box::new(content_parser),
-                            },
-                        )
-                    },
-                }
+                )
             }
             State::Content {
-                #[cfg(feature = "block-id")]
                 id,
                 mut content_parser,
             } => {
@@ -113,16 +97,11 @@ impl Parser {
                 match next {
                     sub_parsers::Output::ToYield(ev) => (
                         sub_parsers::Output::ToYield(ev),
-                        State::Content {
-                            #[cfg(feature = "block-id")]
-                            id,
-                            content_parser,
-                        },
+                        State::Content { id, content_parser },
                     ),
                     sub_parsers::Output::ToPauseForNewLine => unreachable!(),
                     sub_parsers::Output::Done(have_met) => (
                         sub_parsers::Output::ToYield(BlockEvent::ExitBlock(ExitBlock {
-                            #[cfg(feature = "block-id")]
                             id,
                             #[cfg(feature = "line-number")]
                             start_line_number: self.start_line_number,
@@ -144,11 +123,8 @@ impl Parser {
         ret
     }
 
-    fn make_enter_heading_event(&self, #[cfg(feature = "block-id")] id: BlockId) -> BlockEvent {
-        let data = BlockWithID {
-            #[cfg(feature = "block-id")]
-            id,
-        };
+    fn make_enter_heading_event(&self, id: BlockId) -> BlockEvent {
+        let data = BlockWithID { id };
         match self.leading_signs {
             1 => BlockEvent::EnterHeading1(data),
             2 => BlockEvent::EnterHeading2(data),

@@ -1,5 +1,4 @@
 use crate::common::Range;
-#[cfg(feature = "block-id")]
 use crate::types::BlockId;
 
 use super::{
@@ -25,6 +24,11 @@ impl<'a> Context<'a> {
         let id = self.next_block_id;
         self.next_block_id += 1;
         BlockId::new(id)
+    }
+    #[cfg(not(feature = "block-id"))]
+    #[inline(always)]
+    pub fn pop_block_id(&mut self) -> BlockId {
+        BlockId::new()
     }
 
     pub fn take_from_mapper_and_apply_to_cursor_if_applied_cursor_satisfies<

@@ -9,11 +9,10 @@ mod tests;
 use context::Context;
 use root_parser::ExitingUntil;
 
-#[cfg(feature = "block-id")]
-use crate::types::BlockId;
 use crate::{
     events::{BlockEvent, BlockWithID, ExitBlock, NewLine},
     global,
+    types::BlockId,
     utils::stack::Stack,
 };
 use global_mapper::GlobalEventStreamMapper;
@@ -55,7 +54,6 @@ pub struct Nesting {
 pub struct StackEntry {
     block: BlockInStack,
 
-    #[cfg(feature = "block-id")]
     block_id: BlockId,
 
     #[cfg(feature = "line-number")]
@@ -67,7 +65,6 @@ impl StackEntry {
         #[cfg(feature = "line-number")] end_line_number: usize,
     ) -> ExitBlock {
         ExitBlock {
-            #[cfg(feature = "block-id")]
             id: self.block_id,
             #[cfg(feature = "line-number")]
             start_line_number: self.start_line_number,
@@ -102,44 +99,25 @@ enum ItemLikeType {
     DescriptionDetails,
 }
 impl ItemLikeType {
-    pub fn into_enter_container_block_event(
-        self,
-        #[cfg(feature = "block-id")] id: BlockId,
-    ) -> BlockEvent {
+    pub fn into_enter_container_block_event(self, id: BlockId) -> BlockEvent {
         match self {
-            ItemLikeType::OrderedListItem => BlockEvent::EnterOrderedList(BlockWithID {
-                #[cfg(feature = "block-id")]
-                id,
-            }),
-            ItemLikeType::UnorderedListItem => BlockEvent::EnterUnorderedList(BlockWithID {
-                #[cfg(feature = "block-id")]
-                id,
-            }),
+            ItemLikeType::OrderedListItem => BlockEvent::EnterOrderedList(BlockWithID { id }),
+            ItemLikeType::UnorderedListItem => BlockEvent::EnterUnorderedList(BlockWithID { id }),
             ItemLikeType::DescriptionTerm | ItemLikeType::DescriptionDetails => {
-                BlockEvent::EnterDescriptionList(BlockWithID {
-                    #[cfg(feature = "block-id")]
-                    id,
-                })
+                BlockEvent::EnterDescriptionList(BlockWithID { id })
             }
         }
     }
 
-    pub fn into_enter_block_event(self, #[cfg(feature = "block-id")] id: BlockId) -> BlockEvent {
+    pub fn into_enter_block_event(self, id: BlockId) -> BlockEvent {
         match self {
             ItemLikeType::OrderedListItem | ItemLikeType::UnorderedListItem => {
-                BlockEvent::EnterListItem(BlockWithID {
-                    #[cfg(feature = "block-id")]
-                    id,
-                })
+                BlockEvent::EnterListItem(BlockWithID { id })
             }
-            ItemLikeType::DescriptionTerm => BlockEvent::EnterDescriptionTerm(BlockWithID {
-                #[cfg(feature = "block-id")]
-                id,
-            }),
-            ItemLikeType::DescriptionDetails => BlockEvent::EnterDescriptionDetails(BlockWithID {
-                #[cfg(feature = "block-id")]
-                id,
-            }),
+            ItemLikeType::DescriptionTerm => BlockEvent::EnterDescriptionTerm(BlockWithID { id }),
+            ItemLikeType::DescriptionDetails => {
+                BlockEvent::EnterDescriptionDetails(BlockWithID { id })
+            }
         }
     }
 }

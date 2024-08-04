@@ -13,14 +13,19 @@ impl Error {
     }
 }
 
-#[cfg(feature = "block-id")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct BlockId(usize);
-#[cfg(feature = "block-id")]
+pub struct BlockId(#[cfg(feature = "block-id")] usize);
 impl BlockId {
+    #[cfg(feature = "block-id")]
     pub fn new(id: usize) -> Self {
         Self(id)
     }
+    #[cfg(not(feature = "block-id"))]
+    pub fn new() -> Self {
+        Self()
+    }
+
+    #[cfg(feature = "block-id")]
     pub fn value(&self) -> usize {
         self.0
     }

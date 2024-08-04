@@ -1,13 +1,11 @@
-#[cfg(feature = "block-id")]
-use crate::types::BlockId;
 use crate::{
     block::{
         context::Context,
         sub_parsers::{self, content::TableRelatedCondition},
-        utils::match_pop_block_id,
     },
     common::Range,
     events::{BlockEvent, BlockWithID, ExitBlock, NewLine},
+    types::BlockId,
 };
 
 use super::{HaveMet, InTable};
@@ -25,7 +23,6 @@ enum State {
     /// [sub_parsers::SubParser::resume_from_pause_for_new_line_and_exit] 时设置。
     /// 其他情况下会直接进入 [State::Exiting]。
     ToExit {
-        #[cfg(feature = "block-id")]
         id: BlockId,
     },
 
@@ -35,7 +32,6 @@ struct StateInitial {
     content_before: Option<Range>,
 }
 struct StateContent {
-    #[cfg(feature = "block-id")]
     id: BlockId,
     content_parser: Box<sub_parsers::content::Parser>,
 }
@@ -111,12 +107,8 @@ impl Parser {
                 // 这里。正确的做法是 `take_context` 取回 [Context]，并将解析器
                 // drop 掉。
                 State::Exited | State::Paused { .. } | State::Invalid => unreachable!(),
-                State::ToExit {
-                    #[cfg(feature = "block-id")]
-                    id,
-                } => {
+                State::ToExit { id } => {
                     let exit_block = ExitBlock {
-                        #[cfg(feature = "block-id")]
                         id: *id,
                         #[cfg(feature = "line-number")]
                         start_line_number: self.inner.start_line_number,
@@ -154,20 +146,11 @@ impl Parser {
             ..Default::default()
         };
         let parser = sub_parsers::content::Parser::new(opts);
-        match_pop_block_id! {
-            ctx,
-            Some(id) => {
-                State::Content(Some(StateContent {
-                    id,
-                    content_parser: Box::new(parser),
-                }))
-            },
-            None => {
-                State::Content(Some(StateContent {
-                    content_parser: Box::new(parser),
-                }))
-            },
-        }
+        let id = ctx.pop_block_id();
+        State::Content(Some(StateContent {
+            id,
+            content_parser: Box::new(parser),
+        }))
     }
 
     #[inline(always)]
@@ -183,7 +166,6 @@ impl Parser {
                 if !inner.have_ever_yielded {
                     inner.have_ever_yielded = true;
                     let paragraph = BlockEvent::EnterParagraph(BlockWithID {
-                        #[cfg(feature = "block-id")]
                         id: state_unchecked.id,
                     });
                     debug_assert!(inner.deferred.is_none());
@@ -200,7 +182,6 @@ impl Parser {
             sub_parsers::Output::Done(have_met) => {
                 if inner.have_ever_yielded {
                     let exit_block = BlockEvent::ExitBlock(ExitBlock {
-                        #[cfg(feature = "block-id")]
                         id: state_unchecked.id,
                         #[cfg(feature = "line-number")]
                         start_line_number: inner.start_line_number,
@@ -240,7 +221,6 @@ impl<'a> sub_parsers::SubParser<'a> for Parser {
         #[allow(unused_variables)]
         if let State::Paused(state_content) = &self.state {
             self.state = State::ToExit {
-                #[cfg(feature = "block-id")]
                 id: state_content.id,
             };
         } else {
