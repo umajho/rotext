@@ -4,7 +4,7 @@ use crate::{
         global_mapper,
         sub_parsers::{self, utils::consume_peeked},
     },
-    common::Range,
+    common::{m, Range},
     events::{BlockEvent, NewLine},
 };
 
@@ -447,23 +447,23 @@ fn try_parse_potential_table_related(
     condition: &TableRelatedCondition,
 ) -> Option<HaveMet> {
     match ctx.peek_next_three_chars() {
-        [Some(b'|'), Some(b'}'), ..] => {
+        [Some(m!('|')), Some(m!('}')), ..] => {
             ctx.must_take_from_mapper_and_apply_to_cursor(2);
             Some(HaveMet::TableClosing)
         }
-        [Some(b'|'), Some(b'+'), ..] if condition.is_caption_applicable => {
+        [Some(m!('|')), Some(m!('+')), ..] if condition.is_caption_applicable => {
             ctx.must_take_from_mapper_and_apply_to_cursor(2);
             Some(HaveMet::TableCaptionIndicator)
         }
-        [Some(b'|'), Some(b'-'), ..] => {
+        [Some(m!('|')), Some(m!('-')), ..] => {
             ctx.must_take_from_mapper_and_apply_to_cursor(2);
             Some(HaveMet::TableRowIndicator)
         }
-        [Some(b'|'), Some(b'|'), ..] => {
+        [Some(m!('|')), Some(m!('|')), ..] => {
             ctx.must_take_from_mapper_and_apply_to_cursor(2);
             Some(HaveMet::DoublePipes)
         }
-        [Some(b'!'), Some(b'!'), ..] => {
+        [Some(m!('!')), Some(m!('!')), ..] => {
             ctx.must_take_from_mapper_and_apply_to_cursor(2);
             Some(HaveMet::TableHeaderCellIndicator)
         }
