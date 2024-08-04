@@ -3,7 +3,7 @@ use crate::{
         context::Context,
         sub_parsers::{self, HaveMet},
     },
-    events::{BlockEvent, BlockWithID, ExitBlock, NewLine},
+    events::{BlockEvent, BlockWithId, ExitBlock, NewLine},
     types::BlockId,
 };
 
@@ -90,7 +90,7 @@ impl Parser {
                 };
                 let info_string_content_parser = sub_parsers::content::Parser::new(opts);
                 let id = ctx.pop_block_id();
-                let code_block = BlockEvent::EnterCodeBlock(BlockWithID { id });
+                let code_block = BlockEvent::EnterCodeBlock(BlockWithId { id });
                 (
                     sub_parsers::Output::ToYield(code_block),
                     State::InfoStringContent {

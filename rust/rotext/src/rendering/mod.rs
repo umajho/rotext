@@ -1,7 +1,7 @@
 mod tests;
 
 use crate::events::BlendEvent;
-use crate::events::BlockWithID;
+use crate::events::BlockWithId;
 use crate::events::VerbatimEscaping;
 
 macro_rules! write_data_block_id_attribute_if_applicable {
@@ -258,7 +258,7 @@ impl<'a> HtmlRenderer<'a> {
         &mut self,
         stack: &mut Vec<StackEntry>,
         tag_name: &'static [u8],
-        #[allow(unused_variables)] data: &BlockWithID,
+        #[allow(unused_variables)] data: &BlockWithId,
     ) {
         self.result.push(b'<');
         self.result.extend(tag_name);

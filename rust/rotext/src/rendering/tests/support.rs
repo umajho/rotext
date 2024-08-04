@@ -78,12 +78,12 @@ macro_rules! event {
         })
     };
     ($v:tt (..)) => {
-        $crate::events::BlendEvent::$v($crate::events::BlockWithID {
+        $crate::events::BlendEvent::$v($crate::events::BlockWithId {
             id: $crate::types::BlockId::new(),
         })
     };
     ($v:tt (.., id = $id:literal)) => {
-        $crate::events::BlendEvent::$v($crate::events::BlockWithID {
+        $crate::events::BlendEvent::$v($crate::events::BlockWithId {
             id: $crate::types::BlockId::new($id),
         })
     };

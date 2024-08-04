@@ -95,52 +95,52 @@ pub enum Event {
 
     /// 进入段落。
     #[subenum(BlockEvent, BlendEvent)]
-    EnterParagraph(BlockWithID) = EventType::EnterParagraph as u8,
+    EnterParagraph(BlockWithId) = EventType::EnterParagraph as u8,
     /// 进入一级标题。
     #[subenum(BlockEvent, BlendEvent)]
-    EnterHeading1(BlockWithID) = EventType::EnterHeading1 as u8,
+    EnterHeading1(BlockWithId) = EventType::EnterHeading1 as u8,
     /// 进入二级标题。
     #[subenum(BlockEvent, BlendEvent)]
-    EnterHeading2(BlockWithID) = EventType::EnterHeading2 as u8,
+    EnterHeading2(BlockWithId) = EventType::EnterHeading2 as u8,
     /// 进入三级标题。
     #[subenum(BlockEvent, BlendEvent)]
-    EnterHeading3(BlockWithID) = EventType::EnterHeading3 as u8,
+    EnterHeading3(BlockWithId) = EventType::EnterHeading3 as u8,
     /// 进入四级标题。
     #[subenum(BlockEvent, BlendEvent)]
-    EnterHeading4(BlockWithID) = EventType::EnterHeading4 as u8,
+    EnterHeading4(BlockWithId) = EventType::EnterHeading4 as u8,
     /// 进入五级标题。
     #[subenum(BlockEvent, BlendEvent)]
-    EnterHeading5(BlockWithID) = EventType::EnterHeading5 as u8,
+    EnterHeading5(BlockWithId) = EventType::EnterHeading5 as u8,
     /// 进入六级标题。
     #[subenum(BlockEvent, BlendEvent)]
-    EnterHeading6(BlockWithID) = EventType::EnterHeading6 as u8,
+    EnterHeading6(BlockWithId) = EventType::EnterHeading6 as u8,
     /// 进入块引用
     #[subenum(BlockEvent, BlendEvent)]
-    EnterBlockQuote(BlockWithID) = EventType::EnterBlockQuote as u8,
+    EnterBlockQuote(BlockWithId) = EventType::EnterBlockQuote as u8,
     /// 进入有序列表
     #[subenum(BlockEvent, BlendEvent)]
-    EnterOrderedList(BlockWithID) = EventType::EnterOrderedList as u8,
+    EnterOrderedList(BlockWithId) = EventType::EnterOrderedList as u8,
     /// 进入无序列表
     #[subenum(BlockEvent, BlendEvent)]
-    EnterUnorderedList(BlockWithID) = EventType::EnterUnorderedList as u8,
+    EnterUnorderedList(BlockWithId) = EventType::EnterUnorderedList as u8,
     /// 进入列表项
     #[subenum(BlockEvent, BlendEvent)]
-    EnterListItem(BlockWithID) = EventType::EnterListItem as u8,
+    EnterListItem(BlockWithId) = EventType::EnterListItem as u8,
     /// 进入描述列表
     #[subenum(BlockEvent, BlendEvent)]
-    EnterDescriptionList(BlockWithID) = EventType::EnterDescriptionList as u8,
+    EnterDescriptionList(BlockWithId) = EventType::EnterDescriptionList as u8,
     /// 进入描述术语
     #[subenum(BlockEvent, BlendEvent)]
-    EnterDescriptionTerm(BlockWithID) = EventType::EnterDescriptionTerm as u8,
+    EnterDescriptionTerm(BlockWithId) = EventType::EnterDescriptionTerm as u8,
     /// 进入描述详情
     #[subenum(BlockEvent, BlendEvent)]
-    EnterDescriptionDetails(BlockWithID) = EventType::EnterDescriptionDetails as u8,
+    EnterDescriptionDetails(BlockWithId) = EventType::EnterDescriptionDetails as u8,
     /// 进入代码块。
     #[subenum(BlockEvent, BlendEvent)]
-    EnterCodeBlock(BlockWithID) = EventType::EnterCodeBlock as u8,
+    EnterCodeBlock(BlockWithId) = EventType::EnterCodeBlock as u8,
     /// 进入表格。
     #[subenum(BlockEvent, BlendEvent)]
-    EnterTable(BlockWithID) = EventType::EnterTable as u8,
+    EnterTable(BlockWithId) = EventType::EnterTable as u8,
 
     /// 指示到达代码块的代码部分。
     #[subenum(BlockEvent, BlendEvent)]
@@ -178,7 +178,7 @@ pub struct NewLine {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct BlockWithID {
+pub struct BlockWithId {
     pub id: BlockId,
 }
 

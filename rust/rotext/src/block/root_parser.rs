@@ -9,7 +9,7 @@ use super::{
 };
 use crate::{
     common::{m, Range},
-    events::{BlockEvent, BlockWithID, NewLine, ThematicBreak},
+    events::{BlockEvent, BlockWithId, NewLine, ThematicBreak},
     types::BlockId,
     utils::stack::Stack,
 };
@@ -254,7 +254,7 @@ impl<'a> Parser<'a> {
                 nesting.tables_in_stack += 1;
 
                 let id = try_push_to_stack_with_newly_popped_id(ctx, stack, BlockInStack::Table)?;
-                let ev = BlockEvent::EnterTable(BlockWithID { id });
+                let ev = BlockEvent::EnterTable(BlockWithId { id });
                 self.to_yield.push_back(ev);
 
                 InternalOutput::ToContinue(State::ExpectingContainer)
@@ -295,7 +295,7 @@ impl<'a> Parser<'a> {
                         stack,
                         BlockInStack::BlockQuote,
                     )?;
-                    let ev = BlockEvent::EnterBlockQuote(BlockWithID { id });
+                    let ev = BlockEvent::EnterBlockQuote(BlockWithId { id });
                     self.to_yield.push_back(ev);
                     nesting.item_likes_in_stack += 1;
                 }

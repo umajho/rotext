@@ -4,7 +4,7 @@ use crate::{
         sub_parsers::{self, content::TableRelatedCondition},
     },
     common::Range,
-    events::{BlockEvent, BlockWithID, ExitBlock, NewLine},
+    events::{BlockEvent, BlockWithId, ExitBlock, NewLine},
     types::BlockId,
 };
 
@@ -165,7 +165,7 @@ impl Parser {
             sub_parsers::Output::ToYield(ev) => {
                 if !inner.have_ever_yielded {
                     inner.have_ever_yielded = true;
-                    let paragraph = BlockEvent::EnterParagraph(BlockWithID {
+                    let paragraph = BlockEvent::EnterParagraph(BlockWithId {
                         id: state_unchecked.id,
                     });
                     debug_assert!(inner.deferred.is_none());

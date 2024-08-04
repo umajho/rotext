@@ -3,7 +3,7 @@ use crate::{
         context::Context,
         sub_parsers::{self, content::TableRelatedCondition},
     },
-    events::{BlockEvent, BlockWithID, ExitBlock, NewLine},
+    events::{BlockEvent, BlockWithId, ExitBlock, NewLine},
     types::BlockId,
 };
 
@@ -124,7 +124,7 @@ impl Parser {
     }
 
     fn make_enter_heading_event(&self, id: BlockId) -> BlockEvent {
-        let data = BlockWithID { id };
+        let data = BlockWithId { id };
         match self.leading_signs {
             1 => BlockEvent::EnterHeading1(data),
             2 => BlockEvent::EnterHeading2(data),

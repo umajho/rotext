@@ -10,7 +10,7 @@ use context::Context;
 use root_parser::ExitingUntil;
 
 use crate::{
-    events::{BlockEvent, BlockWithID, ExitBlock, NewLine},
+    events::{BlockEvent, BlockWithId, ExitBlock, NewLine},
     global,
     types::BlockId,
     utils::stack::Stack,
@@ -101,10 +101,10 @@ enum ItemLikeType {
 impl ItemLikeType {
     pub fn into_enter_container_block_event(self, id: BlockId) -> BlockEvent {
         match self {
-            ItemLikeType::OrderedListItem => BlockEvent::EnterOrderedList(BlockWithID { id }),
-            ItemLikeType::UnorderedListItem => BlockEvent::EnterUnorderedList(BlockWithID { id }),
+            ItemLikeType::OrderedListItem => BlockEvent::EnterOrderedList(BlockWithId { id }),
+            ItemLikeType::UnorderedListItem => BlockEvent::EnterUnorderedList(BlockWithId { id }),
             ItemLikeType::DescriptionTerm | ItemLikeType::DescriptionDetails => {
-                BlockEvent::EnterDescriptionList(BlockWithID { id })
+                BlockEvent::EnterDescriptionList(BlockWithId { id })
             }
         }
     }
@@ -112,11 +112,11 @@ impl ItemLikeType {
     pub fn into_enter_block_event(self, id: BlockId) -> BlockEvent {
         match self {
             ItemLikeType::OrderedListItem | ItemLikeType::UnorderedListItem => {
-                BlockEvent::EnterListItem(BlockWithID { id })
+                BlockEvent::EnterListItem(BlockWithId { id })
             }
-            ItemLikeType::DescriptionTerm => BlockEvent::EnterDescriptionTerm(BlockWithID { id }),
+            ItemLikeType::DescriptionTerm => BlockEvent::EnterDescriptionTerm(BlockWithId { id }),
             ItemLikeType::DescriptionDetails => {
-                BlockEvent::EnterDescriptionDetails(BlockWithID { id })
+                BlockEvent::EnterDescriptionDetails(BlockWithId { id })
             }
         }
     }
