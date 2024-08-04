@@ -10,6 +10,7 @@ use super::{
 use crate::{
     common::{m, Range},
     events::{BlockEvent, BlockWithID, NewLine, ThematicBreak},
+    types::BlockId,
     utils::stack::Stack,
 };
 
@@ -236,10 +237,14 @@ impl<'a> Parser<'a> {
         let peeked_3 = ctx.peek_next_three_chars();
 
         if self.is_new_line {
-            if let Some(result) =
-                self.process_possible_item_like(ctx, stack, nesting, is_expecting_deeper, &peeked_3)
-            {
-                return result;
+            if let Some(result) = self.process_possible_item_like(
+                ctx,
+                stack,
+                nesting,
+                is_expecting_deeper,
+                &peeked_3,
+            )? {
+                return Ok(result);
             }
         }
         self.is_new_line = false;
@@ -247,15 +252,10 @@ impl<'a> Parser<'a> {
         let output = match try_scan_surrounded_opening(ctx, &peeked_3) {
             TryScanSurroundedResult::TableOpening => {
                 nesting.tables_in_stack += 1;
-                let id = ctx.pop_block_id();
+
+                let id = try_push_to_stack_with_newly_popped_id(ctx, stack, BlockInStack::Table)?;
                 let ev = BlockEvent::EnterTable(BlockWithID { id });
                 self.to_yield.push_back(ev);
-                stack.try_push(StackEntry {
-                    block: BlockInStack::Table,
-                    block_id: id,
-                    #[cfg(feature = "line-number")]
-                    start_line_number: ctx.current_line_number,
-                })?;
 
                 InternalOutput::ToContinue(State::ExpectingContainer)
             }
@@ -275,11 +275,11 @@ impl<'a> Parser<'a> {
         nesting: &mut Nesting,
         is_expecting_deeper: bool,
         peeked_3: &[Option<u8>; 3],
-    ) -> Option<crate::Result<InternalOutput<'a>>> {
+    ) -> crate::Result<Option<InternalOutput<'a>>> {
         let output = match try_scan_item_like(ctx, peeked_3) {
             TryScanItemLikeResult::None => {
                 if is_expecting_deeper {
-                    return None;
+                    return Ok(None);
                 } else {
                     InternalOutput::ToContinue(State::ExitingUntil(ExitingUntil::ExitedItemLike {
                         should_also_exit_container: true,
@@ -290,18 +290,13 @@ impl<'a> Parser<'a> {
             TryScanItemLikeResult::BlockQuoteLine => {
                 nesting.processed_item_likes += 1;
                 if is_expecting_deeper {
-                    let id = ctx.pop_block_id();
+                    let id = try_push_to_stack_with_newly_popped_id(
+                        ctx,
+                        stack,
+                        BlockInStack::BlockQuote,
+                    )?;
                     let ev = BlockEvent::EnterBlockQuote(BlockWithID { id });
                     self.to_yield.push_back(ev);
-                    let result = stack.try_push(StackEntry {
-                        block: BlockInStack::BlockQuote,
-                        block_id: id,
-                        #[cfg(feature = "line-number")]
-                        start_line_number: ctx.current_line_number,
-                    });
-                    if let Err(err) = result {
-                        return Some(Err(err));
-                    }
                     nesting.item_likes_in_stack += 1;
                 }
                 InternalOutput::ToContinue(State::ExpectingContainer)
@@ -327,7 +322,7 @@ impl<'a> Parser<'a> {
             }
         };
 
-        Some(Ok(output))
+        Ok(Some(output))
     }
 
     #[inline(always)]
@@ -548,32 +543,36 @@ impl<'a> Parser<'a> {
 
         nesting.processed_item_likes += 1;
         if should_enter_container {
-            let id = ctx.pop_block_id();
-            stack.try_push(StackEntry {
-                block: BlockInStack::Container,
-                block_id: id,
-                #[cfg(feature = "line-number")]
-                start_line_number: ctx.current_line_number,
-            })?;
+            let id = try_push_to_stack_with_newly_popped_id(ctx, stack, BlockInStack::Container)?;
             self.to_yield
                 .push_back(item_like_type.into_enter_container_block_event(id));
         }
 
         nesting.item_likes_in_stack += 1;
         {
-            let id = ctx.pop_block_id();
-            stack.try_push(StackEntry {
-                block: item_like_type.into(),
-                block_id: id,
-                #[cfg(feature = "line-number")]
-                start_line_number: ctx.current_line_number,
-            })?;
+            let id = try_push_to_stack_with_newly_popped_id(ctx, stack, item_like_type.into())?;
             self.to_yield
                 .push_back(item_like_type.into_enter_block_event(id));
         }
 
         Ok(())
     }
+}
+
+fn try_push_to_stack_with_newly_popped_id<TStack: Stack<StackEntry>>(
+    ctx: &mut Context,
+    stack: &mut TStack,
+    block: BlockInStack,
+) -> crate::Result<BlockId> {
+    let id = ctx.pop_block_id();
+    stack.try_push(StackEntry {
+        block,
+        block_id: id,
+        #[cfg(feature = "line-number")]
+        start_line_number: ctx.current_line_number,
+    })?;
+
+    Ok(id)
 }
 
 enum TryScanItemLikeResult {
