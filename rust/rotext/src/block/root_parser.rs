@@ -243,8 +243,9 @@ impl<'a> Parser<'a> {
                 return result;
             }
         }
+        self.is_new_line = false;
 
-        match try_scan_surrounded_opening(ctx, &peeked_3) {
+        let output = match try_scan_surrounded_opening(ctx, &peeked_3) {
             TryScanSurroundedResult::TableOpening => {
                 nesting.tables_in_stack += 1;
                 match_pop_block_id! {
@@ -269,13 +270,15 @@ impl<'a> Parser<'a> {
                         })?;
                     },
                 }
-            }
-            TryScanSurroundedResult::None => {}
-        }
 
-        Ok(InternalOutput::ToContinue(State::ExpectingLeaf {
-            spaces_before: spaces,
-        }))
+                InternalOutput::ToContinue(State::ExpectingContainer)
+            }
+            TryScanSurroundedResult::None => InternalOutput::ToContinue(State::ExpectingLeaf {
+                spaces_before: spaces,
+            }),
+        };
+
+        Ok(output)
     }
 
     #[inline(always)]
