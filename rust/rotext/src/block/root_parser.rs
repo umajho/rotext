@@ -4,14 +4,13 @@ use super::{
     context::Context,
     global_mapper::Mapped,
     sub_parsers::{self, HaveMet, InTable},
-    utils::ArrayQueue,
     BlockInStack, ItemLikeType, Nesting, StackEntry,
 };
 use crate::{
     common::{m, Range},
     events::{BlockEvent, BlockWithId, NewLine, ThematicBreak},
     types::BlockId,
-    utils::stack::Stack,
+    utils::{internal::array_queue::ArrayQueue, stack::Stack},
 };
 
 pub struct Parser<'a> {

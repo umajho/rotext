@@ -3,6 +3,7 @@ mod tests;
 use crate::{
     common::Range,
     events::{GlobalEvent, NewLine, VerbatimEscaping},
+    utils::internal::array_queue::ArrayQueue,
 };
 
 pub struct Parser<'a> {
@@ -11,7 +12,7 @@ pub struct Parser<'a> {
     state: State,
     #[cfg(feature = "line-number")]
     current_line_number: usize,
-    deferred: Option<GlobalEvent>,
+    to_yield: ArrayQueue<2, GlobalEvent>,
 }
 
 enum State {
@@ -43,34 +44,27 @@ impl<'a> Parser<'a> {
             state: State::Normal,
             #[cfg(feature = "line-number")]
             current_line_number: opts.current_line_number,
-            deferred: None,
+            to_yield: ArrayQueue::new(),
         }
     }
 
     pub fn next(&mut self) -> Option<GlobalEvent> {
         loop {
-            if self.deferred.is_some() {
-                return self.deferred.take();
+            if let Some(ev) = self.to_yield.pop_front() {
+                return Some(ev);
             }
 
-            let result = match self.state {
+            match self.state {
                 State::Ended => {
                     break None;
                 }
                 State::Normal => self.scan_normal(),
                 State::InVerbatimEscaping { backticks } => self.scan_verbatim_escaping(backticks),
             };
-            if result.is_none() {
-                // 除了已经解析结束（`State::Ended`）外，`None` 还用于表示这次扫
-                // 描没有产出事件（如两个紧邻的特殊语法之间的一般内容）。
-                // 这时，直接进行下一次扫描。
-                continue;
-            }
-            break result;
         }
     }
 
-    fn scan_normal(&mut self) -> Option<GlobalEvent> {
+    fn scan_normal(&mut self) {
         let mut offset = 0;
         loop {
             let index = self.cursor + offset;
@@ -79,19 +73,19 @@ impl<'a> Parser<'a> {
                 None => {
                     // 在一般情况下到达输入结尾，完成扫描并结束解析。
                     self.state = State::Ended;
-                    break if offset != 0 {
-                        self.produce_unparsed(offset)
-                    } else {
-                        None
-                    };
+                    if offset != 0 {
+                        self.yield_unparsed_if_not_empty(offset);
+                    }
+                    break;
                 }
                 Some(b'\r' | b'\n') => {
-                    let ret = self.produce_unparsed(offset);
+                    self.yield_unparsed_if_not_empty(offset);
+
                     #[cfg(feature = "line-number")]
                     {
                         self.current_line_number += 1;
                     }
-                    self.deferred = Some(GlobalEvent::NewLine(NewLine {
+                    self.to_yield.push_back(GlobalEvent::NewLine(NewLine {
                         #[cfg(feature = "line-number")]
                         line_number_after: self.current_line_number,
                     }));
@@ -100,12 +94,12 @@ impl<'a> Parser<'a> {
                     } else {
                         self.cursor += 1;
                     }
-                    break ret;
+                    break;
                 }
                 Some(b'<') => match self.input.get(index + 1) {
                     Some(b'`') => {
                         // 在一般情况下遇到 “<`”，完成扫描并开启逐字文本转义。
-                        let ret = self.produce_unparsed(offset);
+                        self.yield_unparsed_if_not_empty(offset);
 
                         let backticks = {
                             let start_index = self.cursor + 2;
@@ -114,14 +108,14 @@ impl<'a> Parser<'a> {
                         self.state = State::InVerbatimEscaping { backticks };
                         self.cursor += "<".len() + backticks;
 
-                        break ret;
+                        break;
                     }
                     None => {
                         // 在一般情况下遇到 “<” 后到达输入结尾，完成扫描并结束解
                         // 析。
-                        let ret = self.produce_unparsed(offset + "<".len());
+                        self.yield_unparsed_if_not_empty(offset + "<".len());
                         self.state = State::Ended;
-                        break ret;
+                        break;
                     }
                     _ => {
                         // 在一般情况下遇到 “<” 后遇到了不会与 “<” 组合而具有特
@@ -137,7 +131,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn scan_verbatim_escaping(&mut self, backticks: usize) -> Option<GlobalEvent> {
+    fn scan_verbatim_escaping(&mut self, backticks: usize) {
         let mut offset = 0;
         loop {
             let index = self.cursor + offset;
@@ -146,7 +140,8 @@ impl<'a> Parser<'a> {
                 None => {
                     // 在逐字文本转义中到达结尾，完成扫描并结束解析。
                     self.state = State::Ended;
-                    break self.produce_verbatim_escaping(backticks, offset, false);
+                    self.yield_verbatim_escaping(backticks, offset, false);
+                    break;
                 }
                 Some(b'`') => {
                     // 在逐字文本转义中遇到 “`”，可能是逐字文本转义闭合部分的开
@@ -163,13 +158,13 @@ impl<'a> Parser<'a> {
 
                     offset += result.advancing;
                     if result.is_matched {
-                        let ret = self.produce_verbatim_escaping(
+                        self.yield_verbatim_escaping(
                             backticks,
                             offset - backticks - ">".len(),
                             true,
                         );
                         self.state = State::Normal;
-                        break ret;
+                        break;
                     }
                 }
                 Some(b'\r' | b'\n') => {
@@ -192,22 +187,22 @@ impl<'a> Parser<'a> {
 
     /// 产出以 `self.cursor` 开始，长度为 `content_length` 的
     /// [Event::Unparsed]，这之后，`self.cursor` 移至下个 Event 的开始。
-    fn produce_unparsed(&mut self, length: usize) -> Option<GlobalEvent> {
+    fn yield_unparsed_if_not_empty(&mut self, length: usize) {
         if length == 0 {
-            return None;
+            return;
         }
 
         let ret = GlobalEvent::Unparsed(Range::new(self.cursor, length));
         self.cursor += length;
-        Some(ret)
+        self.to_yield.push_back(ret)
     }
 
-    fn produce_verbatim_escaping(
+    fn yield_verbatim_escaping(
         &mut self,
         backtick_length: usize,
         content_length: usize,
         is_closed_normally: bool,
-    ) -> Option<GlobalEvent> {
+    ) {
         let (start, length) = {
             // 去掉开头与结尾可能存在的一个空格。
             let mut start = self.cursor;
@@ -226,17 +221,17 @@ impl<'a> Parser<'a> {
             (start, length)
         };
 
-        let ret = GlobalEvent::VerbatimEscaping(VerbatimEscaping {
-            content: Range::new(start, length),
-            is_closed_forcedly: !is_closed_normally,
-            #[cfg(feature = "line-number")]
-            line_number_after: self.current_line_number,
-        });
+        self.to_yield
+            .push_back(GlobalEvent::VerbatimEscaping(VerbatimEscaping {
+                content: Range::new(start, length),
+                is_closed_forcedly: !is_closed_normally,
+                #[cfg(feature = "line-number")]
+                line_number_after: self.current_line_number,
+            }));
         self.cursor += content_length;
         if is_closed_normally {
             self.cursor += backtick_length + ">".len();
         }
-        Some(ret)
     }
 }
 
