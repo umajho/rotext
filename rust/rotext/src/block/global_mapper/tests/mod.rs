@@ -6,7 +6,7 @@ use std::vec;
 
 use support::{case, new_line, verbatim_escaping};
 
-use crate::test_support::{self, report_failed_cases, FaildCase, GroupedCases};
+use crate::test_support::{self, report_failed_cases, FailedCase, GroupedCases};
 
 use super::*;
 
@@ -112,7 +112,7 @@ fn it_works() {
 
     let failed_cases: Vec<_> = table
         .iter()
-        .flat_map(|row| -> Vec<FaildCase> { row.collect_failed() })
+        .flat_map(|row| -> Vec<FailedCase> { row.collect_failed() })
         .collect();
 
     if failed_cases.is_empty() {

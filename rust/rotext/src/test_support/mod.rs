@@ -5,13 +5,13 @@ pub struct GroupedCases<TCase: Case> {
     pub cases: Vec<TCase>,
 }
 impl<TCase: Case + RefUnwindSafe> GroupedCases<TCase> {
-    pub fn collect_failed(&self) -> Vec<FaildCase> {
+    pub fn collect_failed(&self) -> Vec<FailedCase> {
         self.cases
             .iter()
             .enumerate()
-            .filter_map(|(i, case)| -> Option<FaildCase> {
+            .filter_map(|(i, case)| -> Option<FailedCase> {
                 let panic = std::panic::catch_unwind(|| case.assert_ok()).err()?;
-                Some(FaildCase {
+                Some(FailedCase {
                     group: self.group,
                     nth_case_in_group: i + 1,
                     nth_case_variant_in_case: None,
@@ -29,7 +29,7 @@ pub trait Case {
     fn assert_ok(&self);
 }
 
-pub struct FaildCase {
+pub struct FailedCase {
     pub group: &'static str,
     pub nth_case_in_group: usize,
     pub nth_case_variant_in_case: Option<usize>,
@@ -38,7 +38,7 @@ pub struct FaildCase {
     pub panic: Box<dyn Any + Send>,
 }
 
-pub fn report_failed_cases(cases: Vec<FaildCase>) {
+pub fn report_failed_cases(cases: Vec<FailedCase>) {
     for case in cases {
         print!("=> group={} case={}", case.group, case.nth_case_in_group);
         if let Some(nth) = case.nth_case_variant_in_case {

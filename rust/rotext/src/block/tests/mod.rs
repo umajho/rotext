@@ -12,7 +12,7 @@ mod support;
 
 use crate::{
     events::EventType,
-    test_support::{report_failed_cases, FaildCase},
+    test_support::{report_failed_cases, FailedCase},
     utils::stack::ArrayStack,
     Error,
 };
@@ -43,7 +43,7 @@ fn it_works() {
 
     let failed_cases: Vec<_> = table
         .iter()
-        .flat_map(|row| -> Vec<FaildCase> { row.collect_failed() })
+        .flat_map(|row| -> Vec<FailedCase> { row.collect_failed() })
         .collect();
 
     if failed_cases.is_empty() {

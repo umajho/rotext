@@ -4,7 +4,7 @@ use crate::{
     block::{Parser, StackEntry},
     events::EventType,
     global,
-    test_support::FaildCase,
+    test_support::FailedCase,
     utils::stack::{Stack, VecStack},
     Error, Event,
 };
@@ -27,11 +27,11 @@ pub(super) struct GroupedCases {
     pub cases: Vec<Case>,
 }
 impl GroupedCases {
-    pub(super) fn collect_failed(&self) -> Vec<FaildCase> {
+    pub(super) fn collect_failed(&self) -> Vec<FailedCase> {
         self.cases
             .iter()
             .enumerate()
-            .flat_map(|(i, case)| -> Vec<FaildCase> { case.collect_failed(self.group, i + 1) })
+            .flat_map(|(i, case)| -> Vec<FailedCase> { case.collect_failed(self.group, i + 1) })
             .collect()
     }
 }
@@ -39,13 +39,14 @@ impl GroupedCases {
 pub(super) struct Case {
     pub input_variants: Vec<&'static str>,
     pub expected: Vec<EventMatcher>,
+    pub should_skip: bool,
 }
 impl Case {
-    fn collect_failed(&self, group: &'static str, nth_case_in_group: usize) -> Vec<FaildCase> {
+    fn collect_failed(&self, group: &'static str, nth_case_in_group: usize) -> Vec<FailedCase> {
         self.input_variants
             .iter()
             .enumerate()
-            .flat_map(|(i, input)| -> Vec<FaildCase> {
+            .flat_map(|(i, input)| -> Vec<FailedCase> {
                 let input = input.replace('␠', " ");
                 collect_failed_auto_variant(group, nth_case_in_group, i + 1, input, &self.expected)
             })
@@ -61,16 +62,16 @@ fn collect_failed_auto_variant(
     nth_case_variant_in_case: usize,
     input: String,
     expected: &Vec<EventMatcher>,
-) -> Vec<FaildCase> {
+) -> Vec<FailedCase> {
     AutoVariant::all()
         .iter()
-        .filter_map(|variant| -> Option<FaildCase> {
+        .filter_map(|variant| -> Option<FailedCase> {
             let panic = {
                 let input = input.clone();
                 catch_unwind(|| assert_auto_variant_ok(variant.clone(), input, expected)).err()
             }?;
 
-            Some(FaildCase {
+            Some(FailedCase {
                 group,
                 nth_case_in_group,
                 nth_case_variant_in_case: Some(nth_case_variant_in_case),

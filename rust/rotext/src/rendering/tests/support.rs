@@ -146,7 +146,7 @@ impl<'a> test_support::Case for Case<'a> {
 pub(super) fn run_cases(cases: Vec<GroupedCases<Case>>) {
     let failed_cases: Vec<_> = cases
         .iter()
-        .flat_map(|row| -> Vec<FaildCase> { row.collect_failed() })
+        .flat_map(|row| -> Vec<FailedCase> { row.collect_failed() })
         .collect();
 
     if failed_cases.is_empty() {

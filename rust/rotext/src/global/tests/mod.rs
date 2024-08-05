@@ -10,7 +10,7 @@ use std::collections::HashSet;
 
 use crate::{
     events::{Event, EventType},
-    test_support::{self, report_failed_cases, FaildCase, GroupedCases},
+    test_support::{self, report_failed_cases, FailedCase, GroupedCases},
 };
 
 #[test]
@@ -137,7 +137,7 @@ fn it_works() {
 
     let failed_cases: Vec<_> = table
         .iter()
-        .flat_map(|row| -> Vec<FaildCase> { row.collect_failed() })
+        .flat_map(|row| -> Vec<FailedCase> { row.collect_failed() })
         .collect();
 
     if failed_cases.is_empty() {
