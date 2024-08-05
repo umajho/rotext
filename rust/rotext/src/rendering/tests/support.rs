@@ -1,15 +1,15 @@
 macro_rules! case {
-    ((id), $input:literal, [$($ev_tts:tt)*], $expected:expr,) => {
-        case!(_inner, $input, [$($ev_tts)*], $expected, {
+    (@with_id, $input:literal, [$($ev_tts:tt)*], $expected:expr,) => {
+        case!(@__inner, $input, [$($ev_tts)*], $expected, {
             should_include_block_id: true,
         })
     };
     ($input:literal, [$($ev_tts:tt)*], $expected:expr,) => {
-        case!(_inner, $input, [$($ev_tts)*], $expected, {
+        case!(@__inner, $input, [$($ev_tts)*], $expected, {
             should_include_block_id: false,
         })
     };
-    (_inner, $input:literal, [$($ev_tts:tt)*], $expected:expr, {
+    (@__inner, $input:literal, [$($ev_tts:tt)*], $expected:expr, {
         should_include_block_id: $should_include_block_id:literal,
     }) => {
         $crate::rendering::tests::support::Case {

@@ -448,13 +448,13 @@ fn it_works_with_block_id() {
         group: "基础",
         cases: vec![
             case!(
-                (id),
+                @with_id,
                 "",
                 [(ThematicBreak(.., id = 1, ln = 1)),],
                 r#"<hr data-block-id="1">"#,
             ),
             case!(
-                (id),
+                @with_id,
                 "foo",
                 [
                     (EnterParagraph(.., id = 1)),
@@ -464,7 +464,7 @@ fn it_works_with_block_id() {
                 r#"<p data-block-id="1">foo</p>"#,
             ),
             case!(
-                (id),
+                @with_id,
                 "foo:0/bar:6",
                 [
                     (EnterTable(.., id = 1)),
