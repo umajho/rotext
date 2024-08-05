@@ -1,6 +1,8 @@
+use std::ops::Range;
+
 use subenum::subenum;
 
-use crate::{common::Range, types::BlockId};
+use crate::types::BlockId;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
@@ -60,7 +62,7 @@ impl From<u8> for EventType {
 pub enum Event {
     /// 留给下个阶段解析。
     #[subenum(GlobalEvent, BlockEvent, InlineLevelParseInputEvent)]
-    Unparsed(Range) = EventType::Unparsed as u8,
+    Unparsed(Range<usize>) = EventType::Unparsed as u8,
 
     /// 逐字文本转义。
     ///
@@ -87,7 +89,7 @@ pub enum Event {
 
     /// 文本。
     #[subenum(BlockEvent, InlineLevelParseInputEvent, InlineEvent, BlendEvent)]
-    Text(Range) = EventType::Text as u8,
+    Text(Range<usize>) = EventType::Text as u8,
 
     /// 分割线。
     #[subenum(BlockEvent, BlendEvent)]
@@ -165,7 +167,7 @@ pub enum Event {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VerbatimEscaping {
-    pub content: Range,
+    pub content: Range<usize>,
     pub is_closed_forcedly: bool,
     #[cfg(feature = "line-number")]
     pub line_number_after: usize,
@@ -208,7 +210,9 @@ impl Event {
         let result = match self {
             Event::Unparsed(content)
             | Event::VerbatimEscaping(VerbatimEscaping { content, .. })
-            | Event::Text(content) => content.content(input),
+            | Event::Text(content) => unsafe {
+                std::str::from_utf8_unchecked(&input[content.clone()])
+            },
             Event::NewLine(_)
             | Event::ThematicBreak(_)
             | Event::EnterParagraph(_)

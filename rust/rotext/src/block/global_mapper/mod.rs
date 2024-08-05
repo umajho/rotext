@@ -1,7 +1,8 @@
 mod tests;
 
+use std::ops::Range;
+
 use crate::{
-    common::Range,
     events::{GlobalEvent, NewLine, VerbatimEscaping},
     global,
 };
@@ -19,7 +20,7 @@ pub struct GlobalEventStreamMapper<'a> {
 
 #[derive(Debug)]
 struct RemainUnparsed {
-    content: Range,
+    content: Range<usize>,
 
     next_offset: usize,
 }
@@ -57,13 +58,13 @@ impl<'a> GlobalEventStreamMapper<'a> {
             if let Some(ref mut remain) = self.remain {
                 // 先清掉剩余的。
 
-                if remain.next_offset == remain.content.length() {
+                if remain.next_offset == remain.content.len() {
                     // 已经没有剩余的了。
                     self.remain = None;
                     continue;
                 }
 
-                let index = remain.content.start() + remain.next_offset;
+                let index = remain.content.start + remain.next_offset;
 
                 if remain.next_offset == 0 {
                     remain.next_offset += 1;

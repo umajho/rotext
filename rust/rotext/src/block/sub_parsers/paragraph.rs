@@ -1,9 +1,10 @@
+use std::ops::Range;
+
 use crate::{
     block::{
         context::Context,
         sub_parsers::{self, content::TableRelatedCondition},
     },
-    common::Range,
     events::{BlockEvent, BlockWithId, ExitBlock, NewLine},
     types::BlockId,
 };
@@ -29,7 +30,7 @@ enum State {
     Invalid,
 }
 struct StateInitial {
-    content_before: Option<Range>,
+    content_before: Option<Range<usize>>,
 }
 struct StateContent {
     id: BlockId,
@@ -55,7 +56,7 @@ pub struct NewParserOptions {
     #[cfg(feature = "line-number")]
     pub start_line_number: usize,
 
-    pub content_before: Option<Range>,
+    pub content_before: Option<Range<usize>>,
 
     pub in_table: Option<InTable>,
 }
@@ -130,8 +131,8 @@ impl Parser {
     ) -> State {
         let opts = sub_parsers::content::Options {
             initial_state: match state.content_before {
-                Some(content_before) => sub_parsers::content::State::ExpectingContentNextChar {
-                    content: content_before,
+                Some(ref content_before) => sub_parsers::content::State::ExpectingContentNextChar {
+                    content: content_before.clone(),
                     spaces_after: 0,
                 },
                 None => sub_parsers::content::State::default(),

@@ -29,7 +29,7 @@ macro_rules! case {
 macro_rules! event {
     (VerbatimEscaping ($start:literal..$end:literal)) => {
         $crate::events::BlendEvent::VerbatimEscaping($crate::events::VerbatimEscaping {
-            content: $crate::rendering::tests::support::range!($start..$end),
+            content: $start..$end,
             is_closed_forcedly: false,
         })
     };
@@ -37,7 +37,7 @@ macro_rules! event {
         $crate::events::BlendEvent::NewLine($crate::events::NewLine {})
     };
     (Text ($start:literal..$end:literal)) => {
-        $crate::events::BlendEvent::Text($crate::rendering::tests::support::range!($start..$end))
+        $crate::events::BlendEvent::Text($start..$end)
     };
     (IndicateCodeBlockCode ()) => {
         $crate::events::BlendEvent::IndicateCodeBlockCode
@@ -89,12 +89,6 @@ macro_rules! event {
     };
 }
 
-macro_rules! range {
-    ($start:literal..$end:literal) => {
-        $crate::common::Range::new($start, $end - $start)
-    };
-}
-
 macro_rules! events {
     ($(($($ev:tt)*)),*,) => {
         vec![$($crate::rendering::tests::support::event!($($ev)*)),*]
@@ -104,7 +98,6 @@ macro_rules! events {
 pub(super) use case;
 pub(super) use event;
 pub(super) use events;
-pub(super) use range;
 
 use super::*;
 

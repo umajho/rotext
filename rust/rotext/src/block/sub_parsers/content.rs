@@ -1,10 +1,12 @@
+use std::ops::Range;
+
 use crate::{
     block::{
         context::Context,
         global_mapper,
         sub_parsers::{self, utils::consume_peeked},
     },
-    common::{m, Range},
+    common::m,
     events::{BlockEvent, NewLine},
 };
 
@@ -13,7 +15,10 @@ use super::HaveMet;
 #[derive(Debug)]
 pub enum State {
     ExpectingNewContent(StateExpectingNewContent),
-    ExpectingContentNextChar { content: Range, spaces_after: usize },
+    ExpectingContentNextChar {
+        content: Range<usize>,
+        spaces_after: usize,
+    },
 
     ToOutputDone(HaveMet),
 
@@ -243,11 +248,12 @@ impl Parser {
                         if consumed >= condition.minimal_count {
                             return done!();
                         } else if consumed > 0 {
+                            let content = {
+                                let after_current_cursor = ctx.cursor.value().unwrap() + 1;
+                                (after_current_cursor - consumed)..after_current_cursor
+                            };
                             return InternalOutput::ToContinueIn(State::ExpectingContentNextChar {
-                                content: Range::new(
-                                    ctx.cursor.value().unwrap() - consumed + 1,
-                                    consumed,
-                                ),
+                                content,
                                 spaces_after: 0,
                             });
                         }
@@ -267,12 +273,13 @@ impl Parser {
                             }
                             TryProcessPotentialRepetitiveCharactersResult::Unmatched(consumed) => {
                                 if consumed > 0 {
+                                    let content = {
+                                        let after_current_cursor = ctx.cursor.value().unwrap() + 1;
+                                        (after_current_cursor - consumed)..after_current_cursor
+                                    };
                                     return InternalOutput::ToContinueIn(
                                         State::ExpectingContentNextChar {
-                                            content: Range::new(
-                                                ctx.cursor.value().unwrap() - consumed + 1,
-                                                consumed,
-                                            ),
+                                            content,
                                             spaces_after: 0,
                                         },
                                     );
@@ -289,14 +296,14 @@ impl Parser {
                 }
 
                 consume_peeked!(ctx, &peeked);
-                let content = if inner.has_yielded_at_current_line {
-                    Range::new(
-                        ctx.cursor.value().unwrap() - state.skipped_spaces,
-                        1 + state.skipped_spaces,
-                    )
-                } else {
-                    inner.has_yielded_at_current_line = true;
-                    Range::new(ctx.cursor.value().unwrap(), 1)
+                let content = {
+                    let current_cursor = ctx.cursor.value().unwrap();
+                    if inner.has_yielded_at_current_line {
+                        (current_cursor - state.skipped_spaces)..(1 + current_cursor)
+                    } else {
+                        inner.has_yielded_at_current_line = true;
+                        current_cursor..(current_cursor + 1)
+                    }
                 };
                 InternalOutput::ToContinueIn(State::ExpectingContentNextChar {
                     content,
@@ -333,22 +340,22 @@ impl Parser {
     fn process_in_expecting_content_next_char_state(
         ctx: &mut Context,
         inner: &ParserInner,
-        state_content: &mut Range,
+        state_content: &mut Range<usize>,
         spaces_after: &mut usize,
     ) -> InternalOutput {
         let Some(peeked) = ctx.mapper.peek(0) else {
-            return InternalOutput::ToYield(make_content_event(&inner.mode, *state_content));
+            return InternalOutput::ToYield(make_content_event(&inner.mode, state_content.clone()));
         };
         let peeked = peeked.clone();
 
         match peeked {
             global_mapper::Mapped::CharAt(_) | global_mapper::Mapped::VerbatimEscaping(_) => {
-                state_content.increase_length(*spaces_after);
+                state_content.end += *spaces_after;
                 *spaces_after = 0;
-                InternalOutput::ToYield(make_content_event(&inner.mode, *state_content))
+                InternalOutput::ToYield(make_content_event(&inner.mode, state_content.clone()))
             }
             global_mapper::Mapped::NewLine(_) => {
-                InternalOutput::ToYield(make_content_event(&inner.mode, *state_content))
+                InternalOutput::ToYield(make_content_event(&inner.mode, state_content.clone()))
             }
             global_mapper::Mapped::NextChar => {
                 if matches!(inner.mode, Mode::Inline) && ctx.peek_next_char() == Some(b' ') {
@@ -359,9 +366,9 @@ impl Parser {
 
                 if let Some(condition) = &inner.end_conditions.on_table_related {
                     if let Some(have_met) = try_parse_potential_table_related(ctx, condition) {
-                        if state_content.length() > 0 {
+                        if !Range::is_empty(state_content) {
                             return InternalOutput::ToYieldAndBeDone(
-                                BlockEvent::Unparsed(*state_content),
+                                BlockEvent::Unparsed(state_content.clone()),
                                 have_met,
                             );
                         } else {
@@ -381,12 +388,12 @@ impl Parser {
                         match try_process_potential_repetitive_characters(ctx, condition) {
                             TryProcessPotentialRepetitiveCharactersResult::Matched => {
                                 return InternalOutput::ToYield(BlockEvent::Unparsed(
-                                    *state_content,
+                                    state_content.clone(),
                                 ));
                             }
                             TryProcessPotentialRepetitiveCharactersResult::Unmatched(consumed) => {
                                 if consumed > 0 {
-                                    state_content.increase_length(consumed);
+                                    state_content.end += consumed;
                                     has_already_consumed = true;
                                 }
                             }
@@ -394,12 +401,12 @@ impl Parser {
                     }
                 }
 
-                state_content.increase_length(*spaces_after);
+                state_content.end += *spaces_after;
                 *spaces_after = 0;
 
                 if !has_already_consumed {
                     consume_peeked!(ctx, &peeked);
-                    state_content.increase_length(1);
+                    state_content.end += 1;
                 }
                 InternalOutput::ToContinue
             }
@@ -416,7 +423,7 @@ impl Parser {
 }
 
 #[inline(always)]
-fn make_content_event(mode: &Mode, content: Range) -> BlockEvent {
+fn make_content_event(mode: &Mode, content: Range<usize>) -> BlockEvent {
     match mode {
         Mode::Inline => BlockEvent::Unparsed(content),
         Mode::Verbatim => BlockEvent::Text(content),

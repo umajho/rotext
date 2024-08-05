@@ -59,7 +59,7 @@ fn it_works() {
                     vec![
                         CharAt(0),
                         NextChar,
-                        verbatim_escaping!((4, 1), 1),
+                        verbatim_escaping!(4..5, 1),
                         new_line!(2)
                     ]
                 ),
@@ -68,30 +68,22 @@ fn it_works() {
         GroupedCases {
             group: "逐字文本转义转为文本",
             cases: vec![
-                case!("<`a`>", vec![verbatim_escaping!((2, 1), 1)]),
-                case!("<`a\nb`>", vec![verbatim_escaping!((2, 3), 2)]),
-                case!("<` a `>", vec![verbatim_escaping!((3, 1), 1)]),
-                case!("<`  a  `>", vec![verbatim_escaping!((3, 3), 1)]),
-                case!("<` `>", vec![verbatim_escaping!((2, 1), 1)]),
-                case!("<`  `>", vec![verbatim_escaping!((3, 0), 1)]),
-                case!("<`   `>", vec![verbatim_escaping!((3, 1), 1)]),
+                case!("<`a`>", vec![verbatim_escaping!(2..3, 1)]),
+                case!("<`a\nb`>", vec![verbatim_escaping!(2..5, 2)]),
+                case!("<` a `>", vec![verbatim_escaping!(3..4, 1)]),
+                case!("<`  a  `>", vec![verbatim_escaping!(3..6, 1)]),
+                case!("<` `>", vec![verbatim_escaping!(2..3, 1)]),
+                case!("<`  `>", vec![verbatim_escaping!(3..3, 1)]),
+                case!("<`   `>", vec![verbatim_escaping!(3..4, 1)]),
                 case!(
                     "a<`` ` ``>bc",
-                    vec![
-                        CharAt(0),
-                        verbatim_escaping!((5, 1), 1),
-                        CharAt(10),
-                        NextChar
-                    ]
+                    vec![CharAt(0), verbatim_escaping!(5..6, 1), CharAt(10), NextChar]
                 ),
-                case!("a<` b", vec![CharAt(0), verbatim_escaping!((4, 1), 1, "F")]),
-                case!(
-                    "a<` b ",
-                    vec![CharAt(0), verbatim_escaping!((4, 2), 1, "F")]
-                ),
+                case!("a<` b", vec![CharAt(0), verbatim_escaping!(4..5, 1, "F")]),
+                case!("a<` b ", vec![CharAt(0), verbatim_escaping!(4..6, 1, "F")]),
                 case!(
                     "a\n<`b`>",
-                    vec![CharAt(0), new_line!(2), verbatim_escaping!((4, 1), 2)]
+                    vec![CharAt(0), new_line!(2), verbatim_escaping!(4..5, 2)]
                 ),
                 case!(
                     "a\n <`b`>",
@@ -99,12 +91,12 @@ fn it_works() {
                         CharAt(0),
                         new_line!(2),
                         CharAt(2),
-                        verbatim_escaping!((5, 1), 2)
+                        verbatim_escaping!(5..6, 2)
                     ]
                 ),
                 case!(
                     "<`b`>  c",
-                    vec![verbatim_escaping!((2, 1), 1), CharAt(5), NextChar, NextChar]
+                    vec![verbatim_escaping!(2..3, 1), CharAt(5), NextChar, NextChar]
                 ),
             ],
         },

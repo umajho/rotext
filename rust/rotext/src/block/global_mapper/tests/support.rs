@@ -7,20 +7,20 @@ macro_rules! new_line {
     };
 }
 macro_rules! verbatim_escaping {
-    (($content_start:expr, $content_length:expr), $line_number_after:expr) => {
+    ($content:expr, $line_number_after:expr) => {
         $crate::block::global_mapper::Mapped::VerbatimEscaping(
             $crate::block::global_mapper::VerbatimEscaping {
-                content: $crate::common::Range::new($content_start, $content_length),
+                content: $content,
                 is_closed_forcedly: false,
                 #[cfg(feature = "line-number")]
                 line_number_after: $line_number_after,
             },
         )
     };
-    (($content_start:expr, $content_length:expr), $line_number_after:expr, "F") => {
+    ($content:expr, $line_number_after:expr, "F") => {
         $crate::block::global_mapper::Mapped::VerbatimEscaping(
             $crate::block::global_mapper::VerbatimEscaping {
-                content: $crate::common::Range::new($content_start, $content_length),
+                content: $content,
                 is_closed_forcedly: true,
                 #[cfg(feature = "line-number")]
                 line_number_after: $line_number_after,

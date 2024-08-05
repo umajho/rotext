@@ -1,7 +1,6 @@
 mod tests;
 
 use crate::{
-    common::Range,
     events::{GlobalEvent, NewLine, VerbatimEscaping},
     utils::internal::array_queue::ArrayQueue,
 };
@@ -192,7 +191,7 @@ impl<'a> Parser<'a> {
             return;
         }
 
-        let ret = GlobalEvent::Unparsed(Range::new(self.cursor, length));
+        let ret = GlobalEvent::Unparsed(self.cursor..(self.cursor + length));
         self.cursor += length;
         self.to_yield.push_back(ret)
     }
@@ -223,7 +222,7 @@ impl<'a> Parser<'a> {
 
         self.to_yield
             .push_back(GlobalEvent::VerbatimEscaping(VerbatimEscaping {
-                content: Range::new(start, length),
+                content: start..(start + length),
                 is_closed_forcedly: !is_closed_normally,
                 #[cfg(feature = "line-number")]
                 line_number_after: self.current_line_number,

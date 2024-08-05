@@ -170,7 +170,7 @@ impl<'a> HtmlRenderer<'a> {
                 BlendEvent::NewLine(_) => self.result.extend(b"<br>"),
                 BlendEvent::Text(content)
                 | BlendEvent::VerbatimEscaping(VerbatimEscaping { content, .. }) => {
-                    self.write_escaped_html_text(content.content_in_u8_array(self.input));
+                    self.write_escaped_html_text(&self.input[content]);
                 }
                 #[allow(unused_variables)]
                 BlendEvent::ThematicBreak(data) => {
@@ -221,9 +221,7 @@ impl<'a> HtmlRenderer<'a> {
                     loop {
                         match input_stream.next().unwrap() {
                             BlendEvent::Text(content) => self
-                                .write_escaped_double_quoted_attribute_value(
-                                    content.content_in_u8_array(self.input),
-                                ),
+                                .write_escaped_double_quoted_attribute_value(&self.input[content]),
                             BlendEvent::IndicateCodeBlockCode => break,
                             _ => unreachable!(),
                         }

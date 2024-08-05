@@ -1,4 +1,5 @@
-use crate::common::Range;
+use std::ops::Range;
+
 use crate::types::BlockId;
 
 use super::{
@@ -129,7 +130,7 @@ impl<'a> Context<'a> {
         dropped
     }
 
-    pub fn scan_blank_text(&mut self) -> Option<Range> {
+    pub fn scan_blank_text(&mut self) -> Option<Range<usize>> {
         let start = self.cursor.applying(self.mapper.peek(0)?).value()?;
         let mut length = 0;
         while self.peek_next_char() == Some(b' ') {
@@ -137,7 +138,7 @@ impl<'a> Context<'a> {
             self.must_take_from_mapper_and_apply_to_cursor(1);
         }
         if length > 0 {
-            Some(Range::new(start, length))
+            Some(start..(start + length))
         } else {
             None
         }

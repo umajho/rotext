@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use derivative::Derivative;
 
 use super::{
@@ -7,7 +9,7 @@ use super::{
     BlockInStack, ItemLikeType, Nesting, StackEntry,
 };
 use crate::{
-    common::{m, Range},
+    common::m,
     events::{BlockEvent, BlockWithId, NewLine, ThematicBreak},
     types::BlockId,
     utils::{internal::array_queue::ArrayQueue, stack::Stack},
@@ -232,7 +234,7 @@ impl<'a> Parser<'a> {
             }
         }
 
-        let spaces = ctx.scan_blank_text().map(|r| r.length()).unwrap_or(0);
+        let spaces = ctx.scan_blank_text().map(|r| r.len()).unwrap_or(0);
         let peeked_3 = ctx.peek_next_three_chars();
 
         if self.is_new_line {
@@ -636,9 +638,15 @@ fn check_is_indeed_item_like(ctx: &mut Context, second_char: &Option<u8>) -> boo
 
 enum LeafType {
     ThematicBreak,
-    Heading { leading_signs: usize },
-    CodeBlock { backticks: usize },
-    Paragraph { content_before: Option<Range> },
+    Heading {
+        leading_signs: usize,
+    },
+    CodeBlock {
+        backticks: usize,
+    },
+    Paragraph {
+        content_before: Option<Range<usize>>,
+    },
 }
 
 #[inline(always)]
@@ -651,9 +659,12 @@ fn scan_leaf(ctx: &mut Context) -> LeafType {
         }
         [Some(m!('=')), ..] => {
             ctx.must_take_from_mapper_and_apply_to_cursor(1);
-            let mut potential_opening_part = Range::new(ctx.cursor.value().unwrap(), 1);
+            let mut potential_opening_part = {
+                let start = ctx.cursor.value().unwrap();
+                start..(start + 1)
+            };
             let dropped = ctx.drop_from_mapper_while_char_with_maximum(m!('='), 5);
-            potential_opening_part.increase_length(dropped);
+            potential_opening_part.end += dropped;
 
             if ctx.peek_next_char() == Some(b' ') {
                 ctx.must_take_from_mapper_and_apply_to_cursor(1);
