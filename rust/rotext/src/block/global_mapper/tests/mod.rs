@@ -6,7 +6,7 @@ use std::vec;
 
 use support::{case, new_line, verbatim_escaping};
 
-use crate::test_support::{self, report_failed_cases, FailedCase, GroupedCases};
+use crate::test_support::{self, report_panicked_cases, FailedCase, GroupedCases};
 
 use super::*;
 
@@ -120,7 +120,7 @@ fn it_works() {
     }
     let faild_case_count = failed_cases.len();
 
-    report_failed_cases(failed_cases);
+    report_panicked_cases(failed_cases);
 
     panic!("{} cases failed!", faild_case_count);
 }

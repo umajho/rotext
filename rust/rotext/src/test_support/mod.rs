@@ -17,7 +17,7 @@ impl<TCase: Case + RefUnwindSafe> GroupedCases<TCase> {
                     nth_case_variant_in_case: None,
                     auto_variant: None,
                     input: case.input().to_string(),
-                    panic,
+                    reason: FailureReason::Panicked(panic),
                 })
             })
             .collect()
@@ -35,11 +35,20 @@ pub struct FailedCase {
     pub nth_case_variant_in_case: Option<usize>,
     pub auto_variant: Option<&'static str>,
     pub input: String,
-    pub panic: Box<dyn Any + Send>,
+    pub reason: FailureReason,
 }
 
-pub fn report_failed_cases(cases: Vec<FailedCase>) {
+pub enum FailureReason {
+    Panicked(Box<dyn Any + Send>),
+    ToDo,
+}
+
+pub fn report_panicked_cases(cases: Vec<FailedCase>) {
     for case in cases {
+        let FailureReason::Panicked(panic) = case.reason else {
+            continue;
+        };
+
         print!("=> group={} case={}", case.group, case.nth_case_in_group);
         if let Some(nth) = case.nth_case_variant_in_case {
             print!(" case_variant={}", nth)
@@ -50,7 +59,7 @@ pub fn report_failed_cases(cases: Vec<FailedCase>) {
         println!();
         println!("-> input:\n{}", case.input);
         let panic_message: String = {
-            match case.panic.downcast::<String>() {
+            match panic.downcast::<String>() {
                 Ok(str) => *str,
                 Err(panic) => match panic.downcast::<&str>() {
                     Ok(str) => str.to_string(),

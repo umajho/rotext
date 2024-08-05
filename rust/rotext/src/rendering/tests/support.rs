@@ -154,7 +154,7 @@ pub(super) fn run_cases(cases: Vec<GroupedCases<Case>>) {
     }
     let faild_case_count = failed_cases.len();
 
-    report_failed_cases(failed_cases);
+    report_panicked_cases(failed_cases);
 
     panic!("{} cases failed!", faild_case_count);
 }

@@ -387,6 +387,17 @@ pub fn groups_table() -> Vec<GroupedCases> {
                     ]
                 ),
                 case!(
+                    @todo,
+                    vec!["{|== foo ==|}", "{| == foo == |}",],
+                    vec![
+                        (EventType::EnterTable, None),
+                        (EventType::EnterHeading2, None),
+                        (EventType::Unparsed, Some("foo")),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
                     vec![
                         indoc! {"
                         {|

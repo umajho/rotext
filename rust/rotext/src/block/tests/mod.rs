@@ -12,7 +12,7 @@ mod support;
 
 use crate::{
     events::EventType,
-    test_support::{report_failed_cases, FailedCase},
+    test_support::{report_panicked_cases, FailedCase, FailureReason},
     utils::stack::ArrayStack,
     Error,
 };
@@ -46,12 +46,20 @@ fn it_works() {
         .flat_map(|row| -> Vec<FailedCase> { row.collect_failed() })
         .collect();
 
-    if failed_cases.is_empty() {
+    let todos = failed_cases
+        .iter()
+        .filter(|c| matches!(c.reason, FailureReason::ToDo))
+        .count();
+    if todos > 0 {
+        println!("({} TODO cases)", todos)
+    }
+
+    if failed_cases.len() == todos {
         return;
     }
-    let faild_case_count = failed_cases.len();
+    let faild_case_count = failed_cases.len() - todos;
 
-    report_failed_cases(failed_cases);
+    report_panicked_cases(failed_cases);
 
     panic!("{} cases failed!", faild_case_count);
 }

@@ -10,7 +10,7 @@ use std::collections::HashSet;
 
 use crate::{
     events::{Event, EventType},
-    test_support::{self, report_failed_cases, FailedCase, GroupedCases},
+    test_support::{self, report_panicked_cases, FailedCase, GroupedCases},
 };
 
 #[test]
@@ -145,7 +145,7 @@ fn it_works() {
     }
     let faild_case_count = failed_cases.len();
 
-    report_failed_cases(failed_cases);
+    report_panicked_cases(failed_cases);
 
     panic!("{} cases failed!", faild_case_count);
 }

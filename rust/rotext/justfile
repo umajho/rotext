@@ -1,0 +1,11 @@
+set fallback
+
+test:
+    cargo test -- --nocapture
+test-af:
+    cargo test --all-features -- --nocapture
+
+bench:
+    cargo bench
+bench-af:
+    cargo bench --all-features

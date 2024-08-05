@@ -4,16 +4,23 @@ use crate::{
     block::{Parser, StackEntry},
     events::EventType,
     global,
-    test_support::FailedCase,
+    test_support::{FailedCase, FailureReason},
     utils::stack::{Stack, VecStack},
     Error, Event,
 };
 
 macro_rules! case {
     ($input_variants:expr, $expected:expr) => {
+        case!(@__inner, $input_variants, $expected, false)
+    };
+    (@todo, $input_variants:expr, $expected:expr) => {
+            case!(@__inner, $input_variants, $expected, true)
+        };
+    (@__inner, $input_variants:expr, $expected:expr, $is_to_do:literal) => {
         $crate::block::tests::support::Case {
             input_variants: $input_variants,
             expected: $expected,
+            is_to_do: $is_to_do,
         }
     };
 }
@@ -39,7 +46,7 @@ impl GroupedCases {
 pub(super) struct Case {
     pub input_variants: Vec<&'static str>,
     pub expected: Vec<EventMatcher>,
-    pub should_skip: bool,
+    pub is_to_do: bool,
 }
 impl Case {
     fn collect_failed(&self, group: &'static str, nth_case_in_group: usize) -> Vec<FailedCase> {
@@ -48,40 +55,73 @@ impl Case {
             .enumerate()
             .flat_map(|(i, input)| -> Vec<FailedCase> {
                 let input = input.replace('␠', " ");
-                collect_failed_auto_variant(group, nth_case_in_group, i + 1, input, &self.expected)
+                self.collect_failed_auto_variant(group, nth_case_in_group, i + 1, input)
             })
             .collect()
+    }
+
+    fn collect_failed_auto_variant(
+        &self,
+        group: &'static str,
+        nth_case_in_group: usize,
+        nth_case_variant_in_case: usize,
+        input: String,
+    ) -> Vec<FailedCase> {
+        AutoVariant::all()
+            .iter()
+            .filter_map(|auto_variant| -> Option<FailedCase> {
+                if self.is_to_do {
+                    return Some(self.make_failed_case(
+                        group,
+                        nth_case_in_group,
+                        nth_case_variant_in_case,
+                        auto_variant,
+                        input.clone(),
+                        FailureReason::ToDo,
+                    ));
+                }
+
+                let panic = {
+                    let input = input.clone();
+                    catch_unwind(|| {
+                        assert_auto_variant_ok(auto_variant.clone(), input, &self.expected)
+                    })
+                    .err()
+                }?;
+
+                Some(self.make_failed_case(
+                    group,
+                    nth_case_in_group,
+                    nth_case_variant_in_case,
+                    auto_variant,
+                    input.clone(),
+                    FailureReason::Panicked(panic),
+                ))
+            })
+            .collect()
+    }
+
+    fn make_failed_case(
+        &self,
+        group: &'static str,
+        nth_case_in_group: usize,
+        nth_case_variant_in_case: usize,
+        auto_variant: &AutoVariant,
+        input: String,
+        reason: FailureReason,
+    ) -> FailedCase {
+        FailedCase {
+            group,
+            nth_case_in_group,
+            nth_case_variant_in_case: Some(nth_case_variant_in_case),
+            auto_variant: Some(auto_variant.to_str()),
+            input,
+            reason,
+        }
     }
 }
 
 type EventMatcher = (EventType, Option<&'static str>);
-
-fn collect_failed_auto_variant(
-    group: &'static str,
-    nth_case_in_group: usize,
-    nth_case_variant_in_case: usize,
-    input: String,
-    expected: &Vec<EventMatcher>,
-) -> Vec<FailedCase> {
-    AutoVariant::all()
-        .iter()
-        .filter_map(|variant| -> Option<FailedCase> {
-            let panic = {
-                let input = input.clone();
-                catch_unwind(|| assert_auto_variant_ok(variant.clone(), input, expected)).err()
-            }?;
-
-            Some(FailedCase {
-                group,
-                nth_case_in_group,
-                nth_case_variant_in_case: Some(nth_case_variant_in_case),
-                auto_variant: Some(variant.to_str()),
-                input: input.clone(),
-                panic,
-            })
-        })
-        .collect()
-}
 
 fn assert_auto_variant_ok(variant: AutoVariant, input: String, expected: &Vec<EventMatcher>) {
     let input = match variant {
