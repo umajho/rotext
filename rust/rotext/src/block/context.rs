@@ -1,6 +1,6 @@
 use std::ops::Range;
 
-use crate::types::BlockId;
+use crate::types::{BlockId, LineNumber};
 
 use super::{
     global_mapper::GlobalEventStreamMapper,
@@ -12,8 +12,7 @@ pub struct Context<'a> {
     pub mapper: Peekable<3, GlobalEventStreamMapper<'a>>,
     pub cursor: InputCursor,
 
-    #[cfg(feature = "line-number")]
-    pub current_line_number: usize,
+    pub current_line_number: LineNumber,
 
     #[cfg(feature = "block-id")]
     pub next_block_id: usize,

@@ -2,6 +2,7 @@ mod tests;
 
 use crate::{
     events::{GlobalEvent, NewLine, VerbatimEscaping},
+    types::LineNumber,
     utils::internal::array_queue::ArrayQueue,
 };
 
@@ -9,8 +10,7 @@ pub struct Parser<'a> {
     input: &'a [u8],
     cursor: usize,
     state: State,
-    #[cfg(feature = "line-number")]
-    current_line_number: usize,
+    current_line_number: LineNumber,
     to_yield: ArrayQueue<2, GlobalEvent>,
 }
 
@@ -22,15 +22,13 @@ enum State {
 
 pub struct NewParserOptions {
     pub cursor: usize,
-    #[cfg(feature = "line-number")]
-    pub current_line_number: usize,
+    pub current_line_number: LineNumber,
 }
 impl Default for NewParserOptions {
     fn default() -> Self {
         Self {
             cursor: 0,
-            #[cfg(feature = "line-number")]
-            current_line_number: 1,
+            current_line_number: LineNumber::new_universal(1),
         }
     }
 }
@@ -41,7 +39,6 @@ impl<'a> Parser<'a> {
             input,
             cursor: opts.cursor,
             state: State::Normal,
-            #[cfg(feature = "line-number")]
             current_line_number: opts.current_line_number,
             to_yield: ArrayQueue::new(),
         }
@@ -80,12 +77,8 @@ impl<'a> Parser<'a> {
                 Some(b'\r' | b'\n') => {
                     self.yield_unparsed_if_not_empty(offset);
 
-                    #[cfg(feature = "line-number")]
-                    {
-                        self.current_line_number += 1;
-                    }
+                    self.current_line_number.increase();
                     self.to_yield.push_back(GlobalEvent::NewLine(NewLine {
-                        #[cfg(feature = "line-number")]
                         line_number_after: self.current_line_number,
                     }));
                     if ch == Some(&b'\r') && self.input.get(index + 1) == Some(&b'\n') {
@@ -167,10 +160,7 @@ impl<'a> Parser<'a> {
                     }
                 }
                 Some(b'\r' | b'\n') => {
-                    #[cfg(feature = "line-number")]
-                    {
-                        self.current_line_number += 1;
-                    }
+                    self.current_line_number.increase();
                     if ch == Some(&b'\r') && self.input.get(index + 1) == Some(&b'\n') {
                         offset += "\r\n".len();
                     } else {
@@ -224,7 +214,6 @@ impl<'a> Parser<'a> {
             .push_back(GlobalEvent::VerbatimEscaping(VerbatimEscaping {
                 content: start..(start + length),
                 is_closed_forcedly: !is_closed_normally,
-                #[cfg(feature = "line-number")]
                 line_number_after: self.current_line_number,
             }));
         self.cursor += content_length;

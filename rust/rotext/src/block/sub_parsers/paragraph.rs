@@ -6,7 +6,7 @@ use crate::{
         sub_parsers::{self, content::TableRelatedCondition},
     },
     events::{BlockEvent, BlockWithId, ExitBlock, NewLine},
-    types::BlockId,
+    types::{BlockId, LineNumber},
 };
 
 use super::{HaveMet, InTable};
@@ -43,8 +43,7 @@ pub struct Parser {
     state: State,
 }
 struct ParserInner {
-    #[cfg(feature = "line-number")]
-    start_line_number: usize,
+    start_line_number: LineNumber,
 
     in_table: Option<InTable>,
 
@@ -53,8 +52,7 @@ struct ParserInner {
 }
 
 pub struct NewParserOptions {
-    #[cfg(feature = "line-number")]
-    pub start_line_number: usize,
+    pub start_line_number: LineNumber,
 
     pub content_before: Option<Range<usize>>,
 
@@ -66,7 +64,6 @@ impl Parser {
     pub fn new(opts: NewParserOptions) -> Self {
         Self {
             inner: ParserInner {
-                #[cfg(feature = "line-number")]
                 start_line_number: opts.start_line_number,
                 in_table: opts.in_table,
                 have_ever_yielded: false,
@@ -111,9 +108,7 @@ impl Parser {
                 State::ToExit { id } => {
                     let exit_block = ExitBlock {
                         id: *id,
-                        #[cfg(feature = "line-number")]
                         start_line_number: self.inner.start_line_number,
-                        #[cfg(feature = "line-number")]
                         end_line_number: ctx.current_line_number,
                     };
                     self.state = State::Exiting(HaveMet::None);
@@ -184,9 +179,7 @@ impl Parser {
                 if inner.have_ever_yielded {
                     let exit_block = BlockEvent::ExitBlock(ExitBlock {
                         id: state_unchecked.id,
-                        #[cfg(feature = "line-number")]
                         start_line_number: inner.start_line_number,
-                        #[cfg(feature = "line-number")]
                         end_line_number: ctx.current_line_number,
                     });
                     (

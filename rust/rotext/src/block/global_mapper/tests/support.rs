@@ -1,8 +1,7 @@
 macro_rules! new_line {
     ($line_number_after:expr) => {
         $crate::block::global_mapper::Mapped::NewLine($crate::block::global_mapper::NewLine {
-            #[cfg(feature = "line-number")]
-            line_number_after: $line_number_after,
+            line_number_after: $crate::types::LineNumber::new_universal($line_number_after),
         })
     };
 }
@@ -12,8 +11,7 @@ macro_rules! verbatim_escaping {
             $crate::block::global_mapper::VerbatimEscaping {
                 content: $content,
                 is_closed_forcedly: false,
-                #[cfg(feature = "line-number")]
-                line_number_after: $line_number_after,
+                line_number_after: $crate::types::LineNumber::new_universal($line_number_after),
             },
         )
     };
@@ -22,8 +20,7 @@ macro_rules! verbatim_escaping {
             $crate::block::global_mapper::VerbatimEscaping {
                 content: $content,
                 is_closed_forcedly: true,
-                #[cfg(feature = "line-number")]
-                line_number_after: $line_number_after,
+                line_number_after: $crate::types::LineNumber::new_universal($line_number_after),
             },
         )
     };

@@ -12,7 +12,7 @@ use root_parser::ExitingUntil;
 use crate::{
     events::{BlockEvent, BlockWithId, ExitBlock, NewLine},
     global,
-    types::BlockId,
+    types::{BlockId, LineNumber},
     utils::stack::Stack,
 };
 use global_mapper::GlobalEventStreamMapper;
@@ -56,19 +56,13 @@ pub struct StackEntry {
 
     block_id: BlockId,
 
-    #[cfg(feature = "line-number")]
-    start_line_number: usize,
+    start_line_number: LineNumber,
 }
 impl StackEntry {
-    pub fn into_exit_block(
-        self,
-        #[cfg(feature = "line-number")] end_line_number: usize,
-    ) -> ExitBlock {
+    pub fn into_exit_block(self, end_line_number: LineNumber) -> ExitBlock {
         ExitBlock {
             id: self.block_id,
-            #[cfg(feature = "line-number")]
             start_line_number: self.start_line_number,
-            #[cfg(feature = "line-number")]
             end_line_number,
         }
     }
@@ -130,16 +124,14 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
             cursor: utils::InputCursor::new(),
 
             // 这里只是随便初始化一下，实际在 [State::Start] 中决定。
-            #[cfg(feature = "line-number")]
-            current_line_number: 0,
+            current_line_number: LineNumber::new_universal(0),
 
             #[cfg(feature = "block-id")]
             next_block_id: 1,
         };
 
         let new_line = NewLine {
-            #[cfg(feature = "line-number")]
-            line_number_after: 1,
+            line_number_after: LineNumber::new_universal(1),
         };
 
         Parser {
@@ -168,10 +160,9 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
             if self.is_cleaning_up {
                 // 若栈中还有内容，出栈并返回 `Some(Event::Exit)`；若栈已空，返回 `None`。
                 break self.stack.pop().map(|#[allow(unused_variables)] entry| {
-                    Ok(BlockEvent::ExitBlock(entry.into_exit_block(
-                        #[cfg(feature = "line-number")]
-                        self.context.current_line_number,
-                    )))
+                    Ok(BlockEvent::ExitBlock(
+                        entry.into_exit_block(self.context.current_line_number),
+                    ))
                 });
             }
 

@@ -191,16 +191,10 @@ impl<'a> Parser<'a> {
         #[allow(unused_variables)]
         if let Some(new_line) = new_line {
             self.is_new_line = true;
-            #[cfg(feature = "line-number")]
-            {
-                ctx.current_line_number = new_line.line_number_after;
-            }
+            ctx.current_line_number = new_line.line_number_after;
         } else if let Some(Mapped::NewLine(new_line)) = ctx.mapper.peek(0) {
             self.is_new_line = true;
-            #[cfg(feature = "line-number")]
-            {
-                ctx.current_line_number = new_line.line_number_after;
-            }
+            ctx.current_line_number = new_line.line_number_after;
             if self.is_new_line {
                 ctx.must_take_from_mapper_and_apply_to_cursor(1);
             }
@@ -227,7 +221,6 @@ impl<'a> Parser<'a> {
         if is_expecting_deeper {
             if let Some(mut paused_sub_parser) = self.paused_sub_parser.take() {
                 paused_sub_parser.resume_from_pause_for_new_line_and_continue(NewLine {
-                    #[cfg(feature = "line-number")]
                     line_number_after: ctx.current_line_number,
                 });
                 return Ok(InternalOutput::ToSwitchToSubParser(paused_sub_parser));
@@ -351,14 +344,12 @@ impl<'a> Parser<'a> {
                 self.to_yield
                     .push_back(BlockEvent::ThematicBreak(ThematicBreak {
                         id: ctx.pop_block_id(),
-                        #[cfg(feature = "line-number")]
                         line_number: ctx.current_line_number,
                     }));
                 InternalOutput::ToContinue(new_state)
             }
             LeafType::Heading { leading_signs } => InternalOutput::ToSwitchToSubParser(Box::new(
                 sub_parsers::heading::Parser::new(sub_parsers::heading::NewParserOptions {
-                    #[cfg(feature = "line-number")]
                     start_line_number: ctx.current_line_number,
                     leading_signs,
                     in_table: if nesting.tables_in_stack > 0 {
@@ -372,7 +363,6 @@ impl<'a> Parser<'a> {
             )),
             LeafType::CodeBlock { backticks } => InternalOutput::ToSwitchToSubParser(Box::new(
                 sub_parsers::code_block::Parser::new(sub_parsers::code_block::NewParserOptions {
-                    #[cfg(feature = "line-number")]
                     start_line_number: ctx.current_line_number,
                     leading_backticks: backticks,
                     indentation: spaces_before,
@@ -381,7 +371,6 @@ impl<'a> Parser<'a> {
             LeafType::Paragraph { content_before } => {
                 InternalOutput::ToSwitchToSubParser(Box::new(sub_parsers::paragraph::Parser::new(
                     sub_parsers::paragraph::NewParserOptions {
-                        #[cfg(feature = "line-number")]
                         start_line_number: ctx.current_line_number,
                         content_before,
                         in_table: if nesting.tables_in_stack > 0 {
@@ -423,18 +412,14 @@ impl<'a> Parser<'a> {
                         and_then_enter_item_like,
                     } = state
                     {
-                        self.to_yield
-                            .push_back(BlockEvent::ExitBlock(top.into_exit_block(
-                                #[cfg(feature = "line-number")]
-                                ctx.current_line_number,
-                            )));
+                        self.to_yield.push_back(BlockEvent::ExitBlock(
+                            top.into_exit_block(ctx.current_line_number),
+                        ));
                         if is_item_like && should_also_exit_container {
                             let top = stack.pop().unwrap();
-                            self.to_yield
-                                .push_back(BlockEvent::ExitBlock(top.into_exit_block(
-                                    #[cfg(feature = "line-number")]
-                                    ctx.current_line_number,
-                                )));
+                            self.to_yield.push_back(BlockEvent::ExitBlock(
+                                top.into_exit_block(ctx.current_line_number),
+                            ));
                         }
                         if let Some(item_like_type_to_enter) = and_then_enter_item_like {
                             self.enter_item_like(
@@ -463,11 +448,9 @@ impl<'a> Parser<'a> {
                     }
                     if should_exit_table {
                         nesting.tables_in_stack -= 1;
-                        self.to_yield
-                            .push_back(BlockEvent::ExitBlock(top.into_exit_block(
-                                #[cfg(feature = "line-number")]
-                                ctx.current_line_number,
-                            )));
+                        self.to_yield.push_back(BlockEvent::ExitBlock(
+                            top.into_exit_block(ctx.current_line_number),
+                        ));
                     } else {
                         stack.try_push(top).unwrap();
                     }
@@ -481,11 +464,9 @@ impl<'a> Parser<'a> {
             },
             BlockInStack::Container => {}
         }
-        self.to_yield
-            .push_back(BlockEvent::ExitBlock(top.into_exit_block(
-                #[cfg(feature = "line-number")]
-                ctx.current_line_number,
-            )));
+        self.to_yield.push_back(BlockEvent::ExitBlock(
+            top.into_exit_block(ctx.current_line_number),
+        ));
         InternalOutput::ToContinue(State::ExitingUntil(state))
     }
 
@@ -569,7 +550,6 @@ fn try_push_to_stack_with_newly_popped_id<TStack: Stack<StackEntry>>(
     stack.try_push(StackEntry {
         block,
         block_id: id,
-        #[cfg(feature = "line-number")]
         start_line_number: ctx.current_line_number,
     })?;
 

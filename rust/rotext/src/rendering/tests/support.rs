@@ -31,10 +31,13 @@ macro_rules! event {
         $crate::events::BlendEvent::VerbatimEscaping($crate::events::VerbatimEscaping {
             content: $start..$end,
             is_closed_forcedly: false,
+            line_number_after: $crate::types::LineNumber::new(),
         })
     };
     (NewLine (..)) => {
-        $crate::events::BlendEvent::NewLine($crate::events::NewLine {})
+        $crate::events::BlendEvent::NewLine($crate::events::NewLine {
+            line_number_after: $crate::types::LineNumber::new(),
+        })
     };
     (Text ($start:literal..$end:literal)) => {
         $crate::events::BlendEvent::Text($start..$end)
@@ -57,24 +60,27 @@ macro_rules! event {
     (ExitBlock (..)) => {
         $crate::events::BlendEvent::ExitBlock($crate::events::ExitBlock {
             id: $crate::types::BlockId::new(),
+            start_line_number: $crate::types::LineNumber::new(),
+            end_line_number: $crate::types::LineNumber::new(),
         })
     };
     (ExitBlock (.., id = $id:literal, lns = $ln_s:literal..$ln_e:literal)) => {
         $crate::events::BlendEvent::ExitBlock($crate::events::ExitBlock {
             id: $crate::types::BlockId::new($id),
-            start_line_number: $ln_s,
-            end_line_number: $ln_e,
+            start_line_number: $crate::types::LineNumber::new($ln_s),
+            end_line_number: $crate::types::LineNumber::new($ln_e),
         })
     };
     (ThematicBreak (..)) => {
         $crate::events::BlendEvent::ThematicBreak($crate::events::ThematicBreak {
             id: $crate::types::BlockId::new(),
+            line_number: $crate::types::LineNumber::new(),
         })
     };
     (ThematicBreak (.., id = $id:literal, ln = $ln:literal)) => {
         $crate::events::BlendEvent::ThematicBreak($crate::events::ThematicBreak {
             id: $crate::types::BlockId::new($id),
-            line_number: $ln,
+            line_number: $crate::types::LineNumber::new($ln),
         })
     };
     ($v:tt (..)) => {

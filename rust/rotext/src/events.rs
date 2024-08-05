@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use subenum::subenum;
 
-use crate::types::BlockId;
+use crate::types::{BlockId, LineNumber};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
@@ -169,14 +169,12 @@ pub enum Event {
 pub struct VerbatimEscaping {
     pub content: Range<usize>,
     pub is_closed_forcedly: bool,
-    #[cfg(feature = "line-number")]
-    pub line_number_after: usize,
+    pub line_number_after: LineNumber,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NewLine {
-    #[cfg(feature = "line-number")]
-    pub line_number_after: usize,
+    pub line_number_after: LineNumber,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -187,17 +185,14 @@ pub struct BlockWithId {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ThematicBreak {
     pub id: BlockId,
-    #[cfg(feature = "line-number")]
-    pub line_number: usize,
+    pub line_number: LineNumber,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExitBlock {
     pub id: BlockId,
-    #[cfg(feature = "line-number")]
-    pub start_line_number: usize,
-    #[cfg(feature = "line-number")]
-    pub end_line_number: usize,
+    pub start_line_number: LineNumber,
+    pub end_line_number: LineNumber,
 }
 
 impl Event {
@@ -261,7 +256,7 @@ impl Event {
                 line_number_after, ..
             })
             | Event::NewLine(NewLine { line_number_after }) => {
-                let flag_ln_after = format!(">ln:{}", line_number_after);
+                let flag_ln_after = format!(">ln:{}", line_number_after.value());
                 // 反正也只在测试时使用，为图开发方便，干脆就 leak 了。
                 flags.insert(flag_ln_after.leak());
             }

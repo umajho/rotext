@@ -4,7 +4,7 @@ use crate::{
         sub_parsers::{self, content::TableRelatedCondition},
     },
     events::{BlockEvent, BlockWithId, ExitBlock, NewLine},
-    types::BlockId,
+    types::{BlockId, LineNumber},
 };
 
 use super::{HaveMet, InTable};
@@ -25,8 +25,7 @@ enum State {
 }
 
 pub struct Parser {
-    #[cfg(feature = "line-number")]
-    start_line_number: usize,
+    start_line_number: LineNumber,
     leading_signs: usize,
 
     in_table: Option<InTable>,
@@ -35,8 +34,7 @@ pub struct Parser {
 }
 
 pub struct NewParserOptions {
-    #[cfg(feature = "line-number")]
-    pub start_line_number: usize,
+    pub start_line_number: LineNumber,
     pub leading_signs: usize,
 
     pub in_table: Option<InTable>,
@@ -45,7 +43,6 @@ pub struct NewParserOptions {
 impl Parser {
     pub fn new(opts: NewParserOptions) -> Self {
         Self {
-            #[cfg(feature = "line-number")]
             start_line_number: opts.start_line_number,
             leading_signs: opts.leading_signs,
             in_table: opts.in_table,
@@ -103,9 +100,7 @@ impl Parser {
                     sub_parsers::Output::Done(have_met) => (
                         sub_parsers::Output::ToYield(BlockEvent::ExitBlock(ExitBlock {
                             id,
-                            #[cfg(feature = "line-number")]
                             start_line_number: self.start_line_number,
-                            #[cfg(feature = "line-number")]
                             end_line_number: ctx.current_line_number,
                         })),
                         State::Exiting(have_met),

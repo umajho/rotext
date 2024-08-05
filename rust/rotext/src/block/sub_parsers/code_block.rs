@@ -4,7 +4,7 @@ use crate::{
         sub_parsers::{self, HaveMet},
     },
     events::{BlockEvent, BlockWithId, ExitBlock, NewLine},
-    types::BlockId,
+    types::{BlockId, LineNumber},
 };
 
 enum State {
@@ -45,8 +45,7 @@ enum State {
 }
 
 pub struct Parser {
-    #[cfg(feature = "line-number")]
-    start_line_number: usize,
+    start_line_number: LineNumber,
     leading_backticks: usize,
     indentation: usize,
 
@@ -54,8 +53,7 @@ pub struct Parser {
 }
 
 pub struct NewParserOptions {
-    #[cfg(feature = "line-number")]
-    pub start_line_number: usize,
+    pub start_line_number: LineNumber,
     pub leading_backticks: usize,
     /// 每行开头至多忽略此数量的空格。
     pub indentation: usize,
@@ -64,7 +62,6 @@ pub struct NewParserOptions {
 impl Parser {
     pub fn new(opts: NewParserOptions) -> Self {
         Self {
-            #[cfg(feature = "line-number")]
             start_line_number: opts.start_line_number,
             leading_backticks: opts.leading_backticks,
             indentation: opts.indentation,
@@ -177,9 +174,7 @@ impl Parser {
                         let output =
                             sub_parsers::Output::ToYield(BlockEvent::ExitBlock(ExitBlock {
                                 id: code_block_id,
-                                #[cfg(feature = "line-number")]
                                 start_line_number: self.start_line_number,
-                                #[cfg(feature = "line-number")]
                                 end_line_number: ctx.current_line_number,
                             }));
                         (output, State::Exiting)
@@ -195,9 +190,7 @@ impl Parser {
             State::ToExit { code_block_id } => (
                 sub_parsers::Output::ToYield(BlockEvent::ExitBlock(ExitBlock {
                     id: code_block_id,
-                    #[cfg(feature = "line-number")]
                     start_line_number: self.start_line_number,
-                    #[cfg(feature = "line-number")]
                     end_line_number: ctx.current_line_number,
                 })),
                 State::Exiting,
