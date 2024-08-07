@@ -285,6 +285,26 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                     ]
                 ),
                 case!(
+                    vec![
+                        indoc! {"
+                        > ```info
+                        > > code
+                        > ```"},
+                        indoc! {"
+                        > ```info
+                        > > code"},
+                    ],
+                    vec![
+                        (EventType::EnterBlockQuote, None),
+                        (EventType::EnterCodeBlock, None),
+                        (EventType::Text, Some("info")),
+                        (EventType::IndicateCodeBlockCode, None),
+                        (EventType::Text, Some("> code")),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
                     vec![indoc! {"
                         > ```info
                         >  code
