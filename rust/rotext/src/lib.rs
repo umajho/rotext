@@ -1,5 +1,9 @@
+#![allow(incomplete_features)]
+#![feature(generic_const_exprs)]
+
 mod blend;
 mod block;
+mod block_2;
 mod common;
 mod events;
 mod global;
