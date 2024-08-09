@@ -74,6 +74,11 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                     break None;
                 }
                 State::Expecting(expecting) => {
+                    // 忽略开头的空白。
+                    while self.input.get(self.inner.cursor()) == Some(&b' ') {
+                        self.inner.move_cursor_forward(" ".len());
+                    }
+
                     let Some(&first_char) = self.input.get(self.inner.cursor()) else {
                         self.state = if self.inner.stack.is_empty() {
                             State::Ended

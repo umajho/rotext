@@ -10,7 +10,10 @@ pub fn groups_horizontal_rule() -> Vec<GroupedCases> {
         GroupedCases {
             group: "分割线",
             cases: vec![
-                case!(vec!["---", "----"], vec![(EventType::ThematicBreak, None)]),
+                case!(
+                    vec!["---", "----", " ---"],
+                    vec![(EventType::ThematicBreak, None)]
+                ),
                 case!(
                     vec!["--"],
                     vec![
