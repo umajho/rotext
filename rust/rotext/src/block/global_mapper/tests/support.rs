@@ -1,26 +1,26 @@
 macro_rules! new_line {
-    ($line_number_after:expr) => {
+    ($line_after:expr) => {
         $crate::block::global_mapper::Mapped::NewLine($crate::block::global_mapper::NewLine {
-            line_number_after: $crate::types::LineNumber::new_universal($line_number_after),
+            line_after: $crate::types::LineNumber::new_universal($line_after),
         })
     };
 }
 macro_rules! verbatim_escaping {
-    ($content:expr, $line_number_after:expr) => {
+    ($content:expr, $line_after:expr) => {
         $crate::block::global_mapper::Mapped::VerbatimEscaping(
             $crate::block::global_mapper::VerbatimEscaping {
                 content: $content,
                 is_closed_forcedly: false,
-                line_number_after: $crate::types::LineNumber::new_universal($line_number_after),
+                line_after: $crate::types::LineNumber::new_universal($line_after),
             },
         )
     };
-    ($content:expr, $line_number_after:expr, "F") => {
+    ($content:expr, $line_after:expr, "F") => {
         $crate::block::global_mapper::Mapped::VerbatimEscaping(
             $crate::block::global_mapper::VerbatimEscaping {
                 content: $content,
                 is_closed_forcedly: true,
-                line_number_after: $crate::types::LineNumber::new_universal($line_number_after),
+                line_after: $crate::types::LineNumber::new_universal($line_after),
             },
         )
     };

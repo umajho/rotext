@@ -25,7 +25,7 @@ enum State {
 }
 
 pub struct Parser {
-    start_line_number: LineNumber,
+    start_line: LineNumber,
     leading_signs: usize,
 
     in_table: Option<InTable>,
@@ -34,7 +34,7 @@ pub struct Parser {
 }
 
 pub struct NewParserOptions {
-    pub start_line_number: LineNumber,
+    pub start_line: LineNumber,
     pub leading_signs: usize,
 
     pub in_table: Option<InTable>,
@@ -43,7 +43,7 @@ pub struct NewParserOptions {
 impl Parser {
     pub fn new(opts: NewParserOptions) -> Self {
         Self {
-            start_line_number: opts.start_line_number,
+            start_line: opts.start_line,
             leading_signs: opts.leading_signs,
             in_table: opts.in_table,
             state: State::Initial,
@@ -100,8 +100,8 @@ impl Parser {
                     sub_parsers::Output::Done(have_met) => (
                         sub_parsers::Output::ToYield(BlockEvent::ExitBlock(ExitBlock {
                             id,
-                            start_line_number: self.start_line_number,
-                            end_line_number: ctx.current_line_number,
+                            start_line: self.start_line,
+                            end_line: ctx.current_line,
                         })),
                         State::Exiting(have_met),
                     ),

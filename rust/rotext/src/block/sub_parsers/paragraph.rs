@@ -43,7 +43,7 @@ pub struct Parser {
     state: State,
 }
 struct ParserInner {
-    start_line_number: LineNumber,
+    start_line: LineNumber,
 
     in_table: Option<InTable>,
 
@@ -52,7 +52,7 @@ struct ParserInner {
 }
 
 pub struct NewParserOptions {
-    pub start_line_number: LineNumber,
+    pub start_line: LineNumber,
 
     pub content_before: Option<Range<usize>>,
 
@@ -64,7 +64,7 @@ impl Parser {
     pub fn new(opts: NewParserOptions) -> Self {
         Self {
             inner: ParserInner {
-                start_line_number: opts.start_line_number,
+                start_line: opts.start_line,
                 in_table: opts.in_table,
                 have_ever_yielded: false,
                 deferred: None,
@@ -108,8 +108,8 @@ impl Parser {
                 State::ToExit { id } => {
                     let exit_block = ExitBlock {
                         id: *id,
-                        start_line_number: self.inner.start_line_number,
-                        end_line_number: ctx.current_line_number,
+                        start_line: self.inner.start_line,
+                        end_line: ctx.current_line,
                     };
                     self.state = State::Exiting(HaveMet::None);
                     break sub_parsers::Output::ToYield(BlockEvent::ExitBlock(exit_block));
@@ -179,8 +179,8 @@ impl Parser {
                 if inner.have_ever_yielded {
                     let exit_block = BlockEvent::ExitBlock(ExitBlock {
                         id: state_unchecked.id,
-                        start_line_number: inner.start_line_number,
-                        end_line_number: ctx.current_line_number,
+                        start_line: inner.start_line,
+                        end_line: ctx.current_line,
                     });
                     (
                         sub_parsers::Output::ToYield(exit_block),

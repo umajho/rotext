@@ -7,16 +7,16 @@ pub fn create_block_id_to_lines_map(all_events: &[rotext::BlendEvent]) -> String
                 write_id_and_line_range(
                     &mut result,
                     data.id.value(),
-                    data.line_number.value(),
-                    data.line_number.value(),
+                    data.line.value(),
+                    data.line.value(),
                 );
             }
             rotext::BlendEvent::ExitBlock(data) => {
                 write_id_and_line_range(
                     &mut result,
                     data.id.value(),
-                    data.start_line_number.value(),
-                    data.end_line_number.value(),
+                    data.start_line.value(),
+                    data.end_line.value(),
                 );
             }
             _ => continue,

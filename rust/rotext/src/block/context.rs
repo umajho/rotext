@@ -12,7 +12,7 @@ pub struct Context<'a> {
     pub mapper: Peekable<3, GlobalEventStreamMapper<'a>>,
     pub cursor: InputCursor,
 
-    pub current_line_number: LineNumber,
+    pub current_line: LineNumber,
 
     #[cfg(feature = "block-id")]
     pub next_block_id: usize,

@@ -10,7 +10,7 @@ pub struct Parser<'a> {
     input: &'a [u8],
     cursor: usize,
     state: State,
-    current_line_number: LineNumber,
+    current_line: LineNumber,
     to_yield: ArrayQueue<2, GlobalEvent>,
 }
 
@@ -22,13 +22,13 @@ enum State {
 
 pub struct NewParserOptions {
     pub cursor: usize,
-    pub current_line_number: LineNumber,
+    pub current_line: LineNumber,
 }
 impl Default for NewParserOptions {
     fn default() -> Self {
         Self {
             cursor: 0,
-            current_line_number: LineNumber::new_universal(1),
+            current_line: LineNumber::new_universal(1),
         }
     }
 }
@@ -39,7 +39,7 @@ impl<'a> Parser<'a> {
             input,
             cursor: opts.cursor,
             state: State::Normal,
-            current_line_number: opts.current_line_number,
+            current_line: opts.current_line,
             to_yield: ArrayQueue::new(),
         }
     }
@@ -77,9 +77,9 @@ impl<'a> Parser<'a> {
                 Some(b'\r' | b'\n') => {
                     self.yield_unparsed_if_not_empty(offset);
 
-                    self.current_line_number.increase();
+                    self.current_line.increase();
                     self.to_yield.push_back(GlobalEvent::NewLine(NewLine {
-                        line_number_after: self.current_line_number,
+                        line_after: self.current_line,
                     }));
                     if ch == Some(&b'\r') && self.input.get(index + 1) == Some(&b'\n') {
                         self.cursor += "\r\n".len();
@@ -160,7 +160,7 @@ impl<'a> Parser<'a> {
                     }
                 }
                 Some(b'\r' | b'\n') => {
-                    self.current_line_number.increase();
+                    self.current_line.increase();
                     if ch == Some(&b'\r') && self.input.get(index + 1) == Some(&b'\n') {
                         offset += "\r\n".len();
                     } else {
@@ -214,7 +214,7 @@ impl<'a> Parser<'a> {
             .push_back(GlobalEvent::VerbatimEscaping(VerbatimEscaping {
                 content: start..(start + length),
                 is_closed_forcedly: !is_closed_normally,
-                line_number_after: self.current_line_number,
+                line_after: self.current_line,
             }));
         self.cursor += content_length;
         if is_closed_normally {

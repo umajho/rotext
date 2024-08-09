@@ -169,12 +169,12 @@ pub enum Event {
 pub struct VerbatimEscaping {
     pub content: Range<usize>,
     pub is_closed_forcedly: bool,
-    pub line_number_after: LineNumber,
+    pub line_after: LineNumber,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NewLine {
-    pub line_number_after: LineNumber,
+    pub line_after: LineNumber,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -185,14 +185,14 @@ pub struct BlockWithId {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ThematicBreak {
     pub id: BlockId,
-    pub line_number: LineNumber,
+    pub line: LineNumber,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExitBlock {
     pub id: BlockId,
-    pub start_line_number: LineNumber,
-    pub end_line_number: LineNumber,
+    pub start_line: LineNumber,
+    pub end_line: LineNumber,
 }
 
 impl Event {
@@ -252,11 +252,9 @@ impl Event {
 
         #[cfg(feature = "line-number")]
         match self {
-            Event::VerbatimEscaping(VerbatimEscaping {
-                line_number_after, ..
-            })
-            | Event::NewLine(NewLine { line_number_after }) => {
-                let flag_ln_after = format!(">ln:{}", line_number_after.value());
+            Event::VerbatimEscaping(VerbatimEscaping { line_after, .. })
+            | Event::NewLine(NewLine { line_after }) => {
+                let flag_ln_after = format!(">ln:{}", line_after.value());
                 // 反正也只在测试时使用，为图开发方便，干脆就 leak 了。
                 flags.insert(flag_ln_after.leak());
             }

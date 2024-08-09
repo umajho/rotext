@@ -45,7 +45,7 @@ enum State {
 }
 
 pub struct Parser {
-    start_line_number: LineNumber,
+    start_line: LineNumber,
     leading_backticks: usize,
     indentation: usize,
 
@@ -53,7 +53,7 @@ pub struct Parser {
 }
 
 pub struct NewParserOptions {
-    pub start_line_number: LineNumber,
+    pub start_line: LineNumber,
     pub leading_backticks: usize,
     /// 每行开头至多忽略此数量的空格。
     pub indentation: usize,
@@ -62,7 +62,7 @@ pub struct NewParserOptions {
 impl Parser {
     pub fn new(opts: NewParserOptions) -> Self {
         Self {
-            start_line_number: opts.start_line_number,
+            start_line: opts.start_line,
             leading_backticks: opts.leading_backticks,
             indentation: opts.indentation,
 
@@ -174,8 +174,8 @@ impl Parser {
                         let output =
                             sub_parsers::Output::ToYield(BlockEvent::ExitBlock(ExitBlock {
                                 id: code_block_id,
-                                start_line_number: self.start_line_number,
-                                end_line_number: ctx.current_line_number,
+                                start_line: self.start_line,
+                                end_line: ctx.current_line,
                             }));
                         (output, State::Exiting)
                     }
@@ -190,8 +190,8 @@ impl Parser {
             State::ToExit { code_block_id } => (
                 sub_parsers::Output::ToYield(BlockEvent::ExitBlock(ExitBlock {
                     id: code_block_id,
-                    start_line_number: self.start_line_number,
-                    end_line_number: ctx.current_line_number,
+                    start_line: self.start_line,
+                    end_line: ctx.current_line,
                 })),
                 State::Exiting,
             ),
