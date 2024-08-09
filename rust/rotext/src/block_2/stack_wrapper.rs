@@ -293,9 +293,11 @@ pub struct TopLeafHeading {
     pub meta: Meta,
 
     pub level: usize,
+
+    pub has_content_before: bool,
 }
 impl TopLeafHeading {
-    pub fn make_event(&self) -> BlockEvent {
+    pub fn make_enter_event(&self) -> BlockEvent {
         match self.level {
             1 => BlockEvent::EnterHeading1(self.meta.id.into()),
             2 => BlockEvent::EnterHeading2(self.meta.id.into()),
@@ -305,6 +307,10 @@ impl TopLeafHeading {
             6 => BlockEvent::EnterHeading6(self.meta.id.into()),
             _ => unreachable!(),
         }
+    }
+
+    pub fn make_exit_event(self, line_end: LineNumber) -> BlockEvent {
+        self.meta.make_exit_event(line_end)
     }
 }
 

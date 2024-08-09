@@ -133,12 +133,12 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
         exiting: &mut Exiting,
     ) -> crate::Result<(Tym<2>, Option<State>)> {
         if let Some(top_leaf) = inner.stack.pop_top_leaf() {
-            let result = match top_leaf {
+            let tym = match top_leaf {
                 TopLeaf::Paragraph(top_leaf) => leaf::paragraph::exit(inner, top_leaf),
-                TopLeaf::Heading(_top_leaf) => unreachable!(),
+                TopLeaf::Heading(top_leaf) => leaf::heading::exit(inner, top_leaf),
                 TopLeaf::CodeBlock(top_leaf) => leaf::code_block::exit(inner, top_leaf),
             };
-            return result.map(|tym| (cast_tym!(tym), None));
+            return Ok((cast_tym!(tym), None));
         }
 
         let is_done = match exiting.until {
@@ -543,6 +543,22 @@ mod branch {
 
                 Ok(tym)
             }
+
+            pub fn make_table_related_end_condition<
+                TStack: Stack<StackEntry>,
+                F: FnOnce() -> bool,
+            >(
+                inner: &ParserInner<TStack>,
+                is_caption_applicable: F,
+            ) -> Option<line::normal::TableRelated> {
+                if inner.stack.tables_in_stack() > 0 {
+                    Some(line::normal::TableRelated {
+                        is_caption_applicable: is_caption_applicable(),
+                    })
+                } else {
+                    None
+                }
+            }
         }
     }
 }
@@ -624,6 +640,8 @@ mod leaf {
     }
 
     pub mod heading {
+        use line::normal::AtxClosing;
+
         use super::*;
 
         pub(super) fn enter<TStack: Stack<StackEntry>>(
@@ -634,8 +652,9 @@ mod leaf {
             let top_leaf = TopLeafHeading {
                 meta: Meta::new(id, inner.current_line()),
                 level,
+                has_content_before: false,
             };
-            let ev = top_leaf.make_event();
+            let ev = top_leaf.make_enter_event();
             inner.stack.push_top_leaf(top_leaf.into());
             let tym = inner.r#yield(ev);
 
@@ -645,9 +664,62 @@ mod leaf {
         pub fn parse_content_and_process<TStack: Stack<StackEntry>>(
             input: &[u8],
             inner: &mut ParserInner<TStack>,
-            top_leaf: TopLeafHeading,
+            mut top_leaf: TopLeafHeading,
         ) -> crate::Result<Tym<2>> {
-            todo!()
+            let (mut content, end) = line::normal::parse(
+                input,
+                inner,
+                line::normal::EndCondition {
+                    on_atx_closing: Some(AtxClosing {
+                        character: m!('='),
+                        count: top_leaf.level,
+                    }),
+                    on_table_related: branch::surrounded::table::make_table_related_end_condition(
+                        inner,
+                        || false,
+                    ),
+                },
+                if inner.current_expecting.spaces_before() > 0 {
+                    line::normal::ContentBefore::Space
+                } else {
+                    line::normal::ContentBefore::NotSpace(0)
+                },
+            );
+
+            if top_leaf.has_content_before
+                && inner.current_expecting.spaces_before() > 0
+                && end.is_verbatim_escaping()
+            {
+                content.start -= inner.current_expecting.spaces_before();
+            }
+
+            let tym_a = if !content.is_empty() {
+                inner.r#yield(BlockEvent::Unparsed(content))
+            } else {
+                TYM_UNIT.into()
+            };
+
+            let tym_b = match end {
+                line::normal::End::Eof | line::normal::End::NewLine(_) => exit(inner, top_leaf),
+                line::normal::End::VerbatimEscaping(verbatim_escaping) => {
+                    top_leaf.has_content_before = true;
+                    inner.stack.push_top_leaf(top_leaf.into());
+                    line::global_phase::process_verbatim_escaping(inner, verbatim_escaping)
+                }
+                line::normal::End::TableRelated(table_related_end) => {
+                    let tym = table_related_end.process();
+                    cast_tym!(tym)
+                }
+            };
+
+            Ok(tym_a.add(tym_b))
+        }
+
+        pub fn exit<TStack: Stack<StackEntry>>(
+            inner: &mut ParserInner<TStack>,
+            top_leaf: TopLeafHeading,
+        ) -> Tym<1> {
+            inner.r#yield(top_leaf.make_exit_event(inner.current_line()))
         }
     }
 
@@ -686,10 +758,8 @@ mod leaf {
         pub fn exit<TStack: Stack<StackEntry>>(
             inner: &mut ParserInner<TStack>,
             top_leaf: TopLeafCodeBlock,
-        ) -> crate::Result<Tym<1>> {
-            let tym = inner.r#yield(top_leaf.make_exit_event(inner.current_line()));
-
-            Ok(tym)
+        ) -> Tym<1> {
+            inner.r#yield(top_leaf.make_exit_event(inner.current_line()))
         }
     }
 
@@ -723,15 +793,12 @@ mod leaf {
                 inner,
                 line::normal::EndCondition {
                     on_atx_closing: None,
-                    on_table_related: if inner.stack.tables_in_stack() > 0 {
-                        Some(line::normal::TableRelated {
-                            is_caption_applicable: todo!(),
-                        })
-                    } else {
-                        None
-                    },
+                    on_table_related: branch::surrounded::table::make_table_related_end_condition(
+                        inner,
+                        || todo!(),
+                    ),
                 },
-                content_before,
+                line::normal::ContentBefore::NotSpace(content_before),
             );
 
             let tym_ab = if !content.is_empty() || end.is_verbatim_escaping() {
@@ -791,15 +858,16 @@ mod leaf {
                 inner,
                 line::normal::EndCondition {
                     on_atx_closing: None,
-                    on_table_related: if inner.stack.tables_in_stack() > 0 {
-                        Some(line::normal::TableRelated {
-                            is_caption_applicable: false,
-                        })
-                    } else {
-                        None
-                    },
+                    on_table_related: branch::surrounded::table::make_table_related_end_condition(
+                        inner,
+                        || false,
+                    ),
                 },
-                0,
+                if inner.current_expecting.spaces_before() > 0 {
+                    line::normal::ContentBefore::Space
+                } else {
+                    line::normal::ContentBefore::NotSpace(0)
+                },
             );
 
             let is_still_in_paragraph =
@@ -839,9 +907,8 @@ mod leaf {
         pub fn exit<TStack: Stack<StackEntry>>(
             inner: &mut ParserInner<TStack>,
             top_leaf: TopLeafParagraph,
-        ) -> crate::Result<Tym<1>> {
-            let tym = inner.r#yield(top_leaf.make_exit_event(inner.current_line()));
-            Ok(tym)
+        ) -> Tym<1> {
+            inner.r#yield(top_leaf.make_exit_event(inner.current_line()))
         }
     }
 }

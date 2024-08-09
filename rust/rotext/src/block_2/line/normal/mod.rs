@@ -80,6 +80,11 @@ impl End {
     }
 }
 
+pub enum ContentBefore {
+    NotSpace(usize),
+    Space,
+}
+
 /// 解析一般的一行中的一段内容，即并非逐字内容的一行。
 ///
 /// 有关参数 `content_before` 的说明见 [leaf::paragraph::enter_if_not_blank]。
@@ -90,11 +95,14 @@ pub fn parse<TCtx: CursorContext>(
     input: &[u8],
     ctx: &mut TCtx,
     end_condition: EndCondition,
-    content_before: usize,
+    content_before: ContentBefore,
 ) -> (Range<usize>, End) {
     debug_assert_ne!(input.get(ctx.cursor()), Some(&b' '));
 
-    let mut range = ctx.cursor()..(ctx.cursor() + content_before);
+    let mut range = ctx.cursor()..(ctx.cursor());
+    if let ContentBefore::NotSpace(n) = content_before {
+        range.end += n;
+    }
     let mut spaces = 0;
 
     let (mut range, end) = loop {
@@ -119,10 +127,16 @@ pub fn parse<TCtx: CursorContext>(
             }
         }
 
-        if spaces > 0 {
-            if let Some(cond) = &end_condition.on_atx_closing {
-                let (ch, count) = (cond.character, cond.count);
-                let count = count_continuous_character_with_maximum(input, ch, ctx.cursor(), count);
+        let is_after_space =
+            spaces > 0 || (range.is_empty() && matches!(content_before, ContentBefore::Space));
+        if let Some(cond) = &end_condition.on_atx_closing {
+            if is_after_space && input.get(ctx.cursor()) == Some(&cond.character) {
+                let count = 1 + count_continuous_character_with_maximum(
+                    input,
+                    cond.character,
+                    ctx.cursor() + 1,
+                    cond.count - 1,
+                );
                 ctx.move_cursor_forward(count);
                 if count != cond.count {
                     range.end = ctx.cursor();

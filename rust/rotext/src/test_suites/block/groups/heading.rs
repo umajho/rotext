@@ -19,7 +19,13 @@ pub fn groups_heading() -> Vec<GroupedCases> {
                     ]
                 ),
                 case!(
-                    vec!["== a ==", "==  a  ==", "==   a   =="],
+                    vec![
+                        "== a ==",
+                        "==  a  ==",
+                        "==   a   ==",
+                        " == a ==",
+                        "== a == "
+                    ],
                     vec![
                         (EventType::EnterHeading2, None),
                         (EventType::Unparsed, Some("a")),
@@ -137,14 +143,6 @@ pub fn groups_heading() -> Vec<GroupedCases> {
                     ]
                 ),
                 case!(
-                    vec!["== a == "],
-                    vec![
-                        (EventType::EnterHeading2, None),
-                        (EventType::Unparsed, Some("a ==")),
-                        (EventType::ExitBlock, None),
-                    ]
-                ),
-                case!(
                     vec!["== a ==b"],
                     vec![
                         (EventType::EnterHeading2, None),
@@ -192,6 +190,14 @@ pub fn groups_heading() -> Vec<GroupedCases> {
             group: "标题>无内容",
             cases: vec![
                 case!(
+                    vec!["=="],
+                    vec![
+                        (EventType::EnterParagraph, None),
+                        (EventType::Unparsed, Some("==")),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
                     vec!["== =="],
                     vec![
                         (EventType::EnterHeading2, None),
@@ -200,7 +206,7 @@ pub fn groups_heading() -> Vec<GroupedCases> {
                     ]
                 ),
                 case!(
-                    vec!["==  ==", "==   =="],
+                    vec!["== ", "==  ==", "==   =="],
                     vec![
                         (EventType::EnterHeading2, None),
                         (EventType::ExitBlock, None),

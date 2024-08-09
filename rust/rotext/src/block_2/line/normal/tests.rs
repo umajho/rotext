@@ -2,7 +2,7 @@ mod for_fn_parse {
     use crate::{
         block_2::{
             branch::surrounded::table,
-            line::normal::{parse, AtxClosing, End, EndCondition, TableRelated},
+            line::normal::{parse, AtxClosing, ContentBefore, End, EndCondition, TableRelated},
             test_support::mocks::MockCursorContext,
         },
         common::m,
@@ -22,7 +22,13 @@ mod for_fn_parse {
             cursor: 0,
             current_line: LineNumber::new(1),
         };
-        let (actual_range, actual_end) = parse(input, &mut ctx, end_condition, content_before);
+        let (actual_range, actual_end) = parse(
+            input,
+            &mut ctx,
+            end_condition,
+            // TODO: [ContentBefore::Space] 的情况也应该允许测试。
+            ContentBefore::NotSpace(content_before),
+        );
         assert_eq!(
             (expected_content, expected_end, ctx),
             (&input[actual_range], actual_end, expected_ctx)
