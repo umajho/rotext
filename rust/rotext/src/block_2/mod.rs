@@ -45,7 +45,10 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
     }
 
     pub fn next(&mut self) -> Option<crate::Result<BlockEvent>> {
-        debug_assert!(!self.is_errored);
+        #[cfg(debug_assertions)]
+        {
+            assert!(!self.is_errored);
+        }
         debug_assert!(!matches!(self.state, State::Ended));
 
         loop {
