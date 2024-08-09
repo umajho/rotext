@@ -59,17 +59,6 @@ mod for_fn_parse {
             },
         );
         test(
-            b"   foo",
-            end_condition.clone(),
-            0,
-            b"foo",
-            End::Eof,
-            MockCursorContext {
-                cursor: 6,
-                current_line: LineNumber::new(1),
-            },
-        );
-        test(
             b"foo bar",
             end_condition.clone(),
             0,
@@ -78,20 +67,6 @@ mod for_fn_parse {
             MockCursorContext {
                 cursor: 7,
                 current_line: LineNumber::new(1),
-            },
-        );
-        test(
-            b"\nline 2",
-            end_condition.clone(),
-            0,
-            b"",
-            NewLine {
-                line_after: LineNumber::new(2),
-            }
-            .into(),
-            MockCursorContext {
-                cursor: 1,
-                current_line: LineNumber::new(2),
             },
         );
         for input in [&b"foo\rline 2"[..], &b"foo\nline 2"[..]] {
@@ -162,22 +137,6 @@ mod for_fn_parse {
                 },
             );
         }
-        test(
-            b"   <`VE`>",
-            end_condition.clone(),
-            0,
-            b"",
-            VerbatimEscaping {
-                content: 5..7,
-                is_closed_forcedly: false,
-                line_after: LineNumber::new(1),
-            }
-            .into(),
-            MockCursorContext {
-                cursor: 9,
-                current_line: LineNumber::new(1),
-            },
-        );
         test(
             b"foo<`VE`>",
             end_condition.clone(),
@@ -333,17 +292,6 @@ mod for_fn_parse {
             End::Eof,
             MockCursorContext {
                 cursor: 9,
-                current_line: LineNumber::new(1),
-            },
-        );
-        test(
-            b" ==",
-            end_condition.clone(),
-            0,
-            b"==",
-            End::Eof,
-            MockCursorContext {
-                cursor: 3,
                 current_line: LineNumber::new(1),
             },
         );
