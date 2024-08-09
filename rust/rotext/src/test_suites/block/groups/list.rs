@@ -1,8 +1,8 @@
 use indoc::indoc;
 
 use crate::{
-    block::tests::{support::case, GroupedCases},
     events::EventType,
+    test_suites::block::support::{case, GroupedCases},
 };
 
 pub fn groups_list() -> Vec<GroupedCases> {
