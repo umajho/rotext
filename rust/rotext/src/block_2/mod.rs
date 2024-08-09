@@ -254,9 +254,9 @@ mod branch {
         use super::*;
 
         macro_rules! return_parse_paragraph_if_no_following_space {
-            ($input:expr, $state:expr, $inner:expr) => {
+            ($input:expr, $inner:expr) => {
                 if !matches!($input.get($inner.cursor() + 1), Some(b' ')) {
-                    return leaf::paragraph::enter_if_not_blank($input, $state, $inner, 1)
+                    return leaf::paragraph::enter_if_not_blank($input, $inner, 1)
                         .map(|tym| cast_tym!(tym));
                 }
             };
@@ -268,14 +268,9 @@ mod branch {
             inner: &mut ParserInner<TStack>,
             first_char: u8,
         ) -> crate::Result<Tym<3>> {
-            debug_assert!(matches!(
-                state,
-                State::Expecting(Expecting::ItemLikeOpening)
-            ));
-
             if !inner.stack.has_unprocessed_item_likes_at_current_line() {
                 if let Some(top_leaf) = inner.stack.pop_top_leaf() {
-                    return leaf::parse_content_and_process(input, state, inner, top_leaf)
+                    return leaf::parse_content_and_process(input, inner, top_leaf)
                         .map(|tym| cast_tym!(tym));
                 }
             }
@@ -285,27 +280,27 @@ mod branch {
 
             match first_char {
                 m!('>') => {
-                    return_parse_paragraph_if_no_following_space!(input, state, inner);
+                    return_parse_paragraph_if_no_following_space!(input, inner);
                     inner.move_cursor_forward("> ".len());
                     process_greater_than_opening(inner).map(|tym| cast_tym!(tym))
                 }
                 m!('#') => {
-                    return_parse_paragraph_if_no_following_space!(input, state, inner);
+                    return_parse_paragraph_if_no_following_space!(input, inner);
                     inner.move_cursor_forward("# ".len());
                     process_general_opening(state, inner, G::OL, I::LI).map(|tym| cast_tym!(tym))
                 }
                 m!('*') => {
-                    return_parse_paragraph_if_no_following_space!(input, state, inner);
+                    return_parse_paragraph_if_no_following_space!(input, inner);
                     inner.move_cursor_forward("* ".len());
                     process_general_opening(state, inner, G::UL, I::LI).map(|tym| cast_tym!(tym))
                 }
                 m!(';') => {
-                    return_parse_paragraph_if_no_following_space!(input, state, inner);
+                    return_parse_paragraph_if_no_following_space!(input, inner);
                     inner.move_cursor_forward("; ".len());
                     process_general_opening(state, inner, G::DL, I::DT).map(|tym| cast_tym!(tym))
                 }
                 m!(':') => {
-                    return_parse_paragraph_if_no_following_space!(input, state, inner);
+                    return_parse_paragraph_if_no_following_space!(input, inner);
                     inner.move_cursor_forward(": ".len());
                     process_general_opening(state, inner, G::DL, I::DD).map(|tym| cast_tym!(tym))
                 }
@@ -456,21 +451,16 @@ mod branch {
             inner: &mut ParserInner<TStack>,
             first_char: u8,
         ) -> crate::Result<Tym<3>> {
-            debug_assert!(matches!(
-                state,
-                State::Expecting(Expecting::ItemLikeOpening | Expecting::SurroundedOpening)
-            ));
-
             match first_char {
                 m!('{') => match input.get(inner.cursor() + 1) {
                     Some(m!('|')) => {
                         inner.move_cursor_forward("{|".len());
                         table::enter(state, inner).map(|tym| cast_tym!(tym))
                     }
-                    _ => leaf::paragraph::enter_if_not_blank(input, state, inner, 1)
+                    _ => leaf::paragraph::enter_if_not_blank(input, inner, 1)
                         .map(|tym| cast_tym!(tym)),
                 },
-                _ => leaf::parse_opening_and_process(input, state, inner, first_char)
+                _ => leaf::parse_opening_and_process(input, inner, first_char)
                     .map(|tym| cast_tym!(tym)),
             }
         }
@@ -551,15 +541,9 @@ mod leaf {
 
     pub fn parse_opening_and_process<TStack: Stack<StackEntry>>(
         input: &[u8],
-        state: &mut State,
         inner: &mut ParserInner<TStack>,
         first_char: u8,
     ) -> crate::Result<Tym<3>> {
-        debug_assert!(matches!(
-            state,
-            State::Expecting(Expecting::ItemLikeOpening | Expecting::SurroundedOpening)
-        ));
-
         match first_char {
             m!('-') => {
                 let count = 1 + count_continuous_character(input, m!('-'), inner.cursor() + 1);
@@ -567,8 +551,7 @@ mod leaf {
                     inner.move_cursor_forward(count);
                     thematic_break::process(inner).map(|tym| cast_tym!(tym))
                 } else {
-                    paragraph::enter_if_not_blank(input, state, inner, count)
-                        .map(|tym| cast_tym!(tym))
+                    paragraph::enter_if_not_blank(input, inner, count).map(|tym| cast_tym!(tym))
                 }
             }
             m!('=') => {
@@ -577,8 +560,7 @@ mod leaf {
                     inner.move_cursor_forward(count + " ".len());
                     heading::enter(inner, count).map(|tym| cast_tym!(tym))
                 } else {
-                    paragraph::enter_if_not_blank(input, state, inner, count)
-                        .map(|tym| cast_tym!(tym))
+                    paragraph::enter_if_not_blank(input, inner, count).map(|tym| cast_tym!(tym))
                 }
             }
             m!('`') => {
@@ -586,31 +568,29 @@ mod leaf {
                 if count >= 3 {
                     code_block::enter(inner, count).map(|tym| cast_tym!(tym))
                 } else {
-                    paragraph::enter_if_not_blank(input, state, inner, count)
-                        .map(|tym| cast_tym!(tym))
+                    paragraph::enter_if_not_blank(input, inner, count).map(|tym| cast_tym!(tym))
                 }
             }
-            _ => paragraph::enter_if_not_blank(input, state, inner, 0).map(|tym| cast_tym!(tym)),
+            _ => paragraph::enter_if_not_blank(input, inner, 0).map(|tym| cast_tym!(tym)),
         }
     }
 
     pub fn parse_content_and_process<TStack: Stack<StackEntry>>(
         input: &[u8],
-        state: &mut State,
         inner: &mut ParserInner<TStack>,
         top_leaf: TopLeaf,
     ) -> crate::Result<Tym<3>> {
         match top_leaf {
             TopLeaf::Paragraph(top_leaf) => {
-                leaf::paragraph::parse_content_and_process(input, state, inner, top_leaf)
+                leaf::paragraph::parse_content_and_process(input, inner, top_leaf)
                     .map(|tym| cast_tym!(tym))
             }
             TopLeaf::Heading(top_leaf) => {
-                leaf::heading::parse_content_and_process(input, state, inner, top_leaf)
+                leaf::heading::parse_content_and_process(input, inner, top_leaf)
                     .map(|tym| cast_tym!(tym))
             }
             TopLeaf::CodeBlock(top_leaf) => {
-                leaf::code_block::parse_content_and_process(input, state, inner, top_leaf)
+                leaf::code_block::parse_content_and_process(input, inner, top_leaf)
                     .map(|tym| cast_tym!(tym))
             }
         }
@@ -653,7 +633,6 @@ mod leaf {
 
         pub fn parse_content_and_process<TStack: Stack<StackEntry>>(
             input: &[u8],
-            state: &mut State,
             inner: &mut ParserInner<TStack>,
             top_leaf: TopLeafHeading,
         ) -> crate::Result<Tym<2>> {
@@ -685,7 +664,6 @@ mod leaf {
 
         pub fn parse_content_and_process<TStack: Stack<StackEntry>>(
             input: &[u8],
-            state: &mut State,
             inner: &mut ParserInner<TStack>,
             top_leaf: TopLeafCodeBlock,
         ) -> crate::Result<Tym<2>> {
@@ -712,14 +690,9 @@ mod leaf {
         /// `inner.cursor` 就能作为段落的开头（段落开头应该是并非空格或换行的字符）。
         pub fn enter_if_not_blank<TStack: Stack<StackEntry>>(
             input: &[u8],
-            state: &mut State,
             inner: &mut ParserInner<TStack>,
             content_before: usize,
         ) -> crate::Result<Tym<3>> {
-            debug_assert!(matches!(
-                state,
-                State::Expecting(Expecting::ItemLikeOpening | Expecting::SurroundedOpening)
-            ));
             #[cfg(debug_assertions)]
             {
                 if content_before > 0 {
@@ -799,7 +772,6 @@ mod leaf {
 
         pub fn parse_content_and_process<TStack: Stack<StackEntry>>(
             input: &[u8],
-            state: &mut State,
             inner: &mut ParserInner<TStack>,
             mut top_leaf: TopLeafParagraph,
         ) -> crate::Result<Tym<3>> {
