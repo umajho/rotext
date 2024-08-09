@@ -9,6 +9,8 @@ mod test_support;
 #[cfg(test)]
 mod tests;
 
+pub use stack_wrapper::StackEntry;
+
 use crate::{
     common::m,
     events::{BlockEvent, ThematicBreak},
@@ -17,9 +19,8 @@ use crate::{
 
 use parser_inner::ParserInner;
 use stack_wrapper::{
-    GeneralItemLike, ItemLikeContainer, Meta, StackEntry, StackEntryItemLike,
-    StackEntryItemLikeContainer, StackEntryTable, TopLeaf, TopLeafCodeBlock, TopLeafHeading,
-    TopLeafParagraph,
+    GeneralItemLike, ItemLikeContainer, Meta, StackEntryItemLike, StackEntryItemLikeContainer,
+    StackEntryTable, TopLeaf, TopLeafCodeBlock, TopLeafHeading, TopLeafParagraph,
 };
 use types::{cast_tym, CursorContext, Tym, YieldContext, TYM_UNIT};
 use utils::count_continuous_character;
