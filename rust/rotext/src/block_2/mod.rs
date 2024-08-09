@@ -13,13 +13,13 @@ use crate::{
     utils::stack::Stack,
 };
 
-use parser_inner::{cast_tym, ParserInner, Tym, TYM_UNIT};
+use parser_inner::ParserInner;
 use stack_wrapper::{
     GeneralItemLike, ItemLikeContainer, Meta, StackEntry, StackEntryItemLike,
     StackEntryItemLikeContainer, StackEntryTable, TopLeaf, TopLeafCodeBlock, TopLeafHeading,
     TopLeafParagraph,
 };
-use types::CursorContext;
+use types::{cast_tym, CursorContext, Tym, YieldContext, TYM_UNIT};
 use utils::count_continuous_character;
 
 pub struct Parser<'a, TStack: Stack<StackEntry>> {
@@ -478,6 +478,11 @@ mod branch {
                 TableHeaderCellIndicator,
                 DoublePipes,
             }
+            impl TableRelatedEnd {
+                pub fn process(self) -> Tym<0> {
+                    todo!()
+                }
+            }
 
             pub fn parse_end<TCtx: CursorContext>(
                 input: &[u8],
@@ -704,7 +709,7 @@ mod leaf {
             // 需要提前取得行数。
             let line_start = inner.current_line();
 
-            let (content, have_met) = line::normal::parse(
+            let (content, end) = line::normal::parse(
                 input,
                 inner,
                 line::normal::EndCondition {
@@ -720,18 +725,26 @@ mod leaf {
                 content_before,
             );
 
-            todo!();
+            let tym_ab = if !content.is_empty() {
+                let id = inner.pop_block_id();
+                let top_leaf = TopLeafParagraph {
+                    meta: Meta::new(id, line_start),
+                    is_at_line_beginning: matches!(end, line::normal::End::NewLine(_)),
+                };
+                let ev = top_leaf.make_enter_event();
+                inner.stack.push_top_leaf(top_leaf.into());
+                let tym_a = inner.r#yield(ev);
 
-            let id = inner.pop_block_id();
-            let top_leaf = TopLeafParagraph {
-                meta: Meta::new(id, inner.current_line()),
-                is_at_line_beginning: todo!(),
+                let tym_b = inner.r#yield(BlockEvent::Unparsed(content));
+
+                tym_a.add(tym_b)
+            } else {
+                TYM_UNIT.into()
             };
-            let ev = top_leaf.make_enter_event();
-            inner.stack.push_top_leaf(top_leaf.into());
-            inner.r#yield(ev);
 
-            todo!()
+            let tym_c = end.process(inner);
+
+            Ok(tym_ab.add(tym_c))
         }
 
         pub fn parse_content_and_process<TStack: Stack<StackEntry>>(

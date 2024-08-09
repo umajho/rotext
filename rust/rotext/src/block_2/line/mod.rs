@@ -1,3 +1,5 @@
+use crate::events::NewLine;
+
 use super::types::CursorContext;
 
 pub mod normal;
@@ -12,7 +14,12 @@ enum ParseCommonEndOutput {
 }
 enum CommonEnd {
     Eof,
-    NewLine,
+    NewLine(NewLine),
+}
+impl From<NewLine> for CommonEnd {
+    fn from(value: NewLine) -> Self {
+        Self::NewLine(value)
+    }
 }
 
 fn parse_common_end<TCtx: CursorContext>(
@@ -31,7 +38,12 @@ fn parse_common_end<TCtx: CursorContext>(
             if char == b'\r' && input.get(ctx.cursor()) == Some(&b'\n') {
                 ctx.move_cursor_forward(1);
             }
-            ParseCommonEndOutput::Some(CommonEnd::NewLine)
+            ParseCommonEndOutput::Some(
+                NewLine {
+                    line_after: ctx.current_line(),
+                }
+                .into(),
+            )
         }
         b' ' => ParseCommonEndOutput::NoneButMetSpace,
         _ => ParseCommonEndOutput::None(char),

@@ -2,9 +2,13 @@
 mod tests;
 
 use crate::{
-    block_2::{types::CursorContext, utils::count_continuous_character},
+    block_2::{
+        types::{CursorContext, Tym, YieldContext},
+        utils::count_continuous_character,
+    },
     common::m,
     events::VerbatimEscaping,
+    BlockEvent,
 };
 
 #[derive(Debug, PartialEq, Eq)]
@@ -97,4 +101,11 @@ pub fn parse_verbatim_escaping<TCtx: CursorContext>(
         is_closed_forcedly: true,
         line_after: ctx.current_line(),
     }
+}
+
+pub fn process_verbatim_escaping<TCtx: YieldContext>(
+    ctx: &mut TCtx,
+    verbatim_escaping: VerbatimEscaping,
+) -> Tym<1> {
+    ctx.r#yield(BlockEvent::VerbatimEscaping(verbatim_escaping))
 }

@@ -5,10 +5,12 @@ use std::ops::Range;
 
 use crate::{
     block_2::{
-        branch::surrounded::table, types::CursorContext,
+        branch::surrounded::table,
+        types::{cast_tym, CursorContext, Tym, YieldContext, TYM_UNIT},
         utils::count_continuous_character_with_maximum,
     },
-    events::VerbatimEscaping,
+    events::{NewLine, VerbatimEscaping},
+    BlockEvent,
 };
 
 use super::{global_phase, parse_common_end, CommonEnd, ParseCommonEndOutput};
@@ -39,7 +41,7 @@ pub struct TableRelated {
 #[derive(Debug, PartialEq, Eq)]
 pub enum End {
     Eof,
-    NewLine,
+    NewLine(NewLine),
     VerbatimEscaping(VerbatimEscaping),
     TableRelated(table::TableRelatedEnd),
 }
@@ -52,13 +54,37 @@ impl From<CommonEnd> for End {
     fn from(value: CommonEnd) -> Self {
         match value {
             CommonEnd::Eof => End::Eof,
-            CommonEnd::NewLine => End::NewLine,
+            CommonEnd::NewLine(new_line) => new_line.into(),
         }
+    }
+}
+impl From<NewLine> for End {
+    fn from(value: NewLine) -> Self {
+        Self::NewLine(value)
     }
 }
 impl From<VerbatimEscaping> for End {
     fn from(value: VerbatimEscaping) -> Self {
         Self::VerbatimEscaping(value)
+    }
+}
+impl End {
+    pub fn process<TCtx: YieldContext>(self, ctx: &mut TCtx) -> Tym<1> {
+        match self {
+            End::Eof => TYM_UNIT.into(),
+            End::NewLine(new_line) => {
+                let tym = ctx.r#yield(BlockEvent::NewLine(new_line));
+                cast_tym!(tym)
+            }
+            End::VerbatimEscaping(verbatim_escaping) => {
+                let tym = global_phase::process_verbatim_escaping(ctx, verbatim_escaping);
+                cast_tym!(tym)
+            }
+            End::TableRelated(table_related_end) => {
+                let tym = table_related_end.process();
+                cast_tym!(tym)
+            }
+        }
     }
 }
 
@@ -151,7 +177,7 @@ pub fn parse<TCtx: CursorContext>(
 
     match end {
         End::VerbatimEscaping(_) => range.end += spaces,
-        End::Eof | End::NewLine | End::TableRelated(_) => {}
+        End::Eof | End::NewLine(_) | End::TableRelated(_) => {}
     }
 
     (range, end)
