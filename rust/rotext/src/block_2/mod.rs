@@ -799,7 +799,9 @@ mod leaf {
                 0,
             );
 
-            let tym_ab = if !content.is_empty() || end.is_verbatim_escaping() {
+            let is_still_in_paragraph =
+                !content.is_empty() || top_leaf.new_line.is_none() || end.is_verbatim_escaping();
+            let tym_ab = if is_still_in_paragraph {
                 let tym_a = if let Some(new_line) = top_leaf.new_line {
                     inner.r#yield(BlockEvent::NewLine(new_line))
                 } else {

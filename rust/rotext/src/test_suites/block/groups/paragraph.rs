@@ -113,6 +113,23 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
                         (EventType::ExitBlock, None),
                     ]
                 ),
+                case!(
+                    vec![
+                        indoc! {"
+                        <`c`>
+                        b"},
+                        indoc! {"
+                        <`c`>
+                        ␠b"},
+                    ],
+                    vec![
+                        (EventType::EnterParagraph, None),
+                        (EventType::VerbatimEscaping, Some("c")),
+                        (EventType::NewLine, None),
+                        (EventType::Unparsed, Some("b")),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
             ],
         },
         GroupedCases {
