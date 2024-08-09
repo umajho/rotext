@@ -1,5 +1,5 @@
 use crate::{
-    events::{BlockEvent, ExitBlock},
+    events::{BlockEvent, ExitBlock, NewLine},
     types::{BlockId, LineNumber},
     utils::stack::Stack,
 };
@@ -277,7 +277,7 @@ impl From<TopLeafCodeBlock> for TopLeaf {
 pub struct TopLeafParagraph {
     pub meta: Meta,
 
-    pub is_at_line_beginning: bool,
+    pub new_line: Option<NewLine>,
 }
 impl TopLeafParagraph {
     pub fn make_enter_event(&self) -> BlockEvent {

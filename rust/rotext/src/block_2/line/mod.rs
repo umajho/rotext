@@ -2,10 +2,9 @@ use crate::events::NewLine;
 
 use super::types::CursorContext;
 
+pub mod global_phase;
 pub mod normal;
 pub mod verbatim;
-
-mod global_phase;
 
 enum ParseCommonEndOutput {
     Some(CommonEnd),

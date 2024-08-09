@@ -5,12 +5,10 @@ use std::ops::Range;
 
 use crate::{
     block_2::{
-        branch::surrounded::table,
-        types::{cast_tym, CursorContext, Tym, YieldContext, TYM_UNIT},
+        branch::surrounded::table, types::CursorContext,
         utils::count_continuous_character_with_maximum,
     },
     events::{NewLine, VerbatimEscaping},
-    BlockEvent,
 };
 
 use super::{global_phase, parse_common_end, CommonEnd, ParseCommonEndOutput};
@@ -41,7 +39,8 @@ pub struct TableRelated {
 #[derive(Debug, PartialEq, Eq)]
 pub enum End {
     Eof,
-    NewLine(NewLine),
+    /// 实际上在处理之前总是 Some，而在处理之后就 drop 掉了。
+    NewLine(Option<NewLine>),
     VerbatimEscaping(VerbatimEscaping),
     TableRelated(table::TableRelatedEnd),
 }
@@ -60,7 +59,7 @@ impl From<CommonEnd> for End {
 }
 impl From<NewLine> for End {
     fn from(value: NewLine) -> Self {
-        Self::NewLine(value)
+        Self::NewLine(Some(value))
     }
 }
 impl From<VerbatimEscaping> for End {
@@ -69,22 +68,15 @@ impl From<VerbatimEscaping> for End {
     }
 }
 impl End {
-    pub fn process<TCtx: YieldContext>(self, ctx: &mut TCtx) -> Tym<1> {
+    pub fn try_take_new_line(&mut self) -> Option<NewLine> {
         match self {
-            End::Eof => TYM_UNIT.into(),
-            End::NewLine(new_line) => {
-                let tym = ctx.r#yield(BlockEvent::NewLine(new_line));
-                cast_tym!(tym)
-            }
-            End::VerbatimEscaping(verbatim_escaping) => {
-                let tym = global_phase::process_verbatim_escaping(ctx, verbatim_escaping);
-                cast_tym!(tym)
-            }
-            End::TableRelated(table_related_end) => {
-                let tym = table_related_end.process();
-                cast_tym!(tym)
-            }
+            End::NewLine(new_line) => new_line.take(),
+            _ => None,
         }
+    }
+
+    pub fn is_verbatim_escaping(&self) -> bool {
+        matches!(self, End::VerbatimEscaping(_))
     }
 }
 

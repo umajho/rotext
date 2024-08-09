@@ -6,6 +6,8 @@ mod utils;
 
 #[cfg(test)]
 mod test_support;
+#[cfg(test)]
+mod tests;
 
 use crate::{
     common::m,
@@ -35,7 +37,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
     pub fn new(input: &'a [u8]) -> Self {
         Self {
             input,
-            state: State::ExpectingItemLikeOpening,
+            state: Expecting::ItemLikeOpening.into(),
             inner: ParserInner::new(),
             #[cfg(debug_assertions)]
             is_errored: false,
@@ -44,37 +46,14 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
 
     pub fn next(&mut self) -> Option<crate::Result<BlockEvent>> {
         debug_assert!(!self.is_errored);
+        debug_assert!(!matches!(self.state, State::Ended));
 
         loop {
             if let Some(ev) = self.inner.pop_to_be_yielded() {
                 break Some(Ok(ev));
             }
 
-            let Some(first_char) = self.input.get(self.inner.cursor()) else {
-                self.state = if self.inner.stack.is_empty() {
-                    State::Ended
-                } else {
-                    Exiting::new(ExitingUntil::StackIsEmpty, ExitingAndThen::End).into()
-                };
-
-                continue;
-            };
-
             let result: crate::Result<Tym<3>> = match &mut self.state {
-                State::ExpectingItemLikeOpening => branch::item_like::parse_opening_and_process(
-                    self.input,
-                    &mut self.state,
-                    &mut self.inner,
-                    *first_char,
-                )
-                .map(|tym| cast_tym!(tym)),
-                State::ExpectingSurroundedOpening => branch::surrounded::parse_opening_and_process(
-                    self.input,
-                    &mut self.state,
-                    &mut self.inner,
-                    *first_char,
-                )
-                .map(|tym| cast_tym!(tym)),
                 State::Exiting(exiting_branches) => {
                     match Self::exit(&mut self.inner, exiting_branches) {
                         Ok((tym, state)) => {
@@ -90,6 +69,19 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                 State::Ended => {
                     break None;
                 }
+                State::Expecting(expecting) => {
+                    let Some(&first_char) = self.input.get(self.inner.cursor()) else {
+                        self.state = if self.inner.stack.is_empty() {
+                            State::Ended
+                        } else {
+                            Exiting::new(ExitingUntil::StackIsEmpty, ExitingAndThen::End).into()
+                        };
+
+                        continue;
+                    };
+                    let expecting = *expecting;
+                    self.parse(expecting, first_char)
+                }
             };
             match result {
                 Ok(tym) => self.inner.enforce_to_yield_mark(tym),
@@ -101,6 +93,26 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                     break Some(Err(err));
                 }
             }
+        }
+    }
+
+    #[inline(always)]
+    fn parse(&mut self, expecting: Expecting, first_char: u8) -> crate::Result<Tym<3>> {
+        match expecting {
+            Expecting::ItemLikeOpening => branch::item_like::parse_opening_and_process(
+                self.input,
+                &mut self.state,
+                &mut self.inner,
+                first_char,
+            )
+            .map(|tym| cast_tym!(tym)),
+            Expecting::SurroundedOpening => branch::surrounded::parse_opening_and_process(
+                self.input,
+                &mut self.state,
+                &mut self.inner,
+                first_char,
+            )
+            .map(|tym| cast_tym!(tym)),
         }
     }
 
@@ -151,10 +163,10 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                         inner.stack.push_item_like(item_like)?;
                         inner.r#yield(ev)
                     };
-                    Ok((tym_a.add(tym_b), Some(State::ExpectingItemLikeOpening)))
+                    Ok((tym_a.add(tym_b), Some(Expecting::ItemLikeOpening.into())))
                 }
                 ExitingAndThen::ExpectSurroundedOpening => {
-                    Ok((TYM_UNIT.into(), Some(State::ExpectingSurroundedOpening)))
+                    Ok((TYM_UNIT.into(), Some(Expecting::SurroundedOpening.into())))
                 }
                 ExitingAndThen::End => Ok((TYM_UNIT.into(), Some(State::Ended))),
             };
@@ -180,16 +192,26 @@ impl<'a, TStack: Stack<StackEntry>> Iterator for Parser<'a, TStack> {
 }
 
 enum State {
-    ExpectingItemLikeOpening,
-    ExpectingSurroundedOpening,
+    Expecting(Expecting),
     /// 持续从栈中推出内容并产出对应的退出事件，直到满足特定条件，在那之后执行要做的事情。
     Exiting(Exiting),
     Ended,
+}
+impl From<Expecting> for State {
+    fn from(value: Expecting) -> Self {
+        Self::Expecting(value)
+    }
 }
 impl From<Exiting> for State {
     fn from(value: Exiting) -> Self {
         Self::Exiting(value)
     }
+}
+
+#[derive(Clone, Copy)]
+enum Expecting {
+    ItemLikeOpening,
+    SurroundedOpening,
 }
 
 struct Exiting {
@@ -246,7 +268,10 @@ mod branch {
             inner: &mut ParserInner<TStack>,
             first_char: u8,
         ) -> crate::Result<Tym<3>> {
-            debug_assert!(!matches!(state, State::ExpectingItemLikeOpening));
+            debug_assert!(matches!(
+                state,
+                State::Expecting(Expecting::ItemLikeOpening)
+            ));
 
             if !inner.stack.has_unprocessed_item_likes_at_current_line() {
                 if let Some(top_leaf) = inner.stack.pop_top_leaf() {
@@ -431,9 +456,9 @@ mod branch {
             inner: &mut ParserInner<TStack>,
             first_char: u8,
         ) -> crate::Result<Tym<3>> {
-            debug_assert!(!matches!(
+            debug_assert!(matches!(
                 state,
-                State::ExpectingItemLikeOpening | State::ExpectingSurroundedOpening
+                State::Expecting(Expecting::ItemLikeOpening | Expecting::SurroundedOpening)
             ));
 
             match first_char {
@@ -457,7 +482,7 @@ mod branch {
                 state: &mut State,
                 inner: &mut ParserInner<TStack>,
             ) -> crate::Result<Tym<1>> {
-                *state = State::ExpectingSurroundedOpening;
+                *state = Expecting::SurroundedOpening.into();
 
                 let id = inner.pop_block_id();
                 let stack_entry = StackEntryTable {
@@ -530,9 +555,9 @@ mod leaf {
         inner: &mut ParserInner<TStack>,
         first_char: u8,
     ) -> crate::Result<Tym<3>> {
-        debug_assert!(!matches!(
+        debug_assert!(matches!(
             state,
-            State::ExpectingItemLikeOpening | State::ExpectingSurroundedOpening
+            State::Expecting(Expecting::ItemLikeOpening | Expecting::SurroundedOpening)
         ));
 
         match first_char {
@@ -691,9 +716,9 @@ mod leaf {
             inner: &mut ParserInner<TStack>,
             content_before: usize,
         ) -> crate::Result<Tym<3>> {
-            debug_assert!(!matches!(
+            debug_assert!(matches!(
                 state,
-                State::ExpectingItemLikeOpening | State::ExpectingSurroundedOpening
+                State::Expecting(Expecting::ItemLikeOpening | Expecting::SurroundedOpening)
             ));
             #[cfg(debug_assertions)]
             {
@@ -709,7 +734,7 @@ mod leaf {
             // 需要提前取得行数。
             let line_start = inner.current_line();
 
-            let (content, end) = line::normal::parse(
+            let (content, mut end) = line::normal::parse(
                 input,
                 inner,
                 line::normal::EndCondition {
@@ -725,35 +750,101 @@ mod leaf {
                 content_before,
             );
 
-            let tym_ab = if !content.is_empty() {
+            let tym_ab = if !content.is_empty() || end.is_verbatim_escaping() {
                 let id = inner.pop_block_id();
                 let top_leaf = TopLeafParagraph {
                     meta: Meta::new(id, line_start),
-                    is_at_line_beginning: matches!(end, line::normal::End::NewLine(_)),
+                    new_line: end.try_take_new_line(),
                 };
                 let ev = top_leaf.make_enter_event();
                 inner.stack.push_top_leaf(top_leaf.into());
                 let tym_a = inner.r#yield(ev);
 
-                let tym_b = inner.r#yield(BlockEvent::Unparsed(content));
+                let tym_b = if !content.is_empty() {
+                    inner.r#yield(BlockEvent::Unparsed(content))
+                } else {
+                    TYM_UNIT.into()
+                };
 
                 tym_a.add(tym_b)
             } else {
                 TYM_UNIT.into()
             };
 
-            let tym_c = end.process(inner);
+            let tym_c = process_normal_end(end, inner);
 
             Ok(tym_ab.add(tym_c))
+        }
+
+        fn process_normal_end<TCtx: YieldContext>(
+            end: line::normal::End,
+            ctx: &mut TCtx,
+        ) -> Tym<1> {
+            match end {
+                line::normal::End::Eof |
+                // 段落处理换行是在换行后的那一行，而非换行前的那一行（现在），因此这里跳过处
+                // 理。这么做是因为现在不知道下一行还有没有内容，没有内容的话就不应该产出换行
+                // 符。此外，这么做也能防止空行产出换行符。
+                line::normal::End::NewLine(_) => TYM_UNIT.into(),
+                line::normal::End::VerbatimEscaping(verbatim_escaping) => {
+                    let tym = line::global_phase::process_verbatim_escaping(ctx, verbatim_escaping);
+                    cast_tym!(tym)
+                }
+                line::normal::End::TableRelated(table_related_end) => {
+                    let tym = table_related_end.process();
+                    cast_tym!(tym)
+                }
+            }
         }
 
         pub fn parse_content_and_process<TStack: Stack<StackEntry>>(
             input: &[u8],
             state: &mut State,
             inner: &mut ParserInner<TStack>,
-            top_leaf: TopLeafParagraph,
+            mut top_leaf: TopLeafParagraph,
         ) -> crate::Result<Tym<3>> {
-            todo!()
+            let (content, mut end) = line::normal::parse(
+                input,
+                inner,
+                line::normal::EndCondition {
+                    on_atx_closing: None,
+                    on_table_related: if inner.stack.tables_in_stack() > 0 {
+                        Some(line::normal::TableRelated {
+                            is_caption_applicable: false,
+                        })
+                    } else {
+                        None
+                    },
+                },
+                0,
+            );
+
+            let tym_ab = if !content.is_empty() || end.is_verbatim_escaping() {
+                let tym_a = if let Some(new_line) = top_leaf.new_line {
+                    inner.r#yield(BlockEvent::NewLine(new_line))
+                } else {
+                    TYM_UNIT.into()
+                };
+
+                top_leaf.new_line = end.try_take_new_line();
+                inner.stack.push_top_leaf(top_leaf.into());
+
+                let tym_b = if !content.is_empty() {
+                    inner.r#yield(BlockEvent::Unparsed(content))
+                } else {
+                    TYM_UNIT.into()
+                };
+
+                tym_a.add(tym_b)
+            } else {
+                inner
+                    .r#yield(top_leaf.make_exit_event(inner.current_line()))
+                    .into()
+            };
+
+            let tym_c = process_normal_end(end, inner);
+
+            Ok(tym_ab.add(tym_c))
         }
 
         pub fn exit<TStack: Stack<StackEntry>>(
