@@ -59,6 +59,17 @@ mod for_fn_parse {
             },
         );
         test(
+            b"foo   ",
+            end_condition.clone(),
+            0,
+            b"foo",
+            End::Eof,
+            MockCursorContext {
+                cursor: 6,
+                current_line: LineNumber::new(1),
+            },
+        );
+        test(
             b"foo bar",
             end_condition.clone(),
             0,
@@ -150,6 +161,22 @@ mod for_fn_parse {
             .into(),
             MockCursorContext {
                 cursor: 9,
+                current_line: LineNumber::new(1),
+            },
+        );
+        test(
+            b"foo   <`VE`>",
+            end_condition.clone(),
+            0,
+            b"foo   ",
+            VerbatimEscaping {
+                content: 8..10,
+                is_closed_forcedly: false,
+                line_after: LineNumber::new(1),
+            }
+            .into(),
+            MockCursorContext {
+                cursor: 12,
                 current_line: LineNumber::new(1),
             },
         );

@@ -168,6 +168,16 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
                         (EventType::ExitBlock, None),
                     ]
                 ),
+                case!(
+                    vec!["<`c`>b <`d`>"],
+                    vec![
+                        (EventType::EnterParagraph, None),
+                        (EventType::VerbatimEscaping, Some("c")),
+                        (EventType::Unparsed, Some("b ")),
+                        (EventType::VerbatimEscaping, Some("d")),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
             ],
         },
         GroupedCases {
