@@ -254,7 +254,6 @@ mod branch {
     use super::*;
 
     pub mod item_like {
-
         use super::*;
 
         macro_rules! return_parse_paragraph_if_no_following_space {
