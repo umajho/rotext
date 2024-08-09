@@ -74,9 +74,12 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                     break None;
                 }
                 State::Expecting(expecting) => {
-                    // 忽略开头的空白。
-                    while self.input.get(self.inner.cursor()) == Some(&b' ') {
-                        self.inner.move_cursor_forward(" ".len());
+                    self.inner.reset_current_expecting();
+
+                    let spaces = count_continuous_character(self.input, b' ', self.inner.cursor());
+                    if spaces > 0 {
+                        self.inner.move_cursor_forward(spaces);
+                        self.inner.current_expecting.set_spaces_before(spaces);
                     }
 
                     let Some(&first_char) = self.input.get(self.inner.cursor()) else {
@@ -783,7 +786,7 @@ mod leaf {
             inner: &mut ParserInner<TStack>,
             mut top_leaf: TopLeafParagraph,
         ) -> crate::Result<Tym<3>> {
-            let (content, mut end) = line::normal::parse(
+            let (mut content, mut end) = line::normal::parse(
                 input,
                 inner,
                 line::normal::EndCondition {
@@ -805,6 +808,10 @@ mod leaf {
                 let tym_a = if let Some(new_line) = top_leaf.new_line {
                     inner.r#yield(BlockEvent::NewLine(new_line))
                 } else {
+                    if inner.current_expecting.spaces_before() > 0 {
+                        // 在一行的中间，那就不能忽略空格。
+                        content.start -= inner.current_expecting.spaces_before();
+                    }
                     TYM_UNIT.into()
                 };
 

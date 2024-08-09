@@ -23,6 +23,9 @@ pub struct ParserInner<TStack: Stack<StackEntry>> {
 
     #[cfg(feature = "block-id")]
     block_id_generator: BlockIdGenerator,
+
+    /// 记录仅在进入变体 `Expecting` 对应的分支时，在处理这个分支期间有效的数据。
+    pub current_expecting: CurrentExpecting,
 }
 
 impl<TStack: Stack<StackEntry>> ParserInner<TStack> {
@@ -33,6 +36,7 @@ impl<TStack: Stack<StackEntry>> ParserInner<TStack> {
             stack: StackWrapper::new(),
             to_yield: ArrayQueue::new(),
             block_id_generator: BlockIdGenerator::new(),
+            current_expecting: CurrentExpecting::new(),
         }
     }
 
@@ -44,6 +48,10 @@ impl<TStack: Stack<StackEntry>> ParserInner<TStack> {
 
     pub fn pop_block_id(&mut self) -> BlockId {
         self.block_id_generator.pop()
+    }
+
+    pub fn reset_current_expecting(&mut self) {
+        self.current_expecting = CurrentExpecting::new();
     }
 }
 
@@ -70,5 +78,23 @@ impl<TStack: Stack<StackEntry>> YieldContext for ParserInner<TStack> {
         self.to_yield.push_back(ev);
 
         Tym::<1>::new()
+    }
+}
+
+pub struct CurrentExpecting {
+    spaces_before: usize,
+}
+
+impl CurrentExpecting {
+    fn new() -> Self {
+        Self { spaces_before: 0 }
+    }
+
+    pub fn spaces_before(&self) -> usize {
+        self.spaces_before
+    }
+
+    pub fn set_spaces_before(&mut self, value: usize) {
+        self.spaces_before = value;
     }
 }

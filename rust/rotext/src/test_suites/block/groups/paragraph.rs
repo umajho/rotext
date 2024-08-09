@@ -87,6 +87,15 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
                     ]
                 ),
                 case!(
+                    vec!["<`c`> b"],
+                    vec![
+                        (EventType::EnterParagraph, None),
+                        (EventType::VerbatimEscaping, Some("c")),
+                        (EventType::Unparsed, Some(" b")),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
                     vec!["a<`c`>b"],
                     vec![
                         (EventType::EnterParagraph, None),
@@ -127,6 +136,25 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
                         (EventType::VerbatimEscaping, Some("c")),
                         (EventType::NewLine, None),
                         (EventType::Unparsed, Some("b")),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec!["<`c`><`d`>"],
+                    vec![
+                        (EventType::EnterParagraph, None),
+                        (EventType::VerbatimEscaping, Some("c")),
+                        (EventType::VerbatimEscaping, Some("d")),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec!["<`c`> <`d`>"],
+                    vec![
+                        (EventType::EnterParagraph, None),
+                        (EventType::VerbatimEscaping, Some("c")),
+                        (EventType::Unparsed, Some(" ")),
+                        (EventType::VerbatimEscaping, Some("d")),
                         (EventType::ExitBlock, None),
                     ]
                 ),

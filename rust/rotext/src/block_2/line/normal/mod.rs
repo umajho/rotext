@@ -89,13 +89,6 @@ pub fn parse<TCtx: CursorContext>(
     end_condition: EndCondition,
     content_before: usize,
 ) -> (Range<usize>, End) {
-    if content_before == 0 {
-        // 忽略开头的空白。
-        while input.get(ctx.cursor()) == Some(&b' ') {
-            ctx.move_cursor_forward(" ".len());
-        }
-    }
-
     let mut range = ctx.cursor()..(ctx.cursor() + content_before);
     let mut spaces = 0;
 
