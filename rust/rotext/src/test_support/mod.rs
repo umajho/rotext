@@ -41,6 +41,7 @@ pub struct FailedCase {
 pub enum FailureReason {
     Panicked(Box<dyn Any + Send>),
     ToDo,
+    Skipped,
 }
 
 pub fn report_panicked_cases(cases: Vec<FailedCase>) {
