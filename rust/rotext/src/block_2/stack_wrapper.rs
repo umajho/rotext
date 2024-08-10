@@ -11,6 +11,8 @@ pub struct StackWrapper<TStack: Stack<StackEntry>> {
     item_likes_in_stack: usize,
     tables_in_stack: usize,
 
+    should_reset_state: bool,
+    item_likes_in_stack_at_last_line: usize,
     last_accessed_item_like_at_current_line: LastAccessedItemLikeAtCurrentLine,
 }
 
@@ -20,8 +22,10 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
             stack: TStack::new(),
             top_leaf: None,
             item_likes_in_stack: 0,
-            last_accessed_item_like_at_current_line: LastAccessedItemLikeAtCurrentLine::new(),
             tables_in_stack: 0,
+            should_reset_state: false,
+            item_likes_in_stack_at_last_line: 0,
+            last_accessed_item_like_at_current_line: LastAccessedItemLikeAtCurrentLine::new(),
         }
     }
 
@@ -37,12 +41,26 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
         self.tables_in_stack
     }
 
+    pub fn reset_current_line_for_new_line(&mut self) {
+        self.should_reset_state = true;
+        self.item_likes_in_stack_at_last_line = self.item_likes_in_stack;
+        self.last_accessed_item_like_at_current_line = LastAccessedItemLikeAtCurrentLine::new();
+    }
+
+    pub fn should_reset_state(&self) -> bool {
+        self.should_reset_state
+    }
+
+    pub fn set_should_reset_state(&mut self, value: bool) {
+        self.should_reset_state = value;
+    }
+
     pub fn processed_item_likes_at_current_line(&self) -> usize {
         self.last_accessed_item_like_at_current_line.nth
     }
 
     pub fn has_unprocessed_item_likes_at_current_line(&self) -> bool {
-        self.processed_item_likes_at_current_line() < self.item_likes_in_stack
+        self.processed_item_likes_at_current_line() < self.item_likes_in_stack_at_last_line
     }
 
     pub fn first_unprocessed_item_like_at_current_line(&mut self) -> &StackEntryItemLikeContainer {
@@ -117,6 +135,10 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
         debug_assert!(self.top_leaf.is_none());
 
         self.top_leaf = Some(entry);
+    }
+
+    pub fn is_top_leaf_some(&self) -> bool {
+        self.top_leaf.is_some()
     }
 
     /// 从栈中推出一个 entry。
@@ -214,6 +236,7 @@ impl StackEntryTable {
     }
 }
 
+#[derive(Debug)]
 pub struct Meta {
     id: BlockId,
     line_start: LineNumber,
@@ -253,6 +276,7 @@ pub enum GeneralItemLike {
     DD,
 }
 
+#[derive(Debug)]
 pub enum TopLeaf {
     Paragraph(TopLeafParagraph),
     Heading(TopLeafHeading),
@@ -274,6 +298,7 @@ impl From<TopLeafCodeBlock> for TopLeaf {
     }
 }
 
+#[derive(Debug)]
 pub struct TopLeafParagraph {
     pub meta: Meta,
 
@@ -289,6 +314,7 @@ impl TopLeafParagraph {
     }
 }
 
+#[derive(Debug)]
 pub struct TopLeafHeading {
     pub meta: Meta,
 
@@ -314,6 +340,7 @@ impl TopLeafHeading {
     }
 }
 
+#[derive(Debug)]
 pub struct TopLeafCodeBlock {
     pub meta: Meta,
 
@@ -321,6 +348,7 @@ pub struct TopLeafCodeBlock {
 
     pub state: TopLeafCodeBlockState,
 }
+#[derive(Debug)]
 pub enum TopLeafCodeBlockState {
     ExpectingInfoString,
     InInfoString,

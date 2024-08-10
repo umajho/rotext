@@ -74,6 +74,10 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                     break None;
                 }
                 State::Expecting(expecting) => {
+                    if self.inner.stack.should_reset_state() {
+                        self.inner.stack.set_should_reset_state(false);
+                        *expecting = Expecting::ItemLikeOpening;
+                    }
                     self.inner.reset_current_expecting();
 
                     let spaces = count_continuous_character(self.input, b' ', self.inner.cursor());
@@ -109,22 +113,55 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
     }
 
     #[inline(always)]
-    fn parse(&mut self, expecting: Expecting, first_char: u8) -> crate::Result<Tym<3>> {
-        match expecting {
-            Expecting::ItemLikeOpening => branch::item_like::parse_opening_and_process(
-                self.input,
-                &mut self.state,
-                &mut self.inner,
-                first_char,
-            )
-            .map(|tym| cast_tym!(tym)),
-            Expecting::SurroundedOpening => branch::surrounded::parse_opening_and_process(
-                self.input,
-                &mut self.state,
-                &mut self.inner,
-                first_char,
-            )
-            .map(|tym| cast_tym!(tym)),
+    fn parse(&mut self, mut expecting: Expecting, first_char: u8) -> crate::Result<Tym<3>> {
+        loop {
+            match expecting {
+                Expecting::ItemLikeOpening => {
+                    if !self
+                        .inner
+                        .stack
+                        .has_unprocessed_item_likes_at_current_line()
+                        && self.inner.stack.is_top_leaf_some()
+                    {
+                        expecting = Expecting::LeafContent;
+                        self.state = expecting.into();
+                        continue;
+                    }
+                    break branch::item_like::parse_opening_and_process(
+                        self.input,
+                        &mut self.state,
+                        &mut self.inner,
+                        first_char,
+                    )
+                    .map(|tym| cast_tym!(tym));
+                }
+                Expecting::SurroundedOpening => {
+                    if self.inner.stack.is_top_leaf_some() {
+                        expecting = Expecting::LeafContent;
+                        self.state = expecting.into();
+                        continue;
+                    }
+                    break branch::surrounded::parse_opening_and_process(
+                        self.input,
+                        &mut self.state,
+                        &mut self.inner,
+                        first_char,
+                    )
+                    .map(|tym| cast_tym!(tym));
+                }
+                Expecting::LeafContent => {
+                    if let Some(top_leaf) = self.inner.stack.pop_top_leaf() {
+                        break leaf::parse_content_and_process(
+                            self.input,
+                            &mut self.inner,
+                            top_leaf,
+                        )
+                        .map(|tym| cast_tym!(tym));
+                    }
+                    break leaf::parse_opening_and_process(self.input, &mut self.inner, first_char)
+                        .map(|tym| cast_tym!(tym));
+                }
+            }
         }
     }
 
@@ -224,6 +261,7 @@ impl From<Exiting> for State {
 enum Expecting {
     ItemLikeOpening,
     SurroundedOpening,
+    LeafContent,
 }
 
 struct Exiting {
@@ -264,57 +302,27 @@ mod branch {
     pub mod item_like {
         use super::*;
 
-        macro_rules! return_parse_paragraph_if_no_following_space {
-            ($input:expr, $inner:expr) => {
-                if !matches!($input.get($inner.cursor() + 1), Some(b' ')) {
-                    return leaf::paragraph::enter_if_not_blank($input, $inner, 1)
-                        .map(|tym| cast_tym!(tym));
-                }
-            };
-        }
-
         pub fn parse_opening_and_process<TStack: Stack<StackEntry>>(
             input: &[u8],
             state: &mut State,
             inner: &mut ParserInner<TStack>,
             first_char: u8,
         ) -> crate::Result<Tym<3>> {
-            if !inner.stack.has_unprocessed_item_likes_at_current_line() {
-                if let Some(top_leaf) = inner.stack.pop_top_leaf() {
-                    return leaf::parse_content_and_process(input, inner, top_leaf)
-                        .map(|tym| cast_tym!(tym));
-                }
-            }
-
             use GeneralItemLike as I;
             use ItemLikeContainer as G;
 
             match first_char {
                 m!('>') => {
-                    return_parse_paragraph_if_no_following_space!(input, inner);
-                    inner.move_cursor_forward("> ".len());
-                    process_greater_than_opening(inner).map(|tym| cast_tym!(tym))
+                    process_maybe_greater_than_opening(input, inner).map(|tym| cast_tym!(tym))
                 }
-                m!('#') => {
-                    return_parse_paragraph_if_no_following_space!(input, inner);
-                    inner.move_cursor_forward("# ".len());
-                    process_general_opening(state, inner, G::OL, I::LI).map(|tym| cast_tym!(tym))
-                }
-                m!('*') => {
-                    return_parse_paragraph_if_no_following_space!(input, inner);
-                    inner.move_cursor_forward("* ".len());
-                    process_general_opening(state, inner, G::UL, I::LI).map(|tym| cast_tym!(tym))
-                }
-                m!(';') => {
-                    return_parse_paragraph_if_no_following_space!(input, inner);
-                    inner.move_cursor_forward("; ".len());
-                    process_general_opening(state, inner, G::DL, I::DT).map(|tym| cast_tym!(tym))
-                }
-                m!(':') => {
-                    return_parse_paragraph_if_no_following_space!(input, inner);
-                    inner.move_cursor_forward(": ".len());
-                    process_general_opening(state, inner, G::DL, I::DD).map(|tym| cast_tym!(tym))
-                }
+                m!('#') => process_maybe_general_opening(input, state, inner, G::OL, I::LI)
+                    .map(|tym| cast_tym!(tym)),
+                m!('*') => process_maybe_general_opening(input, state, inner, G::UL, I::LI)
+                    .map(|tym| cast_tym!(tym)),
+                m!(';') => process_maybe_general_opening(input, state, inner, G::DL, I::DT)
+                    .map(|tym| cast_tym!(tym)),
+                m!(':') => process_maybe_general_opening(input, state, inner, G::DL, I::DD)
+                    .map(|tym| cast_tym!(tym)),
                 _ if inner.stack.has_unprocessed_item_likes_at_current_line() => {
                     *state = Exiting::new(
                         ExitingUntil::OnlyNItemLikesRemain {
@@ -331,9 +339,16 @@ mod branch {
             }
         }
 
-        fn process_greater_than_opening<TStack: Stack<StackEntry>>(
+        fn process_maybe_greater_than_opening<TStack: Stack<StackEntry>>(
+            input: &[u8],
             inner: &mut ParserInner<TStack>,
-        ) -> crate::Result<Tym<1>> {
+        ) -> crate::Result<Tym<3>> {
+            match input.get(inner.cursor() + 1) {
+                Some(b' ') => inner.move_cursor_forward("> ".len()),
+                None | Some(b'\r' | b'\n') => inner.move_cursor_forward(">".len()),
+                _ => return leaf::paragraph::enter_if_not_blank(input, inner, 1),
+            }
+
             let tym = if inner.stack.has_unprocessed_item_likes_at_current_line() {
                 inner
                     .stack
@@ -351,15 +366,22 @@ mod branch {
                 inner.r#yield(BlockEvent::EnterBlockQuote(id.into()))
             };
 
-            Ok(tym)
+            Ok(tym.into())
         }
 
-        fn process_general_opening<TStack: Stack<StackEntry>>(
+        fn process_maybe_general_opening<TStack: Stack<StackEntry>>(
+            input: &[u8],
             state: &mut State,
             inner: &mut ParserInner<TStack>,
             container: ItemLikeContainer,
             item_like: GeneralItemLike,
-        ) -> crate::Result<Tym<2>> {
+        ) -> crate::Result<Tym<3>> {
+            match input.get(inner.cursor() + 1) {
+                Some(b' ') => inner.move_cursor_forward(1 + " ".len()),
+                None | Some(b'\r' | b'\n') => inner.move_cursor_forward(1),
+                _ => return leaf::paragraph::enter_if_not_blank(input, inner, 1),
+            }
+
             let tym = if inner.stack.has_unprocessed_item_likes_at_current_line() {
                 let stack_entry = inner.stack.first_unprocessed_item_like_at_current_line();
                 if stack_entry.r#type == container {
@@ -411,7 +433,7 @@ mod branch {
                 tym_a.add(tym_b)
             };
 
-            Ok(tym)
+            Ok(tym.into())
         }
 
         fn make_stack_entry_from_general_item_like<TStack: Stack<StackEntry>>(
