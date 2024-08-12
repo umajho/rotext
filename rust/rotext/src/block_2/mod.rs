@@ -916,9 +916,7 @@ mod leaf {
 
                 tym_a.add(tym_b)
             } else {
-                inner
-                    .r#yield(top_leaf.make_exit_event(inner.current_line()))
-                    .into()
+                exit(inner, top_leaf).into()
             };
 
             let tym_c = process_normal_end(end, inner);
