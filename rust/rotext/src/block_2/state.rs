@@ -105,11 +105,10 @@ impl ItemLikesStateMatchingLastLine {
     }
 
     pub fn mark_first_unprocessed_item_like_as_processed_at_current_line<
-        'a,
         TStack: Stack<StackEntry>,
     >(
         &mut self,
-        stack: &'a StackWrapper<TStack>,
+        stack: &StackWrapper<TStack>,
     ) -> bool {
         self.current_last_accessed.nth += 1;
         self.update_last_accessed_item_like_next_index(stack);
