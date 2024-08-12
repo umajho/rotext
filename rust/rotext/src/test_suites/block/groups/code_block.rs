@@ -80,6 +80,10 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                         indoc! {"
                         ````
                         ````"},
+                        "```",
+                        indoc! {"
+                        ````
+                        "},
                     ],
                     vec![
                         (EventType::EnterCodeBlock, None),

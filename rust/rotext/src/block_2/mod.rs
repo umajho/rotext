@@ -53,6 +53,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
             state: Expecting::ItemLikeOpening.into(),
             inner: ParserInner::new(),
             item_likes_state: ItemLikesState::ProcessingNew,
+
             #[cfg(debug_assertions)]
             is_errored: false,
         }
@@ -195,9 +196,9 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
         exiting: &mut Exiting,
     ) -> crate::Result<(Tym<2>, Option<State>)> {
         if let Some(top_leaf) = inner.stack.pop_top_leaf() {
-            let tym = match top_leaf {
-                TopLeaf::Paragraph(top_leaf) => leaf::paragraph::exit(inner, top_leaf),
-                TopLeaf::Heading(top_leaf) => leaf::heading::exit(inner, top_leaf),
+            let tym: Tym<2> = match top_leaf {
+                TopLeaf::Paragraph(top_leaf) => leaf::paragraph::exit(inner, top_leaf).into(),
+                TopLeaf::Heading(top_leaf) => leaf::heading::exit(inner, top_leaf).into(),
                 TopLeaf::CodeBlock(top_leaf) => leaf::code_block::exit(inner, top_leaf),
             };
             return Ok((cast_tym!(tym), None));
@@ -615,6 +616,7 @@ mod leaf {
             m!('`') => {
                 let count = 1 + count_continuous_character(input, m!('`'), inner.cursor() + 1);
                 if count >= 3 {
+                    inner.move_cursor_forward(count);
                     code_block::enter(inner, count).map(|tym| cast_tym!(tym))
                 } else {
                     paragraph::enter_if_not_blank(input, inner, count).map(|tym| cast_tym!(tym))
@@ -746,7 +748,7 @@ mod leaf {
     }
 
     pub mod code_block {
-        use stack_wrapper::TopLeafCodeBlockState;
+        use stack_wrapper::{TopLeafCodeBlockState, TopLeafCodeBlockStateInCode};
 
         use super::*;
 
@@ -758,7 +760,8 @@ mod leaf {
             let top_leaf = TopLeafCodeBlock {
                 meta: Meta::new(id, inner.current_line()),
                 backticks,
-                state: TopLeafCodeBlockState::ExpectingInfoString,
+                indent: inner.current_expecting.spaces_before(),
+                state: TopLeafCodeBlockState::InInfoString,
             };
             let ev = top_leaf.make_enter_event();
             inner.stack.push_top_leaf(top_leaf.into());
@@ -770,18 +773,140 @@ mod leaf {
         pub fn parse_content_and_process<TStack: Stack<StackEntry>>(
             input: &[u8],
             inner: &mut ParserInner<TStack>,
-            top_leaf: TopLeafCodeBlock,
-        ) -> crate::Result<Tym<2>> {
-            todo!("info string");
+            mut top_leaf: TopLeafCodeBlock,
+        ) -> crate::Result<Tym<3>> {
+            let tym = match top_leaf.state {
+                TopLeafCodeBlockState::InInfoString => {
+                    let (content, end) = line::verbatim::parse(
+                        input,
+                        inner,
+                        line::verbatim::EndCondition { on_fence: None },
+                        inner.current_expecting.spaces_before(),
+                        None,
+                    );
 
-            todo!()
+                    let tym_a = if !content.is_empty() {
+                        inner.r#yield(BlockEvent::Text(content))
+                    } else {
+                        TYM_UNIT.into()
+                    };
+
+                    let tym_b = match end {
+                        line::verbatim::End::Eof => TYM_UNIT.into(),
+                        line::verbatim::End::NewLine(_new_line) => {
+                            top_leaf.state = TopLeafCodeBlockState::InCode(
+                                TopLeafCodeBlockStateInCode::AtFirstLineBeginning,
+                            );
+                            inner.r#yield(BlockEvent::IndicateCodeBlockCode)
+                        }
+                        line::verbatim::End::VerbatimEscaping(verbatim_escaping) => {
+                            line::global_phase::process_verbatim_escaping(inner, verbatim_escaping)
+                        }
+                        line::verbatim::End::Fence => unreachable!(),
+                    };
+
+                    inner.stack.push_top_leaf(top_leaf.into());
+
+                    tym_a.add(tym_b).into()
+                }
+                TopLeafCodeBlockState::InCode(ref in_code) => {
+                    let (at_line_beginning, new_line) = match in_code {
+                        TopLeafCodeBlockStateInCode::AtFirstLineBeginning => (
+                            Some(line::verbatim::AtLineBeginning {
+                                indent: top_leaf.indent,
+                            }),
+                            None,
+                        ),
+                        TopLeafCodeBlockStateInCode::AtLineBeginning(new_line) => (
+                            Some(line::verbatim::AtLineBeginning {
+                                indent: inner.current_expecting.spaces_before(),
+                            }),
+                            Some(new_line.clone()),
+                        ),
+                        TopLeafCodeBlockStateInCode::Normal => (None, None),
+                    };
+
+                    let (content, end) = line::verbatim::parse(
+                        input,
+                        inner,
+                        line::verbatim::EndCondition {
+                            on_fence: Some(line::verbatim::Fence {
+                                character: m!('`'),
+                                minimum_count: top_leaf.backticks,
+                            }),
+                        },
+                        inner.current_expecting.spaces_before(),
+                        at_line_beginning,
+                    );
+
+                    let tym_a = if let Some(new_line) = new_line {
+                        if matches!(
+                            end,
+                            line::verbatim::End::NewLine(_)
+                                | line::verbatim::End::VerbatimEscaping(_)
+                        ) {
+                            inner.r#yield(BlockEvent::NewLine(new_line))
+                        } else {
+                            TYM_UNIT.into()
+                        }
+                    } else {
+                        TYM_UNIT.into()
+                    };
+
+                    let tym_b = if !content.is_empty() {
+                        inner.r#yield(BlockEvent::Text(content))
+                    } else {
+                        TYM_UNIT.into()
+                    };
+
+                    let tym_c = match end {
+                        line::verbatim::End::Eof => {
+                            inner.stack.push_top_leaf(top_leaf.into());
+                            TYM_UNIT.into()
+                        }
+                        line::verbatim::End::NewLine(new_line) => {
+                            top_leaf.state = TopLeafCodeBlockState::InCode(
+                                TopLeafCodeBlockStateInCode::AtLineBeginning(new_line),
+                            );
+                            inner.stack.push_top_leaf(top_leaf.into());
+                            TYM_UNIT.into()
+                        }
+                        line::verbatim::End::VerbatimEscaping(verbatim_escaping) => {
+                            inner.stack.push_top_leaf(top_leaf.into());
+                            line::global_phase::process_verbatim_escaping(inner, verbatim_escaping)
+                        }
+                        line::verbatim::End::Fence => {
+                            exit_when_indicator_already_yielded(inner, top_leaf)
+                        }
+                    };
+
+                    tym_a.add(tym_b).add(tym_c)
+                }
+            };
+
+            Ok(tym)
+        }
+
+        fn exit_when_indicator_already_yielded<TStack: Stack<StackEntry>>(
+            inner: &mut ParserInner<TStack>,
+            top_leaf: TopLeafCodeBlock,
+        ) -> Tym<1> {
+            inner.r#yield(top_leaf.make_exit_event(inner.current_line()))
         }
 
         pub fn exit<TStack: Stack<StackEntry>>(
             inner: &mut ParserInner<TStack>,
             top_leaf: TopLeafCodeBlock,
-        ) -> Tym<1> {
-            inner.r#yield(top_leaf.make_exit_event(inner.current_line()))
+        ) -> Tym<2> {
+            let tym_a = if matches!(top_leaf.state, TopLeafCodeBlockState::InInfoString) {
+                inner.r#yield(BlockEvent::IndicateCodeBlockCode)
+            } else {
+                TYM_UNIT.into()
+            };
+
+            let tym_b = exit_when_indicator_already_yielded(inner, top_leaf);
+
+            tym_a.add(tym_b)
         }
     }
 

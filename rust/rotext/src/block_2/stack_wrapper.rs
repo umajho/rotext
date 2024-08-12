@@ -314,15 +314,20 @@ pub struct TopLeafCodeBlock {
     pub meta: Meta,
 
     pub backticks: usize,
+    pub indent: usize,
 
     pub state: TopLeafCodeBlockState,
 }
 #[derive(Debug)]
 pub enum TopLeafCodeBlockState {
-    ExpectingInfoString,
     InInfoString,
-    InCodeAtFirstLineBeginning,
-    InCode,
+    InCode(TopLeafCodeBlockStateInCode),
+}
+#[derive(Debug)]
+pub enum TopLeafCodeBlockStateInCode {
+    AtFirstLineBeginning,
+    AtLineBeginning(NewLine),
+    Normal,
 }
 impl TopLeafCodeBlock {
     pub fn make_enter_event(&self) -> BlockEvent {
