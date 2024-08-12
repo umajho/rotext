@@ -103,23 +103,8 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                     }
                     self.inner.reset_current_expecting();
 
-                    let spaces = count_continuous_character(self.input, b' ', self.inner.cursor());
-                    if spaces > 0 {
-                        self.inner.move_cursor_forward(spaces);
-                        self.inner.current_expecting.set_spaces_before(spaces);
-                    }
-
-                    let Some(&first_char) = self.input.get(self.inner.cursor()) else {
-                        self.state = if self.inner.stack.is_empty() {
-                            State::Ended
-                        } else {
-                            Exiting::new(ExitingUntil::StackIsEmpty, ExitingAndThen::End).into()
-                        };
-
-                        continue;
-                    };
                     let expecting = *expecting;
-                    self.parse(expecting, first_char)
+                    self.parse(expecting)
                 }
             };
             match result {
@@ -136,7 +121,23 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
     }
 
     #[inline(always)]
-    fn parse(&mut self, mut expecting: Expecting, first_char: u8) -> crate::Result<Tym<3>> {
+    fn parse(&mut self, mut expecting: Expecting) -> crate::Result<Tym<3>> {
+        let spaces = count_continuous_character(self.input, b' ', self.inner.cursor());
+        if spaces > 0 {
+            self.inner.move_cursor_forward(spaces);
+            self.inner.current_expecting.set_spaces_before(spaces);
+        }
+
+        let Some(&first_char) = self.input.get(self.inner.cursor()) else {
+            self.state = if self.inner.stack.is_empty() {
+                State::Ended
+            } else {
+                Exiting::new(ExitingUntil::StackIsEmpty, ExitingAndThen::End).into()
+            };
+
+            return Ok(TYM_UNIT.into());
+        };
+
         loop {
             match expecting {
                 Expecting::ItemLikeOpening => {
