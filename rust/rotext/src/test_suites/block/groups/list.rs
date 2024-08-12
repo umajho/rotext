@@ -285,10 +285,7 @@ pub fn groups_list() -> Vec<GroupedCases> {
                     indoc! {"
                         # 1
                         * a"},
-                    indoc! {"
-                        # 1
-
-                        * a"},
+                    // indock},
                 ],
                 vec![
                     (EventType::EnterOrderedList, None),
@@ -385,6 +382,60 @@ pub fn groups_list() -> Vec<GroupedCases> {
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+            ],
+        },
+        GroupedCases {
+            group: "列表>列表或块引用的下一行的第一个字符可能与列表相关，但因为缺少空格而实际无关",
+            cases: vec![
+                case!(
+                    vec![indoc! {"
+                        # 1
+                        #foo"},],
+                    vec![
+                        (EventType::EnterOrderedList, None),
+                        (EventType::EnterListItem, None),
+                        (EventType::EnterParagraph, None),
+                        (EventType::Unparsed, Some("1")),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                        (EventType::EnterParagraph, None),
+                        (EventType::Unparsed, Some("#foo")),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec![indoc! {"
+                        > foo
+                        #bar"},],
+                    vec![
+                        (EventType::EnterBlockQuote, None),
+                        (EventType::EnterParagraph, None),
+                        (EventType::Unparsed, Some("foo")),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                        (EventType::EnterParagraph, None),
+                        (EventType::Unparsed, Some("#bar")),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec![indoc! {"
+                        * a
+                        #bar"},],
+                    vec![
+                        (EventType::EnterUnorderedList, None),
+                        (EventType::EnterListItem, None),
+                        (EventType::EnterParagraph, None),
+                        (EventType::Unparsed, Some("a")),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                        (EventType::EnterParagraph, None),
+                        (EventType::Unparsed, Some("#bar")),
                         (EventType::ExitBlock, None),
                     ]
                 ),

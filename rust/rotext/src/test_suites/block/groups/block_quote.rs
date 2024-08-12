@@ -206,5 +206,23 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
                 ),
             ],
         },
+        GroupedCases {
+            group: "块引用>块引用的下一行的第一个字符有可能延续块引用，但因为缺少空格而未能如此",
+            cases: vec![case!(
+                vec![indoc! {"
+                    > foo
+                    >bar"},],
+                vec![
+                    (EventType::EnterBlockQuote, None),
+                    (EventType::EnterParagraph, None),
+                    (EventType::Unparsed, Some("foo")),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                    (EventType::EnterParagraph, None),
+                    (EventType::Unparsed, Some(">bar")),
+                    (EventType::ExitBlock, None),
+                ]
+            )],
+        },
     ]
 }

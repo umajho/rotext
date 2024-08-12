@@ -12,8 +12,6 @@ pub struct StackWrapper<TStack: Stack<StackEntry>> {
     tables_in_stack: usize,
 
     should_reset_state: bool,
-    item_likes_in_stack_at_last_line: usize,
-    last_accessed_item_like_at_current_line: LastAccessedItemLikeAtCurrentLine,
 }
 
 impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
@@ -24,9 +22,11 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
             item_likes_in_stack: 0,
             tables_in_stack: 0,
             should_reset_state: false,
-            item_likes_in_stack_at_last_line: 0,
-            last_accessed_item_like_at_current_line: LastAccessedItemLikeAtCurrentLine::new(),
         }
+    }
+
+    pub fn as_slice(&self) -> &[StackEntry] {
+        self.stack.as_slice()
     }
 
     pub fn is_empty(&self) -> bool {
@@ -36,51 +36,20 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
     pub fn item_likes_in_stack(&self) -> usize {
         self.item_likes_in_stack
     }
-
     pub fn tables_in_stack(&self) -> usize {
         self.tables_in_stack
     }
 
     pub fn reset_current_line_for_new_line(&mut self) {
         self.should_reset_state = true;
-        self.item_likes_in_stack_at_last_line = self.item_likes_in_stack;
-        self.last_accessed_item_like_at_current_line = LastAccessedItemLikeAtCurrentLine::new();
     }
 
     pub fn should_reset_state(&self) -> bool {
         self.should_reset_state
     }
 
-    pub fn set_should_reset_state(&mut self, value: bool) {
-        self.should_reset_state = value;
-    }
-
-    pub fn processed_item_likes_at_current_line(&self) -> usize {
-        self.last_accessed_item_like_at_current_line.nth
-    }
-
-    pub fn has_unprocessed_item_likes_at_current_line(&self) -> bool {
-        self.processed_item_likes_at_current_line() < self.item_likes_in_stack_at_last_line
-    }
-
-    pub fn first_unprocessed_item_like_at_current_line(&mut self) -> &StackEntryItemLikeContainer {
-        self.update_last_accessed_item_like_next_index()
-    }
-
-    pub fn mark_first_unprocessed_item_like_as_processed_at_current_line(&mut self) {
-        self.last_accessed_item_like_at_current_line.nth += 1;
-        self.update_last_accessed_item_like_next_index();
-        self.last_accessed_item_like_at_current_line.next_index += 1;
-    }
-
-    fn update_last_accessed_item_like_next_index(&mut self) -> &StackEntryItemLikeContainer {
-        let slice = self.stack.as_slice();
-        loop {
-            match &slice[self.last_accessed_item_like_at_current_line.next_index] {
-                StackEntry::ItemLikeContainer(stack_entry) => break stack_entry,
-                _ => self.last_accessed_item_like_at_current_line.next_index += 1,
-            }
-        }
+    pub fn reset_should_reset_state(&mut self) {
+        self.should_reset_state = false;
     }
 
     pub fn top_is_item_like_container(&self) -> bool {
@@ -255,7 +224,7 @@ impl Meta {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ItemLikeContainer {
     BlockQuote,
     /// ordered list
@@ -266,7 +235,7 @@ pub enum ItemLikeContainer {
     DL,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum GeneralItemLike {
     /// of [ItemLikeContainer::OL] or [ItemLikeContainer::UL].
     LI,
@@ -362,18 +331,5 @@ impl TopLeafCodeBlock {
 
     pub fn make_exit_event(self, line_end: LineNumber) -> BlockEvent {
         self.meta.make_exit_event(line_end)
-    }
-}
-
-struct LastAccessedItemLikeAtCurrentLine {
-    nth: usize,
-    next_index: usize,
-}
-impl LastAccessedItemLikeAtCurrentLine {
-    fn new() -> Self {
-        Self {
-            nth: 0,
-            next_index: 0,
-        }
     }
 }

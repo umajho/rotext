@@ -1,6 +1,7 @@
 mod line;
 mod parser_inner;
 mod stack_wrapper;
+mod state;
 mod types;
 mod utils;
 
@@ -17,6 +18,11 @@ use crate::{
     utils::stack::Stack,
 };
 
+use state::{
+    Exiting, ExitingAndThen, ExitingUntil, Expecting, ItemLikesState,
+    ItemLikesStateMatchingLastLine, State,
+};
+
 use parser_inner::ParserInner;
 use stack_wrapper::{
     GeneralItemLike, ItemLikeContainer, Meta, StackEntryItemLike, StackEntryItemLikeContainer,
@@ -29,6 +35,12 @@ pub struct Parser<'a, TStack: Stack<StackEntry>> {
     input: &'a [u8],
     state: State,
     inner: ParserInner<TStack>,
+    /// 其实只有在 `state` 为 [Expecting::ItemLikeOpening] 时有效，但将
+    /// [ItemLikesState] 作为 [Expecting::ItemLikeOpening] 的字段并不是很可行。之后有
+    /// 函数既需要传入 `&mut state`，又需要知道 `expecting` 的值是什么，而现在的
+    /// [Expecting] 各分支都没有字段，[Copy] 起来很便宜。如果将
+    /// [ItemLikesState] 作为 [Expecting::ItemLikeOpening] 的字段，开销一下子上来了。
+    item_likes_state: ItemLikesState,
 
     #[cfg(debug_assertions)]
     is_errored: bool,
@@ -40,6 +52,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
             input,
             state: Expecting::ItemLikeOpening.into(),
             inner: ParserInner::new(),
+            item_likes_state: ItemLikesState::ProcessingNew,
             #[cfg(debug_assertions)]
             is_errored: false,
         }
@@ -58,25 +71,35 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
             }
 
             let result: crate::Result<Tym<3>> = match &mut self.state {
-                State::Exiting(exiting_branches) => {
-                    match Self::exit(&mut self.inner, exiting_branches) {
-                        Ok((tym, state)) => {
-                            if let Some(state) = state {
-                                self.state = state;
-                            }
-                            Ok(tym)
+                State::Exiting(exiting_branches) => match Self::exit(
+                    &mut self.inner,
+                    &mut self.item_likes_state,
+                    exiting_branches,
+                ) {
+                    Ok((tym, state)) => {
+                        if let Some(state) = state {
+                            self.state = state;
                         }
-                        Err(err) => Err(err),
+                        Ok(tym)
                     }
-                    .map(|tym| cast_tym!(tym))
+                    Err(err) => Err(err),
                 }
+                .map(|tym| cast_tym!(tym)),
                 State::Ended => {
                     break None;
                 }
                 State::Expecting(expecting) => {
                     if self.inner.stack.should_reset_state() {
-                        self.inner.stack.set_should_reset_state(false);
+                        self.inner.stack.reset_should_reset_state();
+                        let item_likes_in_stack_at_last_line =
+                            self.inner.stack.item_likes_in_stack();
                         *expecting = Expecting::ItemLikeOpening;
+                        self.item_likes_state = if item_likes_in_stack_at_last_line > 0 {
+                            ItemLikesStateMatchingLastLine::new(item_likes_in_stack_at_last_line)
+                                .into()
+                        } else {
+                            ItemLikesState::ProcessingNew
+                        };
                     }
                     self.inner.reset_current_expecting();
 
@@ -118,8 +141,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
             match expecting {
                 Expecting::ItemLikeOpening => {
                     if !self
-                        .inner
-                        .stack
+                        .item_likes_state
                         .has_unprocessed_item_likes_at_current_line()
                         && self.inner.stack.is_top_leaf_some()
                     {
@@ -131,6 +153,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                         self.input,
                         &mut self.state,
                         &mut self.inner,
+                        &mut self.item_likes_state,
                         first_char,
                     )
                     .map(|tym| cast_tym!(tym));
@@ -167,6 +190,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
 
     fn exit(
         inner: &mut ParserInner<TStack>,
+        item_likes_state: &mut ItemLikesState,
         exiting: &mut Exiting,
     ) -> crate::Result<(Tym<2>, Option<State>)> {
         if let Some(top_leaf) = inner.stack.pop_top_leaf() {
@@ -212,6 +236,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                         inner.stack.push_item_like(item_like)?;
                         inner.r#yield(ev)
                     };
+                    *item_likes_state = ItemLikesState::ProcessingNew;
                     Ok((tym_a.add(tym_b), Some(Expecting::ItemLikeOpening.into())))
                 }
                 ExitingAndThen::ExpectSurroundedOpening => {
@@ -240,62 +265,6 @@ impl<'a, TStack: Stack<StackEntry>> Iterator for Parser<'a, TStack> {
     }
 }
 
-enum State {
-    Expecting(Expecting),
-    /// 持续从栈中推出内容并产出对应的退出事件，直到满足特定条件，在那之后执行要做的事情。
-    Exiting(Exiting),
-    Ended,
-}
-impl From<Expecting> for State {
-    fn from(value: Expecting) -> Self {
-        Self::Expecting(value)
-    }
-}
-impl From<Exiting> for State {
-    fn from(value: Exiting) -> Self {
-        Self::Exiting(value)
-    }
-}
-
-#[derive(Clone, Copy)]
-enum Expecting {
-    ItemLikeOpening,
-    SurroundedOpening,
-    LeafContent,
-}
-
-struct Exiting {
-    until: ExitingUntil,
-    /// 完成退出后要做什么。
-    ///
-    /// XXX: 必定为 `Some`，因为在它被 `take` 走后 parser 的状态必定被新的状态覆盖。这里
-    /// 使用 Option 仅仅是为了 workaround rust 的生命周期。
-    and_then: Option<ExitingAndThen>,
-}
-enum ExitingUntil {
-    OnlyNItemLikesRemain {
-        n: usize,
-        should_also_exit_containee_in_last_container: bool,
-    },
-    StackIsEmpty,
-}
-enum ExitingAndThen {
-    EnterItemLikeAndExpectItemLike {
-        container: Option<StackEntryItemLikeContainer>,
-        item_like: StackEntryItemLike,
-    },
-    ExpectSurroundedOpening,
-    End,
-}
-impl Exiting {
-    fn new(until: ExitingUntil, and_then: ExitingAndThen) -> Self {
-        Self {
-            until,
-            and_then: Some(and_then),
-        }
-    }
-}
-
 mod branch {
     use super::*;
 
@@ -306,134 +275,164 @@ mod branch {
             input: &[u8],
             state: &mut State,
             inner: &mut ParserInner<TStack>,
+            item_likes_state: &mut ItemLikesState,
             first_char: u8,
         ) -> crate::Result<Tym<3>> {
             use GeneralItemLike as I;
             use ItemLikeContainer as G;
 
             match first_char {
-                m!('>') => {
-                    process_maybe_greater_than_opening(input, inner).map(|tym| cast_tym!(tym))
+                m!('>') if is_indeed_opening_and_consume_if_true(input, inner) => {
+                    process_greater_than_opening(inner, item_likes_state).map(|tym| cast_tym!(tym))
                 }
-                m!('#') => process_maybe_general_opening(input, state, inner, G::OL, I::LI)
-                    .map(|tym| cast_tym!(tym)),
-                m!('*') => process_maybe_general_opening(input, state, inner, G::UL, I::LI)
-                    .map(|tym| cast_tym!(tym)),
-                m!(';') => process_maybe_general_opening(input, state, inner, G::DL, I::DT)
-                    .map(|tym| cast_tym!(tym)),
-                m!(':') => process_maybe_general_opening(input, state, inner, G::DL, I::DD)
-                    .map(|tym| cast_tym!(tym)),
-                _ if inner.stack.has_unprocessed_item_likes_at_current_line() => {
-                    *state = Exiting::new(
-                        ExitingUntil::OnlyNItemLikesRemain {
-                            n: inner.stack.processed_item_likes_at_current_line(),
-                            should_also_exit_containee_in_last_container: false,
-                        },
-                        ExitingAndThen::ExpectSurroundedOpening,
-                    )
-                    .into();
-                    Ok(TYM_UNIT.into())
+                m!('#') if is_indeed_opening_and_consume_if_true(input, inner) => {
+                    process_general_opening(state, inner, item_likes_state, G::OL, I::LI)
+                        .map(|tym| cast_tym!(tym))
                 }
-                _ => surrounded::parse_opening_and_process(input, state, inner, first_char)
-                    .map(|tym| cast_tym!(tym)),
+                m!('*') if is_indeed_opening_and_consume_if_true(input, inner) => {
+                    process_general_opening(state, inner, item_likes_state, G::UL, I::LI)
+                        .map(|tym| cast_tym!(tym))
+                }
+                m!(';') if is_indeed_opening_and_consume_if_true(input, inner) => {
+                    process_general_opening(state, inner, item_likes_state, G::DL, I::DT)
+                        .map(|tym| cast_tym!(tym))
+                }
+                m!(':') if is_indeed_opening_and_consume_if_true(input, inner) => {
+                    process_general_opening(state, inner, item_likes_state, G::DL, I::DD)
+                        .map(|tym| cast_tym!(tym))
+                }
+                _ => match item_likes_state {
+                    ItemLikesState::MatchingLastLine(matching_last_line) => {
+                        *state = Exiting::new(
+                            ExitingUntil::OnlyNItemLikesRemain {
+                                n: matching_last_line.processed_item_likes(),
+                                should_also_exit_containee_in_last_container: false,
+                            },
+                            ExitingAndThen::ExpectSurroundedOpening,
+                        )
+                        .into();
+                        Ok(TYM_UNIT.into())
+                    }
+                    ItemLikesState::ProcessingNew => {
+                        *state = State::Expecting(Expecting::SurroundedOpening);
+                        surrounded::parse_opening_and_process(input, state, inner, first_char)
+                            .map(|tym| cast_tym!(tym))
+                    }
+                },
             }
         }
 
-        fn process_maybe_greater_than_opening<TStack: Stack<StackEntry>>(
-            input: &[u8],
+        fn process_greater_than_opening<TStack: Stack<StackEntry>>(
             inner: &mut ParserInner<TStack>,
-        ) -> crate::Result<Tym<3>> {
-            match input.get(inner.cursor() + 1) {
-                Some(b' ') => inner.move_cursor_forward("> ".len()),
-                None | Some(b'\r' | b'\n') => inner.move_cursor_forward(">".len()),
-                _ => return leaf::paragraph::enter_if_not_blank(input, inner, 1),
-            }
-
-            let tym = if inner.stack.has_unprocessed_item_likes_at_current_line() {
-                inner
-                    .stack
-                    .mark_first_unprocessed_item_like_as_processed_at_current_line();
-
-                TYM_UNIT.into()
-            } else {
-                let id = inner.pop_block_id();
-                inner
-                    .stack
-                    .push_item_like_container(StackEntryItemLikeContainer {
-                        meta: Meta::new(id, inner.current_line()),
-                        r#type: ItemLikeContainer::BlockQuote,
-                    })?;
-                inner.r#yield(BlockEvent::EnterBlockQuote(id.into()))
+            item_likes_state: &mut ItemLikesState,
+        ) -> crate::Result<Tym<1>> {
+            let tym = match item_likes_state {
+                ItemLikesState::MatchingLastLine(matching_last_line) => {
+                    let is_all_processed = matching_last_line
+                        .mark_first_unprocessed_item_like_as_processed_at_current_line(
+                            &inner.stack,
+                        );
+                    if is_all_processed {
+                        *item_likes_state = ItemLikesState::ProcessingNew;
+                    }
+                    TYM_UNIT.into()
+                }
+                ItemLikesState::ProcessingNew => {
+                    let id = inner.pop_block_id();
+                    inner
+                        .stack
+                        .push_item_like_container(StackEntryItemLikeContainer {
+                            meta: Meta::new(id, inner.current_line()),
+                            r#type: ItemLikeContainer::BlockQuote,
+                        })?;
+                    inner.r#yield(BlockEvent::EnterBlockQuote(id.into()))
+                }
             };
 
-            Ok(tym.into())
+            Ok(tym)
         }
 
-        fn process_maybe_general_opening<TStack: Stack<StackEntry>>(
-            input: &[u8],
+        fn process_general_opening<TStack: Stack<StackEntry>>(
             state: &mut State,
             inner: &mut ParserInner<TStack>,
+            item_likes_state: &mut ItemLikesState,
             container: ItemLikeContainer,
             item_like: GeneralItemLike,
-        ) -> crate::Result<Tym<3>> {
+        ) -> crate::Result<Tym<2>> {
+            let tym = match item_likes_state {
+                ItemLikesState::MatchingLastLine(matching_last_line) => {
+                    let stack_entry = matching_last_line.first_unprocessed_item_like(&inner.stack);
+                    if stack_entry.r#type == container {
+                        matching_last_line
+                            .mark_first_unprocessed_item_like_as_processed_at_current_line(
+                                &inner.stack,
+                            );
+                        *state = Exiting::new(
+                            ExitingUntil::OnlyNItemLikesRemain {
+                                n: matching_last_line.processed_item_likes(),
+                                should_also_exit_containee_in_last_container: true,
+                            },
+                            ExitingAndThen::EnterItemLikeAndExpectItemLike {
+                                container: None,
+                                item_like: make_stack_entry_from_general_item_like(
+                                    item_like, inner,
+                                ),
+                            },
+                        )
+                        .into()
+                    } else {
+                        *state = Exiting::new(
+                            ExitingUntil::OnlyNItemLikesRemain {
+                                n: matching_last_line.processed_item_likes(),
+                                should_also_exit_containee_in_last_container: false,
+                            },
+                            ExitingAndThen::EnterItemLikeAndExpectItemLike {
+                                container: Some(make_stack_entry_from_item_like_container(
+                                    container, inner,
+                                )),
+                                item_like: make_stack_entry_from_general_item_like(
+                                    item_like, inner,
+                                ),
+                            },
+                        )
+                        .into();
+                    }
+                    TYM_UNIT.into()
+                }
+                ItemLikesState::ProcessingNew => {
+                    let tym_a = {
+                        let stack_entry =
+                            make_stack_entry_from_item_like_container(container, inner);
+                        let ev = stack_entry.make_enter_event();
+                        inner.stack.push_item_like_container(stack_entry)?;
+                        inner.r#yield(ev)
+                    };
+                    let tym_b = {
+                        let stack_entry = make_stack_entry_from_general_item_like(item_like, inner);
+                        let ev = stack_entry.make_enter_event();
+                        inner.stack.push_item_like(stack_entry)?;
+                        inner.r#yield(ev)
+                    };
+
+                    tym_a.add(tym_b)
+                }
+            };
+
+            Ok(tym)
+        }
+
+        fn is_indeed_opening_and_consume_if_true<TStack: Stack<StackEntry>>(
+            input: &[u8],
+            inner: &mut ParserInner<TStack>,
+        ) -> bool {
             match input.get(inner.cursor() + 1) {
                 Some(b' ') => inner.move_cursor_forward(1 + " ".len()),
                 None | Some(b'\r' | b'\n') => inner.move_cursor_forward(1),
-                _ => return leaf::paragraph::enter_if_not_blank(input, inner, 1),
+                // TODO: 也许可以一步到位调用 `leaf::paragraph::enter_if_not_blank(input, inner, 1)`。
+                _ => return false,
             }
 
-            let tym = if inner.stack.has_unprocessed_item_likes_at_current_line() {
-                let stack_entry = inner.stack.first_unprocessed_item_like_at_current_line();
-                if stack_entry.r#type == container {
-                    inner
-                        .stack
-                        .mark_first_unprocessed_item_like_as_processed_at_current_line();
-                    *state = Exiting::new(
-                        ExitingUntil::OnlyNItemLikesRemain {
-                            n: inner.stack.processed_item_likes_at_current_line(),
-                            should_also_exit_containee_in_last_container: true,
-                        },
-                        ExitingAndThen::EnterItemLikeAndExpectItemLike {
-                            container: None,
-                            item_like: make_stack_entry_from_general_item_like(item_like, inner),
-                        },
-                    )
-                    .into()
-                } else {
-                    *state = Exiting::new(
-                        ExitingUntil::OnlyNItemLikesRemain {
-                            n: inner.stack.processed_item_likes_at_current_line(),
-                            should_also_exit_containee_in_last_container: false,
-                        },
-                        ExitingAndThen::EnterItemLikeAndExpectItemLike {
-                            container: Some(make_stack_entry_from_item_like_container(
-                                container, inner,
-                            )),
-                            item_like: make_stack_entry_from_general_item_like(item_like, inner),
-                        },
-                    )
-                    .into()
-                }
-
-                TYM_UNIT.into()
-            } else {
-                let tym_a = {
-                    let stack_entry = make_stack_entry_from_item_like_container(container, inner);
-                    let ev = stack_entry.make_enter_event();
-                    inner.stack.push_item_like_container(stack_entry)?;
-                    inner.r#yield(ev)
-                };
-                let tym_b = {
-                    let stack_entry = make_stack_entry_from_general_item_like(item_like, inner);
-                    let ev = stack_entry.make_enter_event();
-                    inner.stack.push_item_like(stack_entry)?;
-                    inner.r#yield(ev)
-                };
-
-                tym_a.add(tym_b)
-            };
-
-            Ok(tym.into())
+            true
         }
 
         fn make_stack_entry_from_general_item_like<TStack: Stack<StackEntry>>(
