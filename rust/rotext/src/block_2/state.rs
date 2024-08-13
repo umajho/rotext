@@ -1,4 +1,4 @@
-use crate::utils::stack::Stack;
+use crate::{utils::stack::Stack, BlockEvent};
 
 use super::{
     stack_wrapper::{StackEntryItemLike, StackEntryItemLikeContainer, StackWrapper},
@@ -42,6 +42,10 @@ pub enum ExitingUntil {
         n: usize,
         should_also_exit_containee_in_last_container: bool,
     },
+    TopIsTable {
+        should_also_exit_table: bool,
+    },
+    TopIsAwareOfDoublePipes,
     StackIsEmpty,
 }
 pub enum ExitingAndThen {
@@ -50,6 +54,8 @@ pub enum ExitingAndThen {
         item_like: StackEntryItemLike,
     },
     ExpectSurroundedOpening,
+    YieldAndExpectSurroundedOpening(BlockEvent),
+    YieldBasedOnContextAndExpectSurroundedOpening,
     End,
 }
 impl Exiting {

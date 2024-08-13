@@ -62,6 +62,13 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
         )
     }
 
+    pub fn top_is_table(&self) -> bool {
+        if self.top_leaf.is_some() {
+            return false;
+        }
+        matches!(self.stack.as_slice().last(), Some(StackEntry::Table(_)))
+    }
+
     /// 向栈中推入一个 item-like entry。
     ///
     /// 调用者应保证 `self.top_leaf` 为 `None`。

@@ -26,6 +26,8 @@ pub struct ParserInner<TStack: Stack<StackEntry>> {
 
     /// 记录仅在进入变体 `Expecting` 对应的分支时，在处理这个分支期间有效的数据。
     pub current_expecting: CurrentExpecting,
+
+    has_just_entered_table: bool,
 }
 
 impl<TStack: Stack<StackEntry>> ParserInner<TStack> {
@@ -37,6 +39,7 @@ impl<TStack: Stack<StackEntry>> ParserInner<TStack> {
             to_yield: ArrayQueue::new(),
             block_id_generator: BlockIdGenerator::new(),
             current_expecting: CurrentExpecting::new(),
+            has_just_entered_table: false,
         }
     }
 
@@ -52,6 +55,10 @@ impl<TStack: Stack<StackEntry>> ParserInner<TStack> {
 
     pub fn reset_current_expecting(&mut self) {
         self.current_expecting = CurrentExpecting::new();
+    }
+
+    pub fn has_just_entered_table(&mut self) -> bool {
+        self.has_just_entered_table
     }
 }
 
@@ -76,6 +83,8 @@ impl<TStack: Stack<StackEntry>> CursorContext for ParserInner<TStack> {
 impl<TStack: Stack<StackEntry>> YieldContext for ParserInner<TStack> {
     #[must_use]
     fn r#yield(&mut self, ev: BlockEvent) -> Tym<1> {
+        self.has_just_entered_table = matches!(ev, BlockEvent::EnterTable(..));
+
         self.to_yield.push_back(ev);
 
         Tym::<1>::new()

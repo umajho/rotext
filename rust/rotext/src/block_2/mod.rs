@@ -178,13 +178,19 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                     if let Some(top_leaf) = self.inner.stack.pop_top_leaf() {
                         break leaf::parse_content_and_process(
                             self.input,
+                            &mut self.state,
                             &mut self.inner,
                             top_leaf,
                         )
                         .map(|tym| cast_tym!(tym));
                     }
-                    break leaf::parse_opening_and_process(self.input, &mut self.inner, first_char)
-                        .map(|tym| cast_tym!(tym));
+                    break leaf::parse_opening_and_process(
+                        self.input,
+                        &mut self.state,
+                        &mut self.inner,
+                        first_char,
+                    )
+                    .map(|tym| cast_tym!(tym));
                 }
             }
         }
@@ -204,6 +210,8 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
             return Ok((cast_tym!(tym), None));
         }
 
+        let mut to_be_yielded_based_on_context: Option<BlockEvent> = None;
+
         let (is_done, should_exit_top) = match exiting.until {
             ExitingUntil::OnlyNItemLikesRemain {
                 n,
@@ -215,6 +223,17 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                     is_done = is_done && inner.stack.top_is_item_like_container();
                 }
                 (is_done, !is_done)
+            }
+            ExitingUntil::TopIsTable {
+                should_also_exit_table,
+            } => (inner.stack.top_is_table(), should_also_exit_table),
+            ExitingUntil::TopIsAwareOfDoublePipes => {
+                if inner.stack.top_is_table() {
+                    to_be_yielded_based_on_context = Some(BlockEvent::IndicateTableDataCell);
+                    (true, false)
+                } else {
+                    (false, true)
+                }
             }
             ExitingUntil::StackIsEmpty => {
                 let is_done = inner.stack.is_empty();
@@ -238,7 +257,17 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
 
         let (tym_b, new_state) = if is_done {
             debug_assert!(exiting.and_then.is_some());
-            match unsafe { exiting.and_then.take().unwrap_unchecked() } {
+            let and_then = unsafe { exiting.and_then.take().unwrap_unchecked() };
+            #[cfg(debug_assertions)]
+            {
+                if !matches!(
+                    and_then,
+                    ExitingAndThen::YieldBasedOnContextAndExpectSurroundedOpening
+                ) {
+                    assert!(to_be_yielded_based_on_context.is_none());
+                }
+            }
+            match and_then {
                 ExitingAndThen::EnterItemLikeAndExpectItemLike {
                     container,
                     item_like,
@@ -261,9 +290,23 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                 ExitingAndThen::ExpectSurroundedOpening => {
                     (TYM_UNIT.into(), Some(Expecting::SurroundedOpening.into()))
                 }
+                ExitingAndThen::YieldAndExpectSurroundedOpening(ev) => (
+                    inner.r#yield(ev).into(),
+                    Some(Expecting::SurroundedOpening.into()),
+                ),
+                ExitingAndThen::YieldBasedOnContextAndExpectSurroundedOpening => {
+                    debug_assert!(to_be_yielded_based_on_context.is_some());
+                    (
+                        inner
+                            .r#yield(unsafe { to_be_yielded_based_on_context.unwrap_unchecked() })
+                            .into(),
+                        Some(Expecting::SurroundedOpening.into()),
+                    )
+                }
                 ExitingAndThen::End => (TYM_UNIT.into(), Some(State::Ended)),
             }
         } else {
+            debug_assert!(to_be_yielded_based_on_context.is_none());
             (TYM_UNIT.into(), None)
         };
 
@@ -503,10 +546,10 @@ mod branch {
                         inner.move_cursor_forward("{|".len());
                         table::enter(state, inner).map(|tym| cast_tym!(tym))
                     }
-                    _ => leaf::paragraph::enter_if_not_blank(input, inner, 1)
+                    _ => leaf::paragraph::enter_if_not_blank(input, state, inner, 1)
                         .map(|tym| cast_tym!(tym)),
                 },
-                _ => leaf::parse_opening_and_process(input, inner, first_char)
+                _ => leaf::parse_opening_and_process(input, state, inner, first_char)
                     .map(|tym| cast_tym!(tym)),
             }
         }
@@ -540,8 +583,50 @@ mod branch {
                 DoublePipes,
             }
             impl TableRelatedEnd {
-                pub fn process(self) -> Tym<0> {
-                    todo!()
+                pub fn process(self, state: &mut State) -> Tym<0> {
+                    *state = match self {
+                        TableRelatedEnd::TableClosing => Exiting::new(
+                            ExitingUntil::TopIsTable {
+                                should_also_exit_table: true,
+                            },
+                            ExitingAndThen::ExpectSurroundedOpening,
+                        )
+                        .into(),
+                        TableRelatedEnd::TableCaptionIndicator => Exiting::new(
+                            ExitingUntil::TopIsTable {
+                                should_also_exit_table: false,
+                            },
+                            ExitingAndThen::YieldAndExpectSurroundedOpening(
+                                BlockEvent::IndicateTableCaption,
+                            ),
+                        )
+                        .into(),
+                        TableRelatedEnd::TableRowIndicator => Exiting::new(
+                            ExitingUntil::TopIsTable {
+                                should_also_exit_table: false,
+                            },
+                            ExitingAndThen::YieldAndExpectSurroundedOpening(
+                                BlockEvent::IndicateTableRow,
+                            ),
+                        )
+                        .into(),
+                        TableRelatedEnd::TableHeaderCellIndicator => Exiting::new(
+                            ExitingUntil::TopIsTable {
+                                should_also_exit_table: false,
+                            },
+                            ExitingAndThen::YieldAndExpectSurroundedOpening(
+                                BlockEvent::IndicateTableHeaderCell,
+                            ),
+                        )
+                        .into(),
+                        TableRelatedEnd::DoublePipes => Exiting::new(
+                            ExitingUntil::TopIsAwareOfDoublePipes,
+                            ExitingAndThen::YieldBasedOnContextAndExpectSurroundedOpening,
+                        )
+                        .into(),
+                    };
+
+                    cast_tym!(TYM_UNIT)
                 }
             }
 
@@ -579,16 +664,13 @@ mod branch {
                 Ok(tym)
             }
 
-            pub fn make_table_related_end_condition<
-                TStack: Stack<StackEntry>,
-                F: FnOnce() -> bool,
-            >(
+            pub fn make_table_related_end_condition<TStack: Stack<StackEntry>>(
                 inner: &ParserInner<TStack>,
-                is_caption_applicable: F,
+                is_caption_applicable: bool,
             ) -> Option<line::normal::TableRelated> {
                 if inner.stack.tables_in_stack() > 0 {
                     Some(line::normal::TableRelated {
-                        is_caption_applicable: is_caption_applicable(),
+                        is_caption_applicable,
                     })
                 } else {
                     None
@@ -603,6 +685,7 @@ mod leaf {
 
     pub fn parse_opening_and_process<TStack: Stack<StackEntry>>(
         input: &[u8],
+        state: &mut State,
         inner: &mut ParserInner<TStack>,
         first_char: u8,
     ) -> crate::Result<Tym<3>> {
@@ -613,7 +696,8 @@ mod leaf {
                     inner.move_cursor_forward(count);
                     thematic_break::process(inner).map(|tym| cast_tym!(tym))
                 } else {
-                    paragraph::enter_if_not_blank(input, inner, count).map(|tym| cast_tym!(tym))
+                    paragraph::enter_if_not_blank(input, state, inner, count)
+                        .map(|tym| cast_tym!(tym))
                 }
             }
             m!('=') => {
@@ -622,7 +706,8 @@ mod leaf {
                     inner.move_cursor_forward(count + " ".len());
                     heading::enter(inner, count).map(|tym| cast_tym!(tym))
                 } else {
-                    paragraph::enter_if_not_blank(input, inner, count).map(|tym| cast_tym!(tym))
+                    paragraph::enter_if_not_blank(input, state, inner, count)
+                        .map(|tym| cast_tym!(tym))
                 }
             }
             m!('`') => {
@@ -631,25 +716,27 @@ mod leaf {
                     inner.move_cursor_forward(count);
                     code_block::enter(inner, count).map(|tym| cast_tym!(tym))
                 } else {
-                    paragraph::enter_if_not_blank(input, inner, count).map(|tym| cast_tym!(tym))
+                    paragraph::enter_if_not_blank(input, state, inner, count)
+                        .map(|tym| cast_tym!(tym))
                 }
             }
-            _ => paragraph::enter_if_not_blank(input, inner, 0).map(|tym| cast_tym!(tym)),
+            _ => paragraph::enter_if_not_blank(input, state, inner, 0).map(|tym| cast_tym!(tym)),
         }
     }
 
     pub fn parse_content_and_process<TStack: Stack<StackEntry>>(
         input: &[u8],
+        state: &mut State,
         inner: &mut ParserInner<TStack>,
         top_leaf: TopLeaf,
     ) -> crate::Result<Tym<3>> {
         match top_leaf {
             TopLeaf::Paragraph(top_leaf) => {
-                leaf::paragraph::parse_content_and_process(input, inner, top_leaf)
+                leaf::paragraph::parse_content_and_process(input, state, inner, top_leaf)
                     .map(|tym| cast_tym!(tym))
             }
             TopLeaf::Heading(top_leaf) => {
-                leaf::heading::parse_content_and_process(input, inner, top_leaf)
+                leaf::heading::parse_content_and_process(input, state, inner, top_leaf)
                     .map(|tym| cast_tym!(tym))
             }
             TopLeaf::CodeBlock(top_leaf) => {
@@ -699,6 +786,7 @@ mod leaf {
 
         pub fn parse_content_and_process<TStack: Stack<StackEntry>>(
             input: &[u8],
+            state: &mut State,
             inner: &mut ParserInner<TStack>,
             mut top_leaf: TopLeafHeading,
         ) -> crate::Result<Tym<2>> {
@@ -711,8 +799,7 @@ mod leaf {
                         count: top_leaf.level,
                     }),
                     on_table_related: branch::surrounded::table::make_table_related_end_condition(
-                        inner,
-                        || false,
+                        inner, false,
                     ),
                 },
                 if inner.current_expecting.spaces_before() > 0 {
@@ -743,8 +830,10 @@ mod leaf {
                     line::global_phase::process_verbatim_escaping(inner, verbatim_escaping)
                 }
                 line::normal::End::TableRelated(table_related_end) => {
-                    let tym = table_related_end.process();
-                    cast_tym!(tym)
+                    let tym_a = exit(inner, top_leaf);
+                    let tym_b = table_related_end.process(state);
+
+                    tym_a.add(tym_b)
                 }
             };
 
@@ -926,6 +1015,7 @@ mod leaf {
         /// `inner.cursor` 就能作为段落的开头（段落开头应该是并非空格或换行的字符）。
         pub fn enter_if_not_blank<TStack: Stack<StackEntry>>(
             input: &[u8],
+            state: &mut State,
             inner: &mut ParserInner<TStack>,
             content_before: usize,
         ) -> crate::Result<Tym<3>> {
@@ -943,6 +1033,7 @@ mod leaf {
             // 需要提前取得行数。
             let line_start = inner.current_line();
 
+            let has_just_entered_table = inner.has_just_entered_table();
             let (content, mut end) = line::normal::parse(
                 input,
                 inner,
@@ -950,7 +1041,7 @@ mod leaf {
                     on_atx_closing: None,
                     on_table_related: branch::surrounded::table::make_table_related_end_condition(
                         inner,
-                        || todo!(),
+                        has_just_entered_table,
                     ),
                 },
                 line::normal::ContentBefore::NotSpace(content_before),
@@ -977,14 +1068,15 @@ mod leaf {
                 TYM_UNIT.into()
             };
 
-            let tym_c = process_normal_end(end, inner);
+            let tym_c = process_normal_end(end, state, inner);
 
             Ok(tym_ab.add(tym_c))
         }
 
-        fn process_normal_end<TCtx: YieldContext>(
+        fn process_normal_end<TStack: Stack<StackEntry>>(
             end: line::normal::End,
-            ctx: &mut TCtx,
+            state: &mut State,
+            inner: &mut ParserInner<TStack>,
         ) -> Tym<1> {
             match end {
                 line::normal::End::Eof |
@@ -993,11 +1085,11 @@ mod leaf {
                 // 符。此外，这么做也能防止空行产出换行符。
                 line::normal::End::NewLine(_) => TYM_UNIT.into(),
                 line::normal::End::VerbatimEscaping(verbatim_escaping) => {
-                    let tym = line::global_phase::process_verbatim_escaping(ctx, verbatim_escaping);
+                    let tym = line::global_phase::process_verbatim_escaping(inner, verbatim_escaping);
                     cast_tym!(tym)
                 }
                 line::normal::End::TableRelated(table_related_end) => {
-                    let tym = table_related_end.process();
+                    let tym = table_related_end.process(state, );
                     cast_tym!(tym)
                 }
             }
@@ -1005,6 +1097,7 @@ mod leaf {
 
         pub fn parse_content_and_process<TStack: Stack<StackEntry>>(
             input: &[u8],
+            state: &mut State,
             inner: &mut ParserInner<TStack>,
             mut top_leaf: TopLeafParagraph,
         ) -> crate::Result<Tym<3>> {
@@ -1014,8 +1107,7 @@ mod leaf {
                 line::normal::EndCondition {
                     on_atx_closing: None,
                     on_table_related: branch::surrounded::table::make_table_related_end_condition(
-                        inner,
-                        || false,
+                        inner, false,
                     ),
                 },
                 if inner.current_expecting.spaces_before() > 0 {
@@ -1052,7 +1144,7 @@ mod leaf {
                 exit(inner, top_leaf).into()
             };
 
-            let tym_c = process_normal_end(end, inner);
+            let tym_c = process_normal_end(end, state, inner);
 
             Ok(tym_ab.add(tym_c))
         }
