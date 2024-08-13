@@ -194,7 +194,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
         inner: &mut ParserInner<TStack>,
         item_likes_state: &mut ItemLikesState,
         exiting: &mut Exiting,
-    ) -> crate::Result<(Tym<2>, Option<State>)> {
+    ) -> crate::Result<(Tym<3>, Option<State>)> {
         if let Some(top_leaf) = inner.stack.pop_top_leaf() {
             let tym: Tym<2> = match top_leaf {
                 TopLeaf::Paragraph(top_leaf) => leaf::paragraph::exit(inner, top_leaf).into(),
@@ -204,7 +204,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
             return Ok((cast_tym!(tym), None));
         }
 
-        let is_done = match exiting.until {
+        let (is_done, should_exit_top) = match exiting.until {
             ExitingUntil::OnlyNItemLikesRemain {
                 n,
                 should_also_exit_containee_in_last_container,
@@ -214,14 +214,31 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                 if should_also_exit_containee_in_last_container {
                     is_done = is_done && inner.stack.top_is_item_like_container();
                 }
-                is_done
+                (is_done, !is_done)
             }
-            ExitingUntil::StackIsEmpty => inner.stack.is_empty(),
+            ExitingUntil::StackIsEmpty => {
+                let is_done = inner.stack.is_empty();
+                (is_done, !is_done)
+            }
         };
 
-        if is_done {
+        let tym_a = if should_exit_top {
+            match inner.stack.pop().unwrap() {
+                StackEntry::ItemLike(stack_entry) => branch::item_like::exit(inner, stack_entry)?,
+                StackEntry::ItemLikeContainer(stack_entry) => {
+                    branch::item_like::exit_container(inner, stack_entry)?
+                }
+                StackEntry::Table(stack_entry) => {
+                    branch::surrounded::table::exit(inner, stack_entry)?
+                }
+            }
+        } else {
+            TYM_UNIT.into()
+        };
+
+        let (tym_b, new_state) = if is_done {
             debug_assert!(exiting.and_then.is_some());
-            return match unsafe { exiting.and_then.take().unwrap_unchecked() } {
+            match unsafe { exiting.and_then.take().unwrap_unchecked() } {
                 ExitingAndThen::EnterItemLikeAndExpectItemLike {
                     container,
                     item_like,
@@ -239,23 +256,18 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                         inner.r#yield(ev)
                     };
                     *item_likes_state = ItemLikesState::ProcessingNew;
-                    Ok((tym_a.add(tym_b), Some(Expecting::ItemLikeOpening.into())))
+                    (tym_a.add(tym_b), Some(Expecting::ItemLikeOpening.into()))
                 }
                 ExitingAndThen::ExpectSurroundedOpening => {
-                    Ok((TYM_UNIT.into(), Some(Expecting::SurroundedOpening.into())))
+                    (TYM_UNIT.into(), Some(Expecting::SurroundedOpening.into()))
                 }
-                ExitingAndThen::End => Ok((TYM_UNIT.into(), Some(State::Ended))),
-            };
-        }
-
-        let result = match inner.stack.pop().unwrap() {
-            StackEntry::ItemLike(stack_entry) => branch::item_like::exit(inner, stack_entry),
-            StackEntry::ItemLikeContainer(stack_entry) => {
-                branch::item_like::exit_container(inner, stack_entry)
+                ExitingAndThen::End => (TYM_UNIT.into(), Some(State::Ended)),
             }
-            StackEntry::Table(stack_entry) => branch::surrounded::table::exit(inner, stack_entry),
+        } else {
+            (TYM_UNIT.into(), None)
         };
-        result.map(|tym| (cast_tym!(tym), None))
+
+        Ok((tym_a.add(tym_b), new_state))
     }
 }
 
