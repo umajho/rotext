@@ -1,4 +1,4 @@
-use crate::{block_2::types::CursorContext, types::LineNumber};
+use crate::{block::types::CursorContext, types::LineNumber};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct MockCursorContext {

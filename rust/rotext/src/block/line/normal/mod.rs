@@ -4,7 +4,7 @@ mod tests;
 use std::ops::Range;
 
 use crate::{
-    block_2::{
+    block::{
         branch::surrounded::table, types::CursorContext,
         utils::count_continuous_character_with_maximum,
     },

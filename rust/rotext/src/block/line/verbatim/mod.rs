@@ -4,7 +4,7 @@ mod tests;
 use std::ops::Range;
 
 use crate::{
-    block_2::{
+    block::{
         line::{global_phase, parse_common_end, ParseCommonEndOutput},
         types::CursorContext,
         utils::count_continuous_character,

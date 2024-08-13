@@ -1,6 +1,6 @@
 mod for_fn_parse {
     use crate::{
-        block_2::{
+        block::{
             line::global_phase::{parse, Output},
             test_support::mocks::MockCursorContext,
         },
@@ -59,7 +59,7 @@ mod for_fn_parse {
 
 mod for_fn_parse_verbatim_escaping {
     use crate::{
-        block_2::{
+        block::{
             line::global_phase::parse_verbatim_escaping, test_support::mocks::MockCursorContext,
         },
         events::VerbatimEscaping,

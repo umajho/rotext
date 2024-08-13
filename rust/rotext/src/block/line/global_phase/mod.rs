@@ -2,7 +2,7 @@
 mod tests;
 
 use crate::{
-    block_2::{
+    block::{
         types::{CursorContext, Tym, YieldContext},
         utils::count_continuous_character,
     },
