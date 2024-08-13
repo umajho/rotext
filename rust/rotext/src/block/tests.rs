@@ -1,8 +1,15 @@
 use std::marker::PhantomData;
 
 use crate::{
-    test_suites,
-    utils::stack::{Stack, VecStack},
+    events::EventType,
+    test_suites::{
+        self,
+        block::support::{
+            assert_parse_error_with_stack, assert_parse_ok_and_output_maches_with_stack,
+        },
+    },
+    utils::stack::{ArrayStack, Stack, VecStack},
+    Error,
 };
 
 use super::{Parser, StackEntry};
@@ -31,5 +38,41 @@ fn it_works() {
     test_suites::block::run(&ctx);
 }
 
-// TODO!!: 在删掉旧版的 [crate::block] 时，不要忘了把其测试中的
-// `it_works_with_array_stack` 粘贴过来。
+#[test]
+fn it_works_with_array_stack() {
+    let ctx: Context<ArrayStack<_, 2>> = Context::new();
+
+    assert_parse_ok_and_output_maches_with_stack(&ctx, "", &vec![]);
+    assert_parse_ok_and_output_maches_with_stack(
+        &ctx,
+        ">",
+        &vec![
+            (EventType::EnterBlockQuote, None),
+            (EventType::ExitBlock, None),
+        ],
+    );
+    assert_parse_ok_and_output_maches_with_stack(
+        &ctx,
+        "> >",
+        &vec![
+            (EventType::EnterBlockQuote, None),
+            (EventType::EnterBlockQuote, None),
+            (EventType::ExitBlock, None),
+            (EventType::ExitBlock, None),
+        ],
+    );
+    assert_parse_ok_and_output_maches_with_stack(
+        &ctx,
+        "> > foo",
+        &vec![
+            (EventType::EnterBlockQuote, None),
+            (EventType::EnterBlockQuote, None),
+            (EventType::EnterParagraph, None),
+            (EventType::Unparsed, Some("foo")),
+            (EventType::ExitBlock, None),
+            (EventType::ExitBlock, None),
+            (EventType::ExitBlock, None),
+        ],
+    );
+    assert_parse_error_with_stack(&ctx, "> > >", Error::OutOfStackSpace)
+}
