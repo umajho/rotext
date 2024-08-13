@@ -819,7 +819,7 @@ mod leaf {
                         ),
                         TopLeafCodeBlockStateInCode::AtLineBeginning(new_line) => (
                             Some(line::verbatim::AtLineBeginning {
-                                indent: inner.current_expecting.spaces_before(),
+                                indent: top_leaf.indent,
                             }),
                             Some(new_line.clone()),
                         ),
