@@ -274,6 +274,21 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                         (EventType::ExitBlock, None),
                     ]
                 ),
+                case!(
+                    vec![indoc! {"
+                        ```
+                        ␠␠foo<`bar`>    baz
+                        ```"},],
+                    vec![
+                        (EventType::EnterCodeBlock, None),
+                        (EventType::IndicateCodeBlockCode, None),
+                        (EventType::Text, Some("  foo")),
+                        (EventType::VerbatimEscaping, Some("bar")),
+                        (EventType::Text, Some("    baz")),
+                        (EventType::NewLine, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
             ],
         },
         GroupedCases {
@@ -401,6 +416,21 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                         (EventType::EnterCodeBlock, None),
                         (EventType::IndicateCodeBlockCode, None),
                         (EventType::Text, Some("code")),
+                        (EventType::NewLine, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec![indoc! {"
+                        ␠␠```
+                        ␠␠␠␠␠␠foo<`bar`>      baz
+                        ␠␠```"},],
+                    vec![
+                        (EventType::EnterCodeBlock, None),
+                        (EventType::IndicateCodeBlockCode, None),
+                        (EventType::Text, Some("    foo")),
+                        (EventType::VerbatimEscaping, Some("bar")),
+                        (EventType::Text, Some("      baz")),
                         (EventType::NewLine, None),
                         (EventType::ExitBlock, None),
                     ]

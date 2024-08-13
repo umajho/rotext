@@ -969,6 +969,8 @@ mod leaf {
                             TYM_UNIT.into()
                         }
                         line::verbatim::End::VerbatimEscaping(verbatim_escaping) => {
+                            top_leaf.state =
+                                TopLeafCodeBlockState::InCode(TopLeafCodeBlockStateInCode::Normal);
                             inner.stack.push_top_leaf(top_leaf.into());
                             line::global_phase::process_verbatim_escaping(inner, verbatim_escaping)
                         }
