@@ -22,6 +22,7 @@ pub struct Fence {
     pub minimum_count: usize,
 }
 
+#[derive(Debug)]
 pub enum End {
     Eof,
     NewLine(NewLine),

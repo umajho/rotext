@@ -217,21 +217,52 @@ impl<'a> HtmlRenderer<'a> {
                 BlendEvent::EnterCodeBlock(data) => {
                     self.result.push(b'<');
                     self.result.extend(self.tag_name_map.code_block);
+
                     self.result.extend(br#" info-string=""#);
                     loop {
                         match input_stream.next().unwrap() {
-                            BlendEvent::Text(content) => self
-                                .write_escaped_double_quoted_attribute_value(&self.input[content]),
+                            BlendEvent::Text(content)
+                            | BlendEvent::VerbatimEscaping(VerbatimEscaping { content, .. }) => {
+                                self.write_escaped_double_quoted_attribute_value(
+                                    &self.input[content],
+                                )
+                            }
                             BlendEvent::IndicateCodeBlockCode => break,
                             _ => unreachable!(),
                         }
                     }
+
+                    self.result.extend(br#"" content=""#);
+                    loop {
+                        match input_stream.next().unwrap() {
+                            BlendEvent::Text(content)
+                            | BlendEvent::VerbatimEscaping(VerbatimEscaping { content, .. }) => {
+                                self.write_escaped_double_quoted_attribute_value(
+                                    &self.input[content],
+                                )
+                            }
+                            BlendEvent::NewLine(_) => {
+                                self.result.extend(b"&#10;");
+                            }
+                            BlendEvent::ExitBlock(exit_block) => {
+                                #[cfg(feature = "block-id")]
+                                {
+                                    debug_assert_eq!(data.id, exit_block.id);
+                                }
+
+                                break;
+                            }
+                            _ => unreachable!(),
+                        }
+                    }
+
                     self.result.push(b'"');
 
                     write_data_block_id_attribute_if_applicable!(self, data);
 
+                    self.result.extend(b"></");
+                    self.result.extend(self.tag_name_map.code_block);
                     self.result.push(b'>');
-                    stack.push(StackEntry::Normal(self.tag_name_map.code_block));
                 }
                 #[allow(unused_variables)]
                 BlendEvent::EnterTable(data) => {

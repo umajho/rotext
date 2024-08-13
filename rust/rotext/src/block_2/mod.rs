@@ -840,11 +840,7 @@ mod leaf {
                     );
 
                     let tym_a = if let Some(new_line) = new_line {
-                        if matches!(
-                            end,
-                            line::verbatim::End::NewLine(_)
-                                | line::verbatim::End::VerbatimEscaping(_)
-                        ) {
+                        if !matches!(end, line::verbatim::End::Eof) {
                             inner.r#yield(BlockEvent::NewLine(new_line))
                         } else {
                             TYM_UNIT.into()

@@ -17,6 +17,7 @@ import { styleProvider as styleProviderForTuanProse } from "../../styles/tuan-pr
 import { Loading } from "../../components/ui/mod";
 import { registerCustomElement as registerCustomElementForScratchOff } from "../../components/custom-elements/ScratchOff";
 import { registerCustomElement as registerCustomElementForCollapse } from "../../components/custom-elements/Collapse";
+import { registerCustomElement as registerCustomElementForCodeBlock } from "../../components/custom-elements/CodeBlock";
 
 import { createDemoRefContentRenderer } from "./ref-content-demo";
 import { evaluatorProvider } from "./evaluator-provider";
@@ -68,4 +69,5 @@ export function registerCustomElementsOnce() {
     innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,
   });
   registerCustomElementForCollapse(TAG_NAME_MAP["collapse"]);
+  registerCustomElementForCodeBlock(TAG_NAME_MAP["code-block"]);
 }
