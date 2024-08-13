@@ -20,7 +20,7 @@ mod for_fn_parse {
     ) {
         let mut ctx = MockCursorContext {
             cursor: 0,
-            current_line: LineNumber::new(1),
+            current_line: LineNumber::new_universal(1),
         };
         let (actual_range, actual_end) = parse(
             input,
@@ -50,7 +50,7 @@ mod for_fn_parse {
             End::Eof,
             MockCursorContext {
                 cursor: 0,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         test(
@@ -61,7 +61,7 @@ mod for_fn_parse {
             End::Eof,
             MockCursorContext {
                 cursor: 3,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         test(
@@ -72,7 +72,7 @@ mod for_fn_parse {
             End::Eof,
             MockCursorContext {
                 cursor: 6,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         test(
@@ -83,7 +83,7 @@ mod for_fn_parse {
             End::Eof,
             MockCursorContext {
                 cursor: 7,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         for input in [&b"foo\rline 2"[..], &b"foo\nline 2"[..]] {
@@ -93,12 +93,12 @@ mod for_fn_parse {
                 0,
                 b"foo",
                 NewLine {
-                    line_after: LineNumber::new(2),
+                    line_after: LineNumber::new_universal(2),
                 }
                 .into(),
                 MockCursorContext {
                     cursor: 4,
-                    current_line: LineNumber::new(2),
+                    current_line: LineNumber::new_universal(2),
                 },
             );
         }
@@ -108,12 +108,12 @@ mod for_fn_parse {
             0,
             b"foo",
             NewLine {
-                line_after: LineNumber::new(2),
+                line_after: LineNumber::new_universal(2),
             }
             .into(),
             MockCursorContext {
                 cursor: 5,
-                current_line: LineNumber::new(2),
+                current_line: LineNumber::new_universal(2),
             },
         );
         test(
@@ -124,7 +124,7 @@ mod for_fn_parse {
             End::Eof,
             MockCursorContext {
                 cursor: 5,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
     }
@@ -145,12 +145,12 @@ mod for_fn_parse {
                 VerbatimEscaping {
                     content: 2..4,
                     is_closed_forcedly: false,
-                    line_after: LineNumber::new(1),
+                    line_after: LineNumber::new_universal(1),
                 }
                 .into(),
                 MockCursorContext {
                     cursor: 6,
-                    current_line: LineNumber::new(1),
+                    current_line: LineNumber::new_universal(1),
                 },
             );
         }
@@ -162,12 +162,12 @@ mod for_fn_parse {
             VerbatimEscaping {
                 content: 5..7,
                 is_closed_forcedly: false,
-                line_after: LineNumber::new(1),
+                line_after: LineNumber::new_universal(1),
             }
             .into(),
             MockCursorContext {
                 cursor: 9,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         test(
@@ -178,12 +178,12 @@ mod for_fn_parse {
             VerbatimEscaping {
                 content: 8..10,
                 is_closed_forcedly: false,
-                line_after: LineNumber::new(1),
+                line_after: LineNumber::new_universal(1),
             }
             .into(),
             MockCursorContext {
                 cursor: 12,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         test(
@@ -194,12 +194,12 @@ mod for_fn_parse {
             VerbatimEscaping {
                 content: 5..8,
                 is_closed_forcedly: false,
-                line_after: LineNumber::new(2),
+                line_after: LineNumber::new_universal(2),
             }
             .into(),
             MockCursorContext {
                 cursor: 10,
-                current_line: LineNumber::new(2),
+                current_line: LineNumber::new_universal(2),
             },
         );
     }
@@ -219,7 +219,7 @@ mod for_fn_parse {
             End::Eof,
             MockCursorContext {
                 cursor: 6,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
     }
@@ -242,7 +242,7 @@ mod for_fn_parse {
             End::Eof,
             MockCursorContext {
                 cursor: 6,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         test(
@@ -253,7 +253,7 @@ mod for_fn_parse {
             End::Eof,
             MockCursorContext {
                 cursor: 9,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         test(
@@ -262,12 +262,12 @@ mod for_fn_parse {
             0,
             b"foo",
             NewLine {
-                line_after: LineNumber::new(2),
+                line_after: LineNumber::new_universal(2),
             }
             .into(),
             MockCursorContext {
                 cursor: 7,
-                current_line: LineNumber::new(2),
+                current_line: LineNumber::new_universal(2),
             },
         );
         test(
@@ -276,12 +276,12 @@ mod for_fn_parse {
             0,
             b"foo",
             NewLine {
-                line_after: LineNumber::new(2),
+                line_after: LineNumber::new_universal(2),
             }
             .into(),
             MockCursorContext {
                 cursor: 10,
-                current_line: LineNumber::new(2),
+                current_line: LineNumber::new_universal(2),
             },
         );
         test(
@@ -292,7 +292,7 @@ mod for_fn_parse {
             End::Eof,
             MockCursorContext {
                 cursor: 5,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         test(
@@ -303,7 +303,7 @@ mod for_fn_parse {
             End::Eof,
             MockCursorContext {
                 cursor: 5,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         test(
@@ -314,7 +314,7 @@ mod for_fn_parse {
             End::Eof,
             MockCursorContext {
                 cursor: 7,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         test(
@@ -325,7 +325,7 @@ mod for_fn_parse {
             End::Eof,
             MockCursorContext {
                 cursor: 9,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
     }
@@ -348,12 +348,12 @@ mod for_fn_parse {
             VerbatimEscaping {
                 content: 8..10,
                 is_closed_forcedly: false,
-                line_after: LineNumber::new(1),
+                line_after: LineNumber::new_universal(1),
             }
             .into(),
             MockCursorContext {
                 cursor: 12,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
     }
@@ -373,7 +373,7 @@ mod for_fn_parse {
             End::Eof,
             MockCursorContext {
                 cursor: 2,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
     }
@@ -395,7 +395,7 @@ mod for_fn_parse {
             table::TableRelatedEnd::TableClosing.into(),
             MockCursorContext {
                 cursor: 2,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         test(
@@ -406,7 +406,7 @@ mod for_fn_parse {
             table::TableRelatedEnd::TableClosing.into(),
             MockCursorContext {
                 cursor: 5,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         test(
@@ -417,7 +417,7 @@ mod for_fn_parse {
             table::TableRelatedEnd::TableClosing.into(),
             MockCursorContext {
                 cursor: 6,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         test(
@@ -428,7 +428,7 @@ mod for_fn_parse {
             table::TableRelatedEnd::TableRowIndicator.into(),
             MockCursorContext {
                 cursor: 2,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         test(
@@ -439,7 +439,7 @@ mod for_fn_parse {
             table::TableRelatedEnd::TableHeaderCellIndicator.into(),
             MockCursorContext {
                 cursor: 2,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         test(
@@ -450,7 +450,7 @@ mod for_fn_parse {
             table::TableRelatedEnd::DoublePipes.into(),
             MockCursorContext {
                 cursor: 2,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         test(
@@ -461,7 +461,7 @@ mod for_fn_parse {
             End::Eof,
             MockCursorContext {
                 cursor: 2,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
     }
@@ -483,7 +483,7 @@ mod for_fn_parse {
             table::TableRelatedEnd::TableCaptionIndicator.into(),
             MockCursorContext {
                 cursor: 2,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
     }
@@ -508,7 +508,7 @@ mod for_fn_parse {
             table::TableRelatedEnd::TableClosing.into(),
             MockCursorContext {
                 cursor: 8,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         test(
@@ -519,7 +519,7 @@ mod for_fn_parse {
             table::TableRelatedEnd::TableClosing.into(),
             MockCursorContext {
                 cursor: 9,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         test(
@@ -530,7 +530,7 @@ mod for_fn_parse {
             table::TableRelatedEnd::TableRowIndicator.into(),
             MockCursorContext {
                 cursor: 8,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
     }

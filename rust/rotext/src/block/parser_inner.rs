@@ -37,6 +37,7 @@ impl<TStack: Stack<StackEntry>> ParserInner<TStack> {
             current_line: LineNumber::new_universal(1),
             stack: StackWrapper::new(),
             to_yield: ArrayQueue::new(),
+            #[cfg(feature = "block-id")]
             block_id_generator: BlockIdGenerator::new(),
             current_expecting: CurrentExpecting::new(),
             has_just_entered_table: false,
@@ -50,7 +51,14 @@ impl<TStack: Stack<StackEntry>> ParserInner<TStack> {
     }
 
     pub fn pop_block_id(&mut self) -> BlockId {
-        self.block_id_generator.pop()
+        #[cfg(feature = "block-id")]
+        {
+            self.block_id_generator.pop()
+        }
+        #[cfg(not(feature = "block-id"))]
+        {
+            BlockId()
+        }
     }
 
     pub fn reset_current_expecting(&mut self) {

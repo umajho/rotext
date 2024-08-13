@@ -11,7 +11,7 @@ mod for_fn_parse {
     fn test(input: &[u8], expected: Option<Output>, expected_ctx: MockCursorContext) {
         let mut ctx = MockCursorContext {
             cursor: 0,
-            current_line: LineNumber::new(1),
+            current_line: LineNumber::new_universal(1),
         };
         let actual = parse(input, &mut ctx, input[0]);
         assert_eq!((expected, expected_ctx), (actual, ctx));
@@ -25,13 +25,13 @@ mod for_fn_parse {
                 VerbatimEscaping {
                     content: 2..5,
                     is_closed_forcedly: false,
-                    line_after: LineNumber::new(1),
+                    line_after: LineNumber::new_universal(1),
                 }
                 .into(),
             ),
             MockCursorContext {
                 cursor: 7,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
     }
@@ -43,7 +43,7 @@ mod for_fn_parse {
             None,
             MockCursorContext {
                 cursor: 0,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         test(
@@ -51,7 +51,7 @@ mod for_fn_parse {
             None,
             MockCursorContext {
                 cursor: 0,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
     }
@@ -69,7 +69,7 @@ mod for_fn_parse_verbatim_escaping {
     fn test(input: &[u8], expected: VerbatimEscaping, expected_ctx: MockCursorContext) {
         let mut ctx = MockCursorContext {
             cursor: 0,
-            current_line: LineNumber::new(1),
+            current_line: LineNumber::new_universal(1),
         };
         let actual = parse_verbatim_escaping(input, &mut ctx);
         assert_eq!((expected, expected_ctx), (actual, ctx));
@@ -82,11 +82,11 @@ mod for_fn_parse_verbatim_escaping {
             VerbatimEscaping {
                 content: 0..3,
                 is_closed_forcedly: false,
-                line_after: LineNumber::new(1),
+                line_after: LineNumber::new_universal(1),
             },
             MockCursorContext {
                 cursor: 5,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         test(
@@ -94,11 +94,11 @@ mod for_fn_parse_verbatim_escaping {
             VerbatimEscaping {
                 content: 0..3,
                 is_closed_forcedly: false,
-                line_after: LineNumber::new(1),
+                line_after: LineNumber::new_universal(1),
             },
             MockCursorContext {
                 cursor: 5,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
     }
@@ -110,11 +110,11 @@ mod for_fn_parse_verbatim_escaping {
             VerbatimEscaping {
                 content: 1..4,
                 is_closed_forcedly: false,
-                line_after: LineNumber::new(1),
+                line_after: LineNumber::new_universal(1),
             },
             MockCursorContext {
                 cursor: 7,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         test(
@@ -122,11 +122,11 @@ mod for_fn_parse_verbatim_escaping {
             VerbatimEscaping {
                 content: 0..3,
                 is_closed_forcedly: false,
-                line_after: LineNumber::new(1),
+                line_after: LineNumber::new_universal(1),
             },
             MockCursorContext {
                 cursor: 6,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         test(
@@ -134,11 +134,11 @@ mod for_fn_parse_verbatim_escaping {
             VerbatimEscaping {
                 content: 1..4,
                 is_closed_forcedly: false,
-                line_after: LineNumber::new(1),
+                line_after: LineNumber::new_universal(1),
             },
             MockCursorContext {
                 cursor: 6,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         test(
@@ -146,11 +146,11 @@ mod for_fn_parse_verbatim_escaping {
             VerbatimEscaping {
                 content: 1..6,
                 is_closed_forcedly: false,
-                line_after: LineNumber::new(1),
+                line_after: LineNumber::new_universal(1),
             },
             MockCursorContext {
                 cursor: 9,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
     }
@@ -162,11 +162,11 @@ mod for_fn_parse_verbatim_escaping {
             VerbatimEscaping {
                 content: 1..4,
                 is_closed_forcedly: false,
-                line_after: LineNumber::new(1),
+                line_after: LineNumber::new_universal(1),
             },
             MockCursorContext {
                 cursor: 7,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         test(
@@ -174,11 +174,11 @@ mod for_fn_parse_verbatim_escaping {
             VerbatimEscaping {
                 content: 2..3,
                 is_closed_forcedly: false,
-                line_after: LineNumber::new(1),
+                line_after: LineNumber::new_universal(1),
             },
             MockCursorContext {
                 cursor: 7,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
     }
@@ -190,11 +190,11 @@ mod for_fn_parse_verbatim_escaping {
             VerbatimEscaping {
                 content: 0..0,
                 is_closed_forcedly: true,
-                line_after: LineNumber::new(1),
+                line_after: LineNumber::new_universal(1),
             },
             MockCursorContext {
                 cursor: 0,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         test(
@@ -202,11 +202,11 @@ mod for_fn_parse_verbatim_escaping {
             VerbatimEscaping {
                 content: 0..3,
                 is_closed_forcedly: true,
-                line_after: LineNumber::new(1),
+                line_after: LineNumber::new_universal(1),
             },
             MockCursorContext {
                 cursor: 3,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         test(
@@ -214,11 +214,11 @@ mod for_fn_parse_verbatim_escaping {
             VerbatimEscaping {
                 content: 0..4,
                 is_closed_forcedly: true,
-                line_after: LineNumber::new(1),
+                line_after: LineNumber::new_universal(1),
             },
             MockCursorContext {
                 cursor: 4,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         test(
@@ -226,11 +226,11 @@ mod for_fn_parse_verbatim_escaping {
             VerbatimEscaping {
                 content: 0..4,
                 is_closed_forcedly: true,
-                line_after: LineNumber::new(1),
+                line_after: LineNumber::new_universal(1),
             },
             MockCursorContext {
                 cursor: 4,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
         test(
@@ -238,11 +238,11 @@ mod for_fn_parse_verbatim_escaping {
             VerbatimEscaping {
                 content: 1..6,
                 is_closed_forcedly: true,
-                line_after: LineNumber::new(1),
+                line_after: LineNumber::new_universal(1),
             },
             MockCursorContext {
                 cursor: 6,
-                current_line: LineNumber::new(1),
+                current_line: LineNumber::new_universal(1),
             },
         );
     }
@@ -254,11 +254,11 @@ mod for_fn_parse_verbatim_escaping {
             VerbatimEscaping {
                 content: 0..4,
                 is_closed_forcedly: false,
-                line_after: LineNumber::new(2),
+                line_after: LineNumber::new_universal(2),
             },
             MockCursorContext {
                 cursor: 6,
-                current_line: LineNumber::new(2),
+                current_line: LineNumber::new_universal(2),
             },
         );
         test(
@@ -266,11 +266,11 @@ mod for_fn_parse_verbatim_escaping {
             VerbatimEscaping {
                 content: 0..4,
                 is_closed_forcedly: false,
-                line_after: LineNumber::new(2),
+                line_after: LineNumber::new_universal(2),
             },
             MockCursorContext {
                 cursor: 6,
-                current_line: LineNumber::new(2),
+                current_line: LineNumber::new_universal(2),
             },
         );
         test(
@@ -278,11 +278,11 @@ mod for_fn_parse_verbatim_escaping {
             VerbatimEscaping {
                 content: 0..5,
                 is_closed_forcedly: false,
-                line_after: LineNumber::new(2),
+                line_after: LineNumber::new_universal(2),
             },
             MockCursorContext {
                 cursor: 7,
-                current_line: LineNumber::new(2),
+                current_line: LineNumber::new_universal(2),
             },
         );
         test(
@@ -290,11 +290,11 @@ mod for_fn_parse_verbatim_escaping {
             VerbatimEscaping {
                 content: 2..7,
                 is_closed_forcedly: false,
-                line_after: LineNumber::new(2),
+                line_after: LineNumber::new_universal(2),
             },
             MockCursorContext {
                 cursor: 11,
-                current_line: LineNumber::new(2),
+                current_line: LineNumber::new_universal(2),
             },
         );
     }
