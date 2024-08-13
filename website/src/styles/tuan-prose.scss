@@ -211,13 +211,8 @@
   }
 
   a {
-    // see: https://stackoverflow.com/a/63883723 
+    // see: https://stackoverflow.com/a/63883723
     @apply underline text-blue-600 hover:text-blue-800 visited:text-purple-600;
     @apply cursor-pointer;
-  }
-
-  pre:has(> code) {
-    @apply bg-[#2d2d2d] text-[#f0f0f0] p-4 rounded-lg overflow-x-auto;
-    @apply font-mono text-sm;
   }
 }

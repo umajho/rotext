@@ -8,16 +8,22 @@ use crate::{
 
 macro_rules! case {
     ($input_variants:expr, $expected:expr) => {
-        case!(@__inner, $input_variants, $expected, false)
+        case!(@__inner, $input_variants, $expected, false, false)
     };
     (@todo, $input_variants:expr, $expected:expr) => {
-            case!(@__inner, $input_variants, $expected, true)
-        };
-    (@__inner, $input_variants:expr, $expected:expr, $is_to_do:literal) => {
+        case!(@__inner, $input_variants, $expected, true, false)
+    };
+    (@only, $input_variants:expr, $expected:expr) => {
+        case!(@__inner, $input_variants, $expected, false, true)
+    };
+    (@__inner, $input_variants:expr, $expected:expr, $flag_todo:literal, $flag_only:literal) => {
         $crate::test_suites::block::support::Case {
             input_variants: $input_variants,
             expected: $expected,
-            is_to_do: $is_to_do,
+            flags: $crate::test_suites::block::support::Flags {
+                to_do: $flag_todo,
+                only: $flag_only,
+            },
         }
     };
 }
@@ -25,6 +31,11 @@ macro_rules! case {
 pub(super) use case;
 
 use super::Context;
+
+pub(super) struct InternalContext<'a, TContext: Context> {
+    external: &'a TContext,
+    is_in_only_mode: bool,
+}
 
 type EventCase<'a> = (EventType, Option<&'a str>);
 
@@ -36,26 +47,40 @@ impl GroupedCases {
     pub(super) fn collect_failed<TContext: Context + RefUnwindSafe>(
         &self,
         ctx: &TContext,
+        is_in_only_mode: bool,
     ) -> Vec<FailedCase> {
+        let ctx = InternalContext {
+            external: ctx,
+            is_in_only_mode,
+        };
+
         self.cases
             .iter()
             .enumerate()
             .flat_map(|(i, case)| -> Vec<FailedCase> {
-                case.collect_failed(ctx, self.group, i + 1)
+                case.collect_failed(&ctx, self.group, i + 1)
             })
             .collect()
+    }
+
+    pub(super) fn any_has_only_flag(&self) -> bool {
+        self.cases.iter().any(|c| c.flags.only)
     }
 }
 
 pub(super) struct Case {
     pub input_variants: Vec<&'static str>,
     pub expected: Vec<EventMatcher>,
-    pub is_to_do: bool,
+    pub flags: Flags,
+}
+pub(super) struct Flags {
+    pub to_do: bool,
+    pub only: bool,
 }
 impl Case {
     fn collect_failed<TContext: Context + RefUnwindSafe>(
         &self,
-        ctx: &TContext,
+        ctx: &InternalContext<TContext>,
         group: &'static str,
         nth_case_in_group: usize,
     ) -> Vec<FailedCase> {
@@ -71,7 +96,7 @@ impl Case {
 
     fn collect_failed_auto_variant<TContext: Context + RefUnwindSafe>(
         &self,
-        ctx: &TContext,
+        ctx: &InternalContext<TContext>,
         group: &'static str,
         nth_case_in_group: usize,
         nth_case_variant_in_case: usize,
@@ -80,14 +105,19 @@ impl Case {
         AutoVariant::all()
             .iter()
             .filter_map(|auto_variant| -> Option<FailedCase> {
-                if self.is_to_do {
+                if self.flags.to_do || (ctx.is_in_only_mode && !self.flags.only) {
+                    let reason = if self.flags.to_do {
+                        FailureReason::ToDo
+                    } else {
+                        FailureReason::Skipped
+                    };
                     return Some(self.make_failed_case(
                         group,
                         nth_case_in_group,
                         nth_case_variant_in_case,
                         auto_variant,
                         input.clone(),
-                        FailureReason::ToDo,
+                        reason,
                     ));
                 }
 
@@ -134,7 +164,7 @@ impl Case {
 type EventMatcher = (EventType, Option<&'static str>);
 
 fn assert_auto_variant_ok<TContext: Context>(
-    ctx: &TContext,
+    ctx: &InternalContext<TContext>,
     variant: AutoVariant,
     input: String,
     expected: &Vec<EventMatcher>,
@@ -145,7 +175,7 @@ fn assert_auto_variant_ok<TContext: Context>(
         AutoVariant::WithTrailingLineFeed => format!("{}\n", input),
     };
 
-    assert_parse_ok_and_output_maches(ctx, &input, expected)
+    assert_parse_ok_and_output_maches(ctx.external, &input, expected)
 }
 
 #[derive(Clone)]

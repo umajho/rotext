@@ -445,6 +445,7 @@ pub fn groups_table() -> Vec<GroupedCases> {
                         (EventType::Text, Some("info")),
                         (EventType::IndicateCodeBlockCode, None),
                         (EventType::Text, Some("code")),
+                        (EventType::NewLine, None),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
                     ]

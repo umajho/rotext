@@ -1,10 +1,7 @@
-#![cfg(test)]
-
 use std::marker::PhantomData;
 
 use crate::{
     events::EventType,
-    global,
     test_suites::{
         self,
         block::support::{
@@ -29,9 +26,7 @@ impl<TStack: Stack<StackEntry>> Context<TStack> {
 }
 impl<TStack: Stack<StackEntry>> test_suites::block::Context for Context<TStack> {
     fn parse(input: &str) -> impl Iterator<Item = crate::Result<crate::BlockEvent>> {
-        let global_parser =
-            global::Parser::new(input.as_bytes(), global::NewParserOptions::default());
-        let block_parser: Parser<TStack> = Parser::new(input.as_bytes(), global_parser);
+        let block_parser: Parser<TStack> = Parser::new(input.as_bytes());
 
         block_parser
     }

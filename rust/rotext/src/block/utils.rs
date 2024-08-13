@@ -1,78 +1,46 @@
-use super::global_mapper;
+use crate::types::BlockId;
 
-#[derive(Clone, Copy)]
-pub struct InputCursor(Option<usize>);
-
-impl InputCursor {
-    pub fn new() -> InputCursor {
-        InputCursor(None)
+pub(super) fn count_continuous_character(input: &[u8], char: u8, since: usize) -> usize {
+    let mut i = 0;
+    while matches!(input.get(since+ i), Some(actual_char) if *actual_char == char) {
+        i += 1;
     }
 
-    pub fn value(&self) -> Option<usize> {
-        self.0
-    }
-
-    pub fn apply(&mut self, mapped: &global_mapper::Mapped) {
-        match mapped {
-            &global_mapper::Mapped::CharAt(new_cursor) => self.0 = Some(new_cursor),
-            global_mapper::Mapped::NextChar => match self.0 {
-                Some(ref mut cursor) => *cursor += 1,
-                None => unreachable!(),
-            },
-            _ => self.0 = None,
-        }
-    }
-
-    pub fn applying(&self, mapped: &global_mapper::Mapped) -> Self {
-        let mut copied = *self;
-        copied.apply(mapped);
-        copied
-    }
-
-    pub fn at(&self, input: &[u8]) -> Option<u8> {
-        self.0.map(|cursor| input[cursor])
-    }
+    i
 }
 
-pub struct Peekable<const N: usize, I: Iterator> {
-    inner: I,
-
-    buffer: [Option<I::Item>; N],
-    start: usize,
-}
-
-impl<const N: usize, I: Iterator> Peekable<N, I> {
-    pub fn new(inner: I) -> Peekable<N, I> {
-        Peekable {
-            inner,
-            buffer: std::array::from_fn(|_| None),
-            start: 0,
-        }
+pub(super) fn count_continuous_character_with_maximum(
+    input: &[u8],
+    char: u8,
+    since: usize,
+    maximum: usize,
+) -> usize {
+    let mut i = 0;
+    while i < maximum && matches!(input.get(since + i), Some(actual_char) if *actual_char == char) {
+        i += 1;
     }
 
-    /// `i` 以 0 为起始。
-    pub fn peek(&mut self, i: usize) -> Option<&I::Item> {
-        debug_assert!(i < N);
-        if self.buffer[(self.start + i) % N].is_none() {
-            if i > 0 {
-                self.peek(i - 1);
-            }
-            self.buffer[(self.start + i) % N] = self.inner.next();
-        }
-        self.buffer[(self.start + i) % N].as_ref()
-    }
+    i
 }
 
-impl<const N: usize, I: Iterator> Iterator for Peekable<N, I> {
-    type Item = I::Item;
+pub struct BlockIdGenerator(#[cfg(feature = "block-id")] usize);
+impl BlockIdGenerator {
+    #[cfg(feature = "block-id")]
+    pub fn new() -> Self {
+        Self(0)
+    }
+    #[cfg(not(feature = "block-id"))]
+    pub fn new() -> Self {
+        Self()
+    }
 
-    fn next(&mut self) -> Option<Self::Item> {
-        let taken = self.buffer[self.start].take();
-        if taken.is_some() {
-            self.start = (self.start + 1) % 3;
-            taken
-        } else {
-            self.inner.next()
-        }
+    #[cfg(feature = "block-id")]
+    pub fn pop(&mut self) -> BlockId {
+        self.0 += 1;
+        BlockId::new(self.0)
+    }
+    #[cfg(not(feature = "block-id"))]
+    pub fn pop(&mut self) -> BlockId {
+        BlockId::new()
     }
 }

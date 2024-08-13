@@ -34,9 +34,11 @@ pub fn run<TContext: Context + RefUnwindSafe>(ctx: &TContext) {
         table
     };
 
+    let is_in_only_mode = table.iter().any(|g| g.any_has_only_flag());
+
     let failed_cases: Vec<_> = table
         .iter()
-        .flat_map(|row| -> Vec<FailedCase> { row.collect_failed(ctx) })
+        .flat_map(|row| -> Vec<FailedCase> { row.collect_failed(ctx, is_in_only_mode) })
         .collect();
 
     let todos = failed_cases
@@ -46,13 +48,20 @@ pub fn run<TContext: Context + RefUnwindSafe>(ctx: &TContext) {
     if todos > 0 {
         println!("({} TODO cases)", todos)
     }
+    let skipped = failed_cases
+        .iter()
+        .filter(|c| matches!(c.reason, FailureReason::Skipped))
+        .count();
+    if skipped > 0 {
+        println!("({} skipped cases)", skipped)
+    }
 
-    if failed_cases.len() == todos {
+    let actual_failed_case_count = failed_cases.len() - todos - skipped;
+    if actual_failed_case_count == 0 {
         return;
     }
-    let faild_case_count = failed_cases.len() - todos;
 
     report_panicked_cases(failed_cases);
 
-    panic!("{} cases failed!", faild_case_count);
+    panic!("{} cases failed!", actual_failed_case_count);
 }

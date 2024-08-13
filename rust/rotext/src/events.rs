@@ -181,6 +181,11 @@ pub struct NewLine {
 pub struct BlockWithId {
     pub id: BlockId,
 }
+impl From<BlockId> for BlockWithId {
+    fn from(value: BlockId) -> Self {
+        Self { id: value }
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ThematicBreak {
