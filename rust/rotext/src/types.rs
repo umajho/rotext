@@ -65,13 +65,3 @@ impl LineNumber {
         self.0
     }
 }
-
-pub struct LineNumberRange {
-    start: LineNumber,
-    end: LineNumber,
-}
-impl LineNumberRange {
-    pub fn new(start: LineNumber, end: LineNumber) -> Self {
-        Self { start, end }
-    }
-}

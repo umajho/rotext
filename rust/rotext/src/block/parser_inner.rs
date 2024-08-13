@@ -4,10 +4,11 @@ use crate::{
     utils::{internal::array_queue::ArrayQueue, stack::Stack},
 };
 
+#[cfg(feature = "block-id")]
+use super::utils::BlockIdGenerator;
 use super::{
     stack_wrapper::{StackEntry, StackWrapper},
     types::{CursorContext, Tym, YieldContext},
-    utils::BlockIdGenerator,
 };
 
 const MAX_TO_YIELD: usize = 3;
