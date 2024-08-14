@@ -38,10 +38,7 @@ pub fn parse<TCtx: CursorContext>(input: &[u8], ctx: &mut TCtx, first_char: u8) 
     }
 }
 
-pub fn parse_verbatim_escaping<TCtx: CursorContext>(
-    input: &[u8],
-    ctx: &mut TCtx,
-) -> VerbatimEscaping {
+fn parse_verbatim_escaping<TCtx: CursorContext>(input: &[u8], ctx: &mut TCtx) -> VerbatimEscaping {
     let count = count_continuous_character(input, m!('`'), ctx.cursor());
     ctx.move_cursor_forward(count);
     let backticks = "`".len() + count;
