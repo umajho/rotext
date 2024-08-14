@@ -43,6 +43,7 @@ pub enum End {
     NewLine(Option<NewLine>),
     VerbatimEscaping(VerbatimEscaping),
     TableRelated(table::TableRelatedEnd),
+    None,
 }
 impl From<table::TableRelatedEnd> for End {
     fn from(value: table::TableRelatedEnd) -> Self {
@@ -124,6 +125,7 @@ pub fn parse<TCtx: CursorContext>(
                 global_phase::Output::VerbatimEscaping(verbatim_escaping) => {
                     break (range, verbatim_escaping.into());
                 }
+                global_phase::Output::None => break (range, End::None),
             }
         }
 
@@ -181,7 +183,7 @@ pub fn parse<TCtx: CursorContext>(
 
     match end {
         End::VerbatimEscaping(_) => range.end += spaces,
-        End::Eof | End::NewLine(_) | End::TableRelated(_) => {}
+        End::Eof | End::NewLine(_) | End::TableRelated(_) | End::None => {}
     }
 
     (range, end)

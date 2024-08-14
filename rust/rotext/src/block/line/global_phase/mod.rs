@@ -14,6 +14,8 @@ use crate::{
 #[derive(Debug, PartialEq, Eq)]
 pub enum Output {
     VerbatimEscaping(VerbatimEscaping),
+    /// 没有输出。（如在解析出注释时。）
+    None,
 }
 impl From<VerbatimEscaping> for Output {
     fn from(value: VerbatimEscaping) -> Self {
@@ -33,6 +35,11 @@ pub fn parse<TCtx: CursorContext>(input: &[u8], ctx: &mut TCtx, first_char: u8) 
             ctx.move_cursor_forward("<`".len());
             let verbatim_escaping = parse_verbatim_escaping(input, ctx);
             Some(Output::VerbatimEscaping(verbatim_escaping))
+        }
+        m!('%') => {
+            ctx.move_cursor_forward("<%".len());
+            parse_comment(input, ctx);
+            Some(Output::None)
         }
         _ => None,
     }
@@ -97,6 +104,33 @@ fn parse_verbatim_escaping<TCtx: CursorContext>(input: &[u8], ctx: &mut TCtx) ->
         content: start..input.len(),
         is_closed_forcedly: true,
         line_after: ctx.current_line(),
+    }
+}
+
+fn parse_comment<TCtx: CursorContext>(input: &[u8], ctx: &mut TCtx) {
+    let mut depth = 1;
+
+    while depth > 0 && ctx.cursor() < input.len() {
+        // SAFETY: `ctx.cursor()` < `input.len()`.
+        let char = unsafe { *input.get_unchecked(ctx.cursor()) };
+        match char {
+            m!('<') => match input.get(ctx.cursor() + 1) {
+                Some(m!('%')) => {
+                    ctx.move_cursor_forward("<%".len());
+                    depth += 1;
+                }
+                Some(m!('`')) => {
+                    ctx.move_cursor_forward("<`".len());
+                    parse_verbatim_escaping(input, ctx);
+                }
+                _ => ctx.move_cursor_forward(1),
+            },
+            m!('%') if input.get(ctx.cursor() + 1) == Some(&b'>') => {
+                ctx.move_cursor_forward("%>".len());
+                depth -= 1;
+            }
+            _ => ctx.move_cursor_forward(1),
+        }
     }
 }
 

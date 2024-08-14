@@ -835,6 +835,7 @@ mod leaf {
 
                     tym_a.add(tym_b)
                 }
+                line::normal::End::None => TYM_UNIT.into(),
             };
 
             Ok(tym_a.add(tym_b))
@@ -904,6 +905,7 @@ mod leaf {
                             line::global_phase::process_verbatim_escaping(inner, verbatim_escaping)
                         }
                         line::verbatim::End::Fence => unreachable!(),
+                        line::verbatim::End::None => TYM_UNIT.into(),
                     };
 
                     inner.stack.push_top_leaf(top_leaf.into());
@@ -977,6 +979,7 @@ mod leaf {
                         line::verbatim::End::Fence => {
                             exit_when_indicator_already_yielded(inner, top_leaf)
                         }
+                        line::verbatim::End::None => TYM_UNIT.into(),
                     };
 
                     tym_a.add(tym_b).add(tym_c)
@@ -1094,6 +1097,7 @@ mod leaf {
                     let tym = table_related_end.process(state, );
                     cast_tym!(tym)
                 }
+                line::normal::End::None => TYM_UNIT.into()
             }
         }
 

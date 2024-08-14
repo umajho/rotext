@@ -30,6 +30,7 @@ pub enum End {
     NewLine(NewLine),
     VerbatimEscaping(VerbatimEscaping),
     Fence,
+    None,
 }
 impl From<CommonEnd> for End {
     fn from(value: CommonEnd) -> Self {
@@ -95,6 +96,7 @@ pub fn parse<TCtx: CursorContext>(
                 global_phase::Output::VerbatimEscaping(verbatim_escaping) => {
                     break (range, verbatim_escaping.into());
                 }
+                global_phase::Output::None => break (range, End::None),
             }
         }
 
