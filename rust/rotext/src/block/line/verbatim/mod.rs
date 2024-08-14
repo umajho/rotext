@@ -14,15 +14,17 @@ use crate::{
 
 use super::CommonEnd;
 
+#[derive(Clone)]
 pub struct EndCondition {
     pub on_fence: Option<Fence>,
 }
+#[derive(Clone)]
 pub struct Fence {
     pub character: u8,
     pub minimum_count: usize,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum End {
     Eof,
     NewLine(NewLine),
