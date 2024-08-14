@@ -50,41 +50,23 @@ impl From<u8> for EventType {
     }
 }
 
-#[subenum(
-    GlobalEvent,
-    BlockEvent,
-    InlineLevelParseInputEvent,
-    InlineEvent,
-    BlendEvent
-)]
+#[subenum(BlockEvent, InlineLevelParseInputEvent, InlineEvent, BlendEvent)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Event {
     /// 留给下个阶段解析。
-    #[subenum(GlobalEvent, BlockEvent, InlineLevelParseInputEvent)]
+    #[subenum(BlockEvent, InlineLevelParseInputEvent)]
     Unparsed(Range<usize>) = EventType::Unparsed as u8,
 
     /// 逐字文本转义。
     ///
     /// NOTE: 内容包含开头和结尾各可能存在的一个空格，省略上述空格的处理是在块级
     /// 阶段将 VerbatimEscaping 变换为 Text 时进行。
-    #[subenum(
-        GlobalEvent,
-        BlockEvent,
-        InlineLevelParseInputEvent,
-        InlineEvent,
-        BlendEvent
-    )]
+    #[subenum(BlockEvent, InlineLevelParseInputEvent, InlineEvent, BlendEvent)]
     VerbatimEscaping(VerbatimEscaping) = EventType::VerbatimEscaping as u8,
 
     /// 换行，在全局阶段由 CR 与 LF 而来。
-    #[subenum(
-        GlobalEvent,
-        BlockEvent,
-        InlineLevelParseInputEvent,
-        InlineEvent,
-        BlendEvent
-    )]
+    #[subenum(BlockEvent, InlineLevelParseInputEvent, InlineEvent, BlendEvent)]
     NewLine(NewLine) = EventType::NewLine as u8,
 
     /// 文本。
