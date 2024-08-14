@@ -267,14 +267,10 @@ impl BlockEvent {
                 | BlockEvent::EnterHeading4(_)
                 | BlockEvent::EnterHeading5(_)
                 | BlockEvent::EnterHeading6(_)
-                | BlockEvent::IndicateCodeBlockCode
         )
     }
 
     pub fn closes_inline_phase(&self) -> bool {
-        matches!(
-            self,
-            BlockEvent::ExitBlock(_) | BlockEvent::IndicateCodeBlockCode
-        )
+        matches!(self, BlockEvent::ExitBlock(_))
     }
 }
