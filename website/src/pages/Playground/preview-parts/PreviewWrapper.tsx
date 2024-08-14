@@ -35,9 +35,6 @@ const PreviewWrapper: Component<{
 }> = (props) => {
   const rotextProcessors = useRotextProcessorsStore()!;
 
-  const [processResult, setProcessResult] = createSignal<
-    RotextProcessResult | null
-  >(null);
   const [isProcessorProviderReady, setIsProcessorProviderReady] = createSignal(
     false,
   );
@@ -49,12 +46,10 @@ const PreviewWrapper: Component<{
         if (!processorProvider) return;
         const processor = processorProvider();
 
-        setProcessResult(
-          processor.process(text, {
-            requiresLookupListRaw: true,
-            tagNameMap: TAG_NAME_MAP,
-          }),
-        );
+        props.store.processResult = processor.process(text, {
+          requiresLookupListRaw: true,
+          tagNameMap: TAG_NAME_MAP,
+        });
       },
     ),
   );
@@ -88,7 +83,7 @@ const PreviewWrapper: Component<{
         }
       >
         <Show
-          when={processResult()}
+          when={props.store.processResult}
         >
           {(processResult) => (
             <>
@@ -105,9 +100,9 @@ const PreviewWrapper: Component<{
                 >
                   {
                     /*
-                由于不明原因，pre 默认的 `whitespace: pre` 会导致其内容与
-                编辑器部分重叠起来，所以手动设为 `whitespace: pre-wrap`。
-              */
+                      由于不明原因，pre 默认的 `whitespace: pre` 会导致其内容与
+                      编辑器部分重叠起来，所以手动设为 `whitespace: pre-wrap`。
+                    */
                   }
                   <pre class="overflow-scroll whitespace-pre-wrap">
               <code>
@@ -117,7 +112,7 @@ const PreviewWrapper: Component<{
                 </Match>
                 <Match when={props.store.currentTab[0] === "extra"}>
                   <pre class="overflow-scroll whitespace-pre-wrap">
-              {processResult().extraInfos[(props.store.currentTab as Extract<Tab, {0:"extra"}>)[1]]?.content}
+                    {processResult().extraInfos[(props.store.currentTab as Extract<Tab, {0:"extra"}>)[1]]?.content}
                   </pre>
                 </Match>
               </Switch>
