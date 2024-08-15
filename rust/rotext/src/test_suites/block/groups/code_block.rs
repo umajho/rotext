@@ -220,34 +220,8 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
             ],
         },
         GroupedCases {
-            group: "代码块>代码块与全局阶段语法的互动",
+            group: "代码块>代码块与全局阶段语法的互动>逐字文本转义",
             cases: vec![
-                case!(
-                    vec![indoc! {"
-                        ```
-                        <` ``` `>
-                        ```"},],
-                    vec![
-                        (EventType::EnterCodeBlock, None),
-                        (EventType::IndicateCodeBlockCode, None),
-                        (EventType::VerbatimEscaping, Some("```")),
-                        (EventType::NewLine, None),
-                        (EventType::ExitBlock, None),
-                    ]
-                ),
-                case!(
-                    vec![indoc! {"
-                        ```info<`
-                        info line 2`>
-                        ```"},],
-                    vec![
-                        (EventType::EnterCodeBlock, None),
-                        (EventType::Text, Some("info")),
-                        (EventType::VerbatimEscaping, Some("\ninfo line 2")),
-                        (EventType::IndicateCodeBlockCode, None),
-                        (EventType::ExitBlock, None),
-                    ]
-                ),
                 case!(
                     vec![indoc! {"
                         ```
@@ -284,6 +258,49 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                         (EventType::IndicateCodeBlockCode, None),
                         (EventType::Text, Some("  foo")),
                         (EventType::VerbatimEscaping, Some("bar")),
+                        (EventType::Text, Some("    baz")),
+                        (EventType::NewLine, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+            ],
+        },
+        GroupedCases {
+            group: "代码块>代码块与全局阶段语法的互动>注释",
+            cases: vec![
+                case!(
+                    vec![indoc! {"
+                        ```
+                        <% ``` %>
+                        ```"},],
+                    vec![
+                        (EventType::EnterCodeBlock, None),
+                        (EventType::IndicateCodeBlockCode, None),
+                        (EventType::NewLine, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec![indoc! {"
+                        ```info<%
+                        info line 2%>
+                        ```"},],
+                    vec![
+                        (EventType::EnterCodeBlock, None),
+                        (EventType::Text, Some("info")),
+                        (EventType::IndicateCodeBlockCode, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec![indoc! {"
+                        ```
+                        ␠␠foo<%bar%>    baz
+                        ```"},],
+                    vec![
+                        (EventType::EnterCodeBlock, None),
+                        (EventType::IndicateCodeBlockCode, None),
+                        (EventType::Text, Some("  foo")),
                         (EventType::Text, Some("    baz")),
                         (EventType::NewLine, None),
                         (EventType::ExitBlock, None),

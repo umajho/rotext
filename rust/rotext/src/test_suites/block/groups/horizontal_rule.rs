@@ -52,7 +52,7 @@ pub fn groups_horizontal_rule() -> Vec<GroupedCases> {
             ],
         },
         GroupedCases {
-            group: "分割线>分割线与全局阶段语法的互动",
+            group: "分割线>分割线与全局阶段语法的互动>逐字文本转义",
             cases: vec![case!(
                 vec![
                     indoc! {"
@@ -67,6 +67,19 @@ pub fn groups_horizontal_rule() -> Vec<GroupedCases> {
                     (EventType::VerbatimEscaping, Some("a")),
                     (EventType::ExitBlock, None),
                 ]
+            )],
+        },
+        GroupedCases {
+            group: "分割线>分割线与全局阶段语法的互动>注释",
+            cases: vec![case!(
+                vec![
+                    indoc! {"
+                        ---
+                        <%a%>"},
+                    "---<%a%>",
+                    "--- <%a%>",
+                ],
+                vec![(EventType::ThematicBreak, None),]
             )],
         },
     ]

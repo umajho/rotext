@@ -205,6 +205,61 @@ mod for_fn_parse {
     }
 
     #[test]
+    fn it_can_process_none_ends() {
+        let end_condition = EndCondition {
+            on_atx_closing: None,
+            on_table_related: None,
+        };
+
+        for input in [&b"<%C%>"[..], &b"<%C%>after"[..]] {
+            test(
+                input,
+                end_condition.clone(),
+                0,
+                b"",
+                End::None,
+                MockCursorContext {
+                    cursor: 5,
+                    current_line: LineNumber::new_universal(1),
+                },
+            );
+        }
+        test(
+            b"foo<%C%>",
+            end_condition.clone(),
+            0,
+            b"foo",
+            End::None,
+            MockCursorContext {
+                cursor: 8,
+                current_line: LineNumber::new_universal(1),
+            },
+        );
+        test(
+            b"foo   <%C%>",
+            end_condition.clone(),
+            0,
+            b"foo   ",
+            End::None,
+            MockCursorContext {
+                cursor: 11,
+                current_line: LineNumber::new_universal(1),
+            },
+        );
+        test(
+            b"foo<%C\nline 2%>",
+            end_condition.clone(),
+            0,
+            b"foo",
+            End::None,
+            MockCursorContext {
+                cursor: 15,
+                current_line: LineNumber::new_universal(2),
+            },
+        );
+    }
+
+    #[test]
     fn it_cannot_process_atx_closing_ends_if_not_enabled() {
         let end_condition = EndCondition {
             on_atx_closing: None,

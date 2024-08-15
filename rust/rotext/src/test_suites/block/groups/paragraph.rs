@@ -66,7 +66,7 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
             ],
         },
         GroupedCases {
-            group: "段落>段落与全局阶段语法的互动",
+            group: "段落>段落与全局阶段语法的互动>逐字文本转义",
             cases: vec![
                 case!(
                     vec!["a<`c`>"],
@@ -175,6 +175,91 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
                         (EventType::VerbatimEscaping, Some("c")),
                         (EventType::Unparsed, Some("b ")),
                         (EventType::VerbatimEscaping, Some("d")),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+            ],
+        },
+        GroupedCases {
+            group: "段落>段落与全局阶段语法的互动>注释",
+            cases: vec![
+                case!(
+                    vec!["a<%c%>"],
+                    vec![
+                        (EventType::EnterParagraph, None),
+                        (EventType::Unparsed, Some("a")),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec!["<%c%>b"],
+                    vec![
+                        (EventType::EnterParagraph, None),
+                        (EventType::Unparsed, Some("b")),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec!["<%c%> b"],
+                    vec![
+                        (EventType::EnterParagraph, None),
+                        (EventType::Unparsed, Some("b")),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec!["a<%c%>b"],
+                    vec![
+                        (EventType::EnterParagraph, None),
+                        (EventType::Unparsed, Some("a")),
+                        (EventType::Unparsed, Some("b")),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec![
+                        indoc! {"
+                        a
+                        <%c%>"},
+                        indoc! {"
+                        a
+                        ␠<%c%>"},
+                    ],
+                    vec![
+                        (EventType::EnterParagraph, None),
+                        (EventType::Unparsed, Some("a")),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec![
+                        indoc! {"
+                        <%c%>
+                        b"},
+                        indoc! {"
+                        <%c%>
+                        ␠b"},
+                    ],
+                    vec![
+                        (EventType::EnterParagraph, None),
+                        (EventType::Unparsed, Some("b")),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(vec!["<%c%><%d%>", "<%c%> <%d%>"], vec![]),
+                case!(
+                    vec!["<%c%> b<%d%>"],
+                    vec![
+                        (EventType::EnterParagraph, None),
+                        (EventType::Unparsed, Some("b")),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec!["<%c%>b <%d%>"],
+                    vec![
+                        (EventType::EnterParagraph, None),
+                        (EventType::Unparsed, Some("b ")),
                         (EventType::ExitBlock, None),
                     ]
                 ),

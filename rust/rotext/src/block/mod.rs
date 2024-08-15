@@ -979,7 +979,12 @@ mod leaf {
                         line::verbatim::End::Fence => {
                             exit_when_indicator_already_yielded(inner, top_leaf)
                         }
-                        line::verbatim::End::None => TYM_UNIT.into(),
+                        line::verbatim::End::None => {
+                            top_leaf.state =
+                                TopLeafCodeBlockState::InCode(TopLeafCodeBlockStateInCode::Normal);
+                            inner.stack.push_top_leaf(top_leaf.into());
+                            TYM_UNIT.into()
+                        }
                     };
 
                     tym_a.add(tym_b).add(tym_c)

@@ -182,8 +182,8 @@ pub fn parse<TCtx: CursorContext>(
     };
 
     match end {
-        End::VerbatimEscaping(_) => range.end += spaces,
-        End::Eof | End::NewLine(_) | End::TableRelated(_) | End::None => {}
+        End::VerbatimEscaping(_) | End::None => range.end += spaces,
+        End::Eof | End::NewLine(_) | End::TableRelated(_) => {}
     }
 
     (range, end)
