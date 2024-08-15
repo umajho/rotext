@@ -28,7 +28,7 @@ pub fn parse(
 ) -> blend::BlockEventStreamInlineSegmentMapper<block::Parser<VecStack<StackEntry>>> {
     let block_parser = block::Parser::new(input);
 
-    blend::BlockEventStreamInlineSegmentMapper::new(block_parser)
+    blend::BlockEventStreamInlineSegmentMapper::new(input, block_parser)
 }
 
 pub fn parse_with_stack<TStackForBlockPhase: Stack<StackEntry>>(
@@ -36,5 +36,5 @@ pub fn parse_with_stack<TStackForBlockPhase: Stack<StackEntry>>(
 ) -> blend::BlockEventStreamInlineSegmentMapper<block::Parser<TStackForBlockPhase>> {
     let block_parser = block::Parser::new(input);
 
-    blend::BlockEventStreamInlineSegmentMapper::new(block_parser)
+    blend::BlockEventStreamInlineSegmentMapper::new(input, block_parser)
 }

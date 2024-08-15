@@ -70,7 +70,7 @@ pub enum Event {
     NewLine(NewLine) = EventType::NewLine as u8,
 
     /// 文本。
-    #[subenum(BlockEvent, InlineLevelParseInputEvent, InlineEvent, BlendEvent)]
+    #[subenum(BlockEvent, InlineEvent, BlendEvent)]
     Text(Range<usize>) = EventType::Text as u8,
 
     /// 分割线。
