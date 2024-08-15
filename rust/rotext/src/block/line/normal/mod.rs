@@ -5,8 +5,7 @@ use std::ops::Range;
 
 use crate::{
     block::{
-        branch::surrounded::table, types::CursorContext,
-        utils::count_continuous_character_with_maximum,
+        branch::braced::table, types::CursorContext, utils::count_continuous_character_with_maximum,
     },
     events::{NewLine, VerbatimEscaping},
 };
@@ -19,7 +18,7 @@ pub struct EndCondition {
     pub on_table_related: Option<TableRelated>,
 }
 /// 类似于 CommonMark 中 ATX 风格的 Headings 中的闭合部分，位于空格之后，外部结构的结
-/// 尾之前（除了常规的换行和文档结束，“结尾” 还可能是 [surrounded] 的闭合部分），标记都
+/// 尾之前（除了常规的换行和文档结束，“结尾” 还可能是 [braced] 的闭合部分），标记都
 /// 是相同的字符。
 ///
 /// 与 CommonMark 不同的是，此部分标记的长度必须与对应的开启部分的相同。

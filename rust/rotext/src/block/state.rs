@@ -25,7 +25,7 @@ impl From<Exiting> for State {
 #[derive(Clone, Copy)]
 pub enum Expecting {
     ItemLikeOpening,
-    SurroundedOpening,
+    BracedOpening,
     LeafContent,
 }
 
@@ -53,9 +53,9 @@ pub enum ExitingAndThen {
         container: Option<StackEntryItemLikeContainer>,
         item_like: StackEntryItemLike,
     },
-    ExpectSurroundedOpening,
-    YieldAndExpectSurroundedOpening(BlockEvent),
-    YieldBasedOnContextAndExpectSurroundedOpening,
+    ExpectBracedOpening,
+    YieldAndExpectBracedOpening(BlockEvent),
+    YieldBasedOnContextAndExpectBracedOpening,
     End,
 }
 impl Exiting {

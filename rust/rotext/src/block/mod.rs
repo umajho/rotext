@@ -160,13 +160,13 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                     )
                     .map(|tym| cast_tym!(tym));
                 }
-                Expecting::SurroundedOpening => {
+                Expecting::BracedOpening => {
                     if self.inner.stack.is_top_leaf_some() {
                         expecting = Expecting::LeafContent;
                         self.state = expecting.into();
                         continue;
                     }
-                    break branch::surrounded::parse_opening_and_process(
+                    break branch::braced::parse_opening_and_process(
                         self.input,
                         &mut self.state,
                         &mut self.inner,
@@ -247,9 +247,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                 StackEntry::ItemLikeContainer(stack_entry) => {
                     branch::item_like::exit_container(inner, stack_entry)?
                 }
-                StackEntry::Table(stack_entry) => {
-                    branch::surrounded::table::exit(inner, stack_entry)?
-                }
+                StackEntry::Table(stack_entry) => branch::braced::table::exit(inner, stack_entry)?,
             }
         } else {
             TYM_UNIT.into()
@@ -262,7 +260,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
             {
                 if !matches!(
                     and_then,
-                    ExitingAndThen::YieldBasedOnContextAndExpectSurroundedOpening
+                    ExitingAndThen::YieldBasedOnContextAndExpectBracedOpening
                 ) {
                     assert!(to_be_yielded_based_on_context.is_none());
                 }
@@ -287,20 +285,20 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                     *item_likes_state = ItemLikesState::ProcessingNew;
                     (tym_a.add(tym_b), Some(Expecting::ItemLikeOpening.into()))
                 }
-                ExitingAndThen::ExpectSurroundedOpening => {
-                    (TYM_UNIT.into(), Some(Expecting::SurroundedOpening.into()))
+                ExitingAndThen::ExpectBracedOpening => {
+                    (TYM_UNIT.into(), Some(Expecting::BracedOpening.into()))
                 }
-                ExitingAndThen::YieldAndExpectSurroundedOpening(ev) => (
+                ExitingAndThen::YieldAndExpectBracedOpening(ev) => (
                     inner.r#yield(ev).into(),
-                    Some(Expecting::SurroundedOpening.into()),
+                    Some(Expecting::BracedOpening.into()),
                 ),
-                ExitingAndThen::YieldBasedOnContextAndExpectSurroundedOpening => {
+                ExitingAndThen::YieldBasedOnContextAndExpectBracedOpening => {
                     debug_assert!(to_be_yielded_based_on_context.is_some());
                     (
                         inner
                             .r#yield(unsafe { to_be_yielded_based_on_context.unwrap_unchecked() })
                             .into(),
-                        Some(Expecting::SurroundedOpening.into()),
+                        Some(Expecting::BracedOpening.into()),
                     )
                 }
                 ExitingAndThen::End => (TYM_UNIT.into(), Some(State::Ended)),
@@ -365,14 +363,14 @@ mod branch {
                                 n: matching_last_line.processed_item_likes(),
                                 should_also_exit_containee_in_last_container: false,
                             },
-                            ExitingAndThen::ExpectSurroundedOpening,
+                            ExitingAndThen::ExpectBracedOpening,
                         )
                         .into();
                         Ok(TYM_UNIT.into())
                     }
                     ItemLikesState::ProcessingNew => {
-                        *state = State::Expecting(Expecting::SurroundedOpening);
-                        surrounded::parse_opening_and_process(input, state, inner, first_char)
+                        *state = State::Expecting(Expecting::BracedOpening);
+                        braced::parse_opening_and_process(input, state, inner, first_char)
                             .map(|tym| cast_tym!(tym))
                     }
                 },
@@ -531,7 +529,7 @@ mod branch {
         }
     }
 
-    pub mod surrounded {
+    pub mod braced {
         use super::*;
 
         pub fn parse_opening_and_process<TStack: Stack<StackEntry>>(
@@ -561,7 +559,7 @@ mod branch {
                 state: &mut State,
                 inner: &mut ParserInner<TStack>,
             ) -> crate::Result<Tym<1>> {
-                *state = Expecting::SurroundedOpening.into();
+                *state = Expecting::BracedOpening.into();
 
                 let id = inner.pop_block_id();
                 let stack_entry = StackEntryTable {
@@ -589,14 +587,14 @@ mod branch {
                             ExitingUntil::TopIsTable {
                                 should_also_exit_table: true,
                             },
-                            ExitingAndThen::ExpectSurroundedOpening,
+                            ExitingAndThen::ExpectBracedOpening,
                         )
                         .into(),
                         TableRelatedEnd::TableCaptionIndicator => Exiting::new(
                             ExitingUntil::TopIsTable {
                                 should_also_exit_table: false,
                             },
-                            ExitingAndThen::YieldAndExpectSurroundedOpening(
+                            ExitingAndThen::YieldAndExpectBracedOpening(
                                 BlockEvent::IndicateTableCaption,
                             ),
                         )
@@ -605,7 +603,7 @@ mod branch {
                             ExitingUntil::TopIsTable {
                                 should_also_exit_table: false,
                             },
-                            ExitingAndThen::YieldAndExpectSurroundedOpening(
+                            ExitingAndThen::YieldAndExpectBracedOpening(
                                 BlockEvent::IndicateTableRow,
                             ),
                         )
@@ -614,14 +612,14 @@ mod branch {
                             ExitingUntil::TopIsTable {
                                 should_also_exit_table: false,
                             },
-                            ExitingAndThen::YieldAndExpectSurroundedOpening(
+                            ExitingAndThen::YieldAndExpectBracedOpening(
                                 BlockEvent::IndicateTableHeaderCell,
                             ),
                         )
                         .into(),
                         TableRelatedEnd::DoublePipes => Exiting::new(
                             ExitingUntil::TopIsAwareOfDoublePipes,
-                            ExitingAndThen::YieldBasedOnContextAndExpectSurroundedOpening,
+                            ExitingAndThen::YieldBasedOnContextAndExpectBracedOpening,
                         )
                         .into(),
                     };
@@ -798,7 +796,7 @@ mod leaf {
                         character: m!('='),
                         count: top_leaf.level,
                     }),
-                    on_table_related: branch::surrounded::table::make_table_related_end_condition(
+                    on_table_related: branch::braced::table::make_table_related_end_condition(
                         inner, false,
                     ),
                 },
@@ -1049,7 +1047,7 @@ mod leaf {
                 inner,
                 line::normal::EndCondition {
                     on_atx_closing: None,
-                    on_table_related: branch::surrounded::table::make_table_related_end_condition(
+                    on_table_related: branch::braced::table::make_table_related_end_condition(
                         inner,
                         has_just_entered_table,
                     ),
@@ -1117,7 +1115,7 @@ mod leaf {
                 inner,
                 line::normal::EndCondition {
                     on_atx_closing: None,
-                    on_table_related: branch::surrounded::table::make_table_related_end_condition(
+                    on_table_related: branch::braced::table::make_table_related_end_condition(
                         inner, false,
                     ),
                 },

@@ -1,7 +1,7 @@
 mod for_fn_parse {
     use crate::{
         block::{
-            branch::surrounded::table,
+            branch::braced::table,
             line::normal::{parse, AtxClosing, ContentBefore, End, EndCondition, TableRelated},
             test_support::mocks::MockCursorContext,
         },
