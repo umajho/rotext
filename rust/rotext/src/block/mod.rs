@@ -15,6 +15,7 @@ pub use stack_wrapper::StackEntry;
 use crate::{
     common::m,
     events::{BlockEvent, ThematicBreak},
+    types::{cast_tym, Tym, TYM_UNIT},
     utils::stack::Stack,
 };
 
@@ -28,7 +29,7 @@ use stack_wrapper::{
     GeneralItemLike, ItemLikeContainer, Meta, StackEntryItemLike, StackEntryItemLikeContainer,
     StackEntryTable, TopLeaf, TopLeafCodeBlock, TopLeafHeading, TopLeafParagraph,
 };
-use types::{cast_tym, CursorContext, Tym, YieldContext, TYM_UNIT};
+use types::{CursorContext, YieldContext};
 use utils::count_continuous_character;
 
 pub struct Parser<'a, TStack: Stack<StackEntry>> {

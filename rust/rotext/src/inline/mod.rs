@@ -1,9 +1,13 @@
 mod parser_inner;
+mod types;
 
 use parser_inner::ParserInner;
+use types::{CursorContext, YieldContext};
 
 use crate::{
+    common::m,
     events::{InlineEvent, InlineLevelParseInputEvent},
+    types::{Tym, TYM_UNIT},
     utils::internal::utf8::get_byte_length_by_first_char,
 };
 
@@ -11,13 +15,12 @@ pub struct Parser<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> {
     input: &'a [u8],
     event_stream: TInput,
 
-    state: State,
-    inner: ParserInner,
+    state: State<'a>,
 }
 
-enum State {
+enum State<'a> {
     Idle,
-    Parsing { end: usize, cursor: usize },
+    Parsing { input: &'a [u8], inner: ParserInner },
 }
 
 impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput> {
@@ -26,26 +29,21 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput>
             input,
             event_stream,
             state: State::Idle,
-            inner: ParserInner::new(),
         }
     }
 
     #[inline(always)]
     fn next(&mut self) -> Option<crate::Result<InlineEvent>> {
         loop {
-            if let Some(ev) = self.inner.pop_to_be_yielded() {
-                break Some(Ok(ev));
-            }
-
             match &mut self.state {
                 State::Idle => {
                     let next = self.event_stream.next()?;
 
                     let to_yield = match next {
                         InlineLevelParseInputEvent::Unparsed(content) => {
-                            let end = content.end;
-                            let cursor = content.start;
-                            self.state = State::Parsing { end, cursor };
+                            let input = &self.input[..content.end];
+                            let inner = ParserInner::new(content.start);
+                            self.state = State::Parsing { input, inner };
                             continue;
                         }
                         InlineLevelParseInputEvent::VerbatimEscaping(verbatim_escaping) => {
@@ -58,9 +56,14 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput>
 
                     break Some(Ok(to_yield));
                 }
-                State::Parsing { end, cursor } => {
-                    if cursor < end {
-                        Self::parse(self.input, &mut self.inner, *end, cursor)
+                State::Parsing { input, inner } => {
+                    if let Some(ev) = inner.pop_to_be_yielded() {
+                        break Some(Ok(ev));
+                    }
+
+                    if inner.cursor() < input.len() {
+                        let tym = Self::parse(input, inner);
+                        inner.enforce_to_yield_mark(tym);
                     } else {
                         self.state = State::Idle;
                     }
@@ -69,29 +72,34 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput>
         }
     }
 
-    fn parse(input: &[u8], inner: &mut ParserInner, end: usize, cursor: &mut usize) {
-        let start = *cursor;
-        while *cursor < end {
-            // SAFETY: `*cursor` < `end` < `input.len()`.
-            match unsafe { input.get_unchecked(*cursor) } {
-                b'\\' if *cursor < end - 1 => {
-                    if *cursor > start {
-                        inner.r#yield(InlineEvent::Text(start..*cursor));
-                    }
+    fn parse(input: &[u8], inner: &mut ParserInner) -> Tym<2> {
+        let start = inner.cursor();
+        while inner.cursor() < input.len() {
+            // SAFETY: `inner.cursor()` `input.len()`.
+            match unsafe { input.get_unchecked(inner.cursor()) } {
+                m!('\\') if inner.cursor() < input.len() - 1 => {
+                    let tym_a = if inner.cursor() > start {
+                        inner.r#yield(InlineEvent::Text(start..inner.cursor()))
+                    } else {
+                        TYM_UNIT.into()
+                    };
 
-                    let target_first_byte = unsafe { *input.get_unchecked(*cursor + 1) };
+                    let target_first_byte = unsafe { *input.get_unchecked(inner.cursor() + 1) };
                     let target_utf8_length = get_byte_length_by_first_char(target_first_byte);
 
-                    inner.r#yield(InlineEvent::Text(
-                        (*cursor + 1)..(*cursor + 1 + target_utf8_length),
+                    let tym_b = inner.r#yield(InlineEvent::Text(
+                        (inner.cursor() + 1)..(inner.cursor() + 1 + target_utf8_length),
                     ));
-                    *cursor += 1 + target_utf8_length;
-                    return;
+                    inner.move_cursor_forward(1 + target_utf8_length);
+
+                    return tym_a.add(tym_b).into();
                 }
-                _ => *cursor += 1,
+                _ => inner.move_cursor_forward(1),
             }
         }
-        inner.r#yield(InlineEvent::Text(start..*cursor));
+
+        let tym = inner.r#yield(InlineEvent::Text(start..inner.cursor()));
+        tym.into()
     }
 }
 

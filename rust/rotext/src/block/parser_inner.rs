@@ -1,5 +1,6 @@
 use crate::{
     events::BlockEvent,
+    types::Tym,
     types::{BlockId, LineNumber},
     utils::{internal::array_queue::ArrayQueue, stack::Stack},
 };
@@ -8,7 +9,7 @@ use crate::{
 use super::utils::BlockIdGenerator;
 use super::{
     stack_wrapper::{StackEntry, StackWrapper},
-    types::{CursorContext, Tym, YieldContext},
+    types::{CursorContext, YieldContext},
 };
 
 const MAX_TO_YIELD: usize = 3;
