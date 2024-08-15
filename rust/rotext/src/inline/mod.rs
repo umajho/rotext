@@ -31,10 +31,10 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput>
     }
 
     #[inline(always)]
-    fn next(&mut self) -> Option<InlineEvent> {
+    fn next(&mut self) -> Option<crate::Result<InlineEvent>> {
         loop {
             if let Some(ev) = self.inner.pop_to_be_yielded() {
-                break Some(ev);
+                break Some(Ok(ev));
             }
 
             match &mut self.state {
@@ -56,7 +56,7 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput>
                         }
                     };
 
-                    break Some(to_yield);
+                    break Some(Ok(to_yield));
                 }
                 State::Parsing { end, cursor } => {
                     if cursor < end {
@@ -96,7 +96,7 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput>
 }
 
 impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Iterator for Parser<'a, TInput> {
-    type Item = InlineEvent;
+    type Item = crate::Result<InlineEvent>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.next()

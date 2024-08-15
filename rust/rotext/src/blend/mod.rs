@@ -56,14 +56,16 @@ impl<'a, TBlockParser: Iterator<Item = crate::Result<BlockEvent>>>
                         break Ok(BlendEvent::try_from(Event::from(next)).unwrap());
                     }
                 }
-                State::TakenOver(ref mut inline_parser) => {
-                    if let Some(next) = inline_parser.next() {
+                State::TakenOver(ref mut inline_parser) => match inline_parser.next() {
+                    Some(Ok(next)) => {
                         break Ok(BlendEvent::try_from(Event::from(next)).unwrap());
-                    } else {
+                    }
+                    Some(Err(err)) => break Err(err),
+                    None => {
                         let event_stream = self.event_stream_returner.borrow_mut().take().unwrap();
                         self.state = State::Normal(Some(event_stream));
                     }
-                }
+                },
             };
         };
 
