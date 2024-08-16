@@ -13,7 +13,6 @@ import pretty from "pretty";
 
 import { Loading } from "../../../components/ui/mod";
 import { useRotextProcessorsStore } from "../../../contexts/rotext-processors-store";
-import { RotextProcessResult } from "../../../processors/mod";
 import { TAG_NAME_MAP } from "../../../utils/custom-elements-registration/mod";
 
 import { EditorStore } from "../editor-store";
