@@ -75,7 +75,7 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput>
     fn parse(input: &[u8], inner: &mut ParserInner) -> Tym<2> {
         let start = inner.cursor();
         while inner.cursor() < input.len() {
-            // SAFETY: `inner.cursor()` `input.len()`.
+            // SAFETY: `inner.cursor()` < `input.len()`.
             match unsafe { input.get_unchecked(inner.cursor()) } {
                 m!('\\') if inner.cursor() < input.len() - 1 => {
                     let tym_a = if inner.cursor() > start {
