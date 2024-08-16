@@ -1,6 +1,9 @@
 mod parser_inner;
 mod types;
 
+#[cfg(test)]
+mod tests;
+
 use parser_inner::ParserInner;
 use types::{CursorContext, YieldContext};
 
@@ -94,6 +97,53 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput>
 
                     return tym_a.add(tym_b).into();
                 }
+                m!('>') if input.get(inner.cursor() + 1) == Some(&m!('>')) => {
+                    let text_content = start..inner.cursor();
+                    inner.move_cursor_forward(">>".len());
+                    let start = inner.cursor();
+
+                    let ref_link_content =
+                        advance_until_potential_ref_link_content_ends(input, inner);
+                    let tym = if let Some(()) = ref_link_content {
+                        let tym_a = if !text_content.is_empty() {
+                            inner.r#yield(InlineEvent::Text(text_content))
+                        } else {
+                            TYM_UNIT.into()
+                        };
+
+                        let tym_b = inner.r#yield(InlineEvent::RefLink(start..inner.cursor()));
+
+                        tym_a.add(tym_b)
+                    } else {
+                        continue;
+                    };
+                    return tym.into();
+                }
+                m!('[') => match input.get(inner.cursor() + 1) {
+                    None => {
+                        inner.move_cursor_forward(1);
+                        break;
+                    }
+                    Some(m!('=')) => {
+                        let tym_a = if inner.cursor() > start {
+                            inner.r#yield(InlineEvent::Text(start..inner.cursor()))
+                        } else {
+                            TYM_UNIT.into()
+                        };
+
+                        inner.move_cursor_forward("[=".len());
+                        let start = inner.cursor();
+                        advance_until_dicexp_will_be_ended(input, inner);
+                        let tym_b = inner.r#yield(InlineEvent::Dicexp(start..inner.cursor()));
+                        inner.move_cursor_forward("]".len());
+
+                        return tym_a.add(tym_b).into();
+                    }
+                    Some(_) => {
+                        inner.move_cursor_forward(1);
+                        continue;
+                    }
+                },
                 _ => inner.move_cursor_forward(1),
             }
         }
@@ -108,5 +158,96 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Iterator for Parse
 
     fn next(&mut self) -> Option<Self::Item> {
         self.next()
+    }
+}
+
+/// 推进游标并尝试解析 ref link 的内容。在成功解析为 ref link 内容时返回 `Some(())`，此时
+/// `ctx.cursor()` 是解析内容的末尾。
+fn advance_until_potential_ref_link_content_ends<TCtx: CursorContext>(
+    input: &[u8],
+    ctx: &mut TCtx,
+) -> Option<()> {
+    let char = input.get(ctx.cursor())?;
+    if !char.is_ascii_alphabetic() {
+        return None;
+    }
+    ctx.move_cursor_forward(1);
+
+    loop {
+        let char = input.get(ctx.cursor())?;
+        if char.is_ascii_alphabetic() {
+            ctx.move_cursor_forward(1);
+            continue;
+        } else if char == &b'.' {
+            ctx.move_cursor_forward(1);
+            break;
+        } else {
+            return None;
+        }
+    }
+
+    let char = input.get(ctx.cursor())?;
+    if char.is_ascii_alphabetic() {
+        ctx.move_cursor_forward(1);
+        loop {
+            let Some(char) = input.get(ctx.cursor()) else {
+                return Some(());
+            };
+            if char.is_ascii_alphabetic() {
+                ctx.move_cursor_forward(1);
+                continue;
+            } else if char == &b'#' {
+                ctx.move_cursor_forward(1);
+                break;
+            } else {
+                return Some(());
+            }
+        }
+
+        match input.get(ctx.cursor()) {
+            Some(char) if char.is_ascii_digit() => {}
+            _ => {
+                ctx.set_cursor(ctx.cursor() - 1);
+                return Some(());
+            }
+        };
+        ctx.move_cursor_forward(1);
+    } else if char.is_ascii_digit() {
+        ctx.move_cursor_forward(1);
+    } else {
+        return None;
+    }
+
+    loop {
+        let Some(char) = input.get(ctx.cursor()) else {
+            return Some(());
+        };
+        if char.is_ascii_digit() {
+            ctx.move_cursor_forward(1);
+            continue;
+        } else {
+            return Some(());
+        }
+    }
+}
+
+/// 推进游标，直到到了数量匹配的 “]” 之前，或者 `input` 到头时。如果是前者，结束时
+/// `ctx.cursor()` 对应于 “]” 的索引，也即还没消耗掉那个 “]”。
+fn advance_until_dicexp_will_be_ended<TCtx: CursorContext>(input: &[u8], ctx: &mut TCtx) {
+    let mut depth = 1;
+
+    while ctx.cursor() < input.len() {
+        // SAFETY: `inner.cursor()` < `input.len()`.
+        match unsafe { input.get_unchecked(ctx.cursor()) } {
+            m!('[') => depth += 1,
+            m!(']') => {
+                depth -= 1;
+                if depth == 0 {
+                    return;
+                }
+            }
+            _ => {}
+        }
+        ctx.move_cursor_forward(1)
     }
 }

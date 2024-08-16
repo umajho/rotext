@@ -41,6 +41,10 @@ pub enum EventType {
     IndicateTableHeaderCell = 33,
     IndicateTableDataCell = 34,
     ExitBlock = 99,
+
+    // 在行内阶段产出。
+    RefLink = 101,
+    Dicexp = 102,
 }
 
 #[cfg(test)]
@@ -145,6 +149,13 @@ pub enum Event {
     /// 退出一层块级的 “进入…”。
     #[subenum(BlockEvent, InlineEvent, BlendEvent)]
     ExitBlock(ExitBlock) = EventType::ExitBlock as u8,
+
+    /// 引用链接。
+    #[subenum(InlineEvent, BlendEvent)]
+    RefLink(Range<usize>) = EventType::RefLink as u8,
+    /// Dicexp。
+    #[subenum(InlineEvent, BlendEvent)]
+    Dicexp(Range<usize>) = EventType::Dicexp as u8,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -192,7 +203,9 @@ impl Event {
         let result = match self {
             Event::Unparsed(content)
             | Event::VerbatimEscaping(VerbatimEscaping { content, .. })
-            | Event::Text(content) => unsafe {
+            | Event::Text(content)
+            | Event::RefLink(content)
+            | Event::Dicexp(content) => unsafe {
                 std::str::from_utf8_unchecked(&input[content.clone()])
             },
             Event::NewLine(_)

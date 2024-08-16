@@ -7,7 +7,7 @@ type LocMap = WeakMap<any, LocationRange>;
 export interface CustomElementTagNameMap {
   "scratch-off": string;
   "ref-link": string;
-  "dicexp-preview": string;
+  "dicexp": string;
 }
 
 export function toSnabbdomChildren(
@@ -117,7 +117,7 @@ export function elementToSnabbdom(
       };
       // TODO: 根据附加数据决定标签名（`…-preview` vs `…-result`？）
       return h(
-        opts.customElementTagNameMap["dicexp-preview"],
+        opts.customElementTagNameMap["dicexp"],
         { attrs },
         children,
       );

@@ -29,6 +29,10 @@ impl CursorContext for ParserInner {
         self.cursor
     }
 
+    fn set_cursor(&mut self, value: usize) {
+        self.cursor = value
+    }
+
     fn move_cursor_forward(&mut self, n: usize) {
         self.cursor += n;
     }

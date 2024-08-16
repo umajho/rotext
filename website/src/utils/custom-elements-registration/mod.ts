@@ -25,7 +25,7 @@ import { evaluatorProvider } from "./evaluator-provider";
 export const TAG_NAME_MAP = {
   "scratch-off": "x-scratch-off",
   "ref-link": "x-ref-link",
-  "dicexp-preview": "x-dicexp-preview",
+  "dicexp": "x-dicexp",
   "collapse": "x-collapse",
   "code-block": "x-code-block",
 };
@@ -55,7 +55,7 @@ export function registerCustomElementsOnce() {
     }),
   });
   registerCustomElementForStepsRepresentation("steps-representation");
-  registerCustomElementForRoWidgetDicexp(TAG_NAME_MAP["dicexp-preview"], {
+  registerCustomElementForRoWidgetDicexp(TAG_NAME_MAP["dicexp"], {
     styleProviders: getDefaultDicexpStyleProviders(),
     backgroundColor: BACKGROUND_COLOR,
     widgetOwnerClass: WIDGET_OWNER_CLASS,

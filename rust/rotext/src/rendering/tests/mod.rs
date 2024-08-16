@@ -493,3 +493,9 @@ fn it_works_with_block_id() {
 
     run_cases(table);
 }
+
+/// TODO!!!
+#[test]
+fn it_works_in_inline_phase() {
+    todo!()
+}
