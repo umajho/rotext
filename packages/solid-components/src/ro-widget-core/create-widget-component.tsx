@@ -217,7 +217,7 @@ export function createWidgetComponent(parts: {
   return () => {
     return (
       <ShadowRootAttacher
-        hostStyle={{ display: "inline" }}
+        hostStyle={{ display: "inline-grid" }}
         preventHostStyleInheritance={true}
         onMount={handleMount}
       >
