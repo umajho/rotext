@@ -2,6 +2,8 @@ mod parser_inner;
 mod types;
 
 #[cfg(test)]
+mod test_support;
+#[cfg(test)]
 mod tests;
 
 use parser_inner::ParserInner;
