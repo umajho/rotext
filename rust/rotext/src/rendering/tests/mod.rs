@@ -9,7 +9,6 @@ use crate::test_support::{self, report_panicked_cases, FailedCase, GroupedCases}
 
 use super::*;
 
-#[cfg(not(any(feature = "block-id", feature = "line-number")))]
 #[test]
 fn it_works_in_block_phase() {
     let table: Vec<GroupedCases<_>> = vec![
@@ -444,7 +443,7 @@ fn it_works_in_block_phase() {
     run_cases(table);
 }
 
-#[cfg(all(feature = "block-id", feature = "line-number"))]
+#[cfg(feature = "block-id")]
 #[test]
 fn it_works_with_block_id() {
     let table: Vec<GroupedCases<_>> = vec![GroupedCases {
@@ -453,7 +452,7 @@ fn it_works_with_block_id() {
             case!(
                 @with_id,
                 "",
-                [(ThematicBreak(.., id = 1, ln = 1)),],
+                [(ThematicBreak(.., id = 1)),],
                 r#"<hr data-block-id="1">"#,
             ),
             case!(
@@ -462,7 +461,7 @@ fn it_works_with_block_id() {
                 [
                     (EnterParagraph(.., id = 1)),
                     (Text(0..3)),
-                    (ExitBlock(.., id = 1, lns = 1..1)),
+                    (ExitBlock(.., id = 1)),
                 ],
                 r#"<p data-block-id="1">foo</p>"#,
             ),
@@ -474,12 +473,12 @@ fn it_works_with_block_id() {
                     (IndicateTableHeaderCell()),
                     (EnterParagraph(.., id = 2)),
                     (Text(0..3)),
-                    (ExitBlock(.., id = 2, lns = 1..1)),
+                    (ExitBlock(.., id = 2)),
                     (IndicateTableRow()),
                     (EnterParagraph(.., id = 3)),
                     (Text(6..9)),
-                    (ExitBlock(.., id = 3, lns = 1..1)),
-                    (ExitBlock(.., id = 1, lns = 1..1)),
+                    (ExitBlock(.., id = 3)),
+                    (ExitBlock(.., id = 1)),
                 ],
                 concat!(
                     r#"<table data-block-id="1">"#,

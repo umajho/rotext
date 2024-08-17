@@ -24,6 +24,20 @@ impl BlockId {
     pub fn new() -> Self {
         Self()
     }
+    pub fn new_universal(#[allow(unused_variables)] id: usize) -> Self {
+        #[cfg(feature = "block-id")]
+        {
+            Self::new(id)
+        }
+        #[cfg(not(feature = "block-id"))]
+        {
+            Self::new()
+        }
+    }
+    #[cfg(test)]
+    pub fn new_invalid() -> Self {
+        Self::new_universal(99999999)
+    }
 
     #[cfg(feature = "block-id")]
     pub fn value(&self) -> usize {
@@ -51,6 +65,10 @@ impl LineNumber {
         {
             Self::new()
         }
+    }
+    #[cfg(test)]
+    pub fn new_invalid() -> Self {
+        Self::new_universal(99999999)
     }
 
     #[cfg(feature = "line-number")]

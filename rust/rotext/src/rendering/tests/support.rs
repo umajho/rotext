@@ -31,17 +31,20 @@ macro_rules! event {
         $crate::events::BlendEvent::VerbatimEscaping($crate::events::VerbatimEscaping {
             content: $start..$end,
             is_closed_forcedly: false,
-            line_after: $crate::types::LineNumber::new(),
+            line_after: $crate::types::LineNumber::new_invalid(),
         })
     };
+
     (NewLine (..)) => {
         $crate::events::BlendEvent::NewLine($crate::events::NewLine {
-            line_after: $crate::types::LineNumber::new(),
+            line_after: $crate::types::LineNumber::new_invalid(),
         })
     };
+
     (Text ($start:literal..$end:literal)) => {
         $crate::events::BlendEvent::Text($start..$end)
     };
+
     (IndicateCodeBlockCode ()) => {
         $crate::events::BlendEvent::IndicateCodeBlockCode
     };
@@ -57,24 +60,39 @@ macro_rules! event {
     (IndicateTableDataCell ()) => {
         $crate::events::BlendEvent::IndicateTableDataCell
     };
+
     (ExitBlock (..)) => {
         $crate::events::BlendEvent::ExitBlock($crate::events::ExitBlock {
-            id: $crate::types::BlockId::new(),
-            start_line: $crate::types::LineNumber::new(),
-            end_line: $crate::types::LineNumber::new(),
+            id: $crate::types::BlockId::new_invalid(),
+            start_line: $crate::types::LineNumber::new_invalid(),
+            end_line: $crate::types::LineNumber::new_invalid(),
         })
     };
-    (ExitBlock (.., id = $id:literal, lns = $ln_s:literal..$ln_e:literal)) => {
+    (ExitBlock (.., id = $id:literal)) => {
+        $crate::events::BlendEvent::ExitBlock($crate::events::ExitBlock {
+            id: $crate::types::BlockId::new($id),
+            start_line: $crate::types::LineNumber::new_invalid(),
+            end_line: $crate::types::LineNumber::new_invalid(),
+        })
+    };
+    (ExitBlock (.., id = $id:literal, lns = $ln_s:literal..=$ln_e:literal)) => {
         $crate::events::BlendEvent::ExitBlock($crate::events::ExitBlock {
             id: $crate::types::BlockId::new($id),
             start_line: $crate::types::LineNumber::new($ln_s),
             end_line: $crate::types::LineNumber::new($ln_e),
         })
     };
+
     (ThematicBreak (..)) => {
         $crate::events::BlendEvent::ThematicBreak($crate::events::ThematicBreak {
-            id: $crate::types::BlockId::new(),
-            line: $crate::types::LineNumber::new(),
+            id: $crate::types::BlockId::new_invalid(),
+            line: $crate::types::LineNumber::new_invalid(),
+        })
+    };
+    (ThematicBreak (.., id = $id:literal)) => {
+        $crate::events::BlendEvent::ThematicBreak($crate::events::ThematicBreak {
+            id: $crate::types::BlockId::new($id),
+            line: $crate::types::LineNumber::new_invalid(),
         })
     };
     (ThematicBreak (.., id = $id:literal, ln = $ln:literal)) => {
@@ -83,9 +101,10 @@ macro_rules! event {
             line: $crate::types::LineNumber::new($ln),
         })
     };
+
     ($v:tt (..)) => {
         $crate::events::BlendEvent::$v($crate::events::BlockWithId {
-            id: $crate::types::BlockId::new(),
+            id: $crate::types::BlockId::new_invalid(),
         })
     };
     ($v:tt (.., id = $id:literal)) => {
