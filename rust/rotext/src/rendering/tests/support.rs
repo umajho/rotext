@@ -102,6 +102,13 @@ macro_rules! event {
         })
     };
 
+    (RefLink ($start:literal..$end:literal)) => {
+        $crate::events::BlendEvent::RefLink($start..$end)
+    };
+    (Dicexp ($start:literal..$end:literal)) => {
+        $crate::events::BlendEvent::Dicexp($start..$end)
+    };
+
     ($v:tt (..)) => {
         $crate::events::BlendEvent::$v($crate::events::BlockWithId {
             id: $crate::types::BlockId::new_invalid(),

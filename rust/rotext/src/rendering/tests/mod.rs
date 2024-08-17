@@ -493,8 +493,34 @@ fn it_works_with_block_id() {
     run_cases(table);
 }
 
-/// TODO!!!
 #[test]
 fn it_works_in_inline_phase() {
-    todo!()
+    let table: Vec<GroupedCases<_>> = vec![
+        GroupedCases {
+            group: "引用链接",
+            cases: vec![case!(
+                "TP.abc",
+                [(RefLink(0..6)),],
+                r#"<x-ref-link address="TP.abc"></x-ref-link>"#,
+            )],
+        },
+        GroupedCases {
+            group: "Dicexp",
+            cases: vec![case!(
+                "d100",
+                [(Dicexp(0..4)),],
+                r#"<x-dicexp code="d100"></x-dicexp>"#,
+            )],
+        },
+        GroupedCases {
+            group: "XSS",
+            cases: vec![case!(
+                r#"""#,
+                [(Dicexp(0..1)),],
+                r#"<x-dicexp code="&quot;"></x-dicexp>"#,
+            )],
+        },
+    ];
+
+    run_cases(table);
 }
