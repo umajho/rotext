@@ -8,6 +8,7 @@ export interface RotextProcessorProcessOptions {
 export interface TagNameMap {
   "code-block": string;
   "ref-link": string;
+  "dicexp": string;
 }
 
 export interface RotextProcessor {
