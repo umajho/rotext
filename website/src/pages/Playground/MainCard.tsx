@@ -21,7 +21,7 @@ const SIZE_OPTS = {
 };
 
 const MainCard: Component = () => {
-  const editorStore = createEditorStore(examples["入门-legacy"]);
+  const editorStore = createEditorStore(examples.get("入门-legacy"));
   const editorPartStore = createEditorPartStore();
   const previewPartStore = createPreviewPartStore();
 

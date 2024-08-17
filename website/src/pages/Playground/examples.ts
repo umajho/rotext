@@ -4,27 +4,28 @@ async function fetchExample(fileName: string): Promise<string> {
   )).text();
 }
 
-const examples = {
-  "入门": fetchExample("rotext入门.rotext"),
-  "入门-legacy": fetchExample("rotext入门-legacy.rotext"),
+const source = {
+  "入门": () => fetchExample("rotext入门.rotext"),
+  "入门-legacy": () => fetchExample("rotext入门-legacy.rotext"),
 };
 
-const cache: { [name in keyof typeof examples]?: string | Promise<string> } =
-  {};
+type Names = keyof typeof source;
 
-const exampleProxy = new Proxy(examples, {
-  get(target, prop_): string | Promise<string> {
-    const prop = prop_ as keyof typeof target;
+const cache: { [name in Names]?: string | Promise<string> } = {};
 
-    if (prop in cache) return cache[prop] as string | Promise<string>;
+export default {
+  keys: (): Names[] => {
+    return Object.keys(source) as Names[];
+  },
 
-    return cache[prop] = target[prop]!.then(
+  get: (name: Names) => {
+    if (name in cache) return cache[name] as string | Promise<string>;
+
+    return cache[name] = source[name]()!.then(
       (text) => {
-        cache[prop] = text;
+        cache[name] = text;
         return text;
       },
     );
   },
-}) as { [name in keyof typeof examples]: string | Promise<string> };
-
-export default exampleProxy;
+};

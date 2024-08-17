@@ -78,7 +78,7 @@ const EditorTopBar: Component<{
               props.editorStore.loadText("");
             } else {
               props.editorStore.loadText(
-                (examples as any)[ev.currentTarget.value],
+                examples.get(ev.currentTarget.value as any),
               );
             }
             ev.currentTarget.value = "label";
@@ -90,7 +90,7 @@ const EditorTopBar: Component<{
           <option value="clear">
             清空
           </option>
-          <Index each={Object.keys(examples)}>
+          <Index each={examples.keys()}>
             {(name) => <option value={name()}>示例：{name()}</option>}
           </Index>
         </select>
