@@ -158,20 +158,13 @@ const Preview: Component<
 
   //==== 组件 ====
   return (
-    <div
-      class={[
-        `${props.hidden ? "hidden" : ""}`,
-        `previewer ${WIDGET_OWNER_CLASS}`,
-        "relative tuan-background overflow-y-auto",
-        props.class,
-      ].join(" ")}
-      ref={scrollContainerEl}
-      onScroll={(ev) => {
-        if (fixScrollOutOfSyncAfterUnhide() === "should_stop") return;
-        scrollHandler()!(ev);
-      }}
-    >
-      <div class={props.processResult.error ? "" : "hidden"}>
+    <>
+      <div
+        class={[
+          "w-full px-4",
+          ...(props.processResult.error ? [] : ["hidden"]),
+        ].join(" ")}
+      >
         {
           /*
             temporary workaround for: “Attempting to access a stale value from
@@ -185,24 +178,38 @@ const Preview: Component<
         />
       </div>
 
-      {/* highlight anchor */}
-      <div class="relative">{highlightElement()}</div>
-
       <div class="relative z-10" ref={widgetAnchorEl} />
 
       <div
-        class={"" +
-          "relative " + // 作为计算元素高度位移的锚点
-          "self-center mx-auto " + // 保持居中，以及撑起父元素
-          "break-all " + // 内容的外观样式
-          `${PROSE_CLASS} ` +
-          ""}
+        class={[
+          `${props.hidden ? "hidden" : ""}`,
+          `previewer ${WIDGET_OWNER_CLASS}`,
+          "relative tuan-background overflow-y-auto",
+          props.class,
+        ].join(" ")}
+        ref={scrollContainerEl}
+        onScroll={(ev) => {
+          if (fixScrollOutOfSyncAfterUnhide() === "should_stop") return;
+          scrollHandler()!(ev);
+        }}
       >
-        <div ref={outputContainerEl}>
-          <article ref={outputEl} class={`relative ${CONTENT_ROOT_CLASS}`} />
+        {/* highlight anchor */}
+        <div class="relative">{highlightElement()}</div>
+
+        <div
+          class={"" +
+            "relative " + // 作为计算元素高度位移的锚点
+            "self-center mx-auto " + // 保持居中，以及撑起父元素
+            "break-all " + // 内容的外观样式
+            `${PROSE_CLASS} ` +
+            ""}
+        >
+          <div ref={outputContainerEl}>
+            <article ref={outputEl} class={`relative ${CONTENT_ROOT_CLASS}`} />
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 export default Preview;
