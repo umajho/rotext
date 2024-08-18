@@ -1,3 +1,5 @@
+use crate::{events::InlineEvent, test_suites, BlendEvent, Event};
+
 mod for_fn_advance_until_potential_ref_link_content_ends {
     use crate::inline::{
         advance_until_potential_ref_link_content_ends, test_support::mocks::MockCursorContext,
@@ -83,4 +85,45 @@ mod for_fn_advance_until_dicexp_will_be_ended {
             test(text, MockCursorContext { cursor });
         }
     }
+}
+
+struct Context;
+impl Context {
+    fn new() -> Self {
+        Self
+    }
+}
+impl test_suites::inline::Context for Context {
+    fn parse(input: &str) -> impl Iterator<Item = crate::Result<InlineEvent>> {
+        let evs: crate::Result<Vec<_>> = crate::parse(input.as_bytes()).collect();
+        let evs = match evs {
+            Ok(evs) => evs,
+            Err(_) => todo!("should yield err!"),
+        };
+
+        let evs = if !evs.is_empty() {
+            if !matches!(evs.first(), Some(BlendEvent::EnterParagraph(_))) {
+                panic!("the input should be a paragraph!")
+            }
+            if !matches!(evs.last(), Some(BlendEvent::ExitBlock(_))) {
+                unreachable!()
+            }
+            evs[1..evs.len() - 1].to_vec()
+        } else {
+            evs
+        };
+
+        if evs.iter().any(|ev| matches!(ev, BlendEvent::ExitBlock(_))) {
+            panic!("the input should be ONE paragraph!")
+        }
+
+        evs.into_iter()
+            .map(|ev| -> crate::Result<InlineEvent> { Ok(Event::from(ev).try_into().unwrap()) })
+    }
+}
+
+#[test]
+fn it_works() {
+    let ctx = Context::new();
+    test_suites::inline::run(&ctx);
 }
