@@ -5,6 +5,7 @@ import {
   createSignal,
   JSX,
   on,
+  onCleanup,
   Show,
 } from "solid-js";
 import { Portal } from "solid-js/web";
@@ -99,6 +100,9 @@ export function createWidgetComponent(parts: {
   // 视情况存在
   let wContainerEl: HTMLDivElement,
     widgetEl: HTMLDivElement; // “w” -> “widget”
+
+  let [isCleaningUp, setIsCleaningUp] = createSignal(false);
+  onCleanup(() => setIsCleaningUp(true));
 
   const backgroundColorCSSValue = createMemo(() =>
     computedColorToCSSValue(opts.widgetBackgroundColor())
@@ -240,9 +244,11 @@ export function createWidgetComponent(parts: {
         />
         <Portal
           ref={handlePortalRef}
-          mount={displayMode() === "pinned"
-            ? widgetFixedAnchorEl
-            : widgetOwner()?.widgetAnchorElement}
+          mount={isCleaningUp()
+            ? undefined
+            : (displayMode() === "pinned"
+              ? widgetFixedAnchorEl
+              : widgetOwner()?.widgetAnchorElement)}
           useShadow={true}
         >
           <Show when={displayMode() !== "closed"}>
