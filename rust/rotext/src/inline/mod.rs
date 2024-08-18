@@ -79,9 +79,8 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput>
 
     fn parse(input: &[u8], inner: &mut ParserInner) -> Tym<2> {
         let start = inner.cursor();
-        while inner.cursor() < input.len() {
-            // SAFETY: `inner.cursor()` < `input.len()`.
-            match unsafe { input.get_unchecked(inner.cursor()) } {
+        while let Some(char) = input.get(inner.cursor()) {
+            match char {
                 m!('\\') if inner.cursor() < input.len() - 1 => {
                     let tym_a = if inner.cursor() > start {
                         inner.r#yield(InlineEvent::Text(start..inner.cursor()))
@@ -238,9 +237,8 @@ fn advance_until_potential_ref_link_content_ends<TCtx: CursorContext>(
 fn advance_until_dicexp_will_be_ended<TCtx: CursorContext>(input: &[u8], ctx: &mut TCtx) {
     let mut depth = 1;
 
-    while ctx.cursor() < input.len() {
-        // SAFETY: `inner.cursor()` < `input.len()`.
-        match unsafe { input.get_unchecked(ctx.cursor()) } {
+    while let Some(char) = input.get(ctx.cursor()) {
+        match char {
             m!('[') => depth += 1,
             m!(']') => {
                 depth -= 1;

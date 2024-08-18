@@ -60,9 +60,7 @@ fn parse_verbatim_escaping<TCtx: CursorContext>(input: &[u8], ctx: &mut TCtx) ->
     };
 
     let mut continuous_backticks = 0;
-    while ctx.cursor() < input.len() {
-        // SAFETY: `ctx.cursor()` < `input.len()`.
-        let char = unsafe { *input.get_unchecked(ctx.cursor()) };
+    while let Some(char) = input.get(ctx.cursor()).copied() {
         match char {
             m!('`') => continuous_backticks += 1,
             m!('>') if continuous_backticks == backticks => {
@@ -111,9 +109,10 @@ fn parse_verbatim_escaping<TCtx: CursorContext>(input: &[u8], ctx: &mut TCtx) ->
 fn parse_comment<TCtx: CursorContext>(input: &[u8], ctx: &mut TCtx) {
     let mut depth = 1;
 
-    while depth > 0 && ctx.cursor() < input.len() {
-        // SAFETY: `ctx.cursor()` < `input.len()`.
-        let char = unsafe { *input.get_unchecked(ctx.cursor()) };
+    while depth > 0 {
+        let Some(char) = input.get(ctx.cursor()).copied() else {
+            break;
+        };
         match char {
             m!('<') => match input.get(ctx.cursor() + 1) {
                 Some(m!('%')) => {
