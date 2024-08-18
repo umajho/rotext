@@ -134,7 +134,7 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput>
 
                         inner.move_cursor_forward("[=".len());
                         let start = inner.cursor();
-                        advance_until_dicexp_will_be_ended(input, inner);
+                        advance_until_dicexp_will_end(input, inner);
                         let tym_b = inner.r#yield(InlineEvent::Dicexp(start..inner.cursor()));
                         inner.move_cursor_forward("]".len());
 
@@ -234,7 +234,7 @@ fn advance_until_potential_ref_link_content_ends<TCtx: CursorContext>(
 
 /// 推进游标，直到到了数量匹配的 “]” 之前，或者 `input` 到头时。如果是前者，结束时
 /// `ctx.cursor()` 对应于 “]” 的索引，也即还没消耗掉那个 “]”。
-fn advance_until_dicexp_will_be_ended<TCtx: CursorContext>(input: &[u8], ctx: &mut TCtx) {
+fn advance_until_dicexp_will_end<TCtx: CursorContext>(input: &[u8], ctx: &mut TCtx) {
     let mut depth = 1;
 
     while let Some(char) = input.get(ctx.cursor()) {

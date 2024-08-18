@@ -59,13 +59,11 @@ mod for_fn_advance_until_potential_ref_link_content_ends {
 }
 
 mod for_fn_advance_until_dicexp_will_be_ended {
-    use crate::inline::{
-        advance_until_dicexp_will_be_ended, test_support::mocks::MockCursorContext,
-    };
+    use crate::inline::{advance_until_dicexp_will_end, test_support::mocks::MockCursorContext};
 
     fn test(input: &[u8], expected_ctx: MockCursorContext) {
         let mut ctx = MockCursorContext { cursor: 0 };
-        advance_until_dicexp_will_be_ended(input, &mut ctx);
+        advance_until_dicexp_will_end(input, &mut ctx);
         assert_eq!(expected_ctx, ctx)
     }
 
