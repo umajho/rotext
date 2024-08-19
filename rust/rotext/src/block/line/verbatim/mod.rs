@@ -7,9 +7,9 @@ use crate::{
     block::{
         line::{global_phase, parse_common_end, ParseCommonEndOutput},
         types::CursorContext,
-        utils::count_continuous_character,
     },
     events::{NewLine, VerbatimEscaping},
+    utils::internal::string::count_continuous_character,
 };
 
 use super::CommonEnd;

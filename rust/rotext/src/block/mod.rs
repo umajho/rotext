@@ -16,7 +16,7 @@ use crate::{
     common::m,
     events::{BlockEvent, ThematicBreak},
     types::{cast_tym, Tym, TYM_UNIT},
-    utils::stack::Stack,
+    utils::{internal::string::count_continuous_character, stack::Stack},
 };
 
 use state::{
@@ -30,7 +30,6 @@ use stack_wrapper::{
     StackEntryTable, TopLeaf, TopLeafCodeBlock, TopLeafHeading, TopLeafParagraph,
 };
 use types::{CursorContext, YieldContext};
-use utils::count_continuous_character;
 
 pub struct Parser<'a, TStack: Stack<StackEntry>> {
     input: &'a [u8],

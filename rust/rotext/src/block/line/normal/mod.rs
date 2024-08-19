@@ -4,10 +4,9 @@ mod tests;
 use std::ops::Range;
 
 use crate::{
-    block::{
-        branch::braced::table, types::CursorContext, utils::count_continuous_character_with_maximum,
-    },
+    block::{branch::braced::table, types::CursorContext},
     events::{NewLine, VerbatimEscaping},
+    utils::internal::string::count_continuous_character_with_maximum,
 };
 
 use super::{global_phase, parse_common_end, CommonEnd, ParseCommonEndOutput};

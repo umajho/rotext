@@ -45,6 +45,8 @@ pub enum EventType {
     // 在行内阶段产出。
     RefLink = 101,
     Dicexp = 102,
+    EnterCodeSpan = 111,
+    ExitInline = 199,
 }
 
 #[cfg(test)]
@@ -147,7 +149,7 @@ pub enum Event {
     IndicateTableDataCell = EventType::IndicateTableDataCell as u8,
 
     /// 退出一层块级的 “进入…”。
-    #[subenum(BlockEvent, InlineEvent, BlendEvent)]
+    #[subenum(BlockEvent, BlendEvent)]
     ExitBlock(ExitBlock) = EventType::ExitBlock as u8,
 
     /// 引用链接。
@@ -156,6 +158,14 @@ pub enum Event {
     /// Dicexp。
     #[subenum(InlineEvent, BlendEvent)]
     Dicexp(Range<usize>) = EventType::Dicexp as u8,
+
+    /// 进入行内代码。
+    #[subenum(InlineEvent, BlendEvent)]
+    EnterCodeSpan = EventType::EnterCodeSpan as u8,
+
+    /// 退出一层行内的 “进入…”。
+    #[subenum(InlineEvent, BlendEvent)]
+    ExitInline = EventType::ExitInline as u8,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -231,7 +241,9 @@ impl Event {
             | Event::IndicateTableRow
             | Event::IndicateTableHeaderCell
             | Event::IndicateTableDataCell
-            | Event::ExitBlock(_) => return None,
+            | Event::ExitBlock(_)
+            | Event::EnterCodeSpan
+            | Event::ExitInline => return None,
         };
 
         Some(result)

@@ -1,4 +1,5 @@
 mod parser_inner;
+mod stack_wrapper;
 mod types;
 
 #[cfg(test)]
@@ -7,13 +8,17 @@ mod tests;
 use std::ops::Range;
 
 use parser_inner::ParserInner;
+use stack_wrapper::{TopLeaf, TopLeafCodeSpan};
 use types::{Cursor, YieldContext};
 
 use crate::{
     common::m,
     events::{InlineEvent, InlineLevelParseInputEvent},
     types::{Tym, TYM_UNIT},
-    utils::internal::utf8::get_byte_length_by_first_char,
+    utils::internal::{
+        string::{count_continuous_character, count_continuous_character_with_maximum},
+        utf8::get_byte_length_by_first_char,
+    },
 };
 
 pub struct Parser<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> {
@@ -27,6 +32,8 @@ pub struct Parser<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> {
 enum State<'a> {
     Idle,
     Parsing { input: &'a [u8], cursor: Cursor },
+    ExitingUntilStackIsEmptyAndThenEnd,
+    Ended,
 }
 
 impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput> {
@@ -46,9 +53,26 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput>
                 break Some(Ok(ev));
             }
 
-            match &mut self.state {
+            let tym = match &mut self.state {
+                State::ExitingUntilStackIsEmptyAndThenEnd => {
+                    let (tym, state) =
+                        Self::exit_until_stack_is_empty_and_then_end(&mut self.inner);
+                    if let Some(state) = state {
+                        self.state = state;
+                    }
+                    tym.into()
+                }
+                State::Ended => break None,
                 State::Idle => {
-                    let next = self.event_stream.next()?;
+                    let Some(next) = self.event_stream.next() else {
+                        self.state = if self.inner.stack.is_empty() {
+                            State::Ended
+                        } else {
+                            State::ExitingUntilStackIsEmptyAndThenEnd
+                        };
+
+                        continue;
+                    };
 
                     let to_yield = match next {
                         InlineLevelParseInputEvent::Unparsed(content) => {
@@ -69,13 +93,19 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput>
                 }
                 State::Parsing { input, cursor } => {
                     if cursor.value() < input.len() {
-                        let tym = Self::parse(input, cursor, &mut self.inner);
-                        self.inner.enforce_to_yield_mark(tym);
+                        match self.inner.stack.pop_top_leaf() {
+                            None => Self::parse(input, cursor, &mut self.inner),
+                            Some(TopLeaf::CodeSpan(top_leaf)) => {
+                                process_code_span_content(input, cursor, &mut self.inner, top_leaf)
+                            }
+                        }
                     } else {
                         self.state = State::Idle;
+                        TYM_UNIT.into()
                     }
                 }
-            }
+            };
+            self.inner.enforce_to_yield_mark(tym);
         }
     }
 
@@ -136,6 +166,23 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput>
 
                         return tym_a.add(tym_b).into();
                     }
+                    Some(m!('`')) => {
+                        let tym_a = yield_text_if_not_empty(start, cursor, inner);
+
+                        let backticks = "`".len()
+                            + count_continuous_character(
+                                input,
+                                m!('`'),
+                                cursor.value() + "[`".len(),
+                            );
+                        cursor.move_forward("[".len() + backticks);
+                        let top_leaf = TopLeafCodeSpan { backticks };
+                        let ev = top_leaf.make_enter_event();
+                        inner.stack.push_top_leaf(top_leaf.into());
+                        let tym_b = inner.r#yield(ev);
+
+                        return tym_a.add(tym_b).into();
+                    }
                     Some(_) => {
                         cursor.move_forward(1);
                         continue;
@@ -147,6 +194,21 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput>
 
         let tym = inner.r#yield(InlineEvent::Text(start..cursor.value()));
         tym.into()
+    }
+
+    fn exit_until_stack_is_empty_and_then_end(
+        inner: &mut ParserInner,
+    ) -> (Tym<1>, Option<State<'a>>) {
+        if let Some(top_leaf) = inner.stack.pop_top_leaf() {
+            let tym = match top_leaf {
+                stack_wrapper::TopLeaf::CodeSpan(top_leaf) => {
+                    inner.r#yield(top_leaf.make_exit_event())
+                }
+            };
+            return (tym, None);
+        }
+
+        (TYM_UNIT.into(), Some(State::Ended))
     }
 }
 
@@ -257,4 +319,54 @@ fn advance_until_dicexp_ends(input: &[u8], cursor: &mut Cursor) -> Range<usize> 
     }
 
     start..cursor.value()
+}
+
+fn process_code_span_content(
+    input: &[u8],
+    cursor: &mut Cursor,
+    inner: &mut ParserInner,
+    top_leaf: TopLeafCodeSpan,
+) -> Tym<2> {
+    let start = cursor.value();
+    while let Some(&char) = input.get(cursor.value()) {
+        if char != m!('`') {
+            cursor.move_forward(1);
+            continue;
+        }
+
+        match input.get(cursor.value() + top_leaf.backticks) {
+            None => {
+                cursor.set_value(input.len());
+                continue;
+            }
+            Some(&m!(']')) => {}
+            Some(_) => {
+                cursor.move_forward(1);
+                continue;
+            }
+        }
+
+        let actual_backticks = "`".len()
+            + count_continuous_character_with_maximum(
+                input,
+                m!('`'),
+                cursor.value() + 1,
+                top_leaf.backticks - 1,
+            );
+        if actual_backticks != top_leaf.backticks {
+            cursor.move_forward(actual_backticks + "]".len());
+            continue;
+        }
+
+        let tym_a = yield_text_if_not_empty(start, cursor, inner);
+
+        cursor.move_forward(top_leaf.backticks + "]".len());
+        let tym_b = inner.r#yield(top_leaf.make_exit_event());
+
+        return tym_a.add(tym_b);
+    }
+
+    inner.stack.push_top_leaf(top_leaf.into());
+    let tym = inner.r#yield(InlineEvent::Text(start..cursor.value()));
+    tym.into()
 }

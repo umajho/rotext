@@ -1,16 +1,19 @@
 use crate::{events::InlineEvent, types::Tym, utils::internal::array_queue::ArrayQueue};
 
-use super::types::YieldContext;
+use super::{stack_wrapper::StackWrapper, types::YieldContext};
 
 const MAX_TO_YIELD: usize = 2;
 
 pub struct ParserInner {
+    pub stack: StackWrapper,
+
     to_yield: ArrayQueue<MAX_TO_YIELD, InlineEvent>,
 }
 
 impl ParserInner {
     pub fn new() -> Self {
         Self {
+            stack: StackWrapper::new(),
             to_yield: ArrayQueue::new(),
         }
     }

@@ -178,14 +178,8 @@ impl<'a> HtmlRenderer<'a> {
                 | BlendEvent::VerbatimEscaping(VerbatimEscaping { content, .. }) => {
                     self.write_escaped_html_text(&self.input[content]);
                 }
-                #[allow(unused_variables)]
-                BlendEvent::ThematicBreak(data) => {
-                    self.result.extend(b"<hr");
-                    write_data_block_id_attribute_if_applicable!(self, data);
-                    self.result.push(b'>');
-                }
 
-                BlendEvent::ExitBlock(_) => {
+                BlendEvent::ExitBlock(_) | BlendEvent::ExitInline => {
                     let top = stack.pop().unwrap();
                     match top {
                         StackEntry::Normal(top) => {
@@ -197,27 +191,38 @@ impl<'a> HtmlRenderer<'a> {
                     }
                 }
 
-                BlendEvent::EnterParagraph(data) => self.push_simple(&mut stack, b"p", &data),
-                BlendEvent::EnterHeading1(data) => self.push_simple(&mut stack, b"h1", &data),
-                BlendEvent::EnterHeading2(data) => self.push_simple(&mut stack, b"h2", &data),
-                BlendEvent::EnterHeading3(data) => self.push_simple(&mut stack, b"h3", &data),
-                BlendEvent::EnterHeading4(data) => self.push_simple(&mut stack, b"h4", &data),
-                BlendEvent::EnterHeading5(data) => self.push_simple(&mut stack, b"h5", &data),
-                BlendEvent::EnterHeading6(data) => self.push_simple(&mut stack, b"h6", &data),
-                BlendEvent::EnterBlockQuote(data) => {
-                    self.push_simple(&mut stack, b"blockquote", &data)
+                #[allow(unused_variables)]
+                BlendEvent::ThematicBreak(data) => {
+                    self.result.extend(b"<hr");
+                    write_data_block_id_attribute_if_applicable!(self, data);
+                    self.result.push(b'>');
                 }
-                BlendEvent::EnterOrderedList(data) => self.push_simple(&mut stack, b"ol", &data),
-                BlendEvent::EnterUnorderedList(data) => self.push_simple(&mut stack, b"ul", &data),
-                BlendEvent::EnterListItem(data) => self.push_simple(&mut stack, b"li", &data),
+
+                BlendEvent::EnterParagraph(data) => self.push_simple_block(&mut stack, b"p", &data),
+                BlendEvent::EnterHeading1(data) => self.push_simple_block(&mut stack, b"h1", &data),
+                BlendEvent::EnterHeading2(data) => self.push_simple_block(&mut stack, b"h2", &data),
+                BlendEvent::EnterHeading3(data) => self.push_simple_block(&mut stack, b"h3", &data),
+                BlendEvent::EnterHeading4(data) => self.push_simple_block(&mut stack, b"h4", &data),
+                BlendEvent::EnterHeading5(data) => self.push_simple_block(&mut stack, b"h5", &data),
+                BlendEvent::EnterHeading6(data) => self.push_simple_block(&mut stack, b"h6", &data),
+                BlendEvent::EnterBlockQuote(data) => {
+                    self.push_simple_block(&mut stack, b"blockquote", &data)
+                }
+                BlendEvent::EnterOrderedList(data) => {
+                    self.push_simple_block(&mut stack, b"ol", &data)
+                }
+                BlendEvent::EnterUnorderedList(data) => {
+                    self.push_simple_block(&mut stack, b"ul", &data)
+                }
+                BlendEvent::EnterListItem(data) => self.push_simple_block(&mut stack, b"li", &data),
                 BlendEvent::EnterDescriptionList(data) => {
-                    self.push_simple(&mut stack, b"dl", &data)
+                    self.push_simple_block(&mut stack, b"dl", &data)
                 }
                 BlendEvent::EnterDescriptionTerm(data) => {
-                    self.push_simple(&mut stack, b"dt", &data)
+                    self.push_simple_block(&mut stack, b"dt", &data)
                 }
                 BlendEvent::EnterDescriptionDetails(data) => {
-                    self.push_simple(&mut stack, b"dd", &data)
+                    self.push_simple_block(&mut stack, b"dd", &data)
                 }
                 #[allow(unused_variables)]
                 BlendEvent::EnterCodeBlock(data) => {
@@ -298,13 +303,15 @@ impl<'a> HtmlRenderer<'a> {
                         &self.input[content],
                     );
                 }
+
+                BlendEvent::EnterCodeSpan => self.push_simple_inline(&mut stack, b"code"),
             };
         }
 
         unsafe { String::from_utf8_unchecked(self.result) }
     }
 
-    fn push_simple(
+    fn push_simple_block(
         &mut self,
         stack: &mut Vec<StackEntry>,
         tag_name: &'static [u8],
@@ -313,6 +320,14 @@ impl<'a> HtmlRenderer<'a> {
         self.result.push(b'<');
         self.result.extend(tag_name);
         write_data_block_id_attribute_if_applicable!(self, data);
+        self.result.push(b'>');
+
+        stack.push(StackEntry::Normal(tag_name));
+    }
+
+    fn push_simple_inline(&mut self, stack: &mut Vec<StackEntry>, tag_name: &'static [u8]) {
+        self.result.push(b'<');
+        self.result.extend(tag_name);
         self.result.push(b'>');
 
         stack.push(StackEntry::Normal(tag_name));

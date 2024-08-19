@@ -2,13 +2,11 @@
 mod tests;
 
 use crate::{
-    block::{
-        types::{CursorContext, YieldContext},
-        utils::count_continuous_character,
-    },
+    block::types::{CursorContext, YieldContext},
     common::m,
     events::VerbatimEscaping,
     types::Tym,
+    utils::internal::string::count_continuous_character,
     BlockEvent,
 };
 
