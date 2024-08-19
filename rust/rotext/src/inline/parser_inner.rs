@@ -1,19 +1,16 @@
 use crate::{events::InlineEvent, types::Tym, utils::internal::array_queue::ArrayQueue};
 
-use super::types::{CursorContext, YieldContext};
+use super::types::YieldContext;
 
 const MAX_TO_YIELD: usize = 2;
 
 pub struct ParserInner {
-    cursor: usize,
-
     to_yield: ArrayQueue<MAX_TO_YIELD, InlineEvent>,
 }
 
 impl ParserInner {
-    pub fn new(cursor: usize) -> Self {
+    pub fn new() -> Self {
         Self {
-            cursor,
             to_yield: ArrayQueue::new(),
         }
     }
@@ -22,19 +19,6 @@ impl ParserInner {
 
     pub fn pop_to_be_yielded(&mut self) -> Option<InlineEvent> {
         self.to_yield.pop_front()
-    }
-}
-impl CursorContext for ParserInner {
-    fn cursor(&self) -> usize {
-        self.cursor
-    }
-
-    fn set_cursor(&mut self, value: usize) {
-        self.cursor = value
-    }
-
-    fn move_cursor_forward(&mut self, n: usize) {
-        self.cursor += n;
     }
 }
 impl YieldContext for ParserInner {
