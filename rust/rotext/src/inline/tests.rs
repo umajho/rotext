@@ -59,29 +59,29 @@ mod for_fn_advance_until_potential_ref_link_content_ends {
 }
 
 mod for_fn_advance_until_dicexp_will_be_ended {
-    use crate::inline::{advance_until_dicexp_will_end, test_support::mocks::MockCursorContext};
+    use std::ops::Range;
 
-    fn test(input: &[u8], expected_ctx: MockCursorContext) {
+    use crate::inline::{advance_until_dicexp_ends, test_support::mocks::MockCursorContext};
+
+    fn test(input: &[u8], expected: Range<usize>, expected_ctx: MockCursorContext) {
         let mut ctx = MockCursorContext { cursor: 0 };
-        advance_until_dicexp_will_end(input, &mut ctx);
-        assert_eq!(expected_ctx, ctx)
+        let actual = advance_until_dicexp_ends(input, &mut ctx);
+        assert_eq!((expected, expected_ctx), (actual, ctx))
     }
 
     #[test]
     fn it_works() {
-        for text in [&b""[..], &b"]"[..], &b"]..."[..]] {
-            test(text, MockCursorContext { cursor: 0 });
-        }
+        test(b"", 0..0, MockCursorContext { cursor: 0 });
+        test(b"]", 0..0, MockCursorContext { cursor: 1 });
+        test(b"]...", 0..0, MockCursorContext { cursor: 1 });
 
-        for text in [&b"d100"[..], &b"d100]"[..], &b"d100]..."[..]] {
-            let cursor = "d100".len();
-            test(text, MockCursorContext { cursor });
-        }
+        test(b"d100", 0..4, MockCursorContext { cursor: 4 });
+        test(b"d100]", 0..4, MockCursorContext { cursor: 5 });
+        test(b"d100]...", 0..4, MockCursorContext { cursor: 5 });
 
-        for text in [&b"[]]"[..], &b"...[...]...]"[..]] {
-            let cursor = text.len() - 1;
-            test(text, MockCursorContext { cursor });
-        }
+        test(b"[]]", 0..2, MockCursorContext { cursor: 3 });
+        test(b"[]", 0..2, MockCursorContext { cursor: 2 });
+        test(b"...[...]...]", 0..11, MockCursorContext { cursor: 12 });
     }
 }
 

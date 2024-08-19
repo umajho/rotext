@@ -6,6 +6,8 @@ mod test_support;
 #[cfg(test)]
 mod tests;
 
+use std::ops::Range;
+
 use parser_inner::ParserInner;
 use types::{CursorContext, YieldContext};
 
@@ -126,17 +128,11 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput>
                         break;
                     }
                     Some(m!('=')) => {
-                        let tym_a = if inner.cursor() > start {
-                            inner.r#yield(InlineEvent::Text(start..inner.cursor()))
-                        } else {
-                            TYM_UNIT.into()
-                        };
+                        let tym_a = yield_text_if_not_empty(start, inner);
 
                         inner.move_cursor_forward("[=".len());
-                        let start = inner.cursor();
-                        advance_until_dicexp_will_end(input, inner);
-                        let tym_b = inner.r#yield(InlineEvent::Dicexp(start..inner.cursor()));
-                        inner.move_cursor_forward("]".len());
+                        let content = advance_until_dicexp_ends(input, inner);
+                        let tym_b = inner.r#yield(InlineEvent::Dicexp(content));
 
                         return tym_a.add(tym_b).into();
                     }
@@ -159,6 +155,14 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Iterator for Parse
 
     fn next(&mut self) -> Option<Self::Item> {
         self.next()
+    }
+}
+
+fn yield_text_if_not_empty(start: usize, inner: &mut ParserInner) -> Tym<1> {
+    if inner.cursor() > start {
+        inner.r#yield(InlineEvent::Text(start..inner.cursor()))
+    } else {
+        TYM_UNIT.into()
     }
 }
 
@@ -234,7 +238,9 @@ fn advance_until_potential_ref_link_content_ends<TCtx: CursorContext>(
 
 /// 推进游标，直到到了数量匹配的 “]” 之前，或者 `input` 到头时。如果是前者，结束时
 /// `ctx.cursor()` 对应于 “]” 的索引，也即还没消耗掉那个 “]”。
-fn advance_until_dicexp_will_end<TCtx: CursorContext>(input: &[u8], ctx: &mut TCtx) {
+fn advance_until_dicexp_ends<TCtx: CursorContext>(input: &[u8], ctx: &mut TCtx) -> Range<usize> {
+    let start = ctx.cursor();
+
     let mut depth = 1;
 
     while let Some(char) = input.get(ctx.cursor()) {
@@ -243,11 +249,15 @@ fn advance_until_dicexp_will_end<TCtx: CursorContext>(input: &[u8], ctx: &mut TC
             m!(']') => {
                 depth -= 1;
                 if depth == 0 {
-                    return;
+                    let content = start..ctx.cursor();
+                    ctx.move_cursor_forward(1);
+                    return content;
                 }
             }
             _ => {}
         }
         ctx.move_cursor_forward(1)
     }
+
+    start..ctx.cursor()
 }
