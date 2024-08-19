@@ -93,12 +93,7 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput>
                 }
                 State::Parsing { input, cursor } => {
                     if cursor.value() < input.len() {
-                        match self.inner.stack.pop_top_leaf() {
-                            None => Self::parse(input, cursor, &mut self.inner),
-                            Some(TopLeaf::CodeSpan(top_leaf)) => {
-                                process_code_span_content(input, cursor, &mut self.inner, top_leaf)
-                            }
-                        }
+                        Self::parse(input, cursor, &mut self.inner)
                     } else {
                         self.state = State::Idle;
                         TYM_UNIT.into()
@@ -110,6 +105,15 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput>
     }
 
     fn parse(input: &[u8], cursor: &mut Cursor, inner: &mut ParserInner) -> Tym<2> {
+        match inner.stack.pop_top_leaf() {
+            None => Self::parse_normal(input, cursor, inner),
+            Some(TopLeaf::CodeSpan(top_leaf)) => {
+                leaf::code_span::parse_content_and_process(input, cursor, inner, top_leaf)
+            }
+        }
+    }
+
+    fn parse_normal(input: &[u8], cursor: &mut Cursor, inner: &mut ParserInner) -> Tym<2> {
         let start = cursor.value();
         while let Some(char) = input.get(cursor.value()) {
             match char {
@@ -136,7 +140,7 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput>
                     let start = cursor.value();
 
                     let ref_link_content =
-                        advance_until_potential_ref_link_content_ends(input, cursor);
+                        leaf::ref_link::advance_until_potential_content_ends(input, cursor);
                     let tym = if let Some(()) = ref_link_content {
                         let tym_a = if !text_content.is_empty() {
                             inner.r#yield(InlineEvent::Text(text_content))
@@ -161,7 +165,7 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput>
                         let tym_a = yield_text_if_not_empty(start, cursor, inner);
 
                         cursor.move_forward("[=".len());
-                        let content = advance_until_dicexp_ends(input, cursor);
+                        let content = leaf::dicexp::advance_until_ends(input, cursor);
                         let tym_b = inner.r#yield(InlineEvent::Dicexp(content));
 
                         return tym_a.add(tym_b).into();
@@ -228,145 +232,164 @@ fn yield_text_if_not_empty(start: usize, cursor: &Cursor, inner: &mut ParserInne
     }
 }
 
-/// 推进游标并尝试解析 ref link 的内容。在成功解析为 ref link 内容时返回 `Some(())`，此时
-/// `ctx.cursor()` 是解析内容的末尾。
-fn advance_until_potential_ref_link_content_ends(input: &[u8], cursor: &mut Cursor) -> Option<()> {
-    let char = input.get(cursor.value())?;
-    if !char.is_ascii_alphabetic() {
-        return None;
-    }
-    cursor.move_forward(1);
+mod leaf {
+    use super::*;
 
-    loop {
-        let char = input.get(cursor.value())?;
-        if char.is_ascii_alphabetic() {
-            cursor.move_forward(1);
-            continue;
-        } else if char == &b'.' {
-            cursor.move_forward(1);
-            break;
-        } else {
-            return None;
-        }
-    }
+    pub mod ref_link {
+        use super::*;
 
-    let char = input.get(cursor.value())?;
-    if char.is_ascii_alphabetic() {
-        cursor.move_forward(1);
-        loop {
-            let Some(char) = input.get(cursor.value()) else {
-                return Some(());
-            };
-            if char.is_ascii_alphabetic() {
-                cursor.move_forward(1);
-                continue;
-            } else if char == &b'#' {
-                cursor.move_forward(1);
-                break;
-            } else {
-                return Some(());
+        /// 推进游标并尝试解析 ref link 的内容。在成功解析为 ref link 内容时返回 `Some(())`，此时
+        /// `ctx.cursor()` 是解析内容的末尾。
+        pub fn advance_until_potential_content_ends(
+            input: &[u8],
+            cursor: &mut Cursor,
+        ) -> Option<()> {
+            let char = input.get(cursor.value())?;
+            if !char.is_ascii_alphabetic() {
+                return None;
             }
-        }
-
-        match input.get(cursor.value()) {
-            Some(char) if char.is_ascii_digit() => {}
-            _ => {
-                cursor.set_value(cursor.value() - 1);
-                return Some(());
-            }
-        };
-        cursor.move_forward(1);
-    } else if char.is_ascii_digit() {
-        cursor.move_forward(1);
-    } else {
-        return None;
-    }
-
-    loop {
-        let Some(char) = input.get(cursor.value()) else {
-            return Some(());
-        };
-        if char.is_ascii_digit() {
             cursor.move_forward(1);
-            continue;
-        } else {
-            return Some(());
-        }
-    }
-}
 
-/// 推进游标，直到到了数量匹配的 “]” 之前，或者 `input` 到头时。如果是前者，结束时
-/// `ctx.cursor()` 对应于 “]” 的索引，也即还没消耗掉那个 “]”。
-fn advance_until_dicexp_ends(input: &[u8], cursor: &mut Cursor) -> Range<usize> {
-    let start = cursor.value();
-
-    let mut depth = 1;
-
-    while let Some(char) = input.get(cursor.value()) {
-        match char {
-            m!('[') => depth += 1,
-            m!(']') => {
-                depth -= 1;
-                if depth == 0 {
-                    let content = start..cursor.value();
+            loop {
+                let char = input.get(cursor.value())?;
+                if char.is_ascii_alphabetic() {
                     cursor.move_forward(1);
-                    return content;
+                    continue;
+                } else if char == &b'.' {
+                    cursor.move_forward(1);
+                    break;
+                } else {
+                    return None;
                 }
             }
-            _ => {}
-        }
-        cursor.move_forward(1)
-    }
 
-    start..cursor.value()
-}
-
-fn process_code_span_content(
-    input: &[u8],
-    cursor: &mut Cursor,
-    inner: &mut ParserInner,
-    top_leaf: TopLeafCodeSpan,
-) -> Tym<2> {
-    let start = cursor.value();
-    while let Some(&char) = input.get(cursor.value()) {
-        if char != m!('`') {
-            cursor.move_forward(1);
-            continue;
-        }
-
-        match input.get(cursor.value() + top_leaf.backticks) {
-            None => {
-                cursor.set_value(input.len());
-                continue;
-            }
-            Some(&m!(']')) => {}
-            Some(_) => {
+            let char = input.get(cursor.value())?;
+            if char.is_ascii_alphabetic() {
                 cursor.move_forward(1);
-                continue;
+                loop {
+                    let Some(char) = input.get(cursor.value()) else {
+                        return Some(());
+                    };
+                    if char.is_ascii_alphabetic() {
+                        cursor.move_forward(1);
+                        continue;
+                    } else if char == &b'#' {
+                        cursor.move_forward(1);
+                        break;
+                    } else {
+                        return Some(());
+                    }
+                }
+
+                match input.get(cursor.value()) {
+                    Some(char) if char.is_ascii_digit() => {}
+                    _ => {
+                        cursor.set_value(cursor.value() - 1);
+                        return Some(());
+                    }
+                };
+                cursor.move_forward(1);
+            } else if char.is_ascii_digit() {
+                cursor.move_forward(1);
+            } else {
+                return None;
+            }
+
+            loop {
+                let Some(char) = input.get(cursor.value()) else {
+                    return Some(());
+                };
+                if char.is_ascii_digit() {
+                    cursor.move_forward(1);
+                    continue;
+                } else {
+                    return Some(());
+                }
             }
         }
-
-        let actual_backticks = "`".len()
-            + count_continuous_character_with_maximum(
-                input,
-                m!('`'),
-                cursor.value() + 1,
-                top_leaf.backticks - 1,
-            );
-        if actual_backticks != top_leaf.backticks {
-            cursor.move_forward(actual_backticks + "]".len());
-            continue;
-        }
-
-        let tym_a = yield_text_if_not_empty(start, cursor, inner);
-
-        cursor.move_forward(top_leaf.backticks + "]".len());
-        let tym_b = inner.r#yield(top_leaf.make_exit_event());
-
-        return tym_a.add(tym_b);
     }
 
-    inner.stack.push_top_leaf(top_leaf.into());
-    let tym = inner.r#yield(InlineEvent::Text(start..cursor.value()));
-    tym.into()
+    pub mod dicexp {
+        use super::*;
+
+        /// 推进游标，直到到了数量匹配的 “]” 之前，或者 `input` 到头时。如果是前者，结束时
+        /// `ctx.cursor()` 对应于 “]” 的索引，也即还没消耗掉那个 “]”。
+        pub fn advance_until_ends(input: &[u8], cursor: &mut Cursor) -> Range<usize> {
+            let start = cursor.value();
+
+            let mut depth = 1;
+
+            while let Some(char) = input.get(cursor.value()) {
+                match char {
+                    m!('[') => depth += 1,
+                    m!(']') => {
+                        depth -= 1;
+                        if depth == 0 {
+                            let content = start..cursor.value();
+                            cursor.move_forward(1);
+                            return content;
+                        }
+                    }
+                    _ => {}
+                }
+                cursor.move_forward(1)
+            }
+
+            start..cursor.value()
+        }
+    }
+
+    pub mod code_span {
+        use super::*;
+
+        pub fn parse_content_and_process(
+            input: &[u8],
+            cursor: &mut Cursor,
+            inner: &mut ParserInner,
+            top_leaf: TopLeafCodeSpan,
+        ) -> Tym<2> {
+            let start = cursor.value();
+            while let Some(&char) = input.get(cursor.value()) {
+                if char != m!('`') {
+                    cursor.move_forward(1);
+                    continue;
+                }
+
+                match input.get(cursor.value() + top_leaf.backticks) {
+                    None => {
+                        cursor.set_value(input.len());
+                        continue;
+                    }
+                    Some(&m!(']')) => {}
+                    Some(_) => {
+                        cursor.move_forward(1);
+                        continue;
+                    }
+                }
+
+                let actual_backticks = "`".len()
+                    + count_continuous_character_with_maximum(
+                        input,
+                        m!('`'),
+                        cursor.value() + 1,
+                        top_leaf.backticks - 1,
+                    );
+                if actual_backticks != top_leaf.backticks {
+                    cursor.move_forward(actual_backticks + "]".len());
+                    continue;
+                }
+
+                let tym_a = yield_text_if_not_empty(start, cursor, inner);
+
+                cursor.move_forward(top_leaf.backticks + "]".len());
+                let tym_b = inner.r#yield(top_leaf.make_exit_event());
+
+                return tym_a.add(tym_b);
+            }
+
+            inner.stack.push_top_leaf(top_leaf.into());
+            let tym = inner.r#yield(InlineEvent::Text(start..cursor.value()));
+            tym.into()
+        }
+    }
 }
