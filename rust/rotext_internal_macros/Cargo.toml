@@ -6,6 +6,7 @@ license.workspace = true
 edition.workspace = true
 authors.workspace = true
 repository.workspace = true
+description = "internal macros used by rotext"
 
 [lib]
 proc-macro = true
