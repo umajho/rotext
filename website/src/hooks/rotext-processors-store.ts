@@ -2,7 +2,7 @@ import { createEffect, createSignal, on } from "solid-js";
 
 import { RotextProcessor } from "../processors/mod";
 
-export type RotextProcessorName = "old" | "rust";
+export type RotextProcessorName = "rust";
 
 export type RotextProcessorProvider = () => RotextProcessor;
 
@@ -39,12 +39,6 @@ export function createRotextProcessorsStore(
 
     (async () => {
       switch (processorName) {
-        case "old":
-          {
-            const module = await import("../processors/old");
-            cache[processorName] = () => new module.OldRotextProcessor();
-          }
-          break;
         case "rust":
           {
             const module = await import("../processors/rust");

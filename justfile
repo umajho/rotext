@@ -1,6 +1,3 @@
-legacy-parsing *args:
-  just -f legacy/parsing/justfile {{args}}
-
 website *args:
   just -f website/justfile {{args}}
 

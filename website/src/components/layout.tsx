@@ -196,12 +196,6 @@ const NavMenu: Component<{
             )}
         >
           <option
-            value="old"
-            selected={rotextProcessors?.currentName === "old"}
-          >
-            旧式
-          </option>
-          <option
             value="rust"
             selected={rotextProcessors?.currentName === "rust"}
           >

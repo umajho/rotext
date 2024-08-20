@@ -46,9 +46,8 @@ function getCurrentRotextProcessorNameInLocalStorage(): RotextProcessorName {
   const item = localStorage.getItem(
     CURRENT_ROTEXT_PROCESSOR_NAME_LOCAL_KEY,
   );
-  if (item === "old") return item;
   if (item === "rust") return item;
-  return "old";
+  return "rust";
 }
 function setCurrentRotextProcessorNameInLocalStorage(
   name: RotextProcessorName,

@@ -6,7 +6,6 @@ async function fetchExample(fileName: string): Promise<string> {
 
 const source = {
   "入门": () => fetchExample("rotext入门.rotext"),
-  "入门-legacy": () => fetchExample("rotext入门-legacy.rotext"),
 };
 
 type Names = keyof typeof source;
