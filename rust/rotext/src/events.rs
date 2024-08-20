@@ -66,7 +66,7 @@ pub enum Event {
     #[subenum(BlockEvent, InlinePhaseParseInputEvent)]
     Unparsed(Range<usize>) = EventType::Unparsed as u8,
 
-    /// 逐字文本转义。
+    /// 逐字转义。
     ///
     /// NOTE: 内容包含开头和结尾各可能存在的一个空格，省略上述空格的处理是在块级
     /// 阶段将 VerbatimEscaping 变换为 Text 时进行。

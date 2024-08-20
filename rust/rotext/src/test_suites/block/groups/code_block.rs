@@ -220,7 +220,7 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
             ],
         },
         GroupedCases {
-            group: "代码块>代码块与全局阶段语法的互动>逐字文本转义",
+            group: "代码块>代码块与全局阶段语法的互动>逐字转义",
             cases: vec![
                 case!(
                     vec![indoc! {"

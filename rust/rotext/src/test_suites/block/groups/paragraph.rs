@@ -66,7 +66,7 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
             ],
         },
         GroupedCases {
-            group: "段落>段落与全局阶段语法的互动>逐字文本转义",
+            group: "段落>段落与全局阶段语法的互动>逐字转义",
             cases: vec![
                 case!(
                     vec!["a<`c`>"],

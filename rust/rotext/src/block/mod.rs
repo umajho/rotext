@@ -1037,7 +1037,7 @@ mod leaf {
                 }
             }
 
-            // [line::normal::parse] 的过程中可能会涉及到逐字文本转义，导致行数增加，因此
+            // [line::normal::parse] 的过程中可能会涉及到逐字转义，导致行数增加，因此
             // 需要提前取得行数。
             let line_start = inner.current_line();
 
