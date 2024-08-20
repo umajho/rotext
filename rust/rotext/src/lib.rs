@@ -20,20 +20,25 @@ pub use events::{BlendEvent, BlockEvent, Event};
 pub use rendering::{HtmlRenderer, NewHtmlRendererOptoins};
 pub use types::{Error, Result};
 
-use block::StackEntry;
 use utils::stack::{Stack, VecStack};
 
 pub fn parse(
     input: &[u8],
-) -> blend::BlockEventStreamInlineSegmentMapper<block::Parser<VecStack<StackEntry>>> {
+) -> blend::BlockEventStreamInlineSegmentMapper<
+    block::Parser<VecStack<block::StackEntry>>,
+    VecStack<inline::StackEntry>,
+> {
     let block_parser = block::Parser::new(input);
 
     blend::BlockEventStreamInlineSegmentMapper::new(input, block_parser)
 }
 
-pub fn parse_with_stack<TStackForBlockPhase: Stack<StackEntry>>(
+pub fn parse_with_stack<
+    TBlockStack: Stack<block::StackEntry>,
+    TInlineStack: Stack<inline::StackEntry>,
+>(
     input: &[u8],
-) -> blend::BlockEventStreamInlineSegmentMapper<block::Parser<TStackForBlockPhase>> {
+) -> blend::BlockEventStreamInlineSegmentMapper<block::Parser<TBlockStack>, TInlineStack> {
     let block_parser = block::Parser::new(input);
 
     blend::BlockEventStreamInlineSegmentMapper::new(input, block_parser)

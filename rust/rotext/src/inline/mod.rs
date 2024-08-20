@@ -5,6 +5,8 @@ mod types;
 #[cfg(test)]
 mod tests;
 
+pub use stack_wrapper::StackEntry;
+
 use std::ops::Range;
 
 use parser_inner::ParserInner;
@@ -15,18 +17,25 @@ use crate::{
     common::m,
     events::{InlineEvent, InlineLevelParseInputEvent},
     types::{Tym, TYM_UNIT},
-    utils::internal::{
-        string::{count_continuous_character, count_continuous_character_with_maximum},
-        utf8::get_byte_length_by_first_char,
+    utils::{
+        internal::{
+            string::{count_continuous_character, count_continuous_character_with_maximum},
+            utf8::get_byte_length_by_first_char,
+        },
+        stack::Stack,
     },
 };
 
-pub struct Parser<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> {
+pub struct Parser<
+    'a,
+    TStack: Stack<StackEntry>,
+    TInput: Iterator<Item = InlineLevelParseInputEvent>,
+> {
     input: &'a [u8],
     event_stream: TInput,
 
     state: State<'a>,
-    inner: ParserInner,
+    inner: ParserInner<TStack>,
 }
 
 enum State<'a> {
@@ -36,7 +45,9 @@ enum State<'a> {
     Ended,
 }
 
-impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput> {
+impl<'a, TStack: Stack<StackEntry>, TInput: Iterator<Item = InlineLevelParseInputEvent>>
+    Parser<'a, TStack, TInput>
+{
     pub fn new(input: &'a [u8], event_stream: TInput) -> Self {
         Self {
             input,
@@ -53,14 +64,14 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput>
                 break Some(Ok(ev));
             }
 
-            let tym = match &mut self.state {
+            let result = match &mut self.state {
                 State::ExitingUntilStackIsEmptyAndThenEnd => {
                     let (tym, state) =
                         Self::exit_until_stack_is_empty_and_then_end(&mut self.inner);
                     if let Some(state) = state {
                         self.state = state;
                     }
-                    tym.into()
+                    Ok(tym.into())
                 }
                 State::Ended => break None,
                 State::Idle => {
@@ -96,15 +107,22 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput>
                         Self::parse(input, cursor, &mut self.inner)
                     } else {
                         self.state = State::Idle;
-                        TYM_UNIT.into()
+                        Ok(TYM_UNIT.into())
                     }
                 }
             };
-            self.inner.enforce_to_yield_mark(tym);
+            match result {
+                Ok(tym) => self.inner.enforce_to_yield_mark(tym),
+                Err(err) => break Some(Err(err)),
+            }
         }
     }
 
-    fn parse(input: &[u8], cursor: &mut Cursor, inner: &mut ParserInner) -> Tym<2> {
+    fn parse(
+        input: &[u8],
+        cursor: &mut Cursor,
+        inner: &mut ParserInner<TStack>,
+    ) -> crate::Result<Tym<2>> {
         match inner.stack.pop_top_leaf() {
             None => Self::parse_normal(input, cursor, inner),
             Some(TopLeaf::CodeSpan(top_leaf)) => {
@@ -113,7 +131,13 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput>
         }
     }
 
-    fn parse_normal(input: &[u8], cursor: &mut Cursor, inner: &mut ParserInner) -> Tym<2> {
+    fn parse_normal(
+        input: &[u8],
+        cursor: &mut Cursor,
+        inner: &mut ParserInner<TStack>,
+    ) -> crate::Result<Tym<2>> {
+        let end_condition = inner.stack.make_end_condition();
+
         let start = cursor.value();
         while let Some(char) = input.get(cursor.value()) {
             match char {
@@ -132,7 +156,7 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput>
                     ));
                     cursor.move_forward(1 + target_utf8_length);
 
-                    return tym_a.add(tym_b).into();
+                    return Ok(tym_a.add(tym_b).into());
                 }
                 m!('>') if input.get(cursor.value() + 1) == Some(&m!('>')) => {
                     let text_content = start..cursor.value();
@@ -154,7 +178,7 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput>
                     } else {
                         continue;
                     };
-                    return tym.into();
+                    return Ok(tym.into());
                 }
                 m!('[') => match input.get(cursor.value() + 1) {
                     None => {
@@ -168,7 +192,7 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput>
                         let content = leaf::dicexp::advance_until_ends(input, cursor);
                         let tym_b = inner.r#yield(InlineEvent::Dicexp(content));
 
-                        return tym_a.add(tym_b).into();
+                        return Ok(tym_a.add(tym_b).into());
                     }
                     Some(m!('`')) => {
                         let tym_a = yield_text_if_not_empty(start, cursor, inner);
@@ -185,23 +209,56 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput>
                         inner.stack.push_top_leaf(top_leaf.into());
                         let tym_b = inner.r#yield(ev);
 
-                        return tym_a.add(tym_b).into();
+                        return Ok(tym_a.add(tym_b).into());
+                    }
+                    Some(m!('\'')) => {
+                        let tym_a = yield_text_if_not_empty(start, cursor, inner);
+
+                        cursor.move_forward("['".len());
+                        inner.stack.push_entry(StackEntry::Strong)?;
+                        let tym_b = inner.r#yield(InlineEvent::EnterStrong);
+
+                        return Ok(tym_a.add(tym_b).into());
+                    }
+                    Some(m!('~')) => {
+                        let tym_a = yield_text_if_not_empty(start, cursor, inner);
+
+                        cursor.move_forward("[~".len());
+                        inner.stack.push_entry(StackEntry::Strikethrough)?;
+                        let tym_b = inner.r#yield(InlineEvent::EnterStrikethrough);
+
+                        return Ok(tym_a.add(tym_b).into());
                     }
                     Some(_) => {
                         cursor.move_forward(1);
                         continue;
                     }
                 },
-                _ => cursor.move_forward(1),
+                &char => {
+                    if ((end_condition.on_strong_closing && char == m!('\''))
+                        || (end_condition.on_strikethrough_closing && char == m!('~')))
+                        && input.get(cursor.value() + 1) == Some(&m!(']'))
+                    {
+                        let tym_a = yield_text_if_not_empty(start, cursor, inner);
+
+                        cursor.move_forward(2);
+                        inner.stack.pop_entry();
+                        let tym_b = inner.r#yield(InlineEvent::ExitInline);
+
+                        return Ok(tym_a.add(tym_b).into());
+                    }
+
+                    cursor.move_forward(1)
+                }
             }
         }
 
         let tym = inner.r#yield(InlineEvent::Text(start..cursor.value()));
-        tym.into()
+        Ok(tym.into())
     }
 
     fn exit_until_stack_is_empty_and_then_end(
-        inner: &mut ParserInner,
+        inner: &mut ParserInner<TStack>,
     ) -> (Tym<1>, Option<State<'a>>) {
         if let Some(top_leaf) = inner.stack.pop_top_leaf() {
             let tym = match top_leaf {
@@ -209,14 +266,24 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Parser<'a, TInput>
                     inner.r#yield(top_leaf.make_exit_event())
                 }
             };
-            return (tym, None);
-        }
+            (tym, None)
+        } else if let Some(entry) = inner.stack.pop_entry() {
+            let tym = match entry {
+                StackEntry::Strong | StackEntry::Strikethrough => {
+                    inner.r#yield(InlineEvent::ExitInline)
+                }
+            };
 
-        (TYM_UNIT.into(), Some(State::Ended))
+            (tym, None)
+        } else {
+            (TYM_UNIT.into(), Some(State::Ended))
+        }
     }
 }
 
-impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Iterator for Parser<'a, TInput> {
+impl<'a, TStack: Stack<StackEntry>, TInput: Iterator<Item = InlineLevelParseInputEvent>> Iterator
+    for Parser<'a, TStack, TInput>
+{
     type Item = crate::Result<InlineEvent>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -224,7 +291,11 @@ impl<'a, TInput: Iterator<Item = InlineLevelParseInputEvent>> Iterator for Parse
     }
 }
 
-fn yield_text_if_not_empty(start: usize, cursor: &Cursor, inner: &mut ParserInner) -> Tym<1> {
+fn yield_text_if_not_empty<TStack: Stack<StackEntry>>(
+    start: usize,
+    cursor: &Cursor,
+    inner: &mut ParserInner<TStack>,
+) -> Tym<1> {
     if cursor.value() > start {
         inner.r#yield(InlineEvent::Text(start..cursor.value()))
     } else {
@@ -342,12 +413,12 @@ mod leaf {
     pub mod code_span {
         use super::*;
 
-        pub fn parse_content_and_process(
+        pub fn parse_content_and_process<TStack: Stack<StackEntry>>(
             input: &[u8],
             cursor: &mut Cursor,
-            inner: &mut ParserInner,
+            inner: &mut ParserInner<TStack>,
             top_leaf: TopLeafCodeSpan,
-        ) -> Tym<2> {
+        ) -> crate::Result<Tym<2>> {
             let start = cursor.value();
             while let Some(&char) = input.get(cursor.value()) {
                 if char != m!('`') {
@@ -384,12 +455,12 @@ mod leaf {
                 cursor.move_forward(top_leaf.backticks + "]".len());
                 let tym_b = inner.r#yield(top_leaf.make_exit_event());
 
-                return tym_a.add(tym_b);
+                return Ok(tym_a.add(tym_b));
             }
 
             inner.stack.push_top_leaf(top_leaf.into());
             let tym = inner.r#yield(InlineEvent::Text(start..cursor.value()));
-            tym.into()
+            Ok(tym.into())
         }
     }
 }

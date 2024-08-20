@@ -1,13 +1,17 @@
 use std::{cell::RefCell, iter::Peekable, rc::Rc};
 
 use crate::{
-    events::{BlendEvent, BlockEvent, Event, InlineLevelParseInputEvent},
+    events::{BlendEvent, BlockEvent, Event, InlineEvent, InlineLevelParseInputEvent},
     inline::{self},
+    utils::stack::Stack,
 };
 
-enum State<'a, TBlockParser: Iterator<Item = crate::Result<BlockEvent>>> {
+enum State<
+    TBlockParser: Iterator<Item = crate::Result<BlockEvent>>,
+    TInlineParser: Iterator<Item = crate::Result<InlineEvent>>,
+> {
     Normal(Option<Box<Peekable<TBlockParser>>>),
-    TakenOver(inline::Parser<'a, WhileInlineSegment<TBlockParser>>),
+    TakenOver(TInlineParser),
 }
 
 /// 用于将 “产出 [BlockEvent] 的流” 中每段 “留给行内阶段解析器处理的、连续产出
@@ -15,14 +19,18 @@ enum State<'a, TBlockParser: Iterator<Item = crate::Result<BlockEvent>>> {
 pub struct BlockEventStreamInlineSegmentMapper<
     'a,
     TBlockParser: Iterator<Item = crate::Result<BlockEvent>>,
+    TInlineStack: Stack<inline::StackEntry>,
 > {
     input: &'a [u8],
-    state: State<'a, TBlockParser>,
+    state: State<TBlockParser, inline::Parser<'a, TInlineStack, WhileInlineSegment<TBlockParser>>>,
     event_stream_returner: Rc<RefCell<Option<Box<Peekable<TBlockParser>>>>>,
 }
 
-impl<'a, TBlockParser: Iterator<Item = crate::Result<BlockEvent>>>
-    BlockEventStreamInlineSegmentMapper<'a, TBlockParser>
+impl<
+        'a,
+        TBlockParser: Iterator<Item = crate::Result<BlockEvent>>,
+        TInlineStack: Stack<inline::StackEntry>,
+    > BlockEventStreamInlineSegmentMapper<'a, TBlockParser, TInlineStack>
 {
     pub fn new(input: &'a [u8], event_stream: TBlockParser) -> Self {
         Self {
@@ -73,8 +81,11 @@ impl<'a, TBlockParser: Iterator<Item = crate::Result<BlockEvent>>>
     }
 }
 
-impl<'a, TBlockParser: Iterator<Item = crate::Result<BlockEvent>>> Iterator
-    for BlockEventStreamInlineSegmentMapper<'a, TBlockParser>
+impl<
+        'a,
+        TBlockParser: Iterator<Item = crate::Result<BlockEvent>>,
+        TInlineStack: Stack<inline::StackEntry>,
+    > Iterator for BlockEventStreamInlineSegmentMapper<'a, TBlockParser, TInlineStack>
 {
     type Item = crate::Result<BlendEvent>;
 

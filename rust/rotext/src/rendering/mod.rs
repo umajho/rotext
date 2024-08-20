@@ -305,6 +305,8 @@ impl<'a> HtmlRenderer<'a> {
                 }
 
                 BlendEvent::EnterCodeSpan => self.push_simple_inline(&mut stack, b"code"),
+                BlendEvent::EnterStrong => self.push_simple_inline(&mut stack, b"strong"),
+                BlendEvent::EnterStrikethrough => self.push_simple_inline(&mut stack, b"s"),
             };
         }
 

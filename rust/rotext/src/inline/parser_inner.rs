@@ -1,16 +1,23 @@
-use crate::{events::InlineEvent, types::Tym, utils::internal::array_queue::ArrayQueue};
+use crate::{
+    events::InlineEvent,
+    types::Tym,
+    utils::{internal::array_queue::ArrayQueue, stack::Stack},
+};
 
-use super::{stack_wrapper::StackWrapper, types::YieldContext};
+use super::{
+    stack_wrapper::{StackEntry, StackWrapper},
+    types::YieldContext,
+};
 
 const MAX_TO_YIELD: usize = 2;
 
-pub struct ParserInner {
-    pub stack: StackWrapper,
+pub struct ParserInner<TStack: Stack<StackEntry>> {
+    pub stack: StackWrapper<TStack>,
 
     to_yield: ArrayQueue<MAX_TO_YIELD, InlineEvent>,
 }
 
-impl ParserInner {
+impl<TStack: Stack<StackEntry>> ParserInner<TStack> {
     pub fn new() -> Self {
         Self {
             stack: StackWrapper::new(),
@@ -24,7 +31,7 @@ impl ParserInner {
         self.to_yield.pop_front()
     }
 }
-impl YieldContext for ParserInner {
+impl<TStack: Stack<StackEntry>> YieldContext for ParserInner<TStack> {
     #[must_use]
     fn r#yield(&mut self, ev: InlineEvent) -> Tym<1> {
         self.to_yield.push_back(ev);

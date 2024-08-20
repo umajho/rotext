@@ -46,6 +46,8 @@ pub enum EventType {
     RefLink = 101,
     Dicexp = 102,
     EnterCodeSpan = 111,
+    EnterStrong = 112,
+    EnterStrikethrough = 113,
     ExitInline = 199,
 }
 
@@ -162,6 +164,12 @@ pub enum Event {
     /// 进入行内代码。
     #[subenum(InlineEvent, BlendEvent)]
     EnterCodeSpan = EventType::EnterCodeSpan as u8,
+    /// 进入加粗强调。
+    #[subenum(InlineEvent, BlendEvent)]
+    EnterStrong = EventType::EnterStrong as u8,
+    /// 进入删除线。
+    #[subenum(InlineEvent, BlendEvent)]
+    EnterStrikethrough = EventType::EnterStrikethrough as u8,
 
     /// 退出一层行内的 “进入…”。
     #[subenum(InlineEvent, BlendEvent)]
@@ -243,6 +251,8 @@ impl Event {
             | Event::IndicateTableDataCell
             | Event::ExitBlock(_)
             | Event::EnterCodeSpan
+            | Event::EnterStrong
+            | Event::EnterStrikethrough
             | Event::ExitInline => return None,
         };
 
