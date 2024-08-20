@@ -244,11 +244,9 @@ export function createWidgetComponent(parts: {
         />
         <Portal
           ref={handlePortalRef}
-          mount={isCleaningUp()
-            ? undefined
-            : (displayMode() === "pinned"
-              ? widgetFixedAnchorEl
-              : widgetOwner()?.widgetAnchorElement)}
+          mount={isCleaningUp() || displayMode() === "pinned"
+            ? widgetFixedAnchorEl
+            : widgetOwner()?.widgetAnchorElement}
           useShadow={true}
         >
           <Show when={displayMode() !== "closed"}>
