@@ -6,7 +6,7 @@ license.workspace = true
 edition.workspace = true
 authors.workspace = true
 repository.workspace = true
-description = "WASM bindings for rust crate `rotext`"
+description = "WASM bindings for rust crate `rotext`."
 
 [lib]
 crate-type = ["cdylib", "rlib"]
