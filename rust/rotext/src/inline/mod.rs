@@ -186,7 +186,7 @@ impl<'a, TStack: Stack<StackEntry>, TInput: Iterator<Item = InlineLevelParseInpu
                         break;
                     }
                     Some(m!('=')) => {
-                        let tym_a = yield_text_if_not_empty(start, cursor, inner);
+                        let tym_a = yield_text_if_not_empty(start, cursor.value(), inner);
 
                         cursor.move_forward("[=".len());
                         let content = leaf::dicexp::advance_until_ends(input, cursor);
@@ -195,7 +195,7 @@ impl<'a, TStack: Stack<StackEntry>, TInput: Iterator<Item = InlineLevelParseInpu
                         return Ok(tym_a.add(tym_b).into());
                     }
                     Some(m!('`')) => {
-                        let tym_a = yield_text_if_not_empty(start, cursor, inner);
+                        let tym_a = yield_text_if_not_empty(start, cursor.value(), inner);
 
                         let backticks = "`".len()
                             + count_continuous_character(
@@ -204,6 +204,11 @@ impl<'a, TStack: Stack<StackEntry>, TInput: Iterator<Item = InlineLevelParseInpu
                                 cursor.value() + "[`".len(),
                             );
                         cursor.move_forward("[".len() + backticks);
+
+                        if input.get(cursor.value()) == Some(&b' ') {
+                            cursor.move_forward(1);
+                        }
+
                         let top_leaf = TopLeafCodeSpan { backticks };
                         let ev = top_leaf.make_enter_event();
                         inner.stack.push_top_leaf(top_leaf.into());
@@ -212,7 +217,7 @@ impl<'a, TStack: Stack<StackEntry>, TInput: Iterator<Item = InlineLevelParseInpu
                         return Ok(tym_a.add(tym_b).into());
                     }
                     Some(m!('\'')) => {
-                        let tym_a = yield_text_if_not_empty(start, cursor, inner);
+                        let tym_a = yield_text_if_not_empty(start, cursor.value(), inner);
 
                         cursor.move_forward("['".len());
                         inner.stack.push_entry(StackEntry::Strong)?;
@@ -221,7 +226,7 @@ impl<'a, TStack: Stack<StackEntry>, TInput: Iterator<Item = InlineLevelParseInpu
                         return Ok(tym_a.add(tym_b).into());
                     }
                     Some(m!('~')) => {
-                        let tym_a = yield_text_if_not_empty(start, cursor, inner);
+                        let tym_a = yield_text_if_not_empty(start, cursor.value(), inner);
 
                         cursor.move_forward("[~".len());
                         inner.stack.push_entry(StackEntry::Strikethrough)?;
@@ -239,7 +244,7 @@ impl<'a, TStack: Stack<StackEntry>, TInput: Iterator<Item = InlineLevelParseInpu
                         || (end_condition.on_strikethrough_closing && char == m!('~')))
                         && input.get(cursor.value() + 1) == Some(&m!(']'))
                     {
-                        let tym_a = yield_text_if_not_empty(start, cursor, inner);
+                        let tym_a = yield_text_if_not_empty(start, cursor.value(), inner);
 
                         cursor.move_forward(2);
                         inner.stack.pop_entry();
@@ -293,11 +298,11 @@ impl<'a, TStack: Stack<StackEntry>, TInput: Iterator<Item = InlineLevelParseInpu
 
 fn yield_text_if_not_empty<TStack: Stack<StackEntry>>(
     start: usize,
-    cursor: &Cursor,
+    end: usize,
     inner: &mut ParserInner<TStack>,
 ) -> Tym<1> {
-    if cursor.value() > start {
-        inner.r#yield(InlineEvent::Text(start..cursor.value()))
+    if end > start {
+        inner.r#yield(InlineEvent::Text(start..end))
     } else {
         TYM_UNIT.into()
     }
@@ -450,7 +455,12 @@ mod leaf {
                     continue;
                 }
 
-                let tym_a = yield_text_if_not_empty(start, cursor, inner);
+                let mut content_end = cursor.value();
+                if cursor.value() > start && input.get(cursor.value() - 1) == Some(&b' ') {
+                    content_end -= 1;
+                }
+
+                let tym_a = yield_text_if_not_empty(start, content_end, inner);
 
                 cursor.move_forward(top_leaf.backticks + "]".len());
                 let tym_b = inner.r#yield(top_leaf.make_exit_event());
