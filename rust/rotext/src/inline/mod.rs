@@ -15,7 +15,7 @@ use types::{Cursor, YieldContext};
 
 use crate::{
     common::m,
-    events::{InlineEvent, InlineLevelParseInputEvent},
+    events::{InlineEvent, InlinePhaseParseInputEvent},
     types::{Tym, TYM_UNIT},
     utils::{
         internal::{
@@ -26,16 +26,11 @@ use crate::{
     },
 };
 
-pub struct Parser<
-    'a,
-    TStack: Stack<StackEntry>,
-    TInput: Iterator<Item = InlineLevelParseInputEvent>,
-> {
+pub struct Parser<'a, TInlineStack: Stack<StackEntry>> {
     input: &'a [u8],
-    event_stream: TInput,
 
     state: State<'a>,
-    inner: ParserInner<TStack>,
+    inner: ParserInner<TInlineStack>,
 }
 
 enum State<'a> {
@@ -45,20 +40,19 @@ enum State<'a> {
     Ended,
 }
 
-impl<'a, TStack: Stack<StackEntry>, TInput: Iterator<Item = InlineLevelParseInputEvent>>
-    Parser<'a, TStack, TInput>
-{
-    pub fn new(input: &'a [u8], event_stream: TInput) -> Self {
+impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
+    pub fn new(input: &'a [u8]) -> Self {
         Self {
             input,
-            event_stream,
             state: State::Idle,
             inner: ParserInner::new(),
         }
     }
 
-    #[inline(always)]
-    fn next(&mut self) -> Option<crate::Result<InlineEvent>> {
+    pub fn next(
+        &mut self,
+        event_stream: &mut impl Iterator<Item = InlinePhaseParseInputEvent>,
+    ) -> Option<crate::Result<InlineEvent>> {
         loop {
             if let Some(ev) = self.inner.pop_to_be_yielded() {
                 break Some(Ok(ev));
@@ -75,7 +69,7 @@ impl<'a, TStack: Stack<StackEntry>, TInput: Iterator<Item = InlineLevelParseInpu
                 }
                 State::Ended => break None,
                 State::Idle => {
-                    let Some(next) = self.event_stream.next() else {
+                    let Some(next) = event_stream.next() else {
                         self.state = if self.inner.stack.is_empty() {
                             State::Ended
                         } else {
@@ -86,16 +80,16 @@ impl<'a, TStack: Stack<StackEntry>, TInput: Iterator<Item = InlineLevelParseInpu
                     };
 
                     let to_yield = match next {
-                        InlineLevelParseInputEvent::Unparsed(content) => {
+                        InlinePhaseParseInputEvent::Unparsed(content) => {
                             let input = &self.input[..content.end];
                             let cursor = Cursor::new(content.start);
                             self.state = State::Parsing { input, cursor };
                             continue;
                         }
-                        InlineLevelParseInputEvent::VerbatimEscaping(verbatim_escaping) => {
+                        InlinePhaseParseInputEvent::VerbatimEscaping(verbatim_escaping) => {
                             InlineEvent::VerbatimEscaping(verbatim_escaping)
                         }
-                        InlineLevelParseInputEvent::NewLine(new_line) => {
+                        InlinePhaseParseInputEvent::NewLine(new_line) => {
                             InlineEvent::NewLine(new_line)
                         }
                     };
@@ -121,7 +115,7 @@ impl<'a, TStack: Stack<StackEntry>, TInput: Iterator<Item = InlineLevelParseInpu
     fn parse(
         input: &[u8],
         cursor: &mut Cursor,
-        inner: &mut ParserInner<TStack>,
+        inner: &mut ParserInner<TInlineStack>,
     ) -> crate::Result<Tym<2>> {
         match inner.stack.pop_top_leaf() {
             None => Self::parse_normal(input, cursor, inner),
@@ -134,7 +128,7 @@ impl<'a, TStack: Stack<StackEntry>, TInput: Iterator<Item = InlineLevelParseInpu
     fn parse_normal(
         input: &[u8],
         cursor: &mut Cursor,
-        inner: &mut ParserInner<TStack>,
+        inner: &mut ParserInner<TInlineStack>,
     ) -> crate::Result<Tym<2>> {
         let end_condition = inner.stack.make_end_condition();
 
@@ -263,7 +257,7 @@ impl<'a, TStack: Stack<StackEntry>, TInput: Iterator<Item = InlineLevelParseInpu
     }
 
     fn exit_until_stack_is_empty_and_then_end(
-        inner: &mut ParserInner<TStack>,
+        inner: &mut ParserInner<TInlineStack>,
     ) -> (Tym<1>, Option<State<'a>>) {
         if let Some(top_leaf) = inner.stack.pop_top_leaf() {
             let tym = match top_leaf {
@@ -286,20 +280,10 @@ impl<'a, TStack: Stack<StackEntry>, TInput: Iterator<Item = InlineLevelParseInpu
     }
 }
 
-impl<'a, TStack: Stack<StackEntry>, TInput: Iterator<Item = InlineLevelParseInputEvent>> Iterator
-    for Parser<'a, TStack, TInput>
-{
-    type Item = crate::Result<InlineEvent>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.next()
-    }
-}
-
-fn yield_text_if_not_empty<TStack: Stack<StackEntry>>(
+fn yield_text_if_not_empty<TInlineStack: Stack<StackEntry>>(
     start: usize,
     end: usize,
-    inner: &mut ParserInner<TStack>,
+    inner: &mut ParserInner<TInlineStack>,
 ) -> Tym<1> {
     if end > start {
         inner.r#yield(InlineEvent::Text(start..end))
@@ -418,10 +402,10 @@ mod leaf {
     pub mod code_span {
         use super::*;
 
-        pub fn parse_content_and_process<TStack: Stack<StackEntry>>(
+        pub fn parse_content_and_process<TInlineStack: Stack<StackEntry>>(
             input: &[u8],
             cursor: &mut Cursor,
-            inner: &mut ParserInner<TStack>,
+            inner: &mut ParserInner<TInlineStack>,
             top_leaf: TopLeafCodeSpan,
         ) -> crate::Result<Tym<2>> {
             let start = cursor.value();
