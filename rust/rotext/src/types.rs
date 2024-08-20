@@ -21,6 +21,7 @@ impl BlockId {
         Self(id)
     }
     #[cfg(not(feature = "block-id"))]
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self()
     }
@@ -53,6 +54,7 @@ impl LineNumber {
         Self(n)
     }
     #[cfg(not(feature = "line-number"))]
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self()
     }
