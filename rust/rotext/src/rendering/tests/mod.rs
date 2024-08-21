@@ -513,6 +513,44 @@ fn it_works_in_inline_phase() {
             )],
         },
         GroupedCases {
+            group: "加粗强调与删除线",
+            cases: vec![
+                case!(
+                    "foo",
+                    [
+                        (@inline EnterStrong(..)),
+                        (Text(0..3)),
+                        (@inline ExitInline(..)),
+                    ],
+                    r#"<strong>foo</strong>"#,
+                ),
+                case!(
+                    "foo",
+                    [
+                        (@inline EnterStrikethrough(..)),
+                        (Text(0..3)),
+                        (@inline ExitInline(..)),
+                    ],
+                    r#"<s>foo</s>"#,
+                ),
+                case!(
+                    "foo:0/bar:6/baz:12",
+                    [
+                        (@inline EnterStrong(..)),
+                        (@inline EnterStrikethrough(..)),
+                        (Text(0..3)),
+                        (@inline ExitInline(..)),
+                        (@inline EnterStrong(..)),
+                        (Text(6..9)),
+                        (@inline ExitInline(..)),
+                        (Text(12..15)),
+                        (@inline ExitInline(..)),
+                    ],
+                    r#"<strong><s>foo</s><strong>bar</strong>baz</strong>"#,
+                ),
+            ],
+        },
+        GroupedCases {
             group: "XSS",
             cases: vec![case!(
                 r#"""#,

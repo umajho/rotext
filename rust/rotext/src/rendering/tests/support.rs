@@ -109,6 +109,10 @@ macro_rules! event {
         $crate::events::BlendEvent::Dicexp($start..$end)
     };
 
+    (@inline $v:tt (..)) => {
+        $crate::events::BlendEvent::$v
+    };
+
     ($v:tt (..)) => {
         $crate::events::BlendEvent::$v($crate::events::BlockWithId {
             id: $crate::types::BlockId::new_invalid(),
