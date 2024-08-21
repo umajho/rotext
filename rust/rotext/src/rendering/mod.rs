@@ -310,6 +310,8 @@ impl<'a> HtmlRenderer<'a> {
             };
         }
 
+        debug_assert!(stack.is_empty());
+
         unsafe { String::from_utf8_unchecked(self.result) }
     }
 
