@@ -45,7 +45,7 @@ const Preview: Component<
   }
 > = (props) => {
   let scrollContainerEl!: HTMLDivElement;
-  let widgetAnchorEl!: HTMLDivElement;
+  let popperAnchorEl!: HTMLDivElement;
   let outputContainerEl!: HTMLDivElement;
   let outputEl!: HTMLElement;
 
@@ -117,7 +117,7 @@ const Preview: Component<
 
       // NOTE: 目前 scrollContainerEl 就是 previewer 的元素
       registerRoWidgetOwner(scrollContainerEl, {
-        widgetAnchorElement: widgetAnchorEl,
+        popperAnchorElement: popperAnchorEl,
         level: 1,
         layoutChangeObserver,
       });
@@ -178,7 +178,7 @@ const Preview: Component<
         />
       </div>
 
-      <div class="relative z-10" ref={widgetAnchorEl} />
+      <div class="relative z-10" ref={popperAnchorEl} />
 
       <div
         class={[

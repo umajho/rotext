@@ -7,10 +7,10 @@ import {
   CreateRefLinkComponentOptions,
 } from "./create-ref-link-component";
 
-import defaultStylesForPrimeContent from "./PrimeContent.default.scss?inline";
+import defaultStylesForLabelContent from "./LabelContent.default.scss?inline";
 
-const defaultStyleProviderForPrimeContent = //
-  createStyleProviderFromCSSText(defaultStylesForPrimeContent);
+const defaultStyleProviderForLabelContent = //
+  createStyleProviderFromCSSText(defaultStylesForLabelContent);
 
 export function registerCustomElement(
   tag: string,
@@ -22,6 +22,6 @@ export function registerCustomElement(
 export function getDefaultStyleProviders(): //
 CreateRefLinkComponentOptions["styleProviders"] {
   return {
-    forPrimeContent: defaultStyleProviderForPrimeContent,
+    forLabelContent: defaultStyleProviderForLabelContent,
   };
 }

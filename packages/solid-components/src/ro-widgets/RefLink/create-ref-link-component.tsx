@@ -23,10 +23,10 @@ import { createRoWidgetComponent } from "../../ro-widget-core/mod";
 
 import { HorizontalRule, PinButton } from "../support/mod";
 
-import stylesForWidgetContent from "./WidgetContent.scss?inline";
+import stylesForPopperContent from "./PopperContent.scss?inline";
 
-const styleProviderForWidgetContent = createStyleProviderFromCSSText(
-  stylesForWidgetContent,
+const styleProviderForPopperContent = createStyleProviderFromCSSText(
+  stylesForPopperContent,
 );
 
 export interface Properties {
@@ -42,7 +42,7 @@ export type RefContentRenderer = (
 
 export interface CreateRefLinkComponentOptions {
   styleProviders: {
-    forPrimeContent: StyleProvider;
+    forLabelContent: StyleProvider;
   };
   backgroundColor: ComputedColor;
 
@@ -60,15 +60,15 @@ export function createRefLinkComponent(
     const address = createMemo(() => parseAddress(outerProps.address));
 
     const component = createRoWidgetComponent({
-      PrimeContent: (props) => {
+      LabelContent: (props) => {
         return (
           <ShadowRootAttacher
-            styleProviders={[opts.styleProviders.forPrimeContent]}
+            styleProviders={[opts.styleProviders.forLabelContent]}
             hostStyle={{ display: "inline" }}
           >
             <span
               style={{ cursor: props.cursor }}
-              onClick={props.onToggleWidget}
+              onClick={props.onTogglePopper}
               onMouseDown={mouseDownNoDoubleClickToSelect}
             >
               {`>>${outerProps.address}`}
@@ -76,7 +76,7 @@ export function createRefLinkComponent(
           </ShadowRootAttacher>
         );
       },
-      WidgetContent: (props) => {
+      PopperContent: (props) => {
         let refContentEl!: HTMLDivElement;
 
         onMount(() => {
@@ -116,8 +116,8 @@ export function createRefLinkComponent(
       widgetOwnerClass: opts.widgetOwnerClass,
       innerNoAutoOpenClass: opts.innerNoAutoOpenClass,
 
-      widgetContentStyleProvider: styleProviderForWidgetContent,
-      widgetBackgroundColor: () => opts.backgroundColor,
+      popperContentStyleProvider: styleProviderForPopperContent,
+      popperBackgroundColor: () => opts.backgroundColor,
       maskTintColor: () => gray500,
     });
 

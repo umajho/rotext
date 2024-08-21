@@ -24,15 +24,15 @@ import {
   StepsRepresentationComponent,
 } from "./external-components";
 import {
-  createWidgetContent,
-  styleProvider as styleProviderForWidgetContent,
-} from "./create-widget-content";
+  createPopperContent,
+  styleProvider as styleProviderForPopperContent,
+} from "./create-popper-content";
 import { DicexpEvaluation } from "./evaluation";
 
-import stylesForPrimeContentSupplements from "./PrimeContent.supplements.scss?inline";
+import stylesForLabelContentSupplements from "./LabelContent.supplements.scss?inline";
 
-const styleProviderForPrimeContentSupplements = //
-  createStyleProviderFromCSSText(stylesForPrimeContentSupplements);
+const styleProviderForLabelContentSupplements = //
+  createStyleProviderFromCSSText(stylesForLabelContentSupplements);
 
 export interface DicexpEvaluatorProvider {
   default: () => Promise<EvaluatingWorkerManager>;
@@ -49,7 +49,7 @@ export interface Properties {
 
 export interface CreateDicexpComponentOptions {
   styleProviders: {
-    forPrimeContent: StyleProvider;
+    forLabelContent: StyleProvider;
   };
   backgroundColor: ComputedColor;
 
@@ -85,37 +85,37 @@ export function createDicexpComponent(
     }
 
     const component = createRoWidgetComponent({
-      PrimeContent: (props) => {
+      LabelContent: (props) => {
         return (
           <ShadowRootAttacher
             hostStyle={{ display: "inline-flex", width: "100%" }}
             styleProviders={[
-              styleProviderForPrimeContentSupplements,
-              opts.styleProviders.forPrimeContent,
+              styleProviderForLabelContentSupplements,
+              opts.styleProviders.forLabelContent,
             ]}
           >
-            <span class="widget-prime-content">
+            <span class="widget-label-content">
               <span
-                class="widget-prime-summary"
+                class="widget-label-summary"
                 style={{
                   display: "inline-flex",
                   "place-items": "center",
                   cursor: props.cursor,
                 }}
-                onClick={() => props.onToggleWidget?.()}
+                onClick={() => props.onTogglePopper?.()}
                 onMouseDown={mouseDownNoDoubleClickToSelect}
               >
                 <FaSolidDice
                   color="white"
                   class={rolling?.isRolling() ? "animate-spin-400ms" : ""}
                 />
-                <span class="widget-prime-raw-text">
+                <span class="widget-label-raw-text">
                   {`[=${outerProps.code}]`}
                 </span>
               </span>
               <Show when={rolling?.roll || resultDisplaying?.summary()}>
                 <span
-                  class={`widget-prime-action`}
+                  class={`widget-label-action`}
                   style={rolling
                     ? { cursor: "pointer", "user-select": "none" }
                     : {}}
@@ -150,7 +150,7 @@ export function createDicexpComponent(
           </ShadowRootAttacher>
         );
       },
-      WidgetContent: createWidgetContent({
+      PopperContent: createPopperContent({
         code: () => outerProps.code,
         processedProperties,
         Loading,
@@ -163,8 +163,8 @@ export function createDicexpComponent(
       openable: everRolled,
       autoOpenShouldCollapse: false,
 
-      widgetContentStyleProvider: styleProviderForWidgetContent,
-      widgetBackgroundColor: () => opts.backgroundColor,
+      popperContentStyleProvider: styleProviderForPopperContent,
+      popperBackgroundColor: () => opts.backgroundColor,
       maskTintColor: () => gray500,
     });
 

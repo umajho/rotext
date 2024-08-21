@@ -1,5 +1,5 @@
 export interface WidgetOwner {
-  widgetAnchorElement: HTMLElement;
+  popperAnchorElement: HTMLElement;
   /**
    * 所属层级，`1` 为最顶层。
    */
@@ -17,7 +17,7 @@ export interface LayoutChangeObserver {
 const previewerElToWidgetOwnerMap = new WeakMap<HTMLElement, WidgetOwner>();
 
 export interface RegisterWidgetOwnerOptions {
-  widgetAnchorElement: HTMLElement;
+  popperAnchorElement: HTMLElement;
   level: number;
   layoutChangeObserver: LayoutChangeObserver;
 }

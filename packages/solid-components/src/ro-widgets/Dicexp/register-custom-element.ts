@@ -12,11 +12,11 @@ import {
   type DicexpEvaluatorProvider,
 } from "./create-dicexp-component";
 
-import defaultStylesForPrimeContent from "./PrimeContent.default.scss?inline";
+import defaultStylesForLabelContent from "./LabelContent.default.scss?inline";
 import { ErrorAlertComponent } from "./external-components";
 
-const defaultStyleProviderForPrimeContent = //
-  createStyleProviderFromCSSText(defaultStylesForPrimeContent);
+const defaultStyleProviderForLabelContent = //
+  createStyleProviderFromCSSText(defaultStylesForLabelContent);
 
 export function registerCustomElement(
   tag: string,
@@ -43,6 +43,6 @@ export function registerCustomElement(
 
 export function getDefaultStyleProviders() {
   return {
-    forPrimeContent: defaultStyleProviderForPrimeContent,
+    forLabelContent: defaultStyleProviderForLabelContent,
   };
 }

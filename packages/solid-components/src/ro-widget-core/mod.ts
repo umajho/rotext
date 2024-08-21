@@ -1,9 +1,9 @@
 export {
   createWidgetComponent as createRoWidgetComponent,
   type DisplayMode as RoWidgetDisplayMode,
-  type PrimeContentComponent as RoWidgetPrimeContentComponent,
-  type WidgetContainerProperties as RoWidgetContainerProperties,
-  type WidgetContentProperties as RoWidgetContentProperties,
+  type LabelContentComponent as RoWidgetLabelContentComponent,
+  type PopperContainerProperties as RoWidgetPopperContainerProperties,
+  type PopperContentProperties as RoWidgetPopperContentProperties,
 } from "./create-widget-component";
 
 export {

@@ -27,7 +27,7 @@ import {
 import { getWidgetOwner, WidgetOwner } from "./widget-owners-store";
 import { mixColor } from "./utils";
 import CollapseMaskLayer from "./CollapseMaskLayer";
-import WidgetContainer from "./WidgetContainer";
+import PopperContainer from "./PopperContainer";
 
 const LEAVING_DELAY_MS = 100;
 
@@ -35,13 +35,13 @@ const COLLAPSE_HEIGHT_PX = getSizeInPx("6rem");
 
 export type DisplayMode = "closed" | "floating" | "pinned";
 
-export interface PrimeContentComponent {
+export interface LabelContentComponent {
   cursor: JSX.CSSProperties["cursor"];
 
-  onToggleWidget?: () => void;
+  onTogglePopper?: () => void;
 }
 
-export interface WidgetContainerProperties {
+export interface PopperContainerProperties {
   ref: HTMLDivElement | undefined;
 
   class?: string;
@@ -53,7 +53,7 @@ export interface WidgetContainerProperties {
   children: JSX.Element;
 }
 
-export interface WidgetContentProperties {
+export interface PopperContentProperties {
   displayMode: () => DisplayMode;
 
   handlerForTouchEndOnPinIcon: () => void;
@@ -71,8 +71,8 @@ interface ElementPosition {
 }
 
 export function createWidgetComponent(parts: {
-  PrimeContent: Component<PrimeContentComponent>;
-  WidgetContent: Component<WidgetContentProperties>;
+  LabelContent: Component<LabelContentComponent>;
+  PopperContent: Component<PopperContentProperties>;
 }, opts: {
   widgetOwnerClass: string;
   innerNoAutoOpenClass?: string;
@@ -80,14 +80,14 @@ export function createWidgetComponent(parts: {
   openable?: () => boolean;
   autoOpenShouldCollapse?: boolean;
 
-  widgetContentStyleProvider?: StyleProvider;
-  widgetBackgroundColor: () => ComputedColor;
+  popperContentStyleProvider?: StyleProvider;
+  popperBackgroundColor: () => ComputedColor;
   maskTintColor: () => ComputedColor;
 }): Component {
   opts.openable ??= () => true;
   opts.autoOpenShouldCollapse ??= true;
 
-  const { PrimeContent, WidgetContent } = parts;
+  const { LabelContent, PopperContent } = parts;
 
   if (getCurrentElement()) {
     getCurrentElement().innerText = ""; // 清空 fallback
@@ -95,29 +95,29 @@ export function createWidgetComponent(parts: {
   }
 
   // 在执行 handleMount 时必定存在
-  let primeEl!: HTMLSpanElement,
-    widgetFixedAnchorEl: HTMLDivElement;
+  let labelEl!: HTMLSpanElement,
+    pinAnchorEl: HTMLDivElement;
   // 视情况存在
-  let wContainerEl: HTMLDivElement,
-    widgetEl: HTMLDivElement; // “w” -> “widget”
+  let popperContainerEl: HTMLDivElement,
+    popperEl: HTMLDivElement;
 
   let [isCleaningUp, setIsCleaningUp] = createSignal(false);
   onCleanup(() => setIsCleaningUp(true));
 
   const backgroundColorCSSValue = createMemo(() =>
-    computedColorToCSSValue(opts.widgetBackgroundColor())
+    computedColorToCSSValue(opts.popperBackgroundColor())
   );
 
   const [widgetOwner, setWidgetOwner] = createSignal<WidgetOwner>();
 
-  const [widgetPosition, setWidgetPosition] = //
+  const [popperPosition, setPopperPosition] = //
     createSignal<ElementPosition | null>({ topPx: 0, leftPx: 0 });
 
   const [canCollapse, setCanCollapse] = createSignal(false);
   const [collapseHeightPx, setCollapseHeightPx] = createSignal(0);
 
   const maskBaseColor = createMemo((): ComputedColor =>
-    mixColor(opts.widgetBackgroundColor(), 2 / 3, opts.maskTintColor(), 1 / 3)
+    mixColor(opts.popperBackgroundColor(), 2 / 3, opts.maskTintColor(), 1 / 3)
   );
 
   const {
@@ -127,7 +127,7 @@ export function createWidgetComponent(parts: {
     leaveHandler,
     pinningTogglerTouchEndHandler,
     pinningToggleHandler,
-    primeClickHandler,
+    labelClickHandler,
     autoOpen,
     expand,
   } = createDisplayModeFSM({
@@ -142,12 +142,12 @@ export function createWidgetComponent(parts: {
     setWidgetOwner(widgetOwner_);
     opts.setWidgetOwner?.(widgetOwner_);
 
-    const closestContainerEl = closestContainer(primeEl)!;
-    const calculateAndSetWidgetPosition = () => {
-      setWidgetPosition(
-        calculateWidgetPosition({
-          prime: primeEl,
-          widgetAnchor: widgetOwner_.widgetAnchorElement,
+    const closestContainerEl = closestContainer(labelEl)!;
+    const calculateAndSetPopperPosition = () => {
+      setPopperPosition(
+        calculatePopperPosition({
+          label: labelEl,
+          popperAnchor: widgetOwner_.popperAnchorElement,
           closestContainer: closestContainerEl,
         }),
       );
@@ -157,10 +157,10 @@ export function createWidgetComponent(parts: {
       ([isFloating]) => {
         widgetOwner_.layoutChangeObserver
           [isFloating ? "subscribe" : "unsubscribe"](
-            calculateAndSetWidgetPosition,
+            calculateAndSetPopperPosition,
           );
         if (isFloating) {
-          calculateAndSetWidgetPosition();
+          calculateAndSetPopperPosition();
         }
       },
     ));
@@ -170,20 +170,20 @@ export function createWidgetComponent(parts: {
       // 挂件内容的大小，目前只有在需要折叠时才需要侦测（判断是否能折叠）；
       // 挂件容器的大小，目前只有在折叠时才需要侦测（确定遮盖的高度）。
 
-      const { size: widgetSize } = createSizeSyncer(
-        () => widgetEl,
+      const { size: popperSize } = createSizeSyncer(
+        () => popperEl,
         { removed: () => displayMode() !== "pinned" },
       );
       createEffect(on(
-        [widgetSize],
+        [popperSize],
         ([size]) => setCanCollapse((size?.heightPx ?? 0) > COLLAPSE_HEIGHT_PX),
       ));
-      const { size: widgetContainerSize } = createSizeSyncer(
-        () => wContainerEl,
+      const { size: popperContainerSize } = createSizeSyncer(
+        () => popperContainerEl,
         { removed: () => (displayMode() !== "pinned") || !collapsed() },
       );
       createEffect(on(
-        [widgetContainerSize],
+        [popperContainerSize],
         ([size]) => setCollapseHeightPx(size?.heightPx ?? 0),
       ));
     }
@@ -191,7 +191,7 @@ export function createWidgetComponent(parts: {
     if (
       widgetOwner_.level === 1 &&
       !(opts.innerNoAutoOpenClass &&
-        primeEl.closest("." + opts.innerNoAutoOpenClass))
+        labelEl.closest("." + opts.innerNoAutoOpenClass))
     ) {
       autoOpen(!!opts.autoOpenShouldCollapse);
     }
@@ -202,19 +202,19 @@ export function createWidgetComponent(parts: {
       // 方案对 Dicexp 失效了（但对 RefLink 还有效）。这里通过手动添加/去处来 workaround。
       createEffect(on([opts.openable], ([openable]) => {
         if (openable) {
-          primeEl.addEventListener("mouseenter", enterHandler);
-          primeEl.addEventListener("mouseleave", leaveHandler);
+          labelEl.addEventListener("mouseenter", enterHandler);
+          labelEl.addEventListener("mouseleave", leaveHandler);
         } else {
-          primeEl.removeEventListener("mouseenter", enterHandler);
-          primeEl.removeEventListener("mouseleave", leaveHandler);
+          labelEl.removeEventListener("mouseenter", enterHandler);
+          labelEl.removeEventListener("mouseleave", leaveHandler);
         }
       }));
     }
   }
 
   function handlePortalRef({ shadowRoot }: { shadowRoot: ShadowRoot }) {
-    if (opts.widgetContentStyleProvider) {
-      adoptStyle(shadowRoot, opts.widgetContentStyleProvider);
+    if (opts.popperContentStyleProvider) {
+      adoptStyle(shadowRoot, opts.popperContentStyleProvider);
     }
   }
 
@@ -225,8 +225,8 @@ export function createWidgetComponent(parts: {
         preventHostStyleInheritance={true}
         onMount={handleMount}
       >
-        <span ref={primeEl} class="widget-prime">
-          <PrimeContent
+        <span ref={labelEl} class="widget-label">
+          <LabelContent
             cursor={opts.openable?.()
               ? (displayMode() === "pinned"
                 ? (canCollapse()
@@ -234,24 +234,24 @@ export function createWidgetComponent(parts: {
                   : undefined)
                 : "zoom-in")
               : undefined}
-            onToggleWidget={opts.openable?.() ? primeClickHandler : undefined}
+            onTogglePopper={opts.openable?.() ? labelClickHandler : undefined}
           />
         </span>
 
         <div
-          ref={widgetFixedAnchorEl}
+          ref={pinAnchorEl}
           style={{ display: displayMode() === "pinned" ? undefined : "none" }}
         />
         <Portal
           ref={handlePortalRef}
           mount={isCleaningUp() || displayMode() === "pinned"
-            ? widgetFixedAnchorEl
-            : widgetOwner()?.widgetAnchorElement}
+            ? pinAnchorEl
+            : widgetOwner()?.popperAnchorElement}
           useShadow={true}
         >
           <Show when={displayMode() !== "closed"}>
-            <WidgetContainer
-              ref={wContainerEl}
+            <PopperContainer
+              ref={popperContainerEl}
               style={{
                 ...(displayMode() === "pinned"
                   ? {
@@ -259,13 +259,13 @@ export function createWidgetComponent(parts: {
                   }
                   : {
                     position: "absolute",
-                    ...(((widgetPosition) =>
-                      widgetPosition
+                    ...(((popperPosition) =>
+                      popperPosition
                         ? {
-                          top: `${widgetPosition.topPx}px`,
-                          left: `${widgetPosition.leftPx}px`,
+                          top: `${popperPosition.topPx}px`,
+                          left: `${popperPosition.leftPx}px`,
                         }
-                        : { display: "none" })(widgetPosition())),
+                        : { display: "none" })(popperPosition())),
                   }),
                 "background-color": backgroundColorCSSValue(),
                 ...(collapsed()
@@ -285,14 +285,14 @@ export function createWidgetComponent(parts: {
                   onExpand={expand}
                 />
               </Show>
-              <div ref={widgetEl}>
-                <WidgetContent
+              <div ref={popperEl}>
+                <PopperContent
                   displayMode={displayMode}
                   handlerForTouchEndOnPinIcon={pinningTogglerTouchEndHandler}
                   handlerForClickOnPinIcon={pinningToggleHandler}
                 />
               </div>
-            </WidgetContainer>
+            </PopperContainer>
           </Show>
         </Portal>
       </ShadowRootAttacher>
@@ -300,28 +300,28 @@ export function createWidgetComponent(parts: {
   };
 }
 
-function calculateWidgetPosition(
+function calculatePopperPosition(
   els: {
-    prime: HTMLElement;
-    widgetAnchor: HTMLElement;
+    label: HTMLElement;
+    popperAnchor: HTMLElement;
     closestContainer: HTMLElement;
   },
 ): ElementPosition | null {
-  if (!els.prime.offsetParent) {
+  if (!els.label.offsetParent) {
     // 为 null 代表在设有 `display: none` 的元素的内部。
     // see: https://stackoverflow.com/a/21696585
     return null;
   }
 
-  const primeRect = els.prime.getBoundingClientRect();
-  const anchorRect = els.widgetAnchor.getBoundingClientRect();
+  const labelRect = els.label.getBoundingClientRect();
+  const anchorRect = els.popperAnchor.getBoundingClientRect();
   const closestContainerRect = els.closestContainer.getBoundingClientRect();
   const closestContainerPaddingLeftPx = parseFloat(
     getComputedStyle(els.closestContainer).paddingLeft,
   );
 
   return {
-    topPx: primeRect.bottom - anchorRect.top,
+    topPx: labelRect.bottom - anchorRect.top,
     leftPx: closestContainerRect.left + closestContainerPaddingLeftPx -
       anchorRect.left,
   };
@@ -423,7 +423,7 @@ function createDisplayModeFSM(
     pinningTogglerTouched = false;
   }
 
-  function handleClickPrime() {
+  function handleClickLabel() {
     if (!opts.openable) return;
     setUserInteracted(true);
 
@@ -460,7 +460,7 @@ function createDisplayModeFSM(
     pinningTogglerTouchEndHandler: handleTouchPinningTogglerEnd,
     pinningToggleHandler: handleTogglePinning,
 
-    primeClickHandler: handleClickPrime,
+    labelClickHandler: handleClickLabel,
 
     autoOpen,
 
@@ -490,17 +490,17 @@ function createSizeSyncer(
       heightPx: rect.height,
     });
   }
-  let resizeObserverForWidget: ResizeObserver | null = null;
+  let resizeObserverForPopper: ResizeObserver | null = null;
   createEffect(on([opts.removed], () => {
     if (!opts.removed()) {
       const el_ = el();
 
       syncSize(el_);
-      resizeObserverForWidget = new ResizeObserver(() => syncSize(el_));
-      resizeObserverForWidget.observe(el_);
+      resizeObserverForPopper = new ResizeObserver(() => syncSize(el_));
+      resizeObserverForPopper.observe(el_);
     } else {
       setSize(null);
-      resizeObserverForWidget?.disconnect();
+      resizeObserverForPopper?.disconnect();
     }
   }));
 

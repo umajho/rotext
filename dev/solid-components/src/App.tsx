@@ -261,7 +261,7 @@ function registerWidgetOwnerEx(anchorEl: HTMLElement, opts?: {
   const ownerEl: HTMLElement = anchorEl.closest("." + WIDGET_OWNER_CLASS)!;
   const observer = new ElementLayoutChangeObserver(ownerEl, { resize: true });
   registerRoWidgetOwner(ownerEl, {
-    widgetAnchorElement: anchorEl,
+    popperAnchorElement: anchorEl,
     level: 1,
     layoutChangeObserver: opts?.extraObservers?.length
       ? new MultiObserver([observer, ...opts.extraObservers])

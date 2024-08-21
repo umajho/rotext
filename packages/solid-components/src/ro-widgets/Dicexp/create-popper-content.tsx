@@ -2,7 +2,7 @@ import { Component, createSignal, Match, Show, Switch } from "solid-js";
 
 import { createStyleProviderFromCSSText } from "@rolludejo/web-internal";
 
-import { WidgetContentProperties } from "../../ro-widget-core/create-widget-component";
+import { PopperContentProperties } from "../../ro-widget-core/create-widget-component";
 
 import { HorizontalRule, PinButton } from "../support/mod";
 import { ProcessedProperties } from "./props-for-create-dicexp-component";
@@ -12,19 +12,19 @@ import {
   StepsRepresentationComponent,
 } from "./external-components";
 
-import styles from "./WidgetContent.scss?inline";
+import styles from "./PopperContent.scss?inline";
 import { errorKindToText } from "./evaluation";
 
 export const styleProvider = createStyleProviderFromCSSText(styles);
 
-export function createWidgetContent(opts: {
+export function createPopperContent(opts: {
   code: () => string;
   processedProperties: ProcessedProperties;
 
   Loading: LoadingComponent;
   ErrorAlert: ErrorAlertComponent;
   StepsRepresentation: StepsRepresentationComponent;
-}): Component<WidgetContentProperties> {
+}): Component<PopperContentProperties> {
   return (props) => {
     const { rolling, resultDisplaying } = opts.processedProperties;
 

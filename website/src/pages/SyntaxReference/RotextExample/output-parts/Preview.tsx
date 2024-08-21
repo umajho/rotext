@@ -29,14 +29,14 @@ export const Preview: Component<{
   content: () => PreviewContent;
 }> = (props) => {
   let containerEl!: HTMLDivElement;
-  let widgetAnchorEl!: HTMLDivElement;
+  let popperAnchorEl!: HTMLDivElement;
   let outputWrapperEl!: HTMLDivElement;
 
   const [isOutputEmpty, setIsOutputEmpty] = createSignal(false);
   onMount(() => {
     //==== 注册进全局存储 ====
     registerRoWidgetOwner(containerEl, {
-      widgetAnchorElement: widgetAnchorEl,
+      popperAnchorElement: popperAnchorEl,
       level: 1,
       layoutChangeObserver: new ElementLayoutChangeObserver(
         outputWrapperEl,
@@ -61,7 +61,7 @@ export const Preview: Component<{
       ].join(" ")}
       ref={containerEl}
     >
-      <div class="relative z-10" ref={widgetAnchorEl} />
+      <div class="relative z-10" ref={popperAnchorEl} />
       <div
         class={[
           "relative",

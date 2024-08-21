@@ -1,8 +1,8 @@
 import { Component } from "solid-js";
 
-import { RoWidgetContainerProperties } from "./mod";
+import { RoWidgetPopperContainerProperties } from "./mod";
 
-const WidgetContainer: Component<RoWidgetContainerProperties> = (
+const PopperContainer: Component<RoWidgetPopperContainerProperties> = (
   props,
 ) => {
   return (
@@ -18,4 +18,4 @@ const WidgetContainer: Component<RoWidgetContainerProperties> = (
   );
 };
 
-export default WidgetContainer;
+export default PopperContainer;
