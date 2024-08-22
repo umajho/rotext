@@ -21,27 +21,27 @@
         "default": "./dist/index/index.js"
       }
     },
-    "./ro-widgets/RefLink": {
+    "./ankor-widgets/RefLink": {
       "import": {
-        "types": "./dist/ro-widgets/RefLink/index.d.ts",
-        "default": "./dist/ro-widgets/RefLink/index.js"
+        "types": "./dist/ankor-widgets/RefLink/index.d.ts",
+        "default": "./dist/ankor-widgets/RefLink/index.js"
       }
     },
-    "./ro-widgets/Dicexp": {
+    "./ankor-widgets/Dicexp": {
       "import": {
-        "types": "./dist/ro-widgets/Dicexp/index.d.ts",
-        "default": "./dist/ro-widgets/Dicexp/index.js"
+        "types": "./dist/ankor-widgets/Dicexp/index.d.ts",
+        "default": "./dist/ankor-widgets/Dicexp/index.js"
       }
     },
     "./internal": "./internal.ts"
   },
   "typesVersions": {
     "*": {
-      "ro-widgets/RefLink": [
-        "./dist/ro-widgets/RefLink/index.d.ts"
+      "ankor-widgets/RefLink": [
+        "./dist/ankor-widgets/RefLink/index.d.ts"
       ],
-      "ro-widgets/Dicexp": [
-        "./dist/ro-widgets/Dicexp/index.d.ts"
+      "ankor-widgets/Dicexp": [
+        "./dist/ankor-widgets/Dicexp/index.d.ts"
       ]
     }
   },

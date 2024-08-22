@@ -39,7 +39,7 @@ export interface DicexpEvaluatorProvider {
   // ) => Promise<EvaluatingWorkerManager>;
 }
 
-export interface AnkorWidgetDicexpProperties {
+export interface Properties {
   code: string;
   evaluation: DicexpEvaluation | null;
 }
@@ -61,7 +61,7 @@ export interface CreateDicexpComponentOptions {
 
 export function createDicexpComponent(
   opts: CreateDicexpComponentOptions,
-): Component<AnkorWidgetDicexpProperties> {
+): Component<Properties> {
   const { Loading, ErrorAlert, StepsRepresentation } = opts;
 
   return (outerProps) => {

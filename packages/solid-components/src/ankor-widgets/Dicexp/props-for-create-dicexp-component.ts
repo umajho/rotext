@@ -5,8 +5,8 @@ import type { ExecutionAppendix, Repr } from "@dicexp/interface";
 import { createRoller, RuntimeLoadingStatus } from "./create-roller";
 import { summarizeValue } from "./value-summary";
 import {
-  AnkorWidgetDicexpProperties,
   CreateDicexpComponentOptions,
+  Properties,
 } from "./create-dicexp-component";
 import { DicexpEvaluation, ErrorKind } from "./evaluation";
 
@@ -31,7 +31,7 @@ export interface ProcessedProperties {
 }
 
 export function processProps(
-  outerProps: AnkorWidgetDicexpProperties,
+  outerProps: Properties,
   opts: CreateDicexpComponentOptions,
 ): ProcessedProperties {
   if (opts.evaluatorProvider && !outerProps.evaluation) {

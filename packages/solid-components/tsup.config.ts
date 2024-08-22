@@ -12,8 +12,14 @@ const preset_options: preset.PresetOptions = {
     // default entry (index)
     ...[
       { entry: "src/index.ts" },
-      { entry: "src/ro-widgets/RefLink/mod.ts", name: "ro-widgets/RefLink" },
-      { entry: "src/ro-widgets/Dicexp/mod.ts", name: "ro-widgets/Dicexp" },
+      {
+        entry: "src/ankor-widgets/RefLink/mod.ts",
+        name: "ankor-widgets/RefLink",
+      },
+      {
+        entry: "src/ankor-widgets/Dicexp/mod.ts",
+        name: "ankor-widgets/Dicexp",
+      },
     ].map(({ entry, name }) => ({
       // entries with '.tsx' extension will have `solid` export condition generated
       entry,
