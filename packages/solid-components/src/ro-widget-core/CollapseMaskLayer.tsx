@@ -7,7 +7,7 @@ import {
   ShadowRootAttacher,
 } from "@rolludejo/web-internal/shadow-root";
 
-import { ComputedColor } from "@rotext/web-utils";
+import { ComputedColor } from "@rolludejo/web-internal/styling";
 
 import styles from "./CollapseMaskLayer.scss?inline";
 
@@ -22,7 +22,7 @@ const CollapseMaskLayer: Component<
 > = (
   props,
 ) => {
-  const [r, g, b] = props.backgroundColor();
+  const { r, g, b } = props.backgroundColor();
   const baseColorRGB = `${r}, ${g}, ${b}`;
   const topColor = `rgba(${baseColorRGB}, 0)`;
   const bottomColor = `rgb(${baseColorRGB})`;

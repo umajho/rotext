@@ -3,7 +3,7 @@ import { customElement } from "solid-element";
 
 import { createStyleProviderFromCSSText } from "@rolludejo/web-internal/shadow-root";
 
-import { ComputedColor } from "@rotext/web-utils";
+import { ComputedColor } from "@rolludejo/web-internal/styling";
 
 import { createStepsRepresentationComponent } from "./steps-representation";
 import {

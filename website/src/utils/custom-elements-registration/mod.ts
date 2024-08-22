@@ -1,9 +1,10 @@
-import { registerCustomElementForStepsRepresentation } from "@dicexp/solid-components";
-
 import {
   getComputedColor,
   getComputedCSSValueOfClass,
-} from "@rotext/web-utils";
+} from "@rolludejo/web-internal/styling";
+
+import { registerCustomElementForStepsRepresentation } from "@dicexp/solid-components";
+
 import {
   ErrorAlert,
   getDefaultDicexpStyleProviders,

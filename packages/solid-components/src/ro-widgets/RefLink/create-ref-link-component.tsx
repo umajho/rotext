@@ -12,12 +12,9 @@ import {
   ShadowRootAttacher,
   StyleProvider,
 } from "@rolludejo/web-internal/shadow-root";
+import { ComputedColor } from "@rolludejo/web-internal/styling";
 
-import {
-  ComputedColor,
-  gray500,
-  mouseDownNoDoubleClickToSelect,
-} from "@rotext/web-utils";
+import { gray500, mouseDownNoDoubleClickToSelect } from "@rotext/web-utils";
 
 import { createRoWidgetComponent } from "../../ro-widget-core/mod";
 

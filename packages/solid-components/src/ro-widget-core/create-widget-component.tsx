@@ -18,14 +18,13 @@ import {
 } from "@rolludejo/web-internal/shadow-root";
 
 import {
-  closestContainer,
   ComputedColor,
   computedColorToCSSValue,
   getSizeInPx,
-} from "@rotext/web-utils";
+} from "@rolludejo/web-internal/styling";
 
 import { getWidgetOwner, WidgetOwner } from "./widget-owners-store";
-import { mixColor } from "./utils";
+import { closestContainer, mixColor } from "./utils";
 import CollapseMaskLayer from "./CollapseMaskLayer";
 import PopperContainer from "./PopperContainer";
 

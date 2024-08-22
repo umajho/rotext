@@ -22,12 +22,12 @@ importers:
       '@dicexp/solid-components':
         specifier: ^0.3.0
         version: 0.3.0(solid-element@1.8.1)(solid-icons@1.1.0)(solid-js@1.8.1)
+      '@rolludejo/web-internal':
+        specifier: ^0.3.0
+        version: 0.3.0(solid-js@1.8.1)
       '@rotext/solid-components':
         specifier: workspace:*
         version: link:../../packages/solid-components
-      '@rotext/web-utils':
-        specifier: workspace:*
-        version: link:../../internal/web-utils
       solid-js:
         specifier: ^1.8.1
         version: 1.8.1
@@ -63,8 +63,8 @@ importers:
   packages/solid-components:
     dependencies:
       '@rolludejo/web-internal':
-        specifier: ^0.2.2
-        version: 0.2.2(solid-js@1.8.18)
+        specifier: ^0.3.0
+        version: 0.3.0(solid-js@1.8.18)
       solid-element:
         specifier: ^1.8.1
         version: 1.8.1(solid-js@1.8.18)
@@ -184,8 +184,8 @@ importers:
         specifier: ^0.3.0
         version: 0.3.0(solid-element@1.8.1)(solid-icons@1.0.11)(solid-js@1.8.18)
       '@rolludejo/web-internal':
-        specifier: ^0.2.2
-        version: 0.2.2(solid-js@1.8.18)
+        specifier: ^0.3.0
+        version: 0.3.0(solid-js@1.8.18)
       '@rotext/solid-components':
         specifier: workspace:*
         version: link:../packages/solid-components
@@ -1534,8 +1534,17 @@ packages:
     requiresBuild: true
     optional: true
 
-  /@rolludejo/web-internal@0.2.2(solid-js@1.8.18):
-    resolution: {integrity: sha512-J6Yd38fUAlVOwq0WLwknDSxM4JkqC+pfcgeMEtlOmNb7rtk29eLKvCuEgXEEif83TDLsfILzemia5Rj7SMQHlA==}
+  /@rolludejo/web-internal@0.3.0(solid-js@1.8.1):
+    resolution: {integrity: sha512-x+7/Wk24QAiIZnFK+Qi8bcOcgZFylp14TF7m+vR0dHp8P3ZLDLfrd4Dx8zeaig9U/6Aah5agrhjRZk9gAVwTEw==}
+    engines: {node: '>=18', pnpm: '>=8.6.0'}
+    peerDependencies:
+      solid-js: ^1.8.18
+    dependencies:
+      solid-js: 1.8.1
+    dev: false
+
+  /@rolludejo/web-internal@0.3.0(solid-js@1.8.18):
+    resolution: {integrity: sha512-x+7/Wk24QAiIZnFK+Qi8bcOcgZFylp14TF7m+vR0dHp8P3ZLDLfrd4Dx8zeaig9U/6Aah5agrhjRZk9gAVwTEw==}
     engines: {node: '>=18', pnpm: '>=8.6.0'}
     peerDependencies:
       solid-js: ^1.8.18

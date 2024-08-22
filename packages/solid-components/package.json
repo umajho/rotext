@@ -66,7 +66,7 @@
     "update-deps": "pnpm up -Li"
   },
   "peerDependencies": {
-    "@rolludejo/web-internal": "^0.2.2",
+    "@rolludejo/web-internal": "^0.3.0",
     "solid-element": "^1.8.1",
     "solid-icons": "^1.0.11",
     "solid-js": "^1.8.18"

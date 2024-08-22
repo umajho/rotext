@@ -8,7 +8,7 @@ import { registerCustomElementForStepsRepresentation } from "@dicexp/solid-compo
 import {
   getComputedColor,
   getComputedCSSValueOfClass,
-} from "@rotext/web-utils";
+} from "@rolludejo/web-internal/styling";
 
 import {
   DicexpEvaluation,
