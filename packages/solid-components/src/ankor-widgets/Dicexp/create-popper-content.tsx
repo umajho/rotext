@@ -1,8 +1,8 @@
 import { Component, createSignal, Match, Show, Switch } from "solid-js";
 
-import { createStyleProviderFromCSSText } from "@rolludejo/web-internal/shadow-root";
+import * as Ankor from "ankor";
 
-import { PopperContentProperties } from "../../ro-widget-core/create-widget-component";
+import { createStyleProviderFromCSSText } from "@rolludejo/web-internal/shadow-root";
 
 import { HorizontalRule, PinButton } from "../support/mod";
 import { ProcessedProperties } from "./props-for-create-dicexp-component";
@@ -24,7 +24,7 @@ export function createPopperContent(opts: {
   Loading: LoadingComponent;
   ErrorAlert: ErrorAlertComponent;
   StepsRepresentation: StepsRepresentationComponent;
-}): Component<PopperContentProperties> {
+}): Component<Ankor.PopperContentProperties> {
   return (props) => {
     const { rolling, resultDisplaying } = opts.processedProperties;
 

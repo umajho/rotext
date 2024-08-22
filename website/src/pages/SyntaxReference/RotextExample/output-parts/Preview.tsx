@@ -10,10 +10,9 @@ import {
 // @ts-ignore
 import { Idiomorph } from "idiomorph/dist/idiomorph.esm.js";
 
-import {
-  ElementLayoutChangeObserver,
-  registerRoWidgetOwner,
-} from "@rotext/solid-components/internal";
+import * as Ankor from "ankor";
+
+import { ElementLayoutChangeObserver } from "@rotext/solid-components/internal";
 
 import {
   PROSE_CLASS,
@@ -35,7 +34,7 @@ export const Preview: Component<{
   const [isOutputEmpty, setIsOutputEmpty] = createSignal(false);
   onMount(() => {
     //==== 注册进全局存储 ====
-    registerRoWidgetOwner(containerEl, {
+    Ankor.registerWidgetOwner(containerEl, {
       popperAnchorElement: popperAnchorEl,
       level: 1,
       layoutChangeObserver: new ElementLayoutChangeObserver(

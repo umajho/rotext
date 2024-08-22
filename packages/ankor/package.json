@@ -1,0 +1,47 @@
+{
+  "name": "ankor",
+  "version": "0.1.0",
+  "license": "MIT",
+  "author": "Umaĵo",
+  "contributors": [],
+  "files": [
+    "src"
+  ],
+  "private": false,
+  "sideEffects": false,
+  "type": "module",
+  "main": "./src/lib.ts",
+  "module": "./src/lib.ts",
+  "types": "./src/lib.ts",
+  "browser": {},
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./src/lib.ts",
+        "default": "./src/lib.ts"
+      }
+    }
+  },
+  "scripts": {
+    "lint": "concurrently pnpm:lint:*",
+    "lint:types": "tsc --noEmit",
+    "update-deps": "pnpm up -Li"
+  },
+  "peerDependencies": {
+    "@rolludejo/web-internal": "^0.3.0",
+    "solid-element": "^1.8.1",
+    "solid-icons": "^1.0.11",
+    "solid-js": "^1.8.18"
+  },
+  "devDependencies": {
+    "typescript": "^5.1.6"
+  },
+  "keywords": [
+    "solid"
+  ],
+  "packageManager": "pnpm@8.10.0",
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=8.6.0"
+  }
+}

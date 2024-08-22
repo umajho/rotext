@@ -1,5 +1,7 @@
 import { Component, createEffect, createSignal, on, Show } from "solid-js";
 
+import * as Ankor from "ankor";
+
 import {
   createStyleProviderFromCSSText,
   ShadowRootAttacher,
@@ -10,8 +12,6 @@ import { ComputedColor } from "@rolludejo/web-internal/styling";
 import type { EvaluatingWorkerManager } from "@dicexp/naive-evaluator-in-worker";
 
 import { gray500, mouseDownNoDoubleClickToSelect } from "@rotext/web-utils";
-
-import { createRoWidgetComponent } from "../../ro-widget-core/mod";
 
 import FaSolidDice from "./icons";
 import { processProps } from "./props-for-create-dicexp-component";
@@ -39,7 +39,7 @@ export interface DicexpEvaluatorProvider {
   // ) => Promise<EvaluatingWorkerManager>;
 }
 
-export interface Properties {
+export interface AnkorWidgetDicexpProperties {
   code: string;
   evaluation: DicexpEvaluation | null;
 }
@@ -61,7 +61,7 @@ export interface CreateDicexpComponentOptions {
 
 export function createDicexpComponent(
   opts: CreateDicexpComponentOptions,
-): Component<Properties> {
+): Component<AnkorWidgetDicexpProperties> {
   const { Loading, ErrorAlert, StepsRepresentation } = opts;
 
   return (outerProps) => {
@@ -81,7 +81,7 @@ export function createDicexpComponent(
       }));
     }
 
-    const component = createRoWidgetComponent({
+    const component = Ankor.createWidgetComponent({
       LabelContent: (props) => {
         return (
           <ShadowRootAttacher

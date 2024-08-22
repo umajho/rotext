@@ -2,19 +2,19 @@ import { Component } from "solid-js";
 
 import { BsPinFill } from "solid-icons/bs";
 
+import * as Ankor from "ankor";
+
 import {
   createStyleProviderFromCSSText,
   ShadowRootAttacher,
 } from "@rolludejo/web-internal/shadow-root";
-
-import { RoWidgetDisplayMode } from "../../ro-widget-core/mod";
 
 import styles from "./PinButton.scss?inline";
 
 const styleProvider = createStyleProviderFromCSSText(styles);
 
 const PinButton: Component<{
-  displayMode: () => RoWidgetDisplayMode;
+  displayMode: () => Ankor.DisplayMode;
   onTouchEnd: () => void;
   onClick: () => void;
 }> = (props) => {

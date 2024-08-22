@@ -9,8 +9,8 @@ import {
   ErrorAlert,
   getDefaultDicexpStyleProviders,
   getDefaultRefLinkStyleProviders,
-  registerCustomElementForRoWidgetDicexp,
-  registerCustomElementForRoWidgetRefLink,
+  registerCustomElementForAnkorWidgetDicexp,
+  registerCustomElementForAnkorWidgetRefLink,
 } from "@rotext/solid-components/internal";
 
 import { styleProvider as styleProviderForTuanProse } from "../../styles/tuan-prose";
@@ -45,7 +45,7 @@ let hasRegistered = false;
 export function registerCustomElementsOnce() {
   if (hasRegistered) return;
 
-  registerCustomElementForRoWidgetRefLink(TAG_NAME_MAP["ref-link"], {
+  registerCustomElementForAnkorWidgetRefLink(TAG_NAME_MAP["ref-link"], {
     styleProviders: getDefaultRefLinkStyleProviders(),
     backgroundColor: BACKGROUND_COLOR,
     widgetOwnerClass: WIDGET_OWNER_CLASS,
@@ -56,7 +56,7 @@ export function registerCustomElementsOnce() {
     }),
   });
   registerCustomElementForStepsRepresentation("steps-representation");
-  registerCustomElementForRoWidgetDicexp(TAG_NAME_MAP["dicexp"], {
+  registerCustomElementForAnkorWidgetDicexp(TAG_NAME_MAP["dicexp"], {
     styleProviders: getDefaultDicexpStyleProviders(),
     backgroundColor: BACKGROUND_COLOR,
     widgetOwnerClass: WIDGET_OWNER_CLASS,

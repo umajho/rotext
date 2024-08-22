@@ -3,6 +3,8 @@ import styles from "./App.module.css";
 
 import { type Component, createSignal, Index, onMount } from "solid-js";
 
+import * as Ankor from "ankor";
+
 import { registerCustomElementForStepsRepresentation } from "@dicexp/solid-components";
 
 import {
@@ -16,9 +18,8 @@ import {
   getDefaultDicexpStyleProviders,
   getDefaultRefLinkStyleProviders,
   MultiObserver,
-  registerCustomElementForRoWidgetDicexp,
-  registerCustomElementForRoWidgetRefLink,
-  registerRoWidgetOwner,
+  registerCustomElementForAnkorWidgetDicexp,
+  registerCustomElementForAnkorWidgetRefLink,
 } from "@rotext/solid-components/internal";
 
 import { EvaluatingWorkerManager } from "@dicexp/naive-evaluator-in-worker";
@@ -31,7 +32,7 @@ const BACKGROUND_COLOR = getComputedColor(
   getComputedCSSValueOfClass("background-color", styles["App"]!),
 )!;
 
-registerCustomElementForRoWidgetRefLink("ro-widget-ref-link", {
+registerCustomElementForAnkorWidgetRefLink("ro-widget-ref-link", {
   styleProviders: getDefaultRefLinkStyleProviders(),
   backgroundColor: BACKGROUND_COLOR,
   widgetOwnerClass: WIDGET_OWNER_CLASS,
@@ -42,7 +43,7 @@ registerCustomElementForRoWidgetRefLink("ro-widget-ref-link", {
   },
 });
 registerCustomElementForStepsRepresentation("steps-representation");
-registerCustomElementForRoWidgetDicexp("ro-widget-dicexp", {
+registerCustomElementForAnkorWidgetDicexp("ro-widget-dicexp", {
   styleProviders: getDefaultDicexpStyleProviders(),
   backgroundColor: BACKGROUND_COLOR,
   widgetOwnerClass: WIDGET_OWNER_CLASS,
@@ -73,7 +74,7 @@ registerCustomElementForRoWidgetDicexp("ro-widget-dicexp", {
   ErrorAlert: (props) => <div>{JSON.stringify(props)}</div>,
   tagNameForStepsRepresentation: "steps-representation",
 });
-registerCustomElementForRoWidgetDicexp("ro-widget-dicexp-no-runtime", {
+registerCustomElementForAnkorWidgetDicexp("ro-widget-dicexp-no-runtime", {
   styleProviders: getDefaultDicexpStyleProviders(),
   backgroundColor: BACKGROUND_COLOR,
   widgetOwnerClass: WIDGET_OWNER_CLASS,
@@ -260,7 +261,7 @@ function registerWidgetOwnerEx(anchorEl: HTMLElement, opts?: {
 }) {
   const ownerEl: HTMLElement = anchorEl.closest("." + WIDGET_OWNER_CLASS)!;
   const observer = new ElementLayoutChangeObserver(ownerEl, { resize: true });
-  registerRoWidgetOwner(ownerEl, {
+  Ankor.registerWidgetOwner(ownerEl, {
     popperAnchorElement: anchorEl,
     level: 1,
     layoutChangeObserver: opts?.extraObservers?.length

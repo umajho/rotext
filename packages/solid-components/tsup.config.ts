@@ -12,7 +12,6 @@ const preset_options: preset.PresetOptions = {
     // default entry (index)
     ...[
       { entry: "src/index.ts" },
-      { entry: "src/ro-widget-core/mod.ts", name: "ro-widget-core" },
       { entry: "src/ro-widgets/RefLink/mod.ts", name: "ro-widgets/RefLink" },
       { entry: "src/ro-widgets/Dicexp/mod.ts", name: "ro-widgets/Dicexp" },
     ].map(({ entry, name }) => ({

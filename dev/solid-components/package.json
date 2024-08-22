@@ -12,6 +12,7 @@
     "@dicexp/solid-components": "^0.3.0",
     "@rolludejo/web-internal": "^0.3.0",
     "@rotext/solid-components": "workspace:*",
+    "ankor": "workspace:*",
     "solid-js": "^1.8.18"
   },
   "devDependencies": {

@@ -7,6 +7,8 @@ import {
   onMount,
 } from "solid-js";
 
+import * as Ankor from "ankor";
+
 import {
   createStyleProviderFromCSSText,
   ShadowRootAttacher,
@@ -15,8 +17,6 @@ import {
 import { ComputedColor } from "@rolludejo/web-internal/styling";
 
 import { gray500, mouseDownNoDoubleClickToSelect } from "@rotext/web-utils";
-
-import { createRoWidgetComponent } from "../../ro-widget-core/mod";
 
 import { HorizontalRule, PinButton } from "../support/mod";
 
@@ -56,7 +56,7 @@ export function createRefLinkComponent(
 
     const address = createMemo(() => parseAddress(outerProps.address));
 
-    const component = createRoWidgetComponent({
+    const component = Ankor.createWidgetComponent({
       LabelContent: (props) => {
         return (
           <ShadowRootAttacher

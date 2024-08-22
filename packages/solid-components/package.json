@@ -21,12 +21,6 @@
         "default": "./dist/index/index.js"
       }
     },
-    "./ro-widget-core": {
-      "import": {
-        "types": "./dist/ro-widget-core/index.d.ts",
-        "default": "./dist/ro-widget-core/index.js"
-      }
-    },
     "./ro-widgets/RefLink": {
       "import": {
         "types": "./dist/ro-widgets/RefLink/index.d.ts",
@@ -43,9 +37,6 @@
   },
   "typesVersions": {
     "*": {
-      "ro-widget-core": [
-        "./dist/ro-widget-core/index.d.ts"
-      ],
       "ro-widgets/RefLink": [
         "./dist/ro-widgets/RefLink/index.d.ts"
       ],
@@ -67,6 +58,7 @@
   },
   "peerDependencies": {
     "@rolludejo/web-internal": "^0.3.0",
+    "ankor": "workspace:*",
     "solid-element": "^1.8.1",
     "solid-icons": "^1.0.11",
     "solid-js": "^1.8.18"

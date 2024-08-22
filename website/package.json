@@ -41,6 +41,7 @@
     "@rotext/web-utils": "workspace:*",
     "@solid-primitives/media": "^2.2.9",
     "@solidjs/router": "^0.13.6",
+    "ankor": "workspace:*",
     "codemirror": "^6.0.1",
     "idiomorph": "^0.3.0",
     "pretty": "^2.0.0",

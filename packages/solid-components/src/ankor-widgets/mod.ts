@@ -2,14 +2,14 @@ export {
   type DicexpEvaluation,
   type DicexpEvaluatorProvider,
   getDefaultStyleProviders as getDefaultDicexpStyleProviders,
-  type Properties as RoWidgetDicexpProperties,
-  registerCustomElement as registerCustomElementForRoWidgetDicexp,
+  type Properties as AnkorWidgetDicexpProperties,
+  registerCustomElement as registerCustomElementForAnkorWidgetDicexp,
 } from "./Dicexp/mod";
 
 export {
   getDefaultStyleProviders as getDefaultRefLinkStyleProviders,
-  type Properties as RoWidgetRefLinkProperties,
+  type Properties as AnkorWidgetRefLinkProperties,
   type RefAddress,
   type RefContentRenderer,
-  registerCustomElement as registerCustomElementForRoWidgetRefLink,
+  registerCustomElement as registerCustomElementForAnkorWidgetRefLink,
 } from "./RefLink/mod";

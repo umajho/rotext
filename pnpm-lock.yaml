@@ -28,6 +28,9 @@ importers:
       '@rotext/solid-components':
         specifier: workspace:*
         version: link:../../packages/solid-components
+      ankor:
+        specifier: workspace:*
+        version: link:../../packages/ankor
       solid-js:
         specifier: ^1.8.18
         version: 1.8.18
@@ -64,11 +67,33 @@ importers:
         specifier: ^3.1.2
         version: 3.1.2
 
+  packages/ankor:
+    dependencies:
+      '@rolludejo/web-internal':
+        specifier: ^0.3.0
+        version: 0.3.0(solid-js@1.8.18)
+      solid-element:
+        specifier: ^1.8.1
+        version: 1.8.1(solid-js@1.8.18)
+      solid-icons:
+        specifier: ^1.0.11
+        version: 1.1.0(solid-js@1.8.18)
+      solid-js:
+        specifier: ^1.8.18
+        version: 1.8.18
+    devDependencies:
+      typescript:
+        specifier: ^5.1.6
+        version: 5.1.6
+
   packages/solid-components:
     dependencies:
       '@rolludejo/web-internal':
         specifier: ^0.3.0
         version: 0.3.0(solid-js@1.8.18)
+      ankor:
+        specifier: workspace:*
+        version: link:../ankor
       solid-element:
         specifier: ^1.8.1
         version: 1.8.1(solid-js@1.8.18)
@@ -205,6 +230,9 @@ importers:
       '@solidjs/router':
         specifier: ^0.13.6
         version: 0.13.6(solid-js@1.8.18)
+      ankor:
+        specifier: workspace:*
+        version: link:../packages/ankor
       codemirror:
         specifier: ^6.0.1
         version: 6.0.1(@lezer/common@1.2.1)

@@ -11,10 +11,9 @@ import {
 // @ts-ignore
 import { Idiomorph } from "idiomorph/dist/idiomorph.esm.js";
 
-import {
-  ErrorAlert,
-  registerRoWidgetOwner,
-} from "@rotext/solid-components/internal";
+import * as Ankor from "ankor";
+
+import { ErrorAlert } from "@rotext/solid-components/internal";
 
 import { debounceEventHandler } from "../../../../utils/mod";
 import {
@@ -116,7 +115,7 @@ const Preview: Component<
       };
 
       // NOTE: 目前 scrollContainerEl 就是 previewer 的元素
-      registerRoWidgetOwner(scrollContainerEl, {
+      Ankor.registerWidgetOwner(scrollContainerEl, {
         popperAnchorElement: popperAnchorEl,
         level: 1,
         layoutChangeObserver,

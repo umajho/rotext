@@ -1,8 +1,8 @@
 import { Component } from "solid-js";
 
-import { RoWidgetPopperContainerProperties } from "./mod";
+import { PopperContainerProperties } from "./create-widget-component";
 
-const PopperContainer: Component<RoWidgetPopperContainerProperties> = (
+const PopperContainer: Component<PopperContainerProperties> = (
   props,
 ) => {
   return (
