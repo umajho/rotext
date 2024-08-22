@@ -293,8 +293,16 @@ async function collectFileInfos(
     const indexableHeadings = headings
       .map((h) => h.child.rawText.trim())
       .filter((h) => !opts.ignoredHeadings.has(h));
-    if (indexableHeadings[0] !== path.parse(filePath).name) {
-      return ["error", `file name not matching with \`h1\` content`];
+    {
+      const fileName = path.parse(filePath).name;
+      const h1Content = indexableHeadings[0];
+
+      if (h1Content !== fileName) {
+        return [
+          "error",
+          `file name ("${fileName}") not matching with \`h1\` content ("${h1Content}")`,
+        ];
+      }
     }
 
     for (const heading of indexableHeadings) {
