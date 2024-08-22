@@ -11,6 +11,9 @@ export default defineConfig({
     // devtools(),
     solidPlugin(),
   ],
+  optimizeDeps: {
+    exclude: ["@rolludejo/web-internal"],
+  },
   server: {
     port: 3000,
   },
