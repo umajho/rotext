@@ -55,6 +55,10 @@ importers:
         version: 2.10.2(solid-js@1.8.18)(vite@5.4.2)
 
   internal/web-utils:
+    dependencies:
+      '@rolludejo/web-internal':
+        specifier: ^0.3.0
+        version: 0.3.0(solid-js@1.8.18)
     devDependencies:
       csstype:
         specifier: ^3.1.2
