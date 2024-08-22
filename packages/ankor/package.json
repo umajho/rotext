@@ -4,6 +4,11 @@
   "license": "MIT",
   "author": "Umaĵo",
   "contributors": [],
+  "homepage": "https://github.com/umajho/rotext/tree/main/packages/ankor#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/umajho/rotext/"
+  },
   "files": [
     "src"
   ],

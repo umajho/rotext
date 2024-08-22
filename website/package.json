@@ -3,6 +3,11 @@
   "name": "@rotext/website",
   "version": "0.0.0",
   "description": "",
+  "homepage": "https://github.com/umajho/rotext/tree/main/website#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/umajho/rotext/"
+  },
   "scripts": {
     "start": "vite",
     "dev": "vite",
