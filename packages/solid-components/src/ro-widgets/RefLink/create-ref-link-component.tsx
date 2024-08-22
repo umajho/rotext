@@ -11,7 +11,7 @@ import {
   createStyleProviderFromCSSText,
   ShadowRootAttacher,
   StyleProvider,
-} from "@rolludejo/web-internal";
+} from "@rolludejo/web-internal/shadow-root";
 
 import {
   ComputedColor,

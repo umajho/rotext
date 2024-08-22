@@ -1,7 +1,7 @@
 import { customElement, getCurrentElement } from "solid-element";
 import { Component, onMount } from "solid-js";
 
-import { adoptStyle } from "@rolludejo/web-internal";
+import { adoptStyle } from "@rolludejo/web-internal/shadow-root";
 
 import { styleProvider as styleProviderForPreflight } from "../../styles/preflight";
 import { styleProvider as styleProviderForTailwind } from "../../styles/tailwind";

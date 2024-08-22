@@ -1,7 +1,7 @@
 import { Component } from "solid-js";
 import { customElement } from "solid-element";
 
-import { createStyleProviderFromCSSText } from "@rolludejo/web-internal";
+import { createStyleProviderFromCSSText } from "@rolludejo/web-internal/shadow-root";
 
 import { ComputedColor } from "@rotext/web-utils";
 

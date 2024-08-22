@@ -1,7 +1,10 @@
 import { Component, createSignal, JSX, Match, Switch } from "solid-js";
 import { render } from "solid-js/web";
 
-import { ShadowRootAttacher, StyleProvider } from "@rolludejo/web-internal";
+import {
+  ShadowRootAttacher,
+  StyleProvider,
+} from "@rolludejo/web-internal/shadow-root";
 
 import {
   RefAddress,

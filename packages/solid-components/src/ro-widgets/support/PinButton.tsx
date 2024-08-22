@@ -5,7 +5,7 @@ import { BsPinFill } from "solid-icons/bs";
 import {
   createStyleProviderFromCSSText,
   ShadowRootAttacher,
-} from "@rolludejo/web-internal";
+} from "@rolludejo/web-internal/shadow-root";
 
 import { RoWidgetDisplayMode } from "../../ro-widget-core/mod";
 

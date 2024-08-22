@@ -5,7 +5,7 @@ import { HiSolidChevronDoubleDown } from "solid-icons/hi";
 import {
   createStyleProviderFromCSSText,
   ShadowRootAttacher,
-} from "@rolludejo/web-internal";
+} from "@rolludejo/web-internal/shadow-root";
 
 import { ComputedColor } from "@rotext/web-utils";
 

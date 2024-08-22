@@ -1,6 +1,6 @@
 import { Component, createSignal, Match, Show, Switch } from "solid-js";
 
-import { createStyleProviderFromCSSText } from "@rolludejo/web-internal";
+import { createStyleProviderFromCSSText } from "@rolludejo/web-internal/shadow-root";
 
 import { PopperContentProperties } from "../../ro-widget-core/create-widget-component";
 
