@@ -136,11 +136,7 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
         while let Some(char) = input.get(cursor.value()) {
             match char {
                 m!('\\') if cursor.value() < input.len() - 1 => {
-                    let tym_a = if cursor.value() > start {
-                        inner.r#yield(InlineEvent::Text(start..cursor.value()))
-                    } else {
-                        TYM_UNIT.into()
-                    };
+                    let tym_a = yield_text_if_not_empty(start, cursor.value(), inner);
 
                     let target_first_byte = unsafe { *input.get_unchecked(cursor.value() + 1) };
                     let target_utf8_length = get_byte_length_by_first_char(target_first_byte);
@@ -153,21 +149,15 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                     return Ok(tym_a.add(tym_b).into());
                 }
                 m!('>') if input.get(cursor.value() + 1) == Some(&m!('>')) => {
-                    let text_content = start..cursor.value();
+                    let (text_start, text_end) = (start, cursor.value());
                     cursor.move_forward(">>".len());
                     let start = cursor.value();
 
                     let ref_link_content =
                         leaf::ref_link::advance_until_potential_content_ends(input, cursor);
                     let tym = if let Some(()) = ref_link_content {
-                        let tym_a = if !text_content.is_empty() {
-                            inner.r#yield(InlineEvent::Text(text_content))
-                        } else {
-                            TYM_UNIT.into()
-                        };
-
+                        let tym_a = yield_text_if_not_empty(text_start, text_end, inner);
                         let tym_b = inner.r#yield(InlineEvent::RefLink(start..cursor.value()));
-
                         tym_a.add(tym_b)
                     } else {
                         continue;
