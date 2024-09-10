@@ -15,6 +15,8 @@ pub struct ParserInner<TStack: Stack<StackEntry>> {
     pub stack: StackWrapper<TStack>,
 
     to_yield: ArrayQueue<MAX_TO_YIELD, InlineEvent>,
+
+    should_skip_next_input_event: bool,
 }
 
 impl<TStack: Stack<StackEntry>> ParserInner<TStack> {
@@ -22,6 +24,7 @@ impl<TStack: Stack<StackEntry>> ParserInner<TStack> {
         Self {
             stack: StackWrapper::new(),
             to_yield: ArrayQueue::new(),
+            should_skip_next_input_event: false,
         }
     }
 
@@ -29,6 +32,16 @@ impl<TStack: Stack<StackEntry>> ParserInner<TStack> {
 
     pub fn pop_to_be_yielded(&mut self) -> Option<InlineEvent> {
         self.to_yield.pop_front()
+    }
+
+    pub fn set_should_skip_next_input_event(&mut self) {
+        self.should_skip_next_input_event = true;
+    }
+
+    pub fn pop_should_skip_next_input_event(&mut self) -> bool {
+        let ret = self.should_skip_next_input_event;
+        self.should_skip_next_input_event = false;
+        ret
     }
 }
 impl<TStack: Stack<StackEntry>> YieldContext for ParserInner<TStack> {

@@ -116,6 +116,8 @@ pub struct WhileInlineSegment<TBlockParser: Iterator<Item = crate::Result<BlockE
 
     leftover: Option<BlockEvent>,
     error: Option<crate::Error>,
+
+    peeked: Option<InlinePhaseParseInputEvent>,
 }
 
 impl<TBlockParser: Iterator<Item = crate::Result<BlockEvent>>> WhileInlineSegment<TBlockParser> {
@@ -124,6 +126,7 @@ impl<TBlockParser: Iterator<Item = crate::Result<BlockEvent>>> WhileInlineSegmen
             block_parser,
             leftover: None,
             error: None,
+            peeked: None,
         }
     }
 
@@ -133,6 +136,10 @@ impl<TBlockParser: Iterator<Item = crate::Result<BlockEvent>>> WhileInlineSegmen
 
     #[inline(always)]
     fn next(&mut self) -> Option<InlinePhaseParseInputEvent> {
+        if let Some(ev) = self.peeked.take() {
+            return Some(ev);
+        }
+
         match self.block_parser.next() {
             Some(Ok(ev)) => {
                 if ev.closes_inline_phase() {
@@ -158,5 +165,22 @@ impl<TBlockParser: Iterator<Item = crate::Result<BlockEvent>>> Iterator
 
     fn next(&mut self) -> Option<Self::Item> {
         self.next()
+    }
+}
+
+pub trait Peekable<T> {
+    fn peek(&mut self) -> Option<&T>;
+}
+
+impl<TBlockParser: Iterator<Item = crate::Result<BlockEvent>>> Peekable<InlinePhaseParseInputEvent>
+    for WhileInlineSegment<TBlockParser>
+{
+    fn peek(&mut self) -> Option<&InlinePhaseParseInputEvent> {
+        if let Some(ref ev) = self.peeked {
+            Some(ev)
+        } else {
+            self.peeked = self.next();
+            self.peeked.as_ref()
+        }
     }
 }
