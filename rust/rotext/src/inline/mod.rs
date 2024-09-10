@@ -132,54 +132,56 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
     ) -> crate::Result<Tym<2>> {
         let end_condition = inner.stack.make_end_condition();
 
-        let start = cursor.value();
+        let text_start = cursor.value();
+        let mut text_end = text_start;
+        let mut to_yield_after_text: Option<InlineEvent> = None;
         while let Some(char) = input.get(cursor.value()) {
             match char {
                 m!('\\') if cursor.value() < input.len() - 1 => {
-                    let tym_a = yield_text_if_not_empty(start, cursor.value(), inner);
+                    text_end = cursor.value();
 
                     let target_first_byte = unsafe { *input.get_unchecked(cursor.value() + 1) };
                     let target_utf8_length = get_byte_length_by_first_char(target_first_byte);
 
-                    let tym_b = inner.r#yield(InlineEvent::Text(
+                    to_yield_after_text = Some(InlineEvent::Text(
                         (cursor.value() + 1)..(cursor.value() + 1 + target_utf8_length),
                     ));
                     cursor.move_forward(1 + target_utf8_length);
 
-                    return Ok(tym_a.add(tym_b).into());
+                    break;
                 }
                 m!('>') if input.get(cursor.value() + 1) == Some(&m!('>')) => {
-                    let (text_start, text_end) = (start, cursor.value());
+                    let maybe_text_end = cursor.value();
                     cursor.move_forward(">>".len());
                     let start = cursor.value();
 
                     let ref_link_content =
                         leaf::ref_link::advance_until_potential_content_ends(input, cursor);
-                    let tym = if let Some(()) = ref_link_content {
-                        let tym_a = yield_text_if_not_empty(text_start, text_end, inner);
-                        let tym_b = inner.r#yield(InlineEvent::RefLink(start..cursor.value()));
-                        tym_a.add(tym_b)
+                    if let Some(()) = ref_link_content {
+                        text_end = maybe_text_end;
+                        to_yield_after_text = Some(InlineEvent::RefLink(start..cursor.value()));
+                        break;
                     } else {
                         continue;
                     };
-                    return Ok(tym.into());
                 }
                 m!('[') => match input.get(cursor.value() + 1) {
                     None => {
                         cursor.move_forward(1);
+                        text_end = cursor.value();
                         break;
                     }
                     Some(m!('=')) => {
-                        let tym_a = yield_text_if_not_empty(start, cursor.value(), inner);
+                        text_end = cursor.value();
 
                         cursor.move_forward("[=".len());
                         let content = leaf::dicexp::advance_until_ends(input, cursor);
-                        let tym_b = inner.r#yield(InlineEvent::Dicexp(content));
+                        to_yield_after_text = Some(InlineEvent::Dicexp(content));
 
-                        return Ok(tym_a.add(tym_b).into());
+                        break;
                     }
                     Some(m!('`')) => {
-                        let tym_a = yield_text_if_not_empty(start, cursor.value(), inner);
+                        text_end = cursor.value();
 
                         let backticks = "`".len()
                             + count_continuous_character(
@@ -196,27 +198,27 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                         let top_leaf = TopLeafCodeSpan { backticks };
                         let ev = top_leaf.make_enter_event();
                         inner.stack.push_top_leaf(top_leaf.into());
-                        let tym_b = inner.r#yield(ev);
+                        to_yield_after_text = Some(ev);
 
-                        return Ok(tym_a.add(tym_b).into());
+                        break;
                     }
                     Some(m!('\'')) => {
-                        let tym_a = yield_text_if_not_empty(start, cursor.value(), inner);
+                        text_end = cursor.value();
 
                         cursor.move_forward("['".len());
                         inner.stack.push_entry(StackEntry::Strong)?;
-                        let tym_b = inner.r#yield(InlineEvent::EnterStrong);
+                        to_yield_after_text = Some(InlineEvent::EnterStrong);
 
-                        return Ok(tym_a.add(tym_b).into());
+                        break;
                     }
                     Some(m!('~')) => {
-                        let tym_a = yield_text_if_not_empty(start, cursor.value(), inner);
+                        text_end = cursor.value();
 
                         cursor.move_forward("[~".len());
                         inner.stack.push_entry(StackEntry::Strikethrough)?;
-                        let tym_b = inner.r#yield(InlineEvent::EnterStrikethrough);
+                        to_yield_after_text = Some(InlineEvent::EnterStrikethrough);
 
-                        return Ok(tym_a.add(tym_b).into());
+                        break;
                     }
                     Some(_) => {
                         cursor.move_forward(1);
@@ -228,13 +230,13 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                         || (end_condition.on_strikethrough_closing && char == m!('~')))
                         && input.get(cursor.value() + 1) == Some(&m!(']'))
                     {
-                        let tym_a = yield_text_if_not_empty(start, cursor.value(), inner);
+                        text_end = cursor.value();
 
                         cursor.move_forward(2);
                         inner.stack.pop_entry();
-                        let tym_b = inner.r#yield(InlineEvent::ExitInline);
+                        to_yield_after_text = Some(InlineEvent::ExitInline);
 
-                        return Ok(tym_a.add(tym_b).into());
+                        break;
                     }
 
                     cursor.move_forward(1)
@@ -242,8 +244,16 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
             }
         }
 
-        let tym = inner.r#yield(InlineEvent::Text(start..cursor.value()));
-        Ok(tym.into())
+        let tym = if let Some(ev) = to_yield_after_text {
+            let tym_a = yield_text_if_not_empty(text_start, text_end, inner);
+            let tym_b = inner.r#yield(ev);
+            tym_a.add(tym_b)
+        } else {
+            let tym = yield_text_if_not_empty(text_start, cursor.value(), inner);
+            tym.into()
+        };
+
+        Ok(tym)
     }
 
     fn exit_until_stack_is_empty_and_then_end(
