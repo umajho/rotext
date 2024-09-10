@@ -117,7 +117,7 @@ pub struct WhileInlineSegment<TBlockParser: Iterator<Item = crate::Result<BlockE
     leftover: Option<BlockEvent>,
     error: Option<crate::Error>,
 
-    peeked: Option<InlinePhaseParseInputEvent>,
+    peeked: Option<Option<InlinePhaseParseInputEvent>>,
 }
 
 impl<TBlockParser: Iterator<Item = crate::Result<BlockEvent>>> WhileInlineSegment<TBlockParser> {
@@ -136,8 +136,8 @@ impl<TBlockParser: Iterator<Item = crate::Result<BlockEvent>>> WhileInlineSegmen
 
     #[inline(always)]
     fn next(&mut self) -> Option<InlinePhaseParseInputEvent> {
-        if let Some(ev) = self.peeked.take() {
-            return Some(ev);
+        if let Some(peeked_ev_option) = self.peeked.take() {
+            return peeked_ev_option;
         }
 
         match self.block_parser.next() {
@@ -176,11 +176,12 @@ impl<TBlockParser: Iterator<Item = crate::Result<BlockEvent>>> Peekable<InlinePh
     for WhileInlineSegment<TBlockParser>
 {
     fn peek(&mut self) -> Option<&InlinePhaseParseInputEvent> {
-        if let Some(ref ev) = self.peeked {
-            Some(ev)
+        if let Some(ref peeked_ev_option) = self.peeked {
+            peeked_ev_option.as_ref()
         } else {
-            self.peeked = self.next();
-            self.peeked.as_ref()
+            let next_ev_option = self.next();
+            self.peeked = Some(next_ev_option);
+            unsafe { self.peeked.as_ref().unwrap_unchecked().as_ref() }
         }
     }
 }
