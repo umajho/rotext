@@ -9,6 +9,7 @@ pub use stack_wrapper::StackEntry;
 
 use std::ops::Range;
 
+use crate::events::NewLine;
 use parser_inner::ParserInner;
 use stack_wrapper::{TopLeaf, TopLeafCodeSpan};
 use types::{Cursor, YieldContext};
@@ -143,45 +144,28 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
         let end_condition = inner.stack.make_end_condition();
 
         let text_start = cursor.value();
-        let mut text_end: Option<usize> = None;
-        let mut to_yield_after_text: Option<InlineEvent> = None;
-        while let Some(char) = input.get(cursor.value()) {
+        let (text_end, to_yield_after_text): (usize, Option<InlineEvent>) = loop {
+            let Some(char) = input.get(cursor.value()) else {
+                break (cursor.value(), None);
+            };
+
             match char {
-                m!('\\') => {
-                    if cursor.value() == input.len() - 1 {
-                        match event_stream.peek() {
-                            Some(InlinePhaseParseInputEvent::NewLine(new_line)) => {
-                                text_end = Some(cursor.value());
-                                cursor.move_forward(1);
-                                inner.set_should_skip_next_input_event();
-                                to_yield_after_text = Some(InlineEvent::NewLine(new_line.clone()));
-                                break;
-                            }
-                            _ => {
-                                cursor.move_forward(1);
-                                continue;
-                            }
-                        }
-                    } else {
-                        text_end = Some(cursor.value());
-
-                        let target_first_byte = unsafe { *input.get_unchecked(cursor.value() + 1) };
-                        let target_utf8_length = get_byte_length_by_first_char(target_first_byte);
-
-                        to_yield_after_text = Some(InlineEvent::Text(
-                            (cursor.value() + 1)..(cursor.value() + 1 + target_utf8_length),
-                        ));
-                        cursor.move_forward(1 + target_utf8_length);
-
-                        break;
-                    }
+                m!('\\') if cursor.value() < input.len() - 1 => {
+                    break special::process_backslash_escaping(input, cursor);
                 }
+                m!('\\') => match event_stream.peek() {
+                    Some(InlinePhaseParseInputEvent::NewLine(new_line)) => {
+                        let new_line = new_line.clone();
+                        break special::process_hard_break_mark(input, cursor, inner, new_line);
+                    }
+                    _ => {
+                        cursor.move_forward(1);
+                        continue;
+                    }
+                },
                 m!('_') if cursor.value() == input.len() - 1 => match event_stream.peek() {
                     Some(InlinePhaseParseInputEvent::NewLine(_)) => {
-                        text_end = Some(cursor.value());
-                        cursor.move_forward(1);
-                        inner.set_should_skip_next_input_event();
-                        break;
+                        break special::process_lines_joint_mark(input, cursor, inner);
                     }
                     _ => {
                         cursor.move_forward(1);
@@ -189,74 +173,41 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                     }
                 },
                 m!('>') if input.get(cursor.value() + 1) == Some(&m!('>')) => {
-                    let maybe_text_end = cursor.value();
-                    cursor.move_forward(">>".len());
-                    let start = cursor.value();
-
-                    let ref_link_content =
-                        leaf::ref_link::advance_until_potential_content_ends(input, cursor);
-                    if let Some(()) = ref_link_content {
-                        text_end = Some(maybe_text_end);
-                        to_yield_after_text = Some(InlineEvent::RefLink(start..cursor.value()));
-                        break;
-                    } else {
-                        continue;
-                    };
+                    match leaf::ref_link::process_potential(input, cursor) {
+                        Some(result) => {
+                            break result;
+                        }
+                        None => continue,
+                    }
                 }
                 m!('[') => match input.get(cursor.value() + 1) {
                     None => {
                         cursor.move_forward(1);
-                        text_end = Some(cursor.value());
-                        break;
+                        break (cursor.value(), None);
                     }
                     Some(m!('=')) => {
-                        text_end = Some(cursor.value());
-
-                        cursor.move_forward("[=".len());
-                        let content = leaf::dicexp::advance_until_ends(input, cursor);
-                        to_yield_after_text = Some(InlineEvent::Dicexp(content));
-
-                        break;
+                        break leaf::dicexp::process(input, cursor);
                     }
                     Some(m!('`')) => {
-                        text_end = Some(cursor.value());
-
-                        let backticks = "`".len()
-                            + count_continuous_character(
-                                input,
-                                m!('`'),
-                                cursor.value() + "[`".len(),
-                            );
-                        cursor.move_forward("[".len() + backticks);
-
-                        if input.get(cursor.value()) == Some(&b' ') {
-                            cursor.move_forward(1);
-                        }
-
-                        let top_leaf = TopLeafCodeSpan { backticks };
-                        let ev = top_leaf.make_enter_event();
-                        inner.stack.push_top_leaf(top_leaf.into());
-                        to_yield_after_text = Some(ev);
-
-                        break;
+                        break leaf::code_span::process(input, cursor, inner);
                     }
                     Some(m!('\'')) => {
-                        text_end = Some(cursor.value());
+                        let text_end = cursor.value();
 
                         cursor.move_forward("['".len());
                         inner.stack.push_entry(StackEntry::Strong)?;
-                        to_yield_after_text = Some(InlineEvent::EnterStrong);
+                        let to_yield_after_text = InlineEvent::EnterStrong;
 
-                        break;
+                        break (text_end, Some(to_yield_after_text));
                     }
                     Some(m!('~')) => {
-                        text_end = Some(cursor.value());
+                        let text_end = cursor.value();
 
                         cursor.move_forward("[~".len());
                         inner.stack.push_entry(StackEntry::Strikethrough)?;
-                        to_yield_after_text = Some(InlineEvent::EnterStrikethrough);
+                        let to_yield_after_text = InlineEvent::EnterStrikethrough;
 
-                        break;
+                        break (text_end, Some(to_yield_after_text));
                     }
                     Some(_) => {
                         cursor.move_forward(1);
@@ -268,25 +219,21 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                         || (end_condition.on_strikethrough_closing && char == m!('~')))
                         && input.get(cursor.value() + 1) == Some(&m!(']'))
                     {
-                        text_end = Some(cursor.value());
+                        let text_end = cursor.value();
 
                         cursor.move_forward(2);
                         inner.stack.pop_entry();
-                        to_yield_after_text = Some(InlineEvent::ExitInline);
+                        let to_yield_after_text = InlineEvent::ExitInline;
 
-                        break;
+                        break (text_end, Some(to_yield_after_text));
                     }
 
-                    cursor.move_forward(1)
+                    cursor.move_forward(1);
                 }
             }
-        }
-
-        let tym_a = if let Some(text_end) = text_end {
-            yield_text_if_not_empty(text_start, text_end, inner)
-        } else {
-            yield_text_if_not_empty(text_start, cursor.value(), inner)
         };
+
+        let tym_a = yield_text_if_not_empty(text_start, text_end, inner);
 
         let tym_b = if let Some(ev) = to_yield_after_text {
             inner.r#yield(ev)
@@ -333,11 +280,75 @@ fn yield_text_if_not_empty<TInlineStack: Stack<StackEntry>>(
     }
 }
 
+mod special {
+    use super::*;
+
+    pub fn process_backslash_escaping(
+        input: &[u8],
+        cursor: &mut Cursor,
+    ) -> (usize, Option<InlineEvent>) {
+        let text_end = cursor.value();
+
+        let target_first_byte = unsafe { *input.get_unchecked(cursor.value() + 1) };
+        let target_utf8_length = get_byte_length_by_first_char(target_first_byte);
+
+        let to_yield_after_text =
+            InlineEvent::Text((cursor.value() + 1)..(cursor.value() + 1 + target_utf8_length));
+        cursor.move_forward(1 + target_utf8_length);
+
+        (text_end, Some(to_yield_after_text))
+    }
+
+    pub fn process_hard_break_mark<TInlineStack: Stack<StackEntry>>(
+        _input: &[u8],
+        cursor: &mut Cursor,
+        inner: &mut ParserInner<TInlineStack>,
+        new_line: NewLine,
+    ) -> (usize, Option<InlineEvent>) {
+        let text_end = cursor.value();
+        cursor.move_forward(1);
+        inner.set_should_skip_next_input_event();
+        let to_yield_after_text = InlineEvent::NewLine(new_line);
+
+        (text_end, Some(to_yield_after_text))
+    }
+
+    pub fn process_lines_joint_mark<TInlineStack: Stack<StackEntry>>(
+        _input: &[u8],
+        cursor: &mut Cursor,
+        inner: &mut ParserInner<TInlineStack>,
+    ) -> (usize, Option<InlineEvent>) {
+        let text_end = cursor.value();
+        cursor.move_forward(1);
+        inner.set_should_skip_next_input_event();
+
+        (text_end, None)
+    }
+}
+
 mod leaf {
     use super::*;
 
     pub mod ref_link {
         use super::*;
+
+        pub fn process_potential(
+            input: &[u8],
+            cursor: &mut Cursor,
+        ) -> Option<(usize, Option<InlineEvent>)> {
+            let maybe_text_end = cursor.value();
+            cursor.move_forward(">>".len());
+            let start = cursor.value();
+
+            let ref_link_content =
+                leaf::ref_link::advance_until_potential_content_ends(input, cursor);
+            if let Some(()) = ref_link_content {
+                let to_yield_after_text = InlineEvent::RefLink(start..cursor.value());
+                Some((maybe_text_end, Some(to_yield_after_text)))
+            } else {
+                None
+            }
+        }
 
         /// 推进游标并尝试解析 ref link 的内容。在成功解析为 ref link 内容时返回 `Some(())`，此时
         /// `ctx.cursor()` 是解析内容的末尾。
@@ -413,6 +424,17 @@ mod leaf {
     pub mod dicexp {
         use super::*;
 
+        /// TODO: 支持多行。到时候名字会改成 “process_opening”。
+        pub fn process(input: &[u8], cursor: &mut Cursor) -> (usize, Option<InlineEvent>) {
+            let text_end = cursor.value();
+
+            cursor.move_forward("[=".len());
+            let content = leaf::dicexp::advance_until_ends(input, cursor);
+            let to_yield_after_text = InlineEvent::Dicexp(content);
+
+            (text_end, Some(to_yield_after_text))
+        }
+
         /// 推进游标，直到到了数量匹配的 “]” 之前，或者 `input` 到头时。如果是前者，结束时
         /// `ctx.cursor()` 对应于 “]” 的索引，也即还没消耗掉那个 “]”。
         pub fn advance_until_ends(input: &[u8], cursor: &mut Cursor) -> Range<usize> {
@@ -442,6 +464,28 @@ mod leaf {
 
     pub mod code_span {
         use super::*;
+
+        pub fn process<TInlineStack: Stack<StackEntry>>(
+            input: &[u8],
+            cursor: &mut Cursor,
+            inner: &mut ParserInner<TInlineStack>,
+        ) -> (usize, Option<InlineEvent>) {
+            let text_end = cursor.value();
+
+            let backticks =
+                "`".len() + count_continuous_character(input, m!('`'), cursor.value() + "[`".len());
+            cursor.move_forward("[".len() + backticks);
+
+            if input.get(cursor.value()) == Some(&b' ') {
+                cursor.move_forward(1);
+            }
+
+            let top_leaf = TopLeafCodeSpan { backticks };
+            let ev = top_leaf.make_enter_event();
+            inner.stack.push_top_leaf(top_leaf.into());
+
+            (text_end, Some(ev))
+        }
 
         pub fn parse_content_and_process<TInlineStack: Stack<StackEntry>>(
             input: &[u8],
