@@ -175,7 +175,7 @@ fn assert_auto_variant_ok<TContext: Context>(
         AutoVariant::WithTrailingLineFeed => format!("{}\n", input),
     };
 
-    assert_parse_ok_and_output_maches(ctx.external, &input, expected)
+    assert_parse_ok_and_output_matches(ctx.external, &input, expected)
 }
 
 #[derive(Clone)]
@@ -202,15 +202,15 @@ impl AutoVariant {
     }
 }
 
-pub fn assert_parse_ok_and_output_maches<TContext: Context>(
+pub fn assert_parse_ok_and_output_matches<TContext: Context>(
     ctx: &TContext,
     input: &str,
     expected: &Vec<EventMatcher>,
 ) {
-    assert_parse_ok_and_output_maches_with_stack(ctx, input, expected);
+    assert_parse_ok_and_output_matches_with_stack(ctx, input, expected);
 }
 
-pub fn assert_parse_ok_and_output_maches_with_stack<TContext: Context>(
+pub fn assert_parse_ok_and_output_matches_with_stack<TContext: Context>(
     _ctx: &TContext,
     input: &str,
     expected: &Vec<EventMatcher>,

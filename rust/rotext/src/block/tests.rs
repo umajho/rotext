@@ -5,7 +5,7 @@ use crate::{
     test_suites::{
         self,
         block::support::{
-            assert_parse_error_with_stack, assert_parse_ok_and_output_maches_with_stack,
+            assert_parse_error_with_stack, assert_parse_ok_and_output_matches_with_stack,
         },
     },
     utils::stack::{ArrayStack, Stack, VecStack},
@@ -42,8 +42,8 @@ fn it_works() {
 fn it_works_with_array_stack() {
     let ctx: Context<ArrayStack<_, 2>> = Context::new();
 
-    assert_parse_ok_and_output_maches_with_stack(&ctx, "", &vec![]);
-    assert_parse_ok_and_output_maches_with_stack(
+    assert_parse_ok_and_output_matches_with_stack(&ctx, "", &vec![]);
+    assert_parse_ok_and_output_matches_with_stack(
         &ctx,
         ">",
         &vec![
@@ -51,7 +51,7 @@ fn it_works_with_array_stack() {
             (EventType::ExitBlock, None),
         ],
     );
-    assert_parse_ok_and_output_maches_with_stack(
+    assert_parse_ok_and_output_matches_with_stack(
         &ctx,
         "> >",
         &vec![
@@ -61,7 +61,7 @@ fn it_works_with_array_stack() {
             (EventType::ExitBlock, None),
         ],
     );
-    assert_parse_ok_and_output_maches_with_stack(
+    assert_parse_ok_and_output_matches_with_stack(
         &ctx,
         "> > foo",
         &vec![

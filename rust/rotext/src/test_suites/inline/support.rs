@@ -119,8 +119,10 @@ impl Case {
 
         let panic = {
             let input = input.clone();
-            catch_unwind(|| assert_parse_ok_and_output_maches(ctx.external, &input, &self.expected))
-                .err()
+            catch_unwind(|| {
+                assert_parse_ok_and_output_matches(ctx.external, &input, &self.expected)
+            })
+            .err()
         }?;
 
         Some(self.make_failed_case(
@@ -153,15 +155,15 @@ impl Case {
 
 type EventMatcher = (EventType, Option<&'static str>);
 
-pub fn assert_parse_ok_and_output_maches<TContext: Context>(
+pub fn assert_parse_ok_and_output_matches<TContext: Context>(
     ctx: &TContext,
     input: &str,
     expected: &Vec<EventMatcher>,
 ) {
-    assert_parse_ok_and_output_maches_with_stack(ctx, input, expected);
+    assert_parse_ok_and_output_matches_with_stack(ctx, input, expected);
 }
 
-pub fn assert_parse_ok_and_output_maches_with_stack<TContext: Context>(
+pub fn assert_parse_ok_and_output_matches_with_stack<TContext: Context>(
     _ctx: &TContext,
     input: &str,
     expected: &Vec<EventMatcher>,
