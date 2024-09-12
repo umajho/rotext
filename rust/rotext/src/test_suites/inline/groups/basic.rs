@@ -145,6 +145,7 @@ pub fn groups_basic() -> Vec<GroupedCases> {
             cases: vec![
                 case!(vec!["&#50;"], vec![(EventType::Raw, Some("&#50;")),]),
                 case!(vec!["&#x32;"], vec![(EventType::Raw, Some("&#x32;")),]),
+                case!(vec!["&#X32;"], vec![(EventType::Raw, Some("&#X32;")),]),
                 case!(
                     vec!["foo&#50;bar"],
                     vec![
@@ -162,17 +163,19 @@ pub fn groups_basic() -> Vec<GroupedCases> {
                     ]
                 ),
                 case!(
-                    vec!["&#9999999999999999;"],
-                    vec![(EventType::Raw, Some("&#9999999999999999;")),]
+                    vec!["&#01234567890123456789;"],
+                    vec![(EventType::Raw, Some("&#01234567890123456789;")),]
                 ),
                 case!(
-                    vec!["&#xffffffffffffffff;"],
-                    vec![(EventType::Raw, Some("&#xffffffffffffffff;")),]
+                    vec!["&#x0123456789ABCDEF0123456789abcdef;"],
+                    vec![(EventType::Raw, Some("&#x0123456789ABCDEF0123456789abcdef;")),]
                 ),
                 case!(vec!["&#50"], vec![(EventType::Text, Some("&#50")),]),
                 case!(vec!["&#x32"], vec![(EventType::Text, Some("&#x32")),]),
                 case!(vec!["&#;"], vec![(EventType::Text, Some("&#;")),]),
                 case!(vec!["&#x;"], vec![(EventType::Text, Some("&#x;")),]),
+                case!(vec!["&#5?;"], vec![(EventType::Text, Some("&#5?;")),]),
+                case!(vec!["&#x3?;"], vec![(EventType::Text, Some("&#x3?;")),]),
             ],
         },
     ]
