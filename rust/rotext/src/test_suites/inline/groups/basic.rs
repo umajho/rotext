@@ -47,6 +47,18 @@ pub fn groups_basic() -> Vec<GroupedCases> {
                         (EventType::VerbatimEscaping, Some("bar")),
                     ]
                 ),
+                case!(
+                    vec![r#"<`\x`>"#],
+                    vec![(EventType::VerbatimEscaping, Some(r#"\x"#)),]
+                ),
+                case!(
+                    vec![r#"<`&#50;`>"#],
+                    vec![(EventType::VerbatimEscaping, Some(r#"&#50;"#)),]
+                ),
+                case!(
+                    vec![r#"<`&#x32;`>"#],
+                    vec![(EventType::VerbatimEscaping, Some(r#"&#x32;"#)),]
+                ),
             ],
         },
         GroupedCases {
@@ -126,6 +138,41 @@ pub fn groups_basic() -> Vec<GroupedCases> {
                     bar"#}],
                     vec![(EventType::Text, Some("bar")),]
                 ),
+            ],
+        },
+        GroupedCases {
+            group: "基础>字符值引用",
+            cases: vec![
+                case!(vec!["&#50;"], vec![(EventType::Raw, Some("&#50;")),]),
+                case!(vec!["&#x32;"], vec![(EventType::Raw, Some("&#x32;")),]),
+                case!(
+                    vec!["foo&#50;bar"],
+                    vec![
+                        (EventType::Text, Some("foo")),
+                        (EventType::Raw, Some("&#50;")),
+                        (EventType::Text, Some("bar")),
+                    ]
+                ),
+                case!(
+                    vec!["foo&#x32;bar"],
+                    vec![
+                        (EventType::Text, Some("foo")),
+                        (EventType::Raw, Some("&#x32;")),
+                        (EventType::Text, Some("bar")),
+                    ]
+                ),
+                case!(
+                    vec!["&#9999999999999999;"],
+                    vec![(EventType::Raw, Some("&#9999999999999999;")),]
+                ),
+                case!(
+                    vec!["&#xffffffffffffffff;"],
+                    vec![(EventType::Raw, Some("&#xffffffffffffffff;")),]
+                ),
+                case!(vec!["&#50"], vec![(EventType::Text, Some("&#50")),]),
+                case!(vec!["&#x32"], vec![(EventType::Text, Some("&#x32")),]),
+                case!(vec!["&#;"], vec![(EventType::Text, Some("&#;")),]),
+                case!(vec!["&#x;"], vec![(EventType::Text, Some("&#x;")),]),
             ],
         },
     ]

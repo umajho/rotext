@@ -173,6 +173,7 @@ impl<'a> HtmlRenderer<'a> {
             }
 
             match ev {
+                BlendEvent::Raw(content) => self.write_raw_html(&self.input[content]),
                 BlendEvent::NewLine(_) => self.result.extend(b"<br>"),
                 BlendEvent::Text(content)
                 | BlendEvent::VerbatimEscaping(VerbatimEscaping { content, .. }) => {
@@ -335,6 +336,10 @@ impl<'a> HtmlRenderer<'a> {
         self.result.push(b'>');
 
         stack.push(StackEntry::Normal(tag_name));
+    }
+
+    fn write_raw_html(&mut self, input: &[u8]) {
+        self.result.extend(input);
     }
 
     fn write_escaped_html_text(&mut self, input: &[u8]) {

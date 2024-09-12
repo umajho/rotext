@@ -7,14 +7,13 @@ use crate::types::{BlockId, LineNumber};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum EventType {
-    // 在全局阶段产出，由块级阶段和行内阶段逐渐消耗。
+    // 在块级阶段产出，由行内阶段消耗。
     Unparsed = 255,
 
-    // 在全局阶段产出，由 CR 与 LF 而来。
+    // 在块级阶段与行内阶段产出。
+    Raw = 254, // TODO: 也许不应该有，而是为 NCR 专门创建一个（或两个）事件？
     NewLine = 201,
     VerbatimEscaping = 202,
-
-    // 在块级阶段与行内阶段产出。
     Text = 203,
 
     // 在块级阶段产出。
@@ -65,6 +64,10 @@ pub enum Event {
     /// 留给下个阶段解析。
     #[subenum(BlockEvent, InlinePhaseParseInputEvent)]
     Unparsed(Range<usize>) = EventType::Unparsed as u8,
+
+    /// 原封不动地渲染至输出。
+    #[subenum(InlineEvent, BlendEvent)]
+    Raw(Range<usize>) = EventType::Raw as u8,
 
     /// 逐字转义。
     ///
@@ -220,6 +223,7 @@ impl Event {
     pub fn content<'a>(&self, input: &'a [u8]) -> Option<&'a str> {
         let result = match self {
             Event::Unparsed(content)
+            | Event::Raw(content)
             | Event::VerbatimEscaping(VerbatimEscaping { content, .. })
             | Event::Text(content)
             | Event::RefLink(content)

@@ -172,6 +172,14 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                         continue;
                     }
                 },
+                m!('&') if input.get(cursor.value() + 1) == Some(&m!('#')) => {
+                    match special::process_potential_numeric_character_reference(input, cursor) {
+                        Some(result) => {
+                            break result;
+                        }
+                        None => continue,
+                    }
+                }
                 m!('>') if input.get(cursor.value() + 1) == Some(&m!('>')) => {
                     match leaf::ref_link::process_potential(input, cursor) {
                         Some(result) => {
@@ -323,6 +331,46 @@ mod special {
         inner.set_should_skip_next_input_event();
 
         (text_end, None)
+    }
+
+    pub fn process_potential_numeric_character_reference(
+        input: &[u8],
+        cursor: &mut Cursor,
+    ) -> Option<(usize, Option<InlineEvent>)> {
+        let start = cursor.value();
+        cursor.move_forward(2);
+
+        let is_hex = match input.get(cursor.value()) {
+            Some(b'x' | b'X') => {
+                cursor.move_forward(1);
+
+                let next = input.get(cursor.value())?;
+                if !next.is_ascii_hexdigit() {
+                    return None;
+                }
+                cursor.move_forward(1);
+
+                true
+            }
+            Some(x) if x.is_ascii_digit() => {
+                cursor.move_forward(1);
+                false
+            }
+            _ => return None,
+        };
+
+        while let Some(char) = input.get(cursor.value()) {
+            if *char == m!(';') {
+                cursor.move_forward(1);
+                let to_yield_after_text = InlineEvent::Raw(start..cursor.value());
+                return Some((start, Some(to_yield_after_text)));
+            } else if (is_hex && !char.is_ascii_hexdigit()) || (!is_hex && !char.is_ascii_digit()) {
+                break;
+            }
+
+            cursor.move_forward(1);
+        }
+        None
     }
 }
 
