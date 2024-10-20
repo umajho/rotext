@@ -11,13 +11,13 @@
 ## 示例
 
 ```example
-{{#Div: 内容。}}
+{{#Div||内容。}}
 ···
 <div><p>内容。</p></div>
 ```
 
 ```example
-{! .foo}{{#Div: 内容。}}
+{! .foo}{{#Div||内容。}}
 ···
 <div class="foo"><p>内容。</p></div>
 ```

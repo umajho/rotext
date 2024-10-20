@@ -11,13 +11,13 @@
 ## 示例
 
 ```example
-[{#span: 内容}]。
+[{#span|内容}]。
 ···
 <p><span>内容</span>。</p>
 ```
 
 ```example
-[! .foo][{#span: 内容}]。
+[! .foo][{#span|内容}]。
 ···
 <p><span class="foo">内容</span>。</p>
 ```
