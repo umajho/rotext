@@ -9,8 +9,6 @@ import {
   Switch,
 } from "solid-js";
 
-import pretty from "pretty";
-
 import { Loading } from "../../../components/ui/mod";
 import { useRotextProcessorsStore } from "../../../contexts/rotext-processors-store";
 import { TAG_NAME_MAP } from "../../../utils/custom-elements-registration/mod";
@@ -18,6 +16,7 @@ import { TAG_NAME_MAP } from "../../../utils/custom-elements-registration/mod";
 import { EditorStore } from "../editor-store";
 
 import { PreviewPartStore } from "./store";
+import { formatHTML } from "../../../utils/html-formatting";
 
 const Preview = lazy(() => import("./Preview/mod"));
 
@@ -104,9 +103,7 @@ const PreviewWrapper: Component<{
                     */
                   }
                   <pre class="overflow-scroll whitespace-pre-wrap">
-              <code>
-                {pretty(processResult().html!)}
-              </code>
+                    <code>{formatHTML(processResult().html!)}</code>
                   </pre>
                 </Match>
                 <Match when={props.store.currentTab[0] === "extra"}>

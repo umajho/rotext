@@ -1,9 +1,8 @@
 import { createEffect, createMemo, createSignal, on } from "solid-js";
 
-import pretty from "pretty";
-
 import { useRotextProcessorsStore } from "../../../contexts/rotext-processors-store";
 import { TAG_NAME_MAP } from "../../../utils/custom-elements-registration/mod";
+import { formatHTML } from "../../../utils/html-formatting";
 
 export type CurrentOutput =
   | [type: "for-unmodified", html: string]
@@ -76,7 +75,7 @@ export function createRotextExampleStore(opts: {
             if (result.error) {
               throw new Error("TODO!!");
             }
-            setActualOutputForOriginalInput(pretty(result.html!));
+            setActualOutputForOriginalInput(formatHTML(result.html!));
           }
         }
 
@@ -93,7 +92,7 @@ export function createRotextExampleStore(opts: {
           if (result.error) {
             throw new Error("TODO!!");
           }
-          setCurrentOutput(["for-modified", pretty(result.html!)]);
+          setCurrentOutput(["for-modified", formatHTML(result.html!)]);
         }
       },
       { defer: true },
