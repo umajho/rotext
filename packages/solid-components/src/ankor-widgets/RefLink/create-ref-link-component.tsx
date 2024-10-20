@@ -16,7 +16,7 @@ import {
 } from "@rolludejo/web-internal/shadow-root";
 import { ComputedColor } from "@rolludejo/web-internal/styling";
 
-import { gray500, mouseDownNoDoubleClickToSelect } from "@rotext/web-utils";
+import { gray500, mouseDownNoDoubleClickToSelect } from "../../utils/mod";
 
 import { HorizontalRule, PinButton } from "../support/mod";
 

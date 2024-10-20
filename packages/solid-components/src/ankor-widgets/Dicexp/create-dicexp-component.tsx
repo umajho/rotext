@@ -11,7 +11,7 @@ import { ComputedColor } from "@rolludejo/web-internal/styling";
 
 import type { EvaluatingWorkerManager } from "@dicexp/naive-evaluator-in-worker";
 
-import { gray500, mouseDownNoDoubleClickToSelect } from "@rotext/web-utils";
+import { gray500, mouseDownNoDoubleClickToSelect } from "../../utils/mod";
 
 import FaSolidDice from "./icons";
 import { processProps } from "./props-for-create-dicexp-component";

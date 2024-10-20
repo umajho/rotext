@@ -42,7 +42,6 @@
     "@rolludejo/web-internal": "^0.3.0",
     "@rotext/solid-components": "workspace:*",
     "@rotext/wasm-bindings-adapter": "workspace:*",
-    "@rotext/web-utils": "workspace:*",
     "@solid-primitives/media": "^2.2.9",
     "@solidjs/router": "^0.13.6",
     "ankor": "workspace:*",

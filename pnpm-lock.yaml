@@ -57,16 +57,6 @@ importers:
         specifier: ^2.10.2
         version: 2.10.2(solid-js@1.8.18)(vite@5.4.2(@types/node@20.3.2)(sass@1.63.6))
 
-  internal/web-utils:
-    dependencies:
-      '@rolludejo/web-internal':
-        specifier: ^0.3.0
-        version: 0.3.0(solid-js@1.8.18)
-    devDependencies:
-      csstype:
-        specifier: ^3.1.2
-        version: 3.1.2
-
   packages/ankor:
     dependencies:
       '@rolludejo/web-internal':
@@ -113,9 +103,6 @@ importers:
       '@dicexp/naive-evaluator-in-worker':
         specifier: ^0.5.0
         version: 0.5.0
-      '@rotext/web-utils':
-        specifier: workspace:*
-        version: link:../../internal/web-utils
       autoprefixer:
         specifier: ^10.4.14
         version: 10.4.14(postcss@8.4.24)
@@ -221,9 +208,6 @@ importers:
       '@rotext/wasm-bindings-adapter':
         specifier: workspace:*
         version: link:../packages/wasm-bindings-adapter
-      '@rotext/web-utils':
-        specifier: workspace:*
-        version: link:../internal/web-utils
       '@solid-primitives/media':
         specifier: ^2.2.9
         version: 2.2.9(solid-js@1.8.18)

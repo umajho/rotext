@@ -23,13 +23,12 @@ import { createBreakpoints } from "@solid-primitives/media";
 
 import { HiSolidArrowTopRightOnSquare, HiSolidBars3 } from "solid-icons/hi";
 
-import { SUPPORTS_DVH } from "@rotext/web-utils";
-
 import { Button, Dropdown, DropdownItem, Loading } from "./ui/mod";
 
 import { Navigation } from "../types/navigation";
 import { syntaxReferenceIndex } from "../data-sources/syntax-reference";
 import { getSyntaxReferencePathOfHeading } from "../utils/syntax-reference";
+import { SUPPORTS_DVH } from "../utils/mod";
 import { useRotextProcessorsStore } from "../contexts/rotext-processors-store";
 import { RotextProcessorName } from "../hooks/rotext-processors-store";
 

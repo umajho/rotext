@@ -1,8 +1,7 @@
 import { Component } from "solid-js";
 
-import { SUPPORTS_DVH } from "@rotext/web-utils";
-
 import { Card } from "../../components/ui/mod";
+import { SUPPORTS_DVH } from "../../utils/mod";
 
 import { createEditorStore } from "./editor-store";
 
