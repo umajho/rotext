@@ -8,7 +8,6 @@ import {
 import { h } from "snabbdom";
 import toHTML from "snabbdom-to-html";
 import { HtmlValidate } from "html-validate";
-import { formatHTML } from "../../src/utils/html-formatting";
 
 const extInternalLink: TokenizerAndRendererExtension = {
   name: "internalLink",
@@ -77,7 +76,7 @@ const renderer: RendererObject = {
       if ("expected" in content) {
         const contentExpected = content["expected"] as string;
         assertHTMLValid(contentExpected);
-        content["expected"] = formatHTML(contentExpected);
+        content["expected"] = contentExpected;
       }
     }
 

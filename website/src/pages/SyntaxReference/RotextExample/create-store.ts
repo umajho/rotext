@@ -8,6 +8,8 @@ export type CurrentOutput =
   | [type: "for-unmodified", html: string]
   | [type: "for-modified", html: string];
 
+const formattedExpectedOutputCache: Record<string, string> = {};
+
 export function createRotextExampleStore(opts: {
   originalInput: string;
   expectedOutputHTMLForOriginalInput: string;
@@ -15,6 +17,10 @@ export function createRotextExampleStore(opts: {
   fixtures: { [fixtureName: string]: string } | null;
 }) {
   const rotextProcessors = useRotextProcessorsStore()!;
+
+  const formattedExpectedOutput =
+    (formattedExpectedOutputCache[opts.expectedOutputHTMLForOriginalInput] ??=
+      formatHTML(opts.expectedOutputHTMLForOriginalInput));
 
   const [input, setInput] = createSignal(opts.originalInput);
   const [actualOutputForOriginalInput, setActualOutputForOriginalInput] =
@@ -32,10 +38,8 @@ export function createRotextExampleStore(opts: {
   const isVerifyingOutputOfOriginalInput = () =>
     shouldVerifyOutputOfOriginalInput() && !actualOutputForOriginalInput();
 
-  const [currentOutput, setCurrentOutput] = createSignal<CurrentOutput>([
-    "for-unmodified",
-    opts.expectedOutputHTMLForOriginalInput,
-  ]);
+  const [currentOutput, setCurrentOutput] = //
+    createSignal<CurrentOutput>(["for-unmodified", formattedExpectedOutput]);
 
   createEffect(
     on(
@@ -80,10 +84,7 @@ export function createRotextExampleStore(opts: {
         }
 
         if (getIsInputUnmodified()) {
-          setCurrentOutput([
-            "for-unmodified",
-            opts.expectedOutputHTMLForOriginalInput,
-          ]);
+          setCurrentOutput(["for-unmodified", formattedExpectedOutput]);
         } else {
           const result = processor.process(input, {
             requiresLookupListRaw: false,
@@ -102,7 +103,7 @@ export function createRotextExampleStore(opts: {
   const expectedOutputMatchesActual = createMemo(() => {
     const actual = actualOutputForOriginalInput();
     if (actual === null) return null;
-    return actual === opts.expectedOutputHTMLForOriginalInput;
+    return actual === formattedExpectedOutput;
   });
   const [
     onOutputOfOriginalInputVerifiedCallback,
@@ -146,9 +147,6 @@ export function createRotextExampleStore(opts: {
       return getIsInputUnmodified();
     },
 
-    get expectedOutputHTMLForOriginalInput() {
-      return opts.expectedOutputHTMLForOriginalInput;
-    },
     get isLoadingForCurrentOutput() {
       return isLoading();
     },
