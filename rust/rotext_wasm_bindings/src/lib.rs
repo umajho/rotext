@@ -90,7 +90,7 @@ pub fn parse_and_render(
 
     let renderer = rotext::HtmlRenderer::new(
         input,
-        rotext::NewHtmlRendererOptoins {
+        rotext::NewHtmlRendererOptions {
             tag_name_map,
             initial_output_string_capacity: input.len() * 3,
             should_include_block_ids,

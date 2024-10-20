@@ -17,7 +17,7 @@ pub(crate) mod test_suites;
 pub(crate) mod test_support;
 
 pub use events::{BlendEvent, BlockEvent, Event};
-pub use rendering::{HtmlRenderer, NewHtmlRendererOptoins};
+pub use rendering::{HtmlRenderer, NewHtmlRendererOptions};
 pub use types::{Error, Result};
 
 use utils::stack::{Stack, VecStack};

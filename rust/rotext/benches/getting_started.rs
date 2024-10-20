@@ -29,7 +29,7 @@ fn rendering(bencher: divan::Bencher) {
         .bench_refs(|events| {
             let renderer = rotext::HtmlRenderer::new(
                 file_content.as_bytes(),
-                rotext::NewHtmlRendererOptoins {
+                rotext::NewHtmlRendererOptions {
                     tag_name_map: Default::default(),
                     initial_output_string_capacity: file_content.len() * 3,
                     #[cfg(feature = "block-id")]
@@ -48,7 +48,7 @@ fn parsing_and_rendering(bencher: divan::Bencher) {
         let events = rotext::parse(file_content.as_bytes()).map(Result::unwrap);
         let renderer = rotext::HtmlRenderer::new(
             file_content.as_bytes(),
-            rotext::NewHtmlRendererOptoins {
+            rotext::NewHtmlRendererOptions {
                 tag_name_map: Default::default(),
                 initial_output_string_capacity: file_content.len() * 3,
                 #[cfg(feature = "block-id")]

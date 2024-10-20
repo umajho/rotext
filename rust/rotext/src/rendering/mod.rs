@@ -15,7 +15,7 @@ macro_rules! write_data_block_id_attribute_if_applicable {
     };
 }
 
-pub struct NewHtmlRendererOptoins<'a> {
+pub struct NewHtmlRendererOptions<'a> {
     pub tag_name_map: TagNameMap<'a>,
 
     pub initial_output_string_capacity: usize,
@@ -71,7 +71,7 @@ impl<'a> From<TableState> for StackEntry<'a> {
 }
 
 impl<'a> HtmlRenderer<'a> {
-    pub fn new(input: &'a [u8], opts: NewHtmlRendererOptoins<'a>) -> Self {
+    pub fn new(input: &'a [u8], opts: NewHtmlRendererOptions<'a>) -> Self {
         Self {
             tag_name_map: opts.tag_name_map,
             input,

@@ -155,7 +155,7 @@ pub(super) struct Case<'a> {
 }
 impl<'a> test_support::Case for Case<'a> {
     fn assert_ok(&self) {
-        let opts = NewHtmlRendererOptoins {
+        let opts = NewHtmlRendererOptions {
             tag_name_map: self.options.tag_name_map.clone(),
             initial_output_string_capacity: 0,
             #[cfg(feature = "block-id")]
