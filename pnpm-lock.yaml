@@ -274,8 +274,8 @@ importers:
         specifier: ^3.1.6
         version: 3.1.6(postcss@8.4.24)
       html-validate:
-        specifier: ^8.20.1
-        version: 8.20.1
+        specifier: ^8.24.2
+        version: 8.24.2
       marked:
         specifier: ^13.0.1
         version: 13.0.1
@@ -1186,11 +1186,11 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@sidvind/better-ajv-errors@2.1.3':
-    resolution: {integrity: sha512-lWuod/rh7Xz5uXiEGSfm2Sd5PG7K/6yJfoAZVqzsEswjPJhUz15R7Gn/o8RczA041QS15hBd/BCSeu9vwPArkA==}
+  '@sidvind/better-ajv-errors@3.0.1':
+    resolution: {integrity: sha512-++1mEYIeozfnwWI9P1ECvOPoacy+CgDASrmGvXPMCcqgx0YUzB01vZ78uHdQ443V6sTY+e9MzHqmN9DOls02aw==}
     engines: {node: '>= 16.14'}
     peerDependencies:
-      ajv: 4.11.8 - 8
+      ajv: ^6.12.3 || ^7.0.0 || ^8.0.0
 
   '@sinclair/typebox@0.27.8':
     resolution: {integrity: sha512-+Fj43pSMwJs4KRrH/938Uf+uAELIgVBmQzg/q1YG10djyfA3TnrU8N8XzqCh/okZdszqBQTZf96idMfE5lnwTA==}
@@ -1872,15 +1872,15 @@ packages:
   html-entities@2.3.3:
     resolution: {integrity: sha512-DV5Ln36z34NNTDgnz0EWGBLZENelNAtkiFA4kyNOG2tDI6Mz1uSWiq1wAKdyjnJwyDiDO7Fa2SO1CTxPXL8VxA==}
 
-  html-validate@8.20.1:
-    resolution: {integrity: sha512-EawDiHzvZtnbBIfxE90lvKOWqNsmZGqRXTy+utxlGo525Vqjowg+RK42q1AeJ6zm1AyVTFIDSah1eBe9tc6YHg==}
+  html-validate@8.24.2:
+    resolution: {integrity: sha512-PpZLlH3gpOSBLRBID4QovOyZ97Ka5dCIhHMPjUxQlMGqk5pc+mgG5enCXbC8ngdjG0jpkTvM8AMhnPv1EiU9Pw==}
     engines: {node: '>= 16.14'}
     hasBin: true
     peerDependencies:
       jest: ^27.1 || ^28.1.3 || ^29.0.3
       jest-diff: ^27.1 || ^28.1.3 || ^29.0.3
       jest-snapshot: ^27.1 || ^28.1.3 || ^29.0.3
-      vitest: ^0.34 || ^1
+      vitest: ^0.34.0 || ^1.0.0 || ^2.0.0
     peerDependenciesMeta:
       jest:
         optional: true
@@ -1922,6 +1922,10 @@ packages:
 
   ignore@5.3.1:
     resolution: {integrity: sha512-5Fytz/IraMjqpwfd34ke28PTVMjZjJG2MPn5t7OE4eUCUNf8BAa7b5WUS9/Qvr6mwOQS7Mk6vdsMno5he+T8Xw==}
+    engines: {node: '>= 4'}
+
+  ignore@5.3.2:
+    resolution: {integrity: sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g==}
     engines: {node: '>= 4'}
 
   immutable@4.3.0:
@@ -3819,11 +3823,10 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.21.0':
     optional: true
 
-  '@sidvind/better-ajv-errors@2.1.3(ajv@8.16.0)':
+  '@sidvind/better-ajv-errors@3.0.1(ajv@8.16.0)':
     dependencies:
-      '@babel/code-frame': 7.24.7
       ajv: 8.16.0
-      chalk: 4.1.2
+      kleur: 4.1.5
 
   '@sinclair/typebox@0.27.8': {}
 
@@ -4627,15 +4630,14 @@ snapshots:
 
   html-entities@2.3.3: {}
 
-  html-validate@8.20.1:
+  html-validate@8.24.2:
     dependencies:
-      '@babel/code-frame': 7.24.7
       '@html-validate/stylish': 4.2.0
-      '@sidvind/better-ajv-errors': 2.1.3(ajv@8.16.0)
+      '@sidvind/better-ajv-errors': 3.0.1(ajv@8.16.0)
       ajv: 8.16.0
       deepmerge: 4.3.1
       glob: 10.4.2
-      ignore: 5.3.1
+      ignore: 5.3.2
       kleur: 4.1.5
       minimist: 1.2.8
       prompts: 2.4.2
@@ -4675,6 +4677,8 @@ snapshots:
   ignore@5.2.4: {}
 
   ignore@5.3.1: {}
+
+  ignore@5.3.2: {}
 
   immutable@4.3.0: {}
 

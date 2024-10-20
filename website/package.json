@@ -21,7 +21,7 @@
     "@types/pretty": "^2.0.3",
     "autoprefixer": "^10.4.14",
     "daisyui": "^3.1.6",
-    "html-validate": "^8.20.1",
+    "html-validate": "^8.24.2",
     "marked": "^13.0.1",
     "node-html-parser": "^6.1.13",
     "postcss": "^8.4.24",
