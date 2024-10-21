@@ -8,6 +8,7 @@ import {
 } from "../../../components/ui/mod";
 
 import { EditorStore } from "../editor-store";
+import { textEncoder } from "../../../utils/global";
 
 import examples from "../examples";
 
@@ -21,7 +22,6 @@ const segmenter: Intl.Segmenter | null = (() => {
   }
   return null;
 })();
-const textEncoder = new TextEncoder();
 
 const EditorTopBar: Component<{
   store: EditorPartStore;

@@ -1,10 +1,33 @@
-import { Component, Index, Show } from "solid-js";
+import { Component, createMemo, Index } from "solid-js";
 
-import { Badge, BadgeBar, Tab, Tabs } from "../../../components/ui/mod";
+import { Tab, Tabs } from "../../../components/ui/mod";
+
+import { textEncoder } from "../../../utils/global";
 
 import { PreviewPartStore } from "./store";
 
 const PreviewTopBar: Component<{ store: PreviewPartStore }> = (props) => {
+  const html = createMemo(() => {
+    if (props.store.processResult?.html) {
+      const html = props.store.processResult.html;
+      return html.replace(/ data-block-id=".*?"/g, "");
+    } else {
+      return null;
+    }
+  });
+  const infoText = createMemo(() => {
+    const parts: string[] = [];
+    if (typeof props.store.processResult?.parsingTimeMs === "number") {
+      const timeMs = props.store.processResult.parsingTimeMs;
+      parts.push(`解析${timeMs.toFixed(3)}毫秒`);
+    }
+    if (html()) {
+      const byteCount = textEncoder.encode(html()!).length;
+      parts.push(`${byteCount}字节`);
+    }
+    return parts.join(" | ");
+  });
+
   return (
     <div class="flex h-full justify-between items-center">
       <Tabs>
@@ -32,17 +55,9 @@ const PreviewTopBar: Component<{ store: PreviewPartStore }> = (props) => {
           )}
         </Index>
       </Tabs>
-      <BadgeBar>
-        <Show
-          when={typeof props.store.processResult?.parsingTimeMs === "number"}
-        >
-          <Badge>
-            解析时间：{`${
-              props.store.processResult!.parsingTimeMs!.toFixed(3)
-            }ms`}
-          </Badge>
-        </Show>
-      </BadgeBar>
+      <div class="flex items-center gap-1">
+        <span class="text-xs text-gray-500">{infoText()}</span>
+      </div>
     </div>
   );
 };
