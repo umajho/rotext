@@ -472,7 +472,18 @@ mod leaf {
     pub mod dicexp {
         use super::*;
 
-        /// TODO: 支持多行。到时候名字会改成 “process_opening”。
+        /// TODO: 支持多行。
+        ///
+        /// NOTE: 为什么 `dicexp` 不能像 `code_span` 那样相对简单地支持多行：
+        /// - `code_span` 基于原生的 HTML 元素 `<code/>`，内容可以直接作为其子节
+        ///   点，因此设计成了用两个事件（`EnterCodeSpan`、`Exit`）来包围内容。
+        ///   
+        /// - `dicexp` 基于自定义元素，需要以属性（attribute）传递内容，因此设计
+        ///   为了只用一个事件（`Dicexp`）。
+        ///
+        /// 后者的事件只能传递一整块范围的内容，而多行内容的范围并不连续，因此无
+        /// 法传递。未来可能会让 `dicexp` 的事件也以 Enter/Exit 的形式表示，在那
+        /// 之前 dicexp 无法支持多行。
         pub fn process(input: &[u8], cursor: &mut Cursor) -> (usize, Option<InlineEvent>) {
             let text_end = cursor.value();
 
