@@ -157,10 +157,14 @@
   }
 
   table {
-    @apply mb-4 w-full;
+    @apply my-4 w-full;
 
     caption {
       @apply font-black text-white;
+
+      &>p:last-child {
+        @apply mb-0;
+      }
     }
 
     th,
