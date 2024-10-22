@@ -388,8 +388,7 @@ mod leaf {
             cursor.move_forward(">>".len());
             let start = cursor.value();
 
-            let ref_link_content =
-                leaf::ref_link::advance_until_potential_content_ends(input, cursor);
+            let ref_link_content = advance_until_potential_content_ends(input, cursor);
             if let Some(()) = ref_link_content {
                 let to_yield_after_text = InlineEvent::RefLink(start..cursor.value());
                 Some((maybe_text_end, Some(to_yield_after_text)))
