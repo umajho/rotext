@@ -135,6 +135,11 @@ impl<'a> HtmlRenderer<'a> {
                     BlendEvent::ExitBlock(_) => {
                         let top = stack.pop().unwrap();
                         match top {
+                            StackEntry::Normal(top) => {
+                                self.result.extend(b"</");
+                                self.result.extend(top);
+                                self.result.push(b'>');
+                            }
                             StackEntry::Table(TableState::AtBeginning) => {
                                 self.result.extend(b"</table>")
                             }
@@ -149,11 +154,6 @@ impl<'a> HtmlRenderer<'a> {
                             }
                             StackEntry::Table(TableState::InDataCell) => {
                                 self.result.extend(b"</td></tr></table>")
-                            }
-                            StackEntry::Normal(top) => {
-                                self.result.extend(b"</");
-                                self.result.extend(top);
-                                self.result.push(b'>');
                             }
                         }
                         continue;
