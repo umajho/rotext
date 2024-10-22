@@ -10,3 +10,13 @@ export function mountStyle(style: string, opts: { id: string }) {
     styleEl.innerText = style;
   }
 }
+
+export function mustGetStyleProviderFormDocument(id: string): CSSStyleSheet {
+  const sheet = [...document.styleSheets]
+    .find((sheet) => {
+      if (!sheet.ownerNode) return false;
+      return (sheet.ownerNode as HTMLElement).id === id;
+    });
+  if (!sheet) throw new Error(`Could not find style sheet with id \`${id}\``);
+  return sheet;
+}

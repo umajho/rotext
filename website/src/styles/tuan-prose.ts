@@ -1,17 +1,5 @@
-import { createStyleProviderFromCSSText } from "@rolludejo/web-internal/shadow-root";
+import { mustGetStyleProviderFormDocument } from "./utils/mod";
 
-import { mountStyle } from "./utils/mod";
+const ID = "tuan-prose";
 
-import tuanProse from "./tuan-prose.scss?inline";
-
-export const STYLE_TEXT = tuanProse;
-
-export const ID = "tuan-prose";
-
-(() => mountStyle(STYLE_TEXT, { id: ID }))();
-
-export function getStyleElement(): HTMLStyleElement {
-  return document.getElementById(ID)! as HTMLStyleElement;
-}
-
-export const styleProvider = createStyleProviderFromCSSText(STYLE_TEXT);
+export const styleProvider = mustGetStyleProviderFormDocument(ID);
