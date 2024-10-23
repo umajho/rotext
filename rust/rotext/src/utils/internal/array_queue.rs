@@ -12,11 +12,22 @@ impl<const N: usize, T> ArrayQueue<N, T> {
         }
     }
 
+    pub fn len(&self) -> usize {
+        self.length
+    }
+
+    fn index(&self, index: usize) -> usize {
+        (self.end + N - self.length + index) % N
+    }
+
+    pub fn get(&self, index: usize) -> Option<&T> {
+        debug_assert!(index < self.length);
+        self.queue[self.index(index)].as_ref()
+    }
+
     pub fn push_back(&mut self, item: T) {
         self.length += 1;
-        if self.length > N {
-            unreachable!();
-        }
+        debug_assert!(self.length <= N);
         self.queue[self.end] = Some(item);
         self.end = (self.end + 1) % N;
     }
@@ -25,7 +36,7 @@ impl<const N: usize, T> ArrayQueue<N, T> {
         if self.length == 0 {
             return None;
         }
-        let item = self.queue[(self.end + N - self.length) % N].take();
+        let item = self.queue[self.index(0)].take();
         self.length -= 1;
         Some(item.unwrap())
     }
