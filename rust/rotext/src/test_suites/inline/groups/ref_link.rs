@@ -19,6 +19,20 @@ pub fn groups_ref_link() -> Vec<GroupedCases> {
                 ]
             ),
             case!(
+                vec![">>>TP.123"],
+                vec![
+                    (EventType::Text, Some(">")),
+                    (EventType::RefLink, Some("TP.123")),
+                ]
+            ),
+            case!(
+                vec![">>>>TP.123"],
+                vec![
+                    (EventType::Text, Some(">>")),
+                    (EventType::RefLink, Some("TP.123")),
+                ]
+            ),
+            case!(
                 vec![">>TP.123abc"],
                 vec![
                     (EventType::RefLink, Some("TP.123")),

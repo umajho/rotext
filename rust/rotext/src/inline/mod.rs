@@ -393,6 +393,7 @@ mod leaf {
                 let to_yield_after_text = InlineEvent::RefLink(start..cursor.value());
                 Some((maybe_text_end, Some(to_yield_after_text)))
             } else {
+                cursor.set_value(cursor.value() - 1);
                 None
             }
         }
