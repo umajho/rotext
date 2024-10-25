@@ -414,6 +414,22 @@ fn it_works_in_block_phase() {
             ],
         },
         GroupedCases {
+            group: "内部链接",
+            cases: vec![
+                case!(
+                    "ADDR:0/title:10",
+                    [
+                        (EnterParagraph(..)),
+                        (EnterInternalLink(0..4)),
+                        (Text(7..12)),
+                        (@inline ExitInline(..)),
+                        (ExitBlock(..)),
+                    ],
+                    r#"<p><x-internal-link address="ADDR"><span slot="content">title</span></x-internal-link></p>"#,
+                ),
+            ]
+        },
+        GroupedCases {
             group: "XSS",
             cases: vec![
                 case!(

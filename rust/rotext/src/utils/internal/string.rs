@@ -20,3 +20,10 @@ pub fn count_continuous_character_with_maximum(
 
     i
 }
+
+macro_rules! is_whitespace {
+    ($char:expr) => {
+        matches!($char, b' ' | b'\t')
+    };
+}
+pub(crate) use is_whitespace;

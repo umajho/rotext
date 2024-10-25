@@ -18,7 +18,7 @@ enum State<
     ParsingInline {
         inline_parser: inline::Parser<'a, TInlineStack>,
         /// Option 仅用于处理所有权，`None` 为无效状态。
-        segment_stream: Option<Peekable<1, WhileInlineSegment<TBlockParser>>>,
+        segment_stream: Option<Peekable<2, WhileInlineSegment<TBlockParser>>>,
     },
 }
 

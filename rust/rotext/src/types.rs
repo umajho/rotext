@@ -118,6 +118,10 @@ macro_rules! impl_cast_tym {
 impl_cast_tym!(0, 1);
 impl_cast_tym!(0, 2);
 impl_cast_tym!(0, 3);
+impl_cast_tym!(0, 4);
 impl_cast_tym!(1, 2);
 impl_cast_tym!(1, 3);
+impl_cast_tym!(1, 4);
 impl_cast_tym!(2, 3);
+impl_cast_tym!(2, 4);
+impl_cast_tym!(3, 4);

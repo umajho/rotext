@@ -109,6 +109,10 @@ macro_rules! event {
         $crate::events::BlendEvent::Dicexp($start..$end)
     };
 
+    (EnterInternalLink ($start:literal..$end:literal)) => {
+        $crate::events::BlendEvent::EnterInternalLink($start..$end)
+    };
+
     (@inline $v:tt (..)) => {
         $crate::events::BlendEvent::$v
     };

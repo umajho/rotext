@@ -30,4 +30,5 @@ impl Cursor {
 pub struct EndCondition {
     pub on_strong_closing: bool,
     pub on_strikethrough_closing: bool,
+    pub on_internal_link_closing: bool,
 }

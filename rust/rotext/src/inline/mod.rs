@@ -10,17 +10,19 @@ pub use stack_wrapper::StackEntry;
 use std::ops::Range;
 
 use crate::{events::NewLine, utils::internal::peekable::Peekable};
-use parser_inner::ParserInner;
+use parser_inner::{ParserInner, ToSkipInputEvents};
 use stack_wrapper::{TopLeaf, TopLeafCodeSpan};
 use types::{Cursor, YieldContext};
 
 use crate::{
-    common::m,
+    common::{is_valid_character_in_name, m},
     events::{InlineEvent, InlineInputEvent},
     types::{Tym, TYM_UNIT},
     utils::{
         internal::{
-            string::{count_continuous_character, count_continuous_character_with_maximum},
+            string::{
+                count_continuous_character, count_continuous_character_with_maximum, is_whitespace,
+            },
             utf8::get_byte_length_by_first_char,
         },
         stack::Stack,
@@ -28,7 +30,7 @@ use crate::{
 };
 
 pub struct Parser<'a, TInlineStack: Stack<StackEntry>> {
-    input: &'a [u8],
+    full_input: &'a [u8],
 
     state: State<'a>,
     inner: ParserInner<TInlineStack>,
@@ -42,9 +44,9 @@ enum State<'a> {
 }
 
 impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
-    pub fn new(input: &'a [u8]) -> Self {
+    pub fn new(full_input: &'a [u8]) -> Self {
         Self {
-            input,
+            full_input,
             state: State::Idle,
             inner: ParserInner::new(),
         }
@@ -52,7 +54,7 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
 
     pub fn next(
         &mut self,
-        event_stream: &mut Peekable<1, impl Iterator<Item = InlineInputEvent>>,
+        event_stream: &mut Peekable<2, impl Iterator<Item = InlineInputEvent>>,
     ) -> Option<crate::Result<InlineEvent>> {
         loop {
             if let Some(ev) = self.inner.pop_to_be_yielded() {
@@ -80,13 +82,25 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                         continue;
                     };
 
-                    if self.inner.pop_should_skip_next_input_event() {
+                    if self.inner.to_skip_input.count > 0 {
+                        self.inner.to_skip_input.count -= 1;
+                        if self.inner.to_skip_input.count == 0 {
+                            if let Some(cursor_value) = self.inner.to_skip_input.cursor_value.take()
+                            {
+                                let InlineInputEvent::Unparsed(content) = next else {
+                                    unreachable!()
+                                };
+                                let input = &self.full_input[..content.end];
+                                let cursor = Cursor::new(cursor_value);
+                                self.state = State::Parsing { input, cursor };
+                            }
+                        }
                         continue;
                     }
 
                     let to_yield = match next {
                         InlineInputEvent::Unparsed(content) => {
-                            let input = &self.input[..content.end];
+                            let input = &self.full_input[..content.end];
                             let cursor = Cursor::new(content.start);
                             self.state = State::Parsing { input, cursor };
                             continue;
@@ -119,12 +133,13 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
         input: &[u8],
         cursor: &mut Cursor,
         inner: &mut ParserInner<TInlineStack>,
-        event_stream: &mut Peekable<1, impl Iterator<Item = InlineInputEvent>>,
-    ) -> crate::Result<Tym<2>> {
+        event_stream: &mut Peekable<2, impl Iterator<Item = InlineInputEvent>>,
+    ) -> crate::Result<Tym<4>> {
         match inner.stack.pop_top_leaf() {
             None => Self::parse_normal(input, cursor, inner, event_stream),
             Some(TopLeaf::CodeSpan(top_leaf)) => {
                 leaf::code_span::parse_content_and_process(input, cursor, inner, top_leaf)
+                    .map(|tym| tym.into())
             }
         }
     }
@@ -133,8 +148,8 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
         input: &[u8],
         cursor: &mut Cursor,
         inner: &mut ParserInner<TInlineStack>,
-        event_stream: &mut Peekable<1, impl Iterator<Item = InlineInputEvent>>,
-    ) -> crate::Result<Tym<2>> {
+        event_stream: &mut Peekable<2, impl Iterator<Item = InlineInputEvent>>,
+    ) -> crate::Result<Tym<4>> {
         let end_condition = inner.stack.make_end_condition();
 
         let text_start = cursor.value();
@@ -211,6 +226,20 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
 
                         break (text_end, Some(to_yield_after_text));
                     }
+                    Some(m!('[')) => {
+                        match leaf::internal_link::process_and_yield_potential(
+                            input,
+                            text_start,
+                            cursor,
+                            inner,
+                            event_stream,
+                        )? {
+                            Some(tym) => {
+                                return Ok(tym);
+                            }
+                            None => continue,
+                        }
+                    }
                     Some(_) => {
                         cursor.move_forward(1);
                         continue;
@@ -218,7 +247,8 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                 },
                 &char => {
                     if ((end_condition.on_strong_closing && char == m!('\''))
-                        || (end_condition.on_strikethrough_closing && char == m!('~')))
+                        || (end_condition.on_strikethrough_closing && char == m!('~'))
+                        || (end_condition.on_internal_link_closing && char == m!(']')))
                         && input.get(cursor.value() + 1) == Some(&m!(']'))
                     {
                         let text_end = cursor.value();
@@ -243,7 +273,7 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
             TYM_UNIT.into()
         };
 
-        Ok(tym_a.add(tym_b))
+        Ok(tym_a.add(tym_b).into())
     }
 
     fn exit_until_stack_is_empty_and_then_end(
@@ -258,7 +288,7 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
             (tym, None)
         } else if let Some(entry) = inner.stack.pop_entry() {
             let tym = match entry {
-                StackEntry::Strong | StackEntry::Strikethrough => {
+                StackEntry::Strong | StackEntry::Strikethrough | StackEntry::InternalLink => {
                     inner.r#yield(InlineEvent::ExitInline)
                 }
             };
@@ -283,6 +313,7 @@ fn yield_text_if_not_empty<TInlineStack: Stack<StackEntry>>(
 }
 
 mod special {
+
     use super::*;
 
     pub fn process_backslash_escaping(
@@ -309,7 +340,7 @@ mod special {
     ) -> (usize, Option<InlineEvent>) {
         let text_end = cursor.value();
         cursor.move_forward(1);
-        inner.set_should_skip_next_input_event();
+        inner.to_skip_input = ToSkipInputEvents::new_one();
         let to_yield_after_text = InlineEvent::NewLine(new_line);
 
         (text_end, Some(to_yield_after_text))
@@ -322,7 +353,7 @@ mod special {
     ) -> (usize, Option<InlineEvent>) {
         let text_end = cursor.value();
         cursor.move_forward(1);
-        inner.set_should_skip_next_input_event();
+        inner.to_skip_input = ToSkipInputEvents::new_one();
 
         (text_end, None)
     }
@@ -545,7 +576,7 @@ mod leaf {
             cursor: &mut Cursor,
             inner: &mut ParserInner<TInlineStack>,
             top_leaf: TopLeafCodeSpan,
-        ) -> crate::Result<Tym<2>> {
+        ) -> crate::Result<Tym<3>> {
             let start = cursor.value();
             while let Some(&char) = input.get(cursor.value()) {
                 if char != m!('`') {
@@ -587,12 +618,211 @@ mod leaf {
                 cursor.move_forward(top_leaf.backticks + "]".len());
                 let tym_b = inner.r#yield(top_leaf.make_exit_event());
 
-                return Ok(tym_a.add(tym_b));
+                return Ok(tym_a.add(tym_b).into());
             }
 
             inner.stack.push_top_leaf(top_leaf.into());
             let tym = inner.r#yield(InlineEvent::Text(start..cursor.value()));
             Ok(tym.into())
+        }
+    }
+
+    pub mod internal_link {
+
+        use super::*;
+
+        pub fn process_and_yield_potential<TInlineStack: Stack<StackEntry>>(
+            input: &[u8],
+            text_start: usize,
+            cursor: &mut Cursor,
+            inner: &mut ParserInner<TInlineStack>,
+            event_stream: &mut Peekable<2, impl Iterator<Item = InlineInputEvent>>,
+        ) -> crate::Result<Option<Tym<4>>> {
+            let maybe_text_end = cursor.value();
+            cursor.move_forward("[[".len());
+
+            let (content, found) = parse_first_input(input, cursor);
+
+            if let Some(content) = content {
+                let content = (content.start_index)..(content.end_index + 1);
+                if let Found::Indicator(indicator, index_after) = found {
+                    cursor.set_value(index_after);
+                    let title = content.clone();
+                    let tym_a = process_before_indicator(text_start, maybe_text_end, inner, title)?;
+                    let tym_b = process_indicator(inner, content, indicator)?;
+                    return Ok(Some(tym_a.add(tym_b)));
+                }
+
+                // 有内容（标题）但没找到指示标记时，不视为内部链接。
+                // 如：`[[f<`oo`>]]`、`[[f\noo]]` 都不被视为内部链接。
+                return Ok(None);
+            }
+
+            let maybe_title = {
+                let Some(InlineInputEvent::VerbatimEscaping(ve)) = event_stream.peek(0) else {
+                    return Ok(None);
+                };
+                ve.content.clone()
+            };
+            let after_title = {
+                let Some(InlineInputEvent::Unparsed(content)) = event_stream.peek(1) else {
+                    return Ok(None);
+                };
+                content.clone()
+            };
+
+            // SAFETY: `after_title.end` < `full_input.len()`.
+            // TODO: 不管怎样，现在的实现也太丑陋了，未来应该重构掉这里的 unsafe。
+            let input = unsafe { std::slice::from_raw_parts(input.as_ptr(), after_title.end) };
+            let Found::Indicator(indicator, index_after) =
+                parse_leading_indicator(input, after_title.start)
+            else {
+                return Ok(None);
+            };
+
+            cursor.set_value(input.len());
+            inner.to_skip_input = ToSkipInputEvents {
+                count: 2,
+                cursor_value: Some(index_after),
+            };
+
+            let title = maybe_title.clone();
+            let tym_a = process_before_indicator(text_start, maybe_text_end, inner, title)?;
+            let tym_b = process_indicator(inner, maybe_title, indicator)?;
+            Ok(Some(tym_a.add(tym_b)))
+        }
+
+        fn process_before_indicator<TInlineStack: Stack<StackEntry>>(
+            text_start: usize,
+            text_end: usize,
+            inner: &mut ParserInner<TInlineStack>,
+            title: Range<usize>,
+        ) -> crate::Result<Tym<2>> {
+            let tym_a = yield_text_if_not_empty(text_start, text_end, inner);
+            let tym_b = inner.r#yield(InlineEvent::EnterInternalLink(title.clone()));
+            Ok(tym_a.add(tym_b))
+        }
+
+        fn process_indicator<TInlineStack: Stack<StackEntry>>(
+            inner: &mut ParserInner<TInlineStack>,
+            title: Range<usize>,
+            indicator: Indicator,
+        ) -> crate::Result<Tym<2>> {
+            let tym = match indicator {
+                Indicator::Closing => {
+                    let tym_c1 = inner.r#yield(InlineEvent::Text(title));
+                    let tym_c2 = inner.r#yield(InlineEvent::ExitInline);
+                    tym_c1.add(tym_c2)
+                }
+                Indicator::Separator => {
+                    inner.stack.push_entry(StackEntry::InternalLink)?;
+                    TYM_UNIT.into()
+                }
+            };
+            Ok(tym)
+        }
+
+        #[derive(Debug)]
+        struct Content {
+            /// 第一处非空白字符的位置。
+            start_index: usize,
+            /// 最后一处非空白字符的位置。
+            ///
+            /// [Content] 转换为 [Range] 时，这里要 +1。
+            end_index: usize,
+        }
+
+        #[derive(Debug)]
+        enum Found {
+            /// 第二个值是第一个值代表内容之后的索引（第二个 `]` 或 `|` 之后的索
+            /// 引）。
+            Indicator(Indicator, usize),
+            Nothing,
+        }
+
+        #[derive(Debug)]
+        enum Indicator {
+            /// `]]`。
+            Closing,
+            /// `|`。
+            Separator,
+        }
+
+        /// NOTE: cursor 只移动到第一处非空白字符之前。
+        fn parse_first_input(input: &[u8], cursor: &mut Cursor) -> (Option<Content>, Found) {
+            let mut content: Option<Content> = None;
+            let mut found = Found::Nothing;
+
+            while let Some(&char) = input.get(cursor.value()) {
+                if is_whitespace!(char) {
+                    cursor.move_forward(1);
+                } else {
+                    break;
+                }
+            }
+
+            for i in cursor.value()..input.len() {
+                // SAFETY: `cursor.value()` <= `i` < `input.len()`.
+                let char = unsafe { input.get_unchecked(i) };
+                match char {
+                    char if is_whitespace!(char) => continue,
+                    m!(']') if input.get(i + 1) == Some(&m!(']')) => {
+                        if content.is_some() {
+                            found = Found::Indicator(Indicator::Closing, i + 2);
+                            return (content, found);
+                        } else {
+                            return (None, Found::Nothing);
+                        }
+                    }
+                    m!('|') => {
+                        if content.is_some() {
+                            found = Found::Indicator(Indicator::Separator, i + 1);
+                            return (content, found);
+                        } else {
+                            return (None, Found::Nothing);
+                        }
+                    }
+                    char if !is_valid_character_in_name(*char) => {
+                        return (None, Found::Nothing);
+                    }
+                    _ => match content {
+                        Some(ref mut content) => content.end_index = i,
+                        None => {
+                            content = Some(Content {
+                                start_index: i,
+                                end_index: i,
+                            })
+                        }
+                    },
+                }
+            }
+
+            (content, found)
+        }
+
+        fn parse_leading_indicator(input: &[u8], mut i: usize) -> Found {
+            while let Some(&char) = input.get(i) {
+                if is_whitespace!(char) {
+                    i += 1;
+                } else {
+                    break;
+                }
+            }
+
+            if i == input.len() {
+                return Found::Nothing;
+            }
+            debug_assert!(i < input.len());
+
+            // SAFETY: `start_index` < `input.len()`.
+            let char = unsafe { input.get_unchecked(i) };
+            match char {
+                m!(']') if input.get(i + 1) == Some(&m!(']')) => {
+                    Found::Indicator(Indicator::Closing, i + 2)
+                }
+                m!('|') => Found::Indicator(Indicator::Separator, i + 1),
+                _ => Found::Nothing,
+            }
         }
     }
 }

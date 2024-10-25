@@ -30,6 +30,7 @@ pub struct TagNameMap<'a> {
 
     pub ref_link: &'a [u8],
     pub dicexp: &'a [u8],
+    pub internal_link: &'a [u8],
 }
 impl<'a> Default for TagNameMap<'a> {
     fn default() -> Self {
@@ -38,6 +39,7 @@ impl<'a> Default for TagNameMap<'a> {
 
             ref_link: b"x-ref-link",
             dicexp: b"x-dicexp",
+            internal_link: b"x-internal-link",
         }
     }
 }
@@ -56,6 +58,7 @@ pub struct HtmlRenderer<'a> {
 enum StackEntry<'a> {
     Normal(&'a [u8]),
     Table(TableState),
+    InternalLink,
 }
 enum TableState {
     AtBeginning,
@@ -155,6 +158,7 @@ impl<'a> HtmlRenderer<'a> {
                             StackEntry::Table(TableState::InDataCell) => {
                                 self.result.extend(b"</td></tr></table>")
                             }
+                            _ => unreachable!(),
                         }
                         continue;
                     }
@@ -186,6 +190,11 @@ impl<'a> HtmlRenderer<'a> {
                         StackEntry::Normal(top) => {
                             self.result.extend(b"</");
                             self.result.extend(top);
+                            self.result.push(b'>');
+                        }
+                        StackEntry::InternalLink => {
+                            self.result.extend(b"</span></");
+                            self.result.extend(self.tag_name_map.internal_link);
                             self.result.push(b'>');
                         }
                         _ => unreachable!(),
@@ -308,6 +317,16 @@ impl<'a> HtmlRenderer<'a> {
                 BlendEvent::EnterCodeSpan => self.push_simple_inline(&mut stack, b"code"),
                 BlendEvent::EnterStrong => self.push_simple_inline(&mut stack, b"strong"),
                 BlendEvent::EnterStrikethrough => self.push_simple_inline(&mut stack, b"s"),
+
+                BlendEvent::EnterInternalLink(address) => {
+                    self.write_opening_tag_with_single_attribute(
+                        self.tag_name_map.internal_link,
+                        b"address",
+                        &self.input[address],
+                    );
+                    self.write_opening_tag_with_single_attribute(b"span", b"slot", b"content");
+                    stack.push(StackEntry::InternalLink);
+                }
             };
         }
 
@@ -375,7 +394,7 @@ impl<'a> HtmlRenderer<'a> {
         self.result.extend(buffer.format(n).as_bytes());
     }
 
-    fn write_empty_element_with_single_attribute(
+    fn write_opening_tag_with_single_attribute(
         &mut self,
         tag_name: &[u8],
         attr_name: &[u8],
@@ -387,7 +406,17 @@ impl<'a> HtmlRenderer<'a> {
         self.result.extend(attr_name);
         self.result.extend(br#"=""#);
         self.write_escaped_double_quoted_attribute_value(attr_value);
-        self.result.extend(br#""></"#);
+        self.result.extend(br#"">"#);
+    }
+
+    fn write_empty_element_with_single_attribute(
+        &mut self,
+        tag_name: &[u8],
+        attr_name: &[u8],
+        attr_value: &[u8],
+    ) {
+        self.write_opening_tag_with_single_attribute(tag_name, attr_name, attr_value);
+        self.result.extend(br#"</"#);
         self.result.extend(tag_name);
         self.result.push(b'>');
     }

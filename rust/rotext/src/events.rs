@@ -47,6 +47,7 @@ pub enum EventType {
     EnterCodeSpan = 111,
     EnterStrong = 112,
     EnterStrikethrough = 113,
+    EnterInternalLink = 121,
     ExitInline = 199,
 }
 
@@ -174,6 +175,10 @@ pub enum Event {
     #[subenum(InlineEvent, BlendEvent)]
     EnterStrikethrough = EventType::EnterStrikethrough as u8,
 
+    // 进入内部链接。
+    #[subenum(InlineEvent, BlendEvent)]
+    EnterInternalLink(Range<usize>) = EventType::EnterInternalLink as u8,
+
     /// 退出一层行内的 “进入…”。
     #[subenum(InlineEvent, BlendEvent)]
     ExitInline = EventType::ExitInline as u8,
@@ -227,7 +232,8 @@ impl Event {
             | Event::VerbatimEscaping(VerbatimEscaping { content, .. })
             | Event::Text(content)
             | Event::RefLink(content)
-            | Event::Dicexp(content) => unsafe {
+            | Event::Dicexp(content)
+            | Event::EnterInternalLink(content) => unsafe {
                 std::str::from_utf8_unchecked(&input[content.clone()])
             },
             Event::NewLine(_)

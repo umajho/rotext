@@ -19,9 +19,9 @@ import { Loading } from "../../components/ui/mod";
 import { registerCustomElement as registerCustomElementForScratchOff } from "../../components/custom-elements/ScratchOff";
 import { registerCustomElement as registerCustomElementForCollapse } from "../../components/custom-elements/Collapse";
 import { registerCustomElement as registerCustomElementForCodeBlock } from "../../components/custom-elements/CodeBlock";
+import { evaluatorProvider } from "./evaluator-provider";
 
 import { createDemoRefContentRenderer } from "./ref-content-demo";
-import { evaluatorProvider } from "./evaluator-provider";
 
 export const TAG_NAME_MAP = {
   "scratch-off": "x-scratch-off",
@@ -29,6 +29,7 @@ export const TAG_NAME_MAP = {
   "dicexp": "x-dicexp",
   "collapse": "x-collapse",
   "code-block": "x-code-block",
+  "internal-link": "x-internal-link",
 };
 
 export const WIDGET_OWNER_CLASS = "widget-owner";
