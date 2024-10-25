@@ -57,12 +57,12 @@ impl From<u8> for EventType {
     }
 }
 
-#[subenum(BlockEvent, InlinePhaseParseInputEvent, InlineEvent, BlendEvent)]
+#[subenum(BlockEvent, InlineInputEvent, InlineEvent, BlendEvent)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Event {
     /// 留给下个阶段解析。
-    #[subenum(BlockEvent, InlinePhaseParseInputEvent)]
+    #[subenum(BlockEvent, InlineInputEvent)]
     Unparsed(Range<usize>) = EventType::Unparsed as u8,
 
     /// 原封不动地渲染至输出。
@@ -73,11 +73,11 @@ pub enum Event {
     ///
     /// NOTE: 内容包含开头和结尾各可能存在的一个空格，省略上述空格的处理是在块级
     /// 阶段将 VerbatimEscaping 变换为 Text 时进行。
-    #[subenum(BlockEvent, InlinePhaseParseInputEvent, InlineEvent, BlendEvent)]
+    #[subenum(BlockEvent, InlineInputEvent, InlineEvent, BlendEvent)]
     VerbatimEscaping(VerbatimEscaping) = EventType::VerbatimEscaping as u8,
 
     /// 换行，在全局阶段由 CR 与 LF 而来。
-    #[subenum(BlockEvent, InlinePhaseParseInputEvent, InlineEvent, BlendEvent)]
+    #[subenum(BlockEvent, InlineInputEvent, InlineEvent, BlendEvent)]
     NewLine(NewLine) = EventType::NewLine as u8,
 
     /// 文本。

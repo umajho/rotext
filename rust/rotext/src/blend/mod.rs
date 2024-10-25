@@ -2,7 +2,7 @@
 mod tests;
 
 use crate::{
-    events::{BlendEvent, BlockEvent, Event, InlinePhaseParseInputEvent},
+    events::{BlendEvent, BlockEvent, Event, InlineInputEvent},
     inline::{self},
     utils::{internal::peekable::Peekable, stack::Stack},
 };
@@ -135,14 +135,14 @@ impl<TBlockParser: Iterator<Item = crate::Result<BlockEvent>>> WhileInlineSegmen
     }
 
     #[inline(always)]
-    fn next(&mut self) -> Option<InlinePhaseParseInputEvent> {
+    fn next(&mut self) -> Option<InlineInputEvent> {
         match self.block_parser.next() {
             Some(Ok(ev)) => {
                 if ev.closes_inline_phase() {
                     self.leftover = Some(ev);
                     None
                 } else {
-                    Some(InlinePhaseParseInputEvent::try_from(Event::from(ev)).unwrap())
+                    Some(InlineInputEvent::try_from(Event::from(ev)).unwrap())
                 }
             }
             Some(Err(err)) => {
@@ -157,7 +157,7 @@ impl<TBlockParser: Iterator<Item = crate::Result<BlockEvent>>> WhileInlineSegmen
 impl<TBlockParser: Iterator<Item = crate::Result<BlockEvent>>> Iterator
     for WhileInlineSegment<TBlockParser>
 {
-    type Item = InlinePhaseParseInputEvent;
+    type Item = InlineInputEvent;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.next()

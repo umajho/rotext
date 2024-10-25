@@ -16,7 +16,7 @@ use types::{Cursor, YieldContext};
 
 use crate::{
     common::m,
-    events::{InlineEvent, InlinePhaseParseInputEvent},
+    events::{InlineEvent, InlineInputEvent},
     types::{Tym, TYM_UNIT},
     utils::{
         internal::{
@@ -52,7 +52,7 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
 
     pub fn next(
         &mut self,
-        event_stream: &mut Peekable<1, impl Iterator<Item = InlinePhaseParseInputEvent>>,
+        event_stream: &mut Peekable<1, impl Iterator<Item = InlineInputEvent>>,
     ) -> Option<crate::Result<InlineEvent>> {
         loop {
             if let Some(ev) = self.inner.pop_to_be_yielded() {
@@ -85,18 +85,16 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                     }
 
                     let to_yield = match next {
-                        InlinePhaseParseInputEvent::Unparsed(content) => {
+                        InlineInputEvent::Unparsed(content) => {
                             let input = &self.input[..content.end];
                             let cursor = Cursor::new(content.start);
                             self.state = State::Parsing { input, cursor };
                             continue;
                         }
-                        InlinePhaseParseInputEvent::VerbatimEscaping(verbatim_escaping) => {
+                        InlineInputEvent::VerbatimEscaping(verbatim_escaping) => {
                             InlineEvent::VerbatimEscaping(verbatim_escaping)
                         }
-                        InlinePhaseParseInputEvent::NewLine(new_line) => {
-                            InlineEvent::NewLine(new_line)
-                        }
+                        InlineInputEvent::NewLine(new_line) => InlineEvent::NewLine(new_line),
                     };
 
                     break Some(Ok(to_yield));
@@ -121,7 +119,7 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
         input: &[u8],
         cursor: &mut Cursor,
         inner: &mut ParserInner<TInlineStack>,
-        event_stream: &mut Peekable<1, impl Iterator<Item = InlinePhaseParseInputEvent>>,
+        event_stream: &mut Peekable<1, impl Iterator<Item = InlineInputEvent>>,
     ) -> crate::Result<Tym<2>> {
         match inner.stack.pop_top_leaf() {
             None => Self::parse_normal(input, cursor, inner, event_stream),
@@ -135,7 +133,7 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
         input: &[u8],
         cursor: &mut Cursor,
         inner: &mut ParserInner<TInlineStack>,
-        event_stream: &mut Peekable<1, impl Iterator<Item = InlinePhaseParseInputEvent>>,
+        event_stream: &mut Peekable<1, impl Iterator<Item = InlineInputEvent>>,
     ) -> crate::Result<Tym<2>> {
         let end_condition = inner.stack.make_end_condition();
 
@@ -150,7 +148,7 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                     break special::process_backslash_escaping(input, cursor);
                 }
                 m!('\\') => match event_stream.peek(0) {
-                    Some(InlinePhaseParseInputEvent::NewLine(new_line)) => {
+                    Some(InlineInputEvent::NewLine(new_line)) => {
                         let new_line = new_line.clone();
                         break special::process_hard_break_mark(input, cursor, inner, new_line);
                     }
@@ -160,7 +158,7 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                     }
                 },
                 m!('_') if cursor.value() == input.len() - 1 => match event_stream.peek(0) {
-                    Some(InlinePhaseParseInputEvent::NewLine(_)) => {
+                    Some(InlineInputEvent::NewLine(_)) => {
                         break special::process_lines_joint_mark(input, cursor, inner);
                     }
                     _ => {
