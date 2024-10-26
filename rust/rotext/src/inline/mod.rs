@@ -648,8 +648,9 @@ mod leaf {
                 if let Found::Indicator(indicator, index_after) = found {
                     cursor.set_value(index_after);
                     let title = content.clone();
+                    let title_ev = InlineEvent::Text(content);
                     let tym_a = process_before_indicator(text_start, maybe_text_end, inner, title)?;
-                    let tym_b = process_indicator(inner, content, indicator)?;
+                    let tym_b = process_indicator(inner, title_ev, indicator)?;
                     return Ok(Some(tym_a.add(tym_b)));
                 }
 
@@ -658,11 +659,11 @@ mod leaf {
                 return Ok(None);
             }
 
-            let maybe_title = {
+            let maybe_title_ve = {
                 let Some(InlineInputEvent::VerbatimEscaping(ve)) = event_stream.peek(0) else {
                     return Ok(None);
                 };
-                ve.content.clone()
+                ve.clone()
             };
             let after_title = {
                 let Some(InlineInputEvent::Unparsed(content)) = event_stream.peek(1) else {
@@ -686,9 +687,10 @@ mod leaf {
                 cursor_value: Some(index_after),
             };
 
-            let title = maybe_title.clone();
+            let title = maybe_title_ve.content.clone();
+            let title_ev = InlineEvent::VerbatimEscaping(maybe_title_ve);
             let tym_a = process_before_indicator(text_start, maybe_text_end, inner, title)?;
-            let tym_b = process_indicator(inner, maybe_title, indicator)?;
+            let tym_b = process_indicator(inner, title_ev, indicator)?;
             Ok(Some(tym_a.add(tym_b)))
         }
 
@@ -703,14 +705,16 @@ mod leaf {
             Ok(tym_a.add(tym_b))
         }
 
+        /// `title_ev` 应该是 [InlineEvent::Text] 或
+        /// [InlineEvent::VerbatimEscaping]。
         fn process_indicator<TInlineStack: Stack<StackEntry>>(
             inner: &mut ParserInner<TInlineStack>,
-            title: Range<usize>,
+            title_ev: InlineEvent,
             indicator: Indicator,
         ) -> crate::Result<Tym<2>> {
             let tym = match indicator {
                 Indicator::Closing => {
-                    let tym_c1 = inner.r#yield(InlineEvent::Text(title));
+                    let tym_c1 = inner.r#yield(title_ev);
                     let tym_c2 = inner.r#yield(InlineEvent::ExitInline);
                     tym_c1.add(tym_c2)
                 }
