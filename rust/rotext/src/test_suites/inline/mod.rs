@@ -24,6 +24,7 @@ pub fn run<TContext: Context + RefUnwindSafe>(ctx: &TContext) {
         table.extend(groups::dicexp::groups_dicexp());
         table.extend(groups::code_span::groups_code_span());
         table.extend(groups::strong_and_strikethrough::groups_strong_and_strikethrough());
+        table.extend(groups::internal_link::groups_internal_link());
 
         table
     };
