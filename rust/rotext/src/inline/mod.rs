@@ -647,10 +647,11 @@ mod leaf {
                 let content = (content.start_index)..(content.end_index + 1);
                 if let Found::Indicator(indicator, index_after) = found {
                     cursor.set_value(index_after);
-                    let title = content.clone();
-                    let title_ev = InlineEvent::Text(content);
-                    let tym_a = process_before_indicator(text_start, maybe_text_end, inner, title)?;
-                    let tym_b = process_indicator(inner, title_ev, indicator)?;
+                    let address = content.clone();
+                    let address_ev = InlineEvent::Text(content);
+                    let tym_a =
+                        process_before_indicator(text_start, maybe_text_end, inner, address)?;
+                    let tym_b = process_indicator(inner, address_ev, indicator)?;
                     return Ok(Some(tym_a.add(tym_b)));
                 }
 
@@ -659,24 +660,24 @@ mod leaf {
                 return Ok(None);
             }
 
-            let maybe_title_ve = {
+            let maybe_address_ve = {
                 let Some(InlineInputEvent::VerbatimEscaping(ve)) = event_stream.peek(0) else {
                     return Ok(None);
                 };
                 ve.clone()
             };
-            let after_title = {
+            let after_address = {
                 let Some(InlineInputEvent::Unparsed(content)) = event_stream.peek(1) else {
                     return Ok(None);
                 };
                 content.clone()
             };
 
-            // SAFETY: `after_title.end` < `full_input.len()`.
+            // SAFETY: `after_address.end` < `full_input.len()`.
             // TODO: 不管怎样，现在的实现也太丑陋了，未来应该重构掉这里的 unsafe。
-            let input = unsafe { std::slice::from_raw_parts(input.as_ptr(), after_title.end) };
+            let input = unsafe { std::slice::from_raw_parts(input.as_ptr(), after_address.end) };
             let Found::Indicator(indicator, index_after) =
-                parse_leading_indicator(input, after_title.start)
+                parse_leading_indicator(input, after_address.start)
             else {
                 return Ok(None);
             };
@@ -687,10 +688,10 @@ mod leaf {
                 cursor_value: Some(index_after),
             };
 
-            let title = maybe_title_ve.content.clone();
-            let title_ev = InlineEvent::VerbatimEscaping(maybe_title_ve);
-            let tym_a = process_before_indicator(text_start, maybe_text_end, inner, title)?;
-            let tym_b = process_indicator(inner, title_ev, indicator)?;
+            let address = maybe_address_ve.content.clone();
+            let address_ev = InlineEvent::VerbatimEscaping(maybe_address_ve);
+            let tym_a = process_before_indicator(text_start, maybe_text_end, inner, address)?;
+            let tym_b = process_indicator(inner, address_ev, indicator)?;
             Ok(Some(tym_a.add(tym_b)))
         }
 
@@ -698,23 +699,23 @@ mod leaf {
             text_start: usize,
             text_end: usize,
             inner: &mut ParserInner<TInlineStack>,
-            title: Range<usize>,
+            address: Range<usize>,
         ) -> crate::Result<Tym<2>> {
             let tym_a = yield_text_if_not_empty(text_start, text_end, inner);
-            let tym_b = inner.r#yield(InlineEvent::EnterInternalLink(title.clone()));
+            let tym_b = inner.r#yield(InlineEvent::EnterInternalLink(address.clone()));
             Ok(tym_a.add(tym_b))
         }
 
-        /// `title_ev` 应该是 [InlineEvent::Text] 或
+        /// `address_ev` 应该是 [InlineEvent::Text] 或
         /// [InlineEvent::VerbatimEscaping]。
         fn process_indicator<TInlineStack: Stack<StackEntry>>(
             inner: &mut ParserInner<TInlineStack>,
-            title_ev: InlineEvent,
+            address_ev: InlineEvent,
             indicator: Indicator,
         ) -> crate::Result<Tym<2>> {
             let tym = match indicator {
                 Indicator::Closing => {
-                    let tym_c1 = inner.r#yield(title_ev);
+                    let tym_c1 = inner.r#yield(address_ev);
                     let tym_c2 = inner.r#yield(InlineEvent::ExitInline);
                     tym_c1.add(tym_c2)
                 }
