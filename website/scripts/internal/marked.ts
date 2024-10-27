@@ -29,7 +29,7 @@ const extInternalLink: TokenizerAndRendererExtension = {
   renderer: (token) => {
     return toHTML(
       h(
-        "x-internal-link",
+        "x-internal-link-tmp",
         token.pageName ? { attrs: { "page-name": token.pageName } } : {},
         token.displayName,
       ),

@@ -81,7 +81,8 @@ export default (() => {
         setIsIndexLoaded(true);
       }
 
-      const linkEls = contentContainerEl.querySelectorAll("x-internal-link");
+      const linkEls = //
+        contentContainerEl.querySelectorAll("x-internal-link-tmp");
       for (const linkEl of linkEls) {
         const heading = linkEl.getAttribute("page-name") ?? linkEl.textContent!;
         const { pathWithAnchor } = getSyntaxReferencePathOfHeading(heading, {

@@ -202,7 +202,7 @@ function extractHeadings(dom: HTMLElement, opts: {
       isChildValid = true;
     } else if (
       opts.allowedContent.singleInternalLink &&
-      child.rawTagName === "x-internal-link"
+      child.rawTagName === "x-internal-link-tmp"
     ) {
       isChildValid = true;
     }
@@ -313,7 +313,7 @@ async function collectFileInfos(
     }
 
     const internalLinkTargets = new Set<string>();
-    for (const el of fileHTML.querySelectorAll("x-internal-link")) {
+    for (const el of fileHTML.querySelectorAll("x-internal-link-tmp")) {
       const target = el.getAttribute("page-name") ?? el.textContent;
       internalLinkTargets.add(target);
     }
