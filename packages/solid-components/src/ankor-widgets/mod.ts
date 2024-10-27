@@ -7,9 +7,7 @@ export {
 } from "./Dicexp/mod";
 
 export {
-  getDefaultStyleProviders as getDefaultRefLinkStyleProviders,
-  type Properties as AnkorWidgetRefLinkProperties,
-  type RefAddress,
-  type RefContentRenderer,
-  registerCustomElement as registerCustomElementForAnkorWidgetRefLink,
-} from "./RefLink/mod";
+  type InnerRenderer as AnkorWidgetNavigationInnerRenderer,
+  type Properties as AnkorWidgetNavigationProperties,
+  registerCustomElement as registerCustomElementForAnkorWidgetNavigation,
+} from "./Navigation/mod";

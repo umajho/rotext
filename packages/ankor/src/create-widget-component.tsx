@@ -6,16 +6,12 @@ import {
   JSX,
   on,
   onCleanup,
+  onMount,
   Show,
 } from "solid-js";
 import { Portal } from "solid-js/web";
-import { getCurrentElement, noShadowDOM } from "solid-element";
 
-import {
-  adoptStyle,
-  ShadowRootAttacher,
-  StyleProvider,
-} from "@rolludejo/web-internal/shadow-root";
+import { adoptStyle, StyleProvider } from "@rolludejo/web-internal/shadow-root";
 
 import {
   ComputedColor,
@@ -73,6 +69,7 @@ export function createWidgetComponent(parts: {
   LabelContent: Component<LabelContentComponent>;
   PopperContent: Component<PopperContentProperties>;
 }, opts: {
+  baseStyleProviders?: StyleProvider[];
   widgetOwnerClass: string;
   innerNoAutoOpenClass?: string;
   setWidgetOwner?: (v: WidgetOwner) => void;
@@ -88,10 +85,7 @@ export function createWidgetComponent(parts: {
 
   const { LabelContent, PopperContent } = parts;
 
-  if (getCurrentElement()) {
-    getCurrentElement().innerText = ""; // 清空 fallback
-    noShadowDOM();
-  }
+  let rootEl!: HTMLDivElement;
 
   // 在执行 handleMount 时必定存在
   let labelEl!: HTMLSpanElement,
@@ -135,9 +129,17 @@ export function createWidgetComponent(parts: {
     collapsible: canCollapse,
   });
 
-  function handleMount(mntOpts: { host: HTMLElement }) {
+  onMount(() => {
+    const shadowRoot = rootEl.getRootNode() as ShadowRoot;
+
+    if (opts.baseStyleProviders) {
+      for (const p of opts.baseStyleProviders) {
+        adoptStyle(shadowRoot, p);
+      }
+    }
+
     const widgetOwner_ = //
-      getWidgetOwner(mntOpts.host.closest("." + opts.widgetOwnerClass)!)!;
+      getWidgetOwner(shadowRoot.host.closest("." + opts.widgetOwnerClass)!)!;
     setWidgetOwner(widgetOwner_);
     opts.setWidgetOwner?.(widgetOwner_);
 
@@ -209,7 +211,7 @@ export function createWidgetComponent(parts: {
         }
       }));
     }
-  }
+  });
 
   function handlePortalRef({ shadowRoot }: { shadowRoot: ShadowRoot }) {
     if (opts.popperContentStyleProvider) {
@@ -219,11 +221,7 @@ export function createWidgetComponent(parts: {
 
   return () => {
     return (
-      <ShadowRootAttacher
-        hostStyle={{ display: "inline-grid" }}
-        preventHostStyleInheritance={true}
-        onMount={handleMount}
-      >
+      <div ref={rootEl} style={{ display: "inline-grid" }}>
         <span ref={labelEl} class="widget-label">
           <LabelContent
             cursor={opts.openable?.()
@@ -294,7 +292,7 @@ export function createWidgetComponent(parts: {
             </PopperContainer>
           </Show>
         </Portal>
-      </ShadowRootAttacher>
+      </div>
     );
   };
 }

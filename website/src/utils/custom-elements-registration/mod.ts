@@ -1,19 +1,10 @@
-import {
-  getComputedColor,
-  getComputedCSSValueOfClass,
-} from "@rolludejo/web-internal/styling";
-
 import { registerCustomElementForStepsRepresentation } from "@dicexp/solid-components";
 
 import {
   ErrorAlert,
   getDefaultDicexpStyleProviders,
-  getDefaultRefLinkStyleProviders,
   registerCustomElementForAnkorWidgetDicexp,
-  registerCustomElementForAnkorWidgetRefLink,
 } from "@rotext/solid-components/internal";
-
-import { styleProvider as styleProviderForTuanProse } from "../../styles/tuan-prose";
 
 import { Loading } from "../../components/ui/mod";
 import { registerCustomElement as registerCustomElementForScratchOff } from "../../components/custom-elements/ScratchOff";
@@ -21,41 +12,24 @@ import { registerCustomElement as registerCustomElementForCollapse } from "../..
 import { registerCustomElement as registerCustomElementForCodeBlock } from "../../components/custom-elements/CodeBlock";
 import { evaluatorProvider } from "./evaluator-provider";
 
-import { createDemoRefContentRenderer } from "./ref-content-demo";
+export { PROSE_CLASS, TAG_NAME_MAP, WIDGET_OWNER_CLASS } from "./consts";
+import {
+  BACKGROUND_COLOR,
+  INNER_NO_AUTO_OPEN_CLASS,
+  TAG_NAME_MAP,
+  WIDGET_OWNER_CLASS,
+} from "./consts";
 
-export const TAG_NAME_MAP = {
-  "scratch-off": "x-scratch-off",
-  "ref-link": "x-ref-link",
-  "dicexp": "x-dicexp",
-  "collapse": "x-collapse",
-  "code-block": "x-code-block",
-  "internal-link": "x-internal-link",
-};
-
-export const WIDGET_OWNER_CLASS = "widget-owner";
-export const PROSE_CLASS = "tuan-prose";
-
-const INNER_NO_AUTO_OPEN_CLASS = "inner-no-auto-open";
-
-const BACKGROUND_COLOR = getComputedColor(
-  getComputedCSSValueOfClass("background-color", "tuan-background"),
-)!;
+import { registerCustomElementForRefLink } from "./ref-link/mod";
+import { registerCustomElementForInternalLink } from "./internal-link/mod";
 
 let hasRegistered = false;
 
 export function registerCustomElementsOnce() {
   if (hasRegistered) return;
 
-  registerCustomElementForAnkorWidgetRefLink(TAG_NAME_MAP["ref-link"], {
-    styleProviders: getDefaultRefLinkStyleProviders(),
-    backgroundColor: BACKGROUND_COLOR,
-    widgetOwnerClass: WIDGET_OWNER_CLASS,
-    innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,
-    refContentRenderer: createDemoRefContentRenderer({
-      proseClass: PROSE_CLASS,
-      proseStyleProvider: styleProviderForTuanProse,
-    }),
-  });
+  registerCustomElementForRefLink();
+  registerCustomElementForInternalLink();
   registerCustomElementForStepsRepresentation("steps-representation");
   registerCustomElementForAnkorWidgetDicexp(TAG_NAME_MAP["dicexp"], {
     styleProviders: getDefaultDicexpStyleProviders(),

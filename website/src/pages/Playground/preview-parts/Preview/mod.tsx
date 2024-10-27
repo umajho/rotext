@@ -28,7 +28,6 @@ import { RotextProcessResult } from "../../../../processors/mod";
 
 import { LookupList, LookupListRaw } from "./internal-types";
 import * as ScrollUtils from "./scroll-utils";
-import { morphAttributes } from "../../../../utils/morph";
 
 registerCustomElementsOnce();
 
@@ -66,20 +65,7 @@ const Preview: Component<
           return;
         }
 
-        Idiomorph.morph(outputEl, html, {
-          morphStyle: "innerHTML",
-          callbacks: {
-            beforeNodeMorphed(oldN: Node, newN: Node) {
-              if (!(oldN instanceof HTMLElement)) return true;
-              if (!(newN instanceof HTMLElement)) return true;
-              if (oldN.tagName.includes("-") && oldN.tagName === newN.tagName) {
-                morphAttributes(oldN, newN);
-                return false;
-              }
-              return true;
-            },
-          },
-        });
+        Idiomorph.morph(outputEl, html, { morphStyle: "innerHTML" });
 
         setLookupListRaw(
           props.processResult.lookupListRawCollector?.(outputEl) ?? [],

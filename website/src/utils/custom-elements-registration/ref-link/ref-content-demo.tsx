@@ -6,20 +6,17 @@ import {
   StyleProvider,
 } from "@rolludejo/web-internal/shadow-root";
 
-import {
-  RefAddress,
-  RefContentRenderer,
-} from "@rotext/solid-components/internal";
+import { AnkorWidgetNavigationInnerRenderer } from "@rotext/solid-components/internal";
 
-import { styleProvider as styleProviderForPreflight } from "../../styles/preflight";
+import { styleProvider as styleProviderForPreflight } from "../../../styles/preflight";
 
 export function createDemoRefContentRenderer(
   opts: { proseClass: string; proseStyleProvider: StyleProvider },
-): RefContentRenderer {
-  return (el, addr, onChange, onCleanup) => {
+): AnkorWidgetNavigationInnerRenderer {
+  return (el, rawAddr, rOpts) => {
     const dispose = render(() => {
-      const [address, setAddress] = createSignal(addr);
-      onChange((addr) => setAddress(addr));
+      const [address, setAddress] = createSignal(parseAddress(rawAddr));
+      rOpts.onAddressChange((rawAddr) => setAddress(parseAddress(rawAddr)));
       return (
         <ShadowRootAttacher
           styleProviders={[styleProviderForPreflight, opts.proseStyleProvider]}
@@ -31,7 +28,7 @@ export function createDemoRefContentRenderer(
         </ShadowRootAttacher>
       );
     }, el);
-    onCleanup(dispose);
+    rOpts.onCleanup(dispose);
   };
 }
 
@@ -102,3 +99,50 @@ const AddressDescriptionList = (
     </Switch>
   );
 };
+
+type RefAddress =
+  | (
+    & { prefix: string }
+    & (
+      | { type: "post_number"; postNumber: number }
+      | { type: "thread_id"; threadID: string; floorNumber?: number }
+      | {
+        type: "thread_id_sub";
+        threadID: string;
+        subThreadID: string;
+        floorNumber?: number;
+      }
+    )
+  )
+  | { type: "unknown" };
+
+function parseAddress(address: string): RefAddress {
+  const prefixAndContent = /^([A-Z]+)\.(.*)$/.exec(address);
+  if (!prefixAndContent) return { type: "unknown" };
+  const [_1, prefix, content] = //
+    prefixAndContent as unknown as [string, string, string];
+
+  if (/^\d+$/.test(content)) {
+    const postNumber = parseInt(content);
+    return { type: "post_number", prefix, postNumber };
+  }
+
+  const threadIDAndRest = /^([a-z]+)(?:\.([a-z]+))?(?:#(\d+))?$/.exec(content);
+  if (!threadIDAndRest) return { type: "unknown" };
+  const [_2, threadID, subThreadID, floorNumberText] = //
+    threadIDAndRest as unknown as [string, string, string?, string?];
+
+  return {
+    prefix,
+    threadID,
+    ...(floorNumberText ? { floorNumber: parseInt(floorNumberText) } : {}),
+    ...(subThreadID
+      ? {
+        type: "thread_id_sub",
+        subThreadID,
+      }
+      : {
+        type: "thread_id",
+      }),
+  };
+}

@@ -26,10 +26,10 @@
         "default": "./dist/index/index.js"
       }
     },
-    "./ankor-widgets/RefLink": {
+    "./ankor-widgets/Navigation": {
       "import": {
-        "types": "./dist/ankor-widgets/RefLink/index.d.ts",
-        "default": "./dist/ankor-widgets/RefLink/index.js"
+        "types": "./dist/ankor-widgets/Navigation/index.d.ts",
+        "default": "./dist/ankor-widgets/Navigation/index.js"
       }
     },
     "./ankor-widgets/Dicexp": {
@@ -42,8 +42,8 @@
   },
   "typesVersions": {
     "*": {
-      "ankor-widgets/RefLink": [
-        "./dist/ankor-widgets/RefLink/index.d.ts"
+      "ankor-widgets/Navigation": [
+        "./dist/ankor-widgets/Navigation/index.d.ts"
       ],
       "ankor-widgets/Dicexp": [
         "./dist/ankor-widgets/Dicexp/index.d.ts"

@@ -13,8 +13,8 @@ const preset_options: preset.PresetOptions = {
     ...[
       { entry: "src/index.ts" },
       {
-        entry: "src/ankor-widgets/RefLink/mod.ts",
-        name: "ankor-widgets/RefLink",
+        entry: "src/ankor-widgets/Navigation/mod.ts",
+        name: "ankor-widgets/Navigation",
       },
       {
         entry: "src/ankor-widgets/Dicexp/mod.ts",
