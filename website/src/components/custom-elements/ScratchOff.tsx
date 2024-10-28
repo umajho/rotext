@@ -1,5 +1,5 @@
 import { customElement, getCurrentElement } from "solid-element";
-import { Component, createEffect, createSignal, on, onMount } from "solid-js";
+import { Component, createSignal, onMount } from "solid-js";
 
 import { adoptStyle } from "@rolludejo/web-internal/shadow-root";
 
@@ -18,6 +18,8 @@ function createScratchOffComponent(
 
     const currentElement = getCurrentElement();
 
+    let wrapperEl!: HTMLSpanElement;
+
     onMount(() => {
       for (
         const p of [styleProviderForPreflight, styleProviderForTailwind]
@@ -25,29 +27,24 @@ function createScratchOffComponent(
         adoptStyle(currentElement.shadowRoot!, p);
       }
 
-      const contentEl = (currentElement.shadowRoot!
-        .querySelector('slot[name="content"]')! as HTMLSlotElement)
-        .assignedElements()[0]!;
-      contentEl.classList.add("[&_*]:invisible");
-      createEffect(on([isRevealed], ([isRevealed]) => {
-        if (isRevealed) {
-          contentEl.classList.remove("[&_*]:invisible");
-        }
-      }));
-    });
-
-    currentElement.addEventListener("click", () => {
-      setIsRevealed(true);
+      // 不知为何，`span` 上的 `onClick` 不会被触发，只好像这样手动添加事件监听
+      // 器。
+      function reveal() {
+        setIsRevealed(true);
+        wrapperEl.removeEventListener("click", reveal);
+      }
+      wrapperEl.addEventListener("click", reveal);
     });
 
     return (
       <span
+        ref={wrapperEl}
         class={[
           "bg-white transition-[background-color] duration-[400ms]",
           opts.innerNoAutoOpenClass,
           isRevealed()
             ? "bg-opacity-10"
-            : "bg-opacity-100 text-transparent select-none cursor-pointer",
+            : "bg-opacity-100 text-transparent select-none cursor-pointer [&_*]:invisible",
         ].join(" ")}
       >
         <slot name="content" />
