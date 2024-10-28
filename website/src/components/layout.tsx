@@ -26,7 +26,7 @@ import { HiSolidArrowTopRightOnSquare, HiSolidBars3 } from "solid-icons/hi";
 import { Button, Dropdown, DropdownItem, Loading } from "./ui/mod";
 
 import { Navigation } from "../types/navigation";
-import { syntaxReferenceIndex } from "../data-sources/syntax-reference";
+import { syntaxReferenceResourceManager } from "../resource-managers/syntax-reference";
 import { getSyntaxReferencePathOfHeading } from "../utils/syntax-reference";
 import { SUPPORTS_DVH } from "../utils/mod";
 import { useRotextProcessorsStore } from "../contexts/rotext-processors-store";
@@ -179,8 +179,10 @@ const NavMenu: Component<{
     );
     return resp.json() as Promise<Navigation>;
   });
-  const isSyntaxReferenceReady = () =>
-    (!!syntaxReferenceNavigation()) && (!!syntaxReferenceIndex());
+
+  const [headingToPageMap] = createResource(
+    syntaxReferenceResourceManager.getHeadingToPageMap,
+  );
 
   return (
     <ul class="menu w-full">
@@ -219,7 +221,7 @@ const NavMenu: Component<{
         <details open>
           <summary>语法参考（WIP）</summary>
           <Show
-            when={isSyntaxReferenceReady()}
+            when={!headingToPageMap.loading}
             fallback={
               <ul>
                 <li class="disabled">
@@ -231,7 +233,7 @@ const NavMenu: Component<{
             }
           >
             <SyntaxReferenceIndexContext.Provider
-              value={syntaxReferenceIndex()}
+              value={headingToPageMap()!}
             >
               <NavMenuList
                 navigationList={syntaxReferenceNavigation()!.children ?? []}

@@ -13,10 +13,7 @@ import { useLocation, useNavigate, useParams } from "@solidjs/router";
 import { Button, Card, Loading } from "../../components/ui/mod";
 
 import "../../styles/tuan-prose";
-import {
-  syntaxReferenceFilesToHeadingMap,
-  syntaxReferenceIndex,
-} from "../../data-sources/syntax-reference";
+import { syntaxReferenceResourceManager } from "../../resource-managers/syntax-reference";
 import { getSyntaxReferencePathOfHeading } from "../../utils/syntax-reference";
 
 import { registerCustomElement as registerCustomElementForRotextPreview } from "./RotextExample/mod";
@@ -56,27 +53,25 @@ export default (() => {
 
   const [isIndexLoaded, setIsIndexLoaded] = createSignal(false);
 
-  const [pageHTMLRaw, { refetch }] = createResource(
+  const [pageHTMLRaw] = createResource(
     pageName,
     async (pageName) => {
-      const map = syntaxReferenceFilesToHeadingMap();
-      if (!map) return;
-      if (!map[pageName]) {
+      const page = await syntaxReferenceResourceManager.getPage(pageName);
+      if (!page) {
         navigate("/404");
         return;
       }
 
-      const path = import.meta.env.BASE_URL +
-        `static/generated/syntax-reference/${pageName}.inc.html`;
-      return (await fetch(path)).text();
+      return page;
     },
   );
-  createEffect(on([syntaxReferenceFilesToHeadingMap], () => refetch()));
+  const [headingToPageMap] = //
+    createResource(syntaxReferenceResourceManager.getHeadingToPageMap);
   createEffect(
-    on([pageHTMLRaw, syntaxReferenceIndex], ([pageHTMLRaw, index]) => {
+    on([pageHTMLRaw, headingToPageMap], ([pageHTMLRaw, headingToPageMap]) => {
       contentContainerEl.innerHTML = pageHTMLRaw ?? "";
 
-      if (!index) return;
+      if (!headingToPageMap) return;
       if (!isIndexLoaded()) {
         setIsIndexLoaded(true);
       }
@@ -86,7 +81,7 @@ export default (() => {
       for (const linkEl of linkEls) {
         const heading = linkEl.getAttribute("page-name") ?? linkEl.textContent!;
         const { pathWithAnchor } = getSyntaxReferencePathOfHeading(heading, {
-          index,
+          index: headingToPageMap,
         });
 
         const aEl = document.createElement("a");
