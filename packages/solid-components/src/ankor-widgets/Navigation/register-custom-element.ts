@@ -1,13 +1,13 @@
 import { customElement } from "solid-element";
 
 import {
-  createRefLinkComponent,
-  CreateRefLinkComponentOptions,
+  createNavigationComponent,
+  CreateNavigationComponentOptions,
 } from "./create-component";
 
 export function registerCustomElement(
   tag: string,
-  opts: CreateRefLinkComponentOptions,
+  opts: CreateNavigationComponentOptions,
 ) {
-  customElement(tag, { address: "" }, createRefLinkComponent(opts));
+  customElement(tag, { address: "" }, createNavigationComponent(opts));
 }

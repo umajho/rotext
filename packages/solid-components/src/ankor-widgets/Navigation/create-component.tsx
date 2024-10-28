@@ -31,7 +31,7 @@ export type InnerRenderer = (
   },
 ) => void;
 
-export interface CreateRefLinkComponentOptions {
+export interface CreateNavigationComponentOptions {
   baseStyleProviders?: StyleProvider[];
   classes: {
     forLabelWrapper: string;
@@ -46,8 +46,8 @@ export interface CreateRefLinkComponentOptions {
   innerPreviewRenderer: InnerRenderer;
 }
 
-export function createRefLinkComponent(
-  opts: CreateRefLinkComponentOptions,
+export function createNavigationComponent(
+  opts: CreateNavigationComponentOptions,
 ): Component<Properties> {
   return (outerProps) => {
     const Label = ((): Component<{ address: string }> => {
@@ -99,7 +99,7 @@ export function createRefLinkComponent(
         });
 
         return (
-          <div class="ref-link-widget-content">
+          <div class="navigation-widget-content">
             <div class="header">
               <PinButton
                 displayMode={props.displayMode}
