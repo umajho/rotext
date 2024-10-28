@@ -66,13 +66,23 @@ export function createRefLinkComponent(
 
     const component = Ankor.createWidgetComponent({
       LabelContent: (props) => {
+        let wrapperEl!: HTMLSpanElement;
+        onMount(() => {
+          // 不知为何，如果使用了 `slot`，`span` 上的 `onClick` 不会被触发；但如
+          // 果没有使用 `slot`，一切就正常。为了让任何情况都能正常运作，这里手动
+          // 添加事件监听器。
+          wrapperEl.addEventListener("click", () => {
+            props.onTogglePopper?.();
+          });
+        });
+
         return (
           <span
+            ref={wrapperEl}
             class={opts.classes.forLabelWrapper}
             style={{
               cursor: props.cursor,
             }}
-            onClick={props.onTogglePopper}
             onMouseDown={mouseDownNoDoubleClickToSelect}
           >
             <Label address={outerProps.address} />
