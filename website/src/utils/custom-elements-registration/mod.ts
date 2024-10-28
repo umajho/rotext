@@ -14,11 +14,11 @@ import { evaluatorProvider } from "./evaluator-provider";
 
 export { PROSE_CLASS, TAG_NAME_MAP, WIDGET_OWNER_CLASS } from "./consts";
 import {
-  BACKGROUND_COLOR,
   INNER_NO_AUTO_OPEN_CLASS,
   TAG_NAME_MAP,
   WIDGET_OWNER_CLASS,
 } from "./consts";
+import { getBackgroundColor } from "./utils";
 
 import { registerCustomElementForRefLink } from "./ref-link/mod";
 import { registerCustomElementForInternalLink } from "./internal-link/mod";
@@ -33,7 +33,7 @@ export function registerCustomElementsOnce() {
   registerCustomElementForStepsRepresentation("steps-representation");
   registerCustomElementForAnkorWidgetDicexp(TAG_NAME_MAP["dicexp"], {
     styleProviders: getDefaultDicexpStyleProviders(),
-    backgroundColor: BACKGROUND_COLOR,
+    backgroundColor: getBackgroundColor(),
     widgetOwnerClass: WIDGET_OWNER_CLASS,
     innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,
     evaluatorProvider,
