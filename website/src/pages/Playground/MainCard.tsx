@@ -14,7 +14,9 @@ import examples from "./examples";
 
 const SIZE_OPTS = {
   widthClass: "w-full",
-  heightClass: SUPPORTS_DVH ? `h-[calc(100dvh-8rem)]` : `h-[calc(100vh-8rem)]`,
+  heightClass: SUPPORTS_DVH
+    ? `h-[calc(50dvh-5rem)] xl:h-[calc(100dvh-8rem)]`
+    : `h-[calc(50vh-5rem)] xl:h-[calc(100vh-8rem)]`,
 };
 
 const MainCard: Component = () => {
