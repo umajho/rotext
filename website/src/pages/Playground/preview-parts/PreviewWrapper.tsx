@@ -6,6 +6,7 @@ import {
   Match,
   on,
   Show,
+  Suspense,
   Switch,
 } from "solid-js";
 
@@ -72,19 +73,11 @@ const PreviewWrapper: Component<{
       }
       <Show
         when={isProcessorProviderReady}
-        fallback={
-          <div
-            class={`flex justify-center items-center h-full ${props.widthClass}`}
-          >
-            <Loading />
-          </div>
-        }
+        fallback={<LocalLoading widthClass={props.widthClass} />}
       >
-        <Show
-          when={props.store.processResult}
-        >
+        <Show when={props.store.processResult}>
           {(processResult) => (
-            <>
+            <Suspense fallback={<LocalLoading widthClass={props.widthClass} />}>
               <Preview
                 store={props.editorStore}
                 processResult={processResult()}
@@ -112,12 +105,18 @@ const PreviewWrapper: Component<{
                   </pre>
                 </Match>
               </Switch>
-            </>
+            </Suspense>
           )}
         </Show>
       </Show>
     </div>
   );
 };
+
+const LocalLoading: Component<{ widthClass: string }> = (props) => (
+  <div class={`flex justify-center items-center h-full ${props.widthClass}`}>
+    <Loading />
+  </div>
+);
 
 export default PreviewWrapper;
