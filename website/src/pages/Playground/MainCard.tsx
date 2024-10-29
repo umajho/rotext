@@ -14,9 +14,7 @@ import examples from "./examples";
 
 const SIZE_OPTS = {
   widthClass: "w-full",
-  heightClass: SUPPORTS_DVH
-    ? `h-[calc(50dvh-6rem)] sm:h-[calc(50dvh-8rem)] xl:h-[calc(100dvh-16rem)]`
-    : `h-[calc(50vh-6rem)] sm:h-[calc(50vh-8rem)] xl:h-[calc(100vh-16rem)]`,
+  heightClass: SUPPORTS_DVH ? `h-[calc(100dvh-8rem)]` : `h-[calc(100vh-8rem)]`,
 };
 
 const MainCard: Component = () => {
@@ -26,8 +24,8 @@ const MainCard: Component = () => {
 
   return (
     <Card
-      class="h-content w-full xl:w-[80rem]"
-      bodyClass="max-sm:px-1 max-sm:py-1"
+      class="h-content w-full h-full"
+      bodyClass="px-1 py-1"
     >
       <div class="grid grid-cols-1 xl:grid-cols-2">
         <div class="max-xl:order-1">
