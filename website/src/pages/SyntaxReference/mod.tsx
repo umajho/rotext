@@ -104,7 +104,7 @@ export default (() => {
     if (loading) contentContainerEl.innerHTML = "";
   }));
 
-  const isReady = () => pageHTMLRaw.loading && isIndexLoaded();
+  const isLoading = () => pageHTMLRaw.loading || !isIndexLoaded();
 
   const [verificationStatistics, setVerificationStatistics] = createSignal<
     { total: number; matches: number; mismatches: number } | null
@@ -145,14 +145,14 @@ export default (() => {
     <div class="flex max-h-full h-fit justify-center p-2 sm:p-4 lg:p-6 2xl:p-8">
       <Card
         class="w-full"
-        bodyClass="max-sm:px-1 !pt-0"
+        bodyClass="max-sm:px-1 h-full !pt-0"
       >
-        <div class="h-full">
-          <Show when={isReady()}>
-            <div class="flex w-full justify-center">
-              <Loading />
-            </div>
-          </Show>
+        <Show when={isLoading()}>
+          <div class="flex w-full h-screen justify-center items-center">
+            <Loading />
+          </div>
+        </Show>
+        <div class={`contents ${isLoading() ? "hidden" : ""}`}>
           <div class="flex h-fit items-center px-2">
             <div class="flex-1" />
             <div>
@@ -172,7 +172,9 @@ export default (() => {
                     本页示例输出验证结果：匹配{" "}
                     <span class="text-green-500">{statistics().matches}
                     </span>，不匹配{" "}
-                    <span class="text-red-500">{statistics().mismatches}</span>
+                    <span class="text-red-500">
+                      {statistics().mismatches}
+                    </span>
                     <Show when={verificationStatisticsUnverified()}>
                       {(unverified) => (
                         <>
