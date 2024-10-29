@@ -161,8 +161,6 @@ const Preview: Component<
         />
       </div>
 
-      <div class={`${Ankor.ANCHOR_CLASS} relative z-10`} />
-
       <div
         ref={scrollContainerEl}
         class={[
@@ -176,6 +174,8 @@ const Preview: Component<
           scrollHandler()!(ev);
         }}
       >
+        <div class={`${Ankor.ANCHOR_CLASS} relative z-10`} />
+
         {/* highlight anchor */}
         <div class="relative">{highlightElement()}</div>
 
