@@ -7,7 +7,10 @@ export {
 } from "./create-widget-component";
 
 export {
-  getWidgetOwner,
-  registerWidgetOwner,
-  type WidgetOwner,
-} from "./widget-owners-store";
+  ANCHOR_CLASS,
+  CONTENT_CLASS,
+  getWidgetOwnerController,
+  WIDGET_OWNER_CLASS,
+  type WidgetOwnerController,
+  type WidgetOwnerRaw,
+} from "./widget-owner-agent";

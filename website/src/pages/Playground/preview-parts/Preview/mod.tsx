@@ -19,7 +19,6 @@ import { debounceEventHandler } from "../../../../utils/mod";
 import {
   PROSE_CLASS,
   registerCustomElementsOnce,
-  WIDGET_OWNER_CLASS,
 } from "../../../../utils/custom-elements-registration/mod";
 
 import { ActiveLines, EditorStore, TopLine } from "../../editor-store";
@@ -42,8 +41,8 @@ const Preview: Component<
     hidden: boolean;
   }
 > = (props) => {
+  let widgetOwnerEl!: HTMLDivElement;
   let scrollContainerEl!: HTMLDivElement;
-  let popperAnchorEl!: HTMLDivElement;
   let outputContainerEl!: HTMLDivElement;
   let outputEl!: HTMLElement;
 
@@ -92,23 +91,12 @@ const Preview: Component<
       setHighlightElement,
     });
 
-    //==== 注册进全局存储 ====
+    //==== Widget Owner 相关 ====
     {
-      const cbs = new Set<() => void>();
-      const layoutChangeObserver = {
-        subscribe: (cb: () => void) => cbs.add(cb),
-        unsubscribe: (cb: () => void) => cbs.delete(cb),
-      };
+      const controller = Ankor.getWidgetOwnerController(widgetOwnerEl)!;
 
-      // NOTE: 目前 scrollContainerEl 就是 previewer 的元素
-      Ankor.registerWidgetOwner(scrollContainerEl, {
-        popperAnchorElement: popperAnchorEl,
-        level: 1,
-        layoutChangeObserver,
-      });
-      createEffect(
-        on([lookupList], () => [...cbs].forEach((cb) => cb())),
-      );
+      // 布局改变，通知 widget owner 重新计算挂件位置。
+      createEffect(on([lookupList], controller.notifyLayoutChange));
     }
   });
 
@@ -141,9 +129,19 @@ const Preview: Component<
     return { fixScrollOutOfSyncAfterUnhide };
   })();
 
+  const widgetOwnerData = JSON.stringify(
+    {
+      level: 1,
+    } satisfies Ankor.WidgetOwnerRaw,
+  );
+
   //==== 组件 ====
   return (
-    <>
+    <div
+      ref={widgetOwnerEl}
+      class={`${Ankor.WIDGET_OWNER_CLASS} contents`}
+      data-ankor-widget-owner={widgetOwnerData}
+    >
       <div
         class={[
           "w-full px-4",
@@ -163,16 +161,16 @@ const Preview: Component<
         />
       </div>
 
-      <div class="relative z-10" ref={popperAnchorEl} />
+      <div class={`${Ankor.ANCHOR_CLASS} relative z-10`} />
 
       <div
+        ref={scrollContainerEl}
         class={[
           `${props.hidden ? "hidden" : ""}`,
-          `previewer ${WIDGET_OWNER_CLASS}`,
+          "previewer",
           "relative tuan-background overflow-y-auto",
           props.class,
         ].join(" ")}
-        ref={scrollContainerEl}
         onScroll={(ev) => {
           if (fixScrollOutOfSyncAfterUnhide() === "should_stop") return;
           scrollHandler()!(ev);
@@ -182,19 +180,20 @@ const Preview: Component<
         <div class="relative">{highlightElement()}</div>
 
         <div
-          class={"" +
-            "relative " + // 作为计算元素高度位移的锚点
-            "self-center mx-auto " + // 保持居中，以及撑起父元素
-            "break-all " + // 内容的外观样式
-            `${PROSE_CLASS} ` +
-            ""}
+          class={[
+            Ankor.CONTENT_CLASS,
+            "relative", // 作为计算元素高度位移的锚点
+            "self-center mx-auto", // 保持居中，以及撑起父元素
+            "break-all", // 内容的外观样式
+            PROSE_CLASS,
+          ].join(" ")}
         >
           <div ref={outputContainerEl}>
             <article ref={outputEl} class={`relative ${CONTENT_ROOT_CLASS}`} />
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 export default Preview;

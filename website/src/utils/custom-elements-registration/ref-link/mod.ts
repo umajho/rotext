@@ -4,12 +4,7 @@ import {
 
 import { styleProvider as styleProviderForTuanProse } from "../../../styles/tuan-prose";
 
-import {
-  INNER_NO_AUTO_OPEN_CLASS,
-  PROSE_CLASS,
-  TAG_NAME_MAP,
-  WIDGET_OWNER_CLASS,
-} from "../consts";
+import { INNER_NO_AUTO_OPEN_CLASS, PROSE_CLASS, TAG_NAME_MAP } from "../consts";
 import { getBackgroundColor } from "../utils";
 
 import { createDemoRefContentRenderer } from "./ref-content-demo";
@@ -24,7 +19,6 @@ export function registerCustomElementForRefLink() {
       forLabelWrapper: "font-mono underline text-[#789922]", // `#789922` is futaba-green.
     },
     backgroundColor: getBackgroundColor(),
-    widgetOwnerClass: WIDGET_OWNER_CLASS,
     innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,
     label: ["text", (address) => `>>${address}`],
     innerPreviewRenderer: createDemoRefContentRenderer({

@@ -7,7 +7,6 @@ export const TAG_NAME_MAP = {
   "internal-link": "x-internal-link",
 };
 
-export const WIDGET_OWNER_CLASS = "widget-owner";
 export const PROSE_CLASS = "tuan-prose";
 
 export const INNER_NO_AUTO_OPEN_CLASS = "inner-no-auto-open";

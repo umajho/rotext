@@ -23,7 +23,6 @@ export function registerCustomElement(
   opts: {
     styleProviders: CreateDicexpComponentOptions["styleProviders"];
     backgroundColor: ComputedColor;
-    widgetOwnerClass: string;
     innerNoAutoOpenClass?: string;
     evaluatorProvider?: DicexpEvaluatorProvider;
     Loading: Component;

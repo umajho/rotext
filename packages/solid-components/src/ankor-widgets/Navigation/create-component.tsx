@@ -38,7 +38,6 @@ export interface CreateNavigationComponentOptions {
   };
   backgroundColor: ComputedColor;
 
-  widgetOwnerClass: string;
   innerNoAutoOpenClass?: string;
   label:
     | ["text", (address: string) => string]
@@ -116,7 +115,6 @@ export function createNavigationComponent(
       },
     }, {
       baseStyleProviders: opts.baseStyleProviders,
-      widgetOwnerClass: opts.widgetOwnerClass,
       innerNoAutoOpenClass: opts.innerNoAutoOpenClass,
 
       popperContentStyleProvider: styleProviderForPopperContent,

@@ -50,7 +50,6 @@ export interface CreateDicexpComponentOptions {
   };
   backgroundColor: ComputedColor;
 
-  widgetOwnerClass: string;
   innerNoAutoOpenClass?: string;
   evaluatorProvider?: DicexpEvaluatorProvider;
 
@@ -155,7 +154,6 @@ export function createDicexpComponent(
         StepsRepresentation,
       }),
     }, {
-      widgetOwnerClass: opts.widgetOwnerClass,
       innerNoAutoOpenClass: opts.innerNoAutoOpenClass,
       openable: everRolled,
       autoOpenShouldCollapse: false,

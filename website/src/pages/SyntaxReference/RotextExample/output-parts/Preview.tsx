@@ -12,12 +12,9 @@ import { Idiomorph } from "idiomorph/dist/idiomorph.esm.js";
 
 import * as Ankor from "ankor";
 
-import { ElementLayoutChangeObserver } from "@rotext/solid-components/internal";
-
 import {
   PROSE_CLASS,
   registerCustomElementsOnce,
-  WIDGET_OWNER_CLASS,
 } from "../../../../utils/custom-elements-registration/mod";
 
 export type PreviewContent = ["html", string];
@@ -28,21 +25,10 @@ export const Preview: Component<{
   content: () => PreviewContent;
 }> = (props) => {
   let containerEl!: HTMLDivElement;
-  let popperAnchorEl!: HTMLDivElement;
   let outputWrapperEl!: HTMLDivElement;
 
   const [isOutputEmpty, setIsOutputEmpty] = createSignal(false);
   onMount(() => {
-    //==== 注册进全局存储 ====
-    Ankor.registerWidgetOwner(containerEl, {
-      popperAnchorElement: popperAnchorEl,
-      level: 1,
-      layoutChangeObserver: new ElementLayoutChangeObserver(
-        outputWrapperEl,
-        { resize: true },
-      ),
-    });
-
     //==== 文档渲染 ====
     setUpRendering({
       content: props.content,
@@ -51,18 +37,26 @@ export const Preview: Component<{
     });
   });
 
+  const widgetOwnerData = JSON.stringify(
+    {
+      level: 1,
+    } satisfies Ankor.WidgetOwnerRaw,
+  );
+
   return (
     <div
+      ref={containerEl}
       class={[
-        WIDGET_OWNER_CLASS,
+        Ankor.WIDGET_OWNER_CLASS,
         "relative h-full p-4",
         "tuan-background",
       ].join(" ")}
-      ref={containerEl}
+      data-ankor-widget-owner={widgetOwnerData}
     >
-      <div class="relative z-10" ref={popperAnchorEl} />
+      <div class={`${Ankor.ANCHOR_CLASS} relative z-10`} />
       <div
         class={[
+          Ankor.CONTENT_CLASS,
           "relative",
           "self-center mx-auto",
           "break-all",

@@ -19,7 +19,7 @@ import {
   getSizeInPx,
 } from "@rolludejo/web-internal/styling";
 
-import { getWidgetOwner, WidgetOwner } from "./widget-owners-store";
+import { createWidgetOwnerAgent, WidgetOwnerAgent } from "./widget-owner-agent";
 import { closestContainer, mixColor } from "./utils";
 import CollapseMaskLayer from "./CollapseMaskLayer";
 import PopperContainer from "./PopperContainer";
@@ -70,9 +70,7 @@ export function createWidgetComponent(parts: {
   PopperContent: Component<PopperContentProperties>;
 }, opts: {
   baseStyleProviders?: StyleProvider[];
-  widgetOwnerClass: string;
   innerNoAutoOpenClass?: string;
-  setWidgetOwner?: (v: WidgetOwner) => void;
   openable?: () => boolean;
   autoOpenShouldCollapse?: boolean;
 
@@ -101,7 +99,7 @@ export function createWidgetComponent(parts: {
     computedColorToCSSValue(opts.popperBackgroundColor())
   );
 
-  const [widgetOwner, setWidgetOwner] = createSignal<WidgetOwner>();
+  const [woAgent, setWOAgent] = createSignal<WidgetOwnerAgent>();
 
   const [popperPosition, setPopperPosition] = //
     createSignal<ElementPosition | null>({ topPx: 0, leftPx: 0 });
@@ -138,17 +136,15 @@ export function createWidgetComponent(parts: {
       }
     }
 
-    const widgetOwner_ = //
-      getWidgetOwner(shadowRoot.host.closest("." + opts.widgetOwnerClass)!)!;
-    setWidgetOwner(widgetOwner_);
-    opts.setWidgetOwner?.(widgetOwner_);
+    const woAgent_ = createWidgetOwnerAgent(shadowRoot.host as HTMLElement);
+    setWOAgent(woAgent_);
 
     const closestContainerEl = closestContainer(labelEl)!;
     const calculateAndSetPopperPosition = () => {
       setPopperPosition(
         calculatePopperPosition({
           label: labelEl,
-          popperAnchor: widgetOwner_.popperAnchorElement,
+          popperAnchor: woAgent_.anchorElement,
           closestContainer: closestContainerEl,
         }),
       );
@@ -156,7 +152,7 @@ export function createWidgetComponent(parts: {
     createEffect(on(
       [() => displayMode() === "floating"],
       ([isFloating]) => {
-        widgetOwner_.layoutChangeObserver
+        woAgent_.layoutChangeObserver
           [isFloating ? "subscribe" : "unsubscribe"](
             calculateAndSetPopperPosition,
           );
@@ -165,6 +161,11 @@ export function createWidgetComponent(parts: {
         }
       },
     ));
+    onCleanup(() =>
+      woAgent_.layoutChangeObserver.unsubscribe(
+        calculateAndSetPopperPosition,
+      )
+    );
 
     // 这里是确认 openable 这个 “决定能否打开的函数” 在不在
     if (opts.openable) {
@@ -190,8 +191,7 @@ export function createWidgetComponent(parts: {
     }
 
     if (
-      widgetOwner_.level === 1 &&
-      !(opts.innerNoAutoOpenClass &&
+      woAgent_.level === 1 && !(opts.innerNoAutoOpenClass &&
         labelEl.closest("." + opts.innerNoAutoOpenClass))
     ) {
       autoOpen(!!opts.autoOpenShouldCollapse);
@@ -243,7 +243,7 @@ export function createWidgetComponent(parts: {
           ref={handlePortalRef}
           mount={isCleaningUp() || displayMode() === "pinned"
             ? pinAnchorEl
-            : widgetOwner()?.popperAnchorElement}
+            : woAgent()?.anchorElement}
           useShadow={true}
         >
           <Show when={displayMode() !== "closed"}>
