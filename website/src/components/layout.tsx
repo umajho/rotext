@@ -25,8 +25,10 @@ import { HiSolidArrowTopRightOnSquare, HiSolidBars3 } from "solid-icons/hi";
 
 import { Button, Dropdown, DropdownItem, Loading } from "./ui/mod";
 
-import { Navigation } from "../types/navigation";
-import { syntaxReferenceResourceManager } from "../resource-managers/syntax-reference";
+import {
+  Navigation,
+  syntaxReferenceResourceManager,
+} from "../resource-managers/syntax-reference";
 import { getSyntaxReferencePathOfHeading } from "../utils/syntax-reference";
 import { SUPPORTS_DVH } from "../utils/mod";
 import { useRotextProcessorsStore } from "../contexts/rotext-processors-store";
@@ -173,16 +175,10 @@ const NavMenu: Component<{
   const navigate = useNavigate();
   const matchPlayground = useMatch(() => "/playground");
 
-  const [syntaxReferenceNavigation] = createResource(async () => {
-    const resp = await fetch(
-      "static/generated/syntax-reference/navigation.json",
-    );
-    return resp.json() as Promise<Navigation>;
-  });
-
-  const [headingToPageMap] = createResource(
-    syntaxReferenceResourceManager.getHeadingToPageMap,
-  );
+  const [syntaxReferenceNavigation] = //
+    createResource(syntaxReferenceResourceManager.getNavigation);
+  const [headingToPageMap] = //
+    createResource(syntaxReferenceResourceManager.getHeadingToPageMap);
 
   return (
     <ul class="menu w-full">

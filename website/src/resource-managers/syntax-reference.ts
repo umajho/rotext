@@ -1,16 +1,33 @@
 const PATH_PREFIX = import.meta.env.BASE_URL +
   "static/generated/syntax-reference";
-const FILES_HEADINGS_PATH = `${PATH_PREFIX}/files-headings.json`;
+const PATHS = {
+  NAVIGATION: `${PATH_PREFIX}/navigation.json`,
+  FILES_HEADINGS: `${PATH_PREFIX}/files-headings.json`,
+  page: (pageName: string) => `${PATH_PREFIX}/${pageName}.inc.html`,
+};
 
-const makePagePath = (pageName: string) =>
-  `${PATH_PREFIX}/${pageName}.inc.html`;
+export interface Navigation {
+  isPlain?: true;
+  name: string;
+  realName?: string;
+  children?: Navigation[];
+}
 
 type PageToHeadingsMap = { [pageName: string]: string[] };
 type HeadingToPageMap = { [heading: string]: string };
 
 function createSyntaxReferenceResourceManager() {
+  async function fetchNavigation() {
+    return await (await fetch(PATHS.NAVIGATION)).json();
+  }
+  let navigationCache: Navigation | Promise<Navigation> | undefined;
+  async function getNavigation(): Promise<Navigation> {
+    return navigationCache ??= fetchNavigation()
+      .then((v) => navigationCache = v);
+  }
+
   async function fetchPageToHeadingsMap(): Promise<PageToHeadingsMap> {
-    return await (await fetch(FILES_HEADINGS_PATH)).json();
+    return await (await fetch(PATHS.FILES_HEADINGS)).json();
   }
   let pageToHeadingsMapCache:
     | PageToHeadingsMap
@@ -40,7 +57,7 @@ function createSyntaxReferenceResourceManager() {
   }
 
   async function fetchPage(pageName: string): Promise<string> {
-    return (await fetch(makePagePath(pageName))).text();
+    return (await fetch(PATHS.page(pageName))).text();
   }
   const pageCaches: { [pageName: string]: string | Promise<string> } = {};
   async function getPage(pageName: string): Promise<string | null> {
@@ -50,7 +67,7 @@ function createSyntaxReferenceResourceManager() {
       .then((v) => pageCaches[pageName] = v);
   }
 
-  return { getPageToHeadingsMap, getHeadingToPageMap, getPage };
+  return { getNavigation, getPageToHeadingsMap, getHeadingToPageMap, getPage };
 }
 
 export const syntaxReferenceResourceManager =
