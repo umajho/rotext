@@ -2,15 +2,15 @@ import {
   registerCustomElementForAnkorWidgetNavigation,
 } from "@rotext/solid-components/internal";
 
-import { styleProvider as styleProviderForTuanProse } from "../../../styles/tuan-prose";
+import { styleProvider as styleProviderForTuanProse } from "../../styles/tuan-prose";
 
 import { INNER_NO_AUTO_OPEN_CLASS, PROSE_CLASS, TAG_NAME_MAP } from "../consts";
 import { getBackgroundColor } from "../utils";
 
 import { createDemoRefContentRenderer } from "./ref-content-demo";
 
-import { styleProvider as styleProviderForPreflight } from "../../../styles/preflight";
-import { styleProvider as styleProviderForTailwind } from "../../../styles/tailwind";
+import { styleProvider as styleProviderForPreflight } from "../../styles/preflight";
+import { styleProvider as styleProviderForTailwind } from "../../styles/tailwind";
 
 export function registerCustomElementForRefLink() {
   registerCustomElementForAnkorWidgetNavigation(TAG_NAME_MAP["ref-link"], {

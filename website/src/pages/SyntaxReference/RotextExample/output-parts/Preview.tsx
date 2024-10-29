@@ -15,7 +15,7 @@ import * as Ankor from "ankor";
 import {
   PROSE_CLASS,
   registerCustomElementsOnce,
-} from "../../../../utils/custom-elements-registration/mod";
+} from "../../../../custom-elements/mod";
 
 export type PreviewContent = ["html", string];
 

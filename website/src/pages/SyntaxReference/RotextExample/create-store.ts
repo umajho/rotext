@@ -1,7 +1,7 @@
 import { createEffect, createMemo, createSignal, on } from "solid-js";
 
 import { useRotextProcessorsStore } from "../../../contexts/rotext-processors-store";
-import { TAG_NAME_MAP } from "../../../utils/custom-elements-registration/mod";
+import { TAG_NAME_MAP } from "../../../custom-elements/mod";
 import { formatHTML } from "../../../utils/html-formatting";
 
 export type CurrentOutput =

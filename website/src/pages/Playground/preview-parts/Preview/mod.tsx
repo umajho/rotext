@@ -19,7 +19,7 @@ import { debounceEventHandler } from "../../../../utils/mod";
 import {
   PROSE_CLASS,
   registerCustomElementsOnce,
-} from "../../../../utils/custom-elements-registration/mod";
+} from "../../../../custom-elements/mod";
 
 import { ActiveLines, EditorStore, TopLine } from "../../editor-store";
 import { createAutoResetCounter } from "../../../../hooks/auto-reset-counter";
