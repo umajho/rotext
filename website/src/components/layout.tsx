@@ -217,7 +217,8 @@ const NavMenu: Component<{
         <details open>
           <summary>语法参考（WIP）</summary>
           <Show
-            when={!headingToPageMap.loading}
+            when={syntaxReferenceNavigation.state === "ready" &&
+              headingToPageMap.state === "ready"}
             fallback={
               <ul>
                 <li class="disabled">
@@ -228,9 +229,7 @@ const NavMenu: Component<{
               </ul>
             }
           >
-            <SyntaxReferenceIndexContext.Provider
-              value={headingToPageMap()!}
-            >
+            <SyntaxReferenceIndexContext.Provider value={headingToPageMap()!}>
               <NavMenuList
                 navigationList={syntaxReferenceNavigation()!.children ?? []}
               />
