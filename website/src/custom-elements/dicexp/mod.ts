@@ -9,7 +9,7 @@ import { Loading } from "../../components/ui/mod";
 
 import { evaluatorProvider } from "./evaluator-provider";
 
-import { INNER_NO_AUTO_OPEN_CLASS, TAG_NAME_MAP } from "../consts";
+import { TAG_NAME_MAP } from "../consts";
 import { getBackgroundColor } from "../utils";
 
 import { styleProvider as styleProviderForPreflight } from "../../styles/preflight";
@@ -20,7 +20,6 @@ export function registerCustomElementsForDicexp() {
   registerCustomElementForAnkorWidgetDicexp(TAG_NAME_MAP["dicexp"], {
     baseStyleProviders: [styleProviderForPreflight, styleProviderForTailwind],
     backgroundColor: getBackgroundColor(),
-    innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,
     evaluatorProvider,
     ErrorAlert,
     Loading,

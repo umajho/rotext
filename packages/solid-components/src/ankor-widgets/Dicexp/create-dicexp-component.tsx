@@ -36,7 +36,6 @@ export interface CreateDicexpComponentOptions {
   baseStyleProviders?: StyleProvider[];
   backgroundColor: ComputedColor;
 
-  innerNoAutoOpenClass?: string;
   evaluatorProvider?: DicexpEvaluatorProvider;
 
   Loading: LoadingComponent;
@@ -143,7 +142,6 @@ export function createDicexpComponent(
       }),
     }, {
       baseStyleProviders: opts.baseStyleProviders,
-      innerNoAutoOpenClass: opts.innerNoAutoOpenClass,
       openable: everRolled,
       autoOpenShouldCollapse: false,
 

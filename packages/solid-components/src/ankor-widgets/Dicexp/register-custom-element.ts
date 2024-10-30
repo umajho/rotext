@@ -18,7 +18,6 @@ export function registerCustomElement(
   opts: {
     baseStyleProviders: StyleProvider[];
     backgroundColor: ComputedColor;
-    innerNoAutoOpenClass?: string;
     evaluatorProvider?: DicexpEvaluatorProvider;
     Loading: Component;
     ErrorAlert: ErrorAlertComponent;

@@ -1,18 +1,14 @@
 import { customElement, getCurrentElement } from "solid-element";
 import { Component, createSignal, onMount } from "solid-js";
 
+import { NO_AUTO_OPEN_CLASS } from "ankor";
+
 import { adoptStyle } from "@rolludejo/web-internal/shadow-root";
 
 import { styleProvider as styleProviderForPreflight } from "../../styles/preflight";
 import { styleProvider as styleProviderForTailwind } from "../../styles/tailwind";
 
-export interface CreateScratchOffComponentOptions {
-  innerNoAutoOpenClass: string;
-}
-
-function createScratchOffComponent(
-  opts: CreateScratchOffComponentOptions & { tagName: string },
-): Component {
+function createScratchOffComponent(): Component {
   return () => {
     const [isRevealed, setIsRevealed] = createSignal(false);
 
@@ -41,7 +37,7 @@ function createScratchOffComponent(
         ref={wrapperEl}
         class={[
           "bg-white transition-[background-color] duration-[400ms]",
-          opts.innerNoAutoOpenClass,
+          NO_AUTO_OPEN_CLASS,
           isRevealed()
             ? "bg-opacity-10"
             : "bg-opacity-100 text-transparent select-none cursor-pointer [&_*]:invisible",
@@ -53,9 +49,6 @@ function createScratchOffComponent(
   };
 }
 
-export function registerCustomElement(
-  tag: string,
-  opts: CreateScratchOffComponentOptions,
-) {
-  customElement(tag, {}, createScratchOffComponent({ ...opts, tagName: tag }));
+export function registerCustomElement(tag: string) {
+  customElement(tag, {}, createScratchOffComponent());
 }

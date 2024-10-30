@@ -9,8 +9,6 @@ export const TAG_NAME_MAP = {
 
 export const PROSE_CLASS = "tuan-prose";
 
-export const INNER_NO_AUTO_OPEN_CLASS = "inner-no-auto-open";
-
 export const CLASSES_FOR_NAVIGATION_ACTION = {
   enabled: "font-bold text-blue-500 hover:text-blue-700",
   disabled: "text-gray-600",

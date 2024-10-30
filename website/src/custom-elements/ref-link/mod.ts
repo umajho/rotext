@@ -6,7 +6,6 @@ import { styleProvider as styleProviderForTuanProse } from "../../styles/tuan-pr
 
 import {
   CLASSES_FOR_NAVIGATION_ACTION,
-  INNER_NO_AUTO_OPEN_CLASS,
   PROSE_CLASS,
   TAG_NAME_MAP,
 } from "../consts";
@@ -25,7 +24,6 @@ export function registerCustomElementForRefLink() {
       forNavigationAction: CLASSES_FOR_NAVIGATION_ACTION,
     },
     backgroundColor: getBackgroundColor(),
-    innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,
     label: ["text", (address) => `>>${address}`],
     innerPreviewRenderer: createDemoRefContentRenderer({
       proseClass: PROSE_CLASS,

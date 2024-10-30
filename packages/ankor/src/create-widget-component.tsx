@@ -20,9 +20,10 @@ import {
 } from "@rolludejo/web-internal/styling";
 
 import { createWidgetOwnerAgent, WidgetOwnerAgent } from "./widget-owner-agent";
-import { closestContainer, mixColor } from "./utils";
+import { closest, closestContainer, mixColor } from "./utils";
 import CollapseMaskLayer from "./CollapseMaskLayer";
 import PopperContainer from "./PopperContainer";
+import { NO_AUTO_OPEN_CLASS } from "./consts";
 
 const LEAVING_DELAY_MS = 100;
 
@@ -70,7 +71,6 @@ export function createWidgetComponent(parts: {
   PopperContent: Component<PopperContentProperties>;
 }, opts: {
   baseStyleProviders?: StyleProvider[];
-  innerNoAutoOpenClass?: string;
   openable?: () => boolean;
   autoOpenShouldCollapse?: boolean;
 
@@ -190,8 +190,8 @@ export function createWidgetComponent(parts: {
     }
 
     if (
-      woAgent_.level === 1 && !(opts.innerNoAutoOpenClass &&
-        labelEl.closest("." + opts.innerNoAutoOpenClass))
+      woAgent_.level === 1 &&
+      !closest(labelEl, (el) => el.classList.contains(NO_AUTO_OPEN_CLASS))
     ) {
       autoOpen(!!opts.autoOpenShouldCollapse);
     }

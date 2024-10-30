@@ -1,5 +1,5 @@
 export { PROSE_CLASS, TAG_NAME_MAP } from "./consts";
-import { INNER_NO_AUTO_OPEN_CLASS, TAG_NAME_MAP } from "./consts";
+import { TAG_NAME_MAP } from "./consts";
 
 import { registerCustomElementForRefLink } from "./ref-link/mod";
 import { registerCustomElementForInternalLink } from "./internal-link/mod";
@@ -18,9 +18,7 @@ export function registerCustomElementsOnce() {
   registerCustomElementForInternalLink();
   registerCustomElementsForDicexp();
 
-  registerCustomElementForScratchOff(TAG_NAME_MAP["scratch-off"], {
-    innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,
-  });
+  registerCustomElementForScratchOff(TAG_NAME_MAP["scratch-off"]);
   registerCustomElementForCollapse(TAG_NAME_MAP["collapse"]);
   registerCustomElementForCodeBlock(TAG_NAME_MAP["code-block"]);
 }

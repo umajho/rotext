@@ -69,7 +69,6 @@ export interface CreateNavigationComponentOptions {
   };
   backgroundColor: ComputedColor;
 
-  innerNoAutoOpenClass?: string;
   label:
     | ["text", (address: string) => string]
     | ["slot"];
@@ -178,7 +177,6 @@ export function createNavigationComponent(
       },
     }, {
       baseStyleProviders: opts.baseStyleProviders,
-      innerNoAutoOpenClass: opts.innerNoAutoOpenClass,
 
       popperBackgroundColor: () => opts.backgroundColor,
       maskTintColor: () => gray500,

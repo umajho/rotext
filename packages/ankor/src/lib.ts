@@ -12,4 +12,9 @@ export {
   type WidgetOwnerRaw,
 } from "./widget-owner-agent";
 
-export { ANCHOR_CLASS, CONTENT_CLASS, WIDGET_OWNER_CLASS } from "./consts";
+export {
+  ANCHOR_CLASS,
+  CONTENT_CLASS,
+  NO_AUTO_OPEN_CLASS,
+  WIDGET_OWNER_CLASS,
+} from "./consts";
