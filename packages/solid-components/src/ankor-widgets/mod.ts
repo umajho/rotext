@@ -1,7 +1,6 @@
 export {
   type DicexpEvaluation,
   type DicexpEvaluatorProvider,
-  getDefaultStyleProviders as getDefaultDicexpStyleProviders,
   type Properties as AnkorWidgetDicexpProperties,
   registerCustomElement as registerCustomElementForAnkorWidgetDicexp,
 } from "./Dicexp/mod";

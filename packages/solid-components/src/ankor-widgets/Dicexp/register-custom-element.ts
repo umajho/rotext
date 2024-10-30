@@ -1,27 +1,22 @@
 import { Component } from "solid-js";
 import { customElement } from "solid-element";
 
-import { createStyleProviderFromCSSText } from "@rolludejo/web-internal/shadow-root";
+import { StyleProvider } from "@rolludejo/web-internal/shadow-root";
 
 import { ComputedColor } from "@rolludejo/web-internal/styling";
 
 import { createStepsRepresentationComponent } from "./steps-representation";
 import {
   createDicexpComponent,
-  CreateDicexpComponentOptions,
   type DicexpEvaluatorProvider,
 } from "./create-dicexp-component";
 
-import defaultStylesForLabelContent from "./LabelContent.default.scss?inline";
 import { ErrorAlertComponent } from "./external-components";
-
-const defaultStyleProviderForLabelContent = //
-  createStyleProviderFromCSSText(defaultStylesForLabelContent);
 
 export function registerCustomElement(
   tag: string,
   opts: {
-    styleProviders: CreateDicexpComponentOptions["styleProviders"];
+    baseStyleProviders: StyleProvider[];
     backgroundColor: ComputedColor;
     innerNoAutoOpenClass?: string;
     evaluatorProvider?: DicexpEvaluatorProvider;
@@ -38,10 +33,4 @@ export function registerCustomElement(
   });
 
   customElement(tag, { code: "", evaluation: null }, DicexpComponent);
-}
-
-export function getDefaultStyleProviders() {
-  return {
-    forLabelContent: defaultStyleProviderForLabelContent,
-  };
 }

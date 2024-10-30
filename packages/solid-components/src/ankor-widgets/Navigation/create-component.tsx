@@ -2,21 +2,12 @@ import { Component, createEffect, on, onCleanup, onMount } from "solid-js";
 
 import * as Ankor from "ankor";
 
-import {
-  createStyleProviderFromCSSText,
-  StyleProvider,
-} from "@rolludejo/web-internal/shadow-root";
+import { StyleProvider } from "@rolludejo/web-internal/shadow-root";
 import { ComputedColor } from "@rolludejo/web-internal/styling";
 
 import { gray500, mouseDownNoDoubleClickToSelect } from "../../utils/mod";
 
 import { HorizontalRule, PinButton } from "../support/mod";
-
-import stylesForPopperContent from "./PopperContent.scss?inline";
-
-const styleProviderForPopperContent = createStyleProviderFromCSSText(
-  stylesForPopperContent,
-);
 
 export interface Properties {
   address: string;
@@ -32,7 +23,7 @@ export type InnerRenderer = (
 ) => void;
 
 export interface CreateNavigationComponentOptions {
-  baseStyleProviders?: StyleProvider[];
+  baseStyleProviders: StyleProvider[];
   classes: {
     forLabelWrapper: string;
   };
@@ -98,8 +89,10 @@ export function createNavigationComponent(
         });
 
         return (
-          <div class="navigation-widget-content">
-            <div class="header">
+          <div class="flex flex-col">
+            <div class="
+              flex justify-between items-center px-2 leading-6
+              text-gray-300 font-sans font-light">
               <PinButton
                 displayMode={props.displayMode}
                 onClick={props.handlerForClickOnPinIcon}
@@ -117,7 +110,6 @@ export function createNavigationComponent(
       baseStyleProviders: opts.baseStyleProviders,
       innerNoAutoOpenClass: opts.innerNoAutoOpenClass,
 
-      popperContentStyleProvider: styleProviderForPopperContent,
       popperBackgroundColor: () => opts.backgroundColor,
       maskTintColor: () => gray500,
     });

@@ -1,7 +1,4 @@
-export {
-  getDefaultStyleProviders,
-  registerCustomElement,
-} from "./register-custom-element";
+export { registerCustomElement } from "./register-custom-element";
 
 export type {
   DicexpEvaluatorProvider,

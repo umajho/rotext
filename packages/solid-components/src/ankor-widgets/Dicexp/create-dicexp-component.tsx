@@ -2,11 +2,7 @@ import { Component, createEffect, createSignal, on, Show } from "solid-js";
 
 import * as Ankor from "ankor";
 
-import {
-  createStyleProviderFromCSSText,
-  ShadowRootAttacher,
-  StyleProvider,
-} from "@rolludejo/web-internal/shadow-root";
+import { StyleProvider } from "@rolludejo/web-internal/shadow-root";
 import { ComputedColor } from "@rolludejo/web-internal/styling";
 
 import type { EvaluatingWorkerManager } from "@dicexp/naive-evaluator-in-worker";
@@ -20,16 +16,8 @@ import {
   LoadingComponent,
   StepsRepresentationComponent,
 } from "./external-components";
-import {
-  createPopperContent,
-  styleProvider as styleProviderForPopperContent,
-} from "./create-popper-content";
+import { createPopperContent } from "./create-popper-content";
 import { DicexpEvaluation } from "./evaluation";
-
-import stylesForLabelContentSupplements from "./LabelContent.supplements.scss?inline";
-
-const styleProviderForLabelContentSupplements = //
-  createStyleProviderFromCSSText(stylesForLabelContentSupplements);
 
 export interface DicexpEvaluatorProvider {
   default: () => Promise<EvaluatingWorkerManager>;
@@ -45,9 +33,7 @@ export interface Properties {
 }
 
 export interface CreateDicexpComponentOptions {
-  styleProviders: {
-    forLabelContent: StyleProvider;
-  };
+  baseStyleProviders?: StyleProvider[];
   backgroundColor: ComputedColor;
 
   innerNoAutoOpenClass?: string;
@@ -83,67 +69,69 @@ export function createDicexpComponent(
     const component = Ankor.createWidgetComponent({
       LabelContent: (props) => {
         return (
-          <ShadowRootAttacher
-            hostStyle={{ display: "inline-flex", width: "100%" }}
-            styleProviders={[
-              styleProviderForLabelContentSupplements,
-              opts.styleProviders.forLabelContent,
-            ]}
-          >
-            <span class="widget-label-content">
-              <span
-                class="widget-label-summary"
-                style={{
-                  display: "inline-flex",
-                  "place-items": "center",
-                  cursor: props.cursor,
-                }}
-                onClick={() => props.onTogglePopper?.()}
-                onMouseDown={mouseDownNoDoubleClickToSelect}
-              >
-                <FaSolidDice
-                  color="white"
-                  class={rolling?.isRolling() ? "animate-spin-400ms" : ""}
-                />
-                <span class="widget-label-raw-text">
-                  {`[=${outerProps.code}]`}
-                </span>
+          <span class="
+            inline-flex max-w-full min-w-0 items-center h-[1.5rem] px-2 mx-2
+            border border-solid rounded-xl border-sky-700 bg-sky-900 text-white
+            font-sans">
+            <span
+              class="gap-1 w-auto min-w-0"
+              style={{
+                display: "inline-flex",
+                "place-items": "center",
+                cursor: props.cursor,
+              }}
+              onClick={() => props.onTogglePopper?.()}
+              onMouseDown={mouseDownNoDoubleClickToSelect}
+            >
+              <FaSolidDice
+                color="white"
+                class={rolling?.isRolling()
+                  ? "animate-spin-400ms animate-[spin_400ms_linear_infinite]"
+                  : ""}
+              />
+              <span class="
+                font-mono text-[smaller]
+                whitespace-nowrap overflow-hidden text-ellipsis">
+                {`[=${outerProps.code}]`}
               </span>
-              <Show when={rolling?.roll || resultDisplaying?.summary()}>
-                <span
-                  class={`widget-label-action`}
-                  style={rolling
-                    ? { cursor: "pointer", "user-select": "none" }
-                    : {}}
-                  onClick={() => rolling?.roll(outerProps.code)}
-                >
-                  <Show when={rolling}>
-                    {(rolling) => (
-                      <span class={"text-color-loading"}>
-                        {rolling().rtmLoadingStatus() === "long"
-                          ? "正在加载运行时…"
-                          : (rolling().isRolling!() ? "正在试投…" : "试投")}
-                      </span>
-                    )}
-                  </Show>
-                  <Show when={resultDisplaying?.summary()}>
-                    {(resultSummary) => (
-                      <>
-                        <span>➔</span>
-                        <span
-                          class={(
-                            (level) => level && `text-color-${level}`
-                          )(resultSummary().level)}
-                        >
-                          {resultSummary().text}
-                        </span>
-                      </>
-                    )}
-                  </Show>
-                </span>
-              </Show>
             </span>
-          </ShadowRootAttacher>
+            <Show when={rolling?.roll || resultDisplaying?.summary()}>
+              <span
+                class="inline-flex min-w-max items-center h-[1.5rem]
+                  -mr-2 pl-1 pr-2 ml-1 gap-2
+                  border border-solid rounded-r-xl border-sky-700 bg-sky-700
+                  font-bold"
+                style={rolling
+                  ? { cursor: "pointer", "user-select": "none" }
+                  : {}}
+                onClick={() => rolling?.roll(outerProps.code)}
+              >
+                <Show when={rolling}>
+                  {(rolling) => (
+                    <span class="text-gray-200">
+                      {rolling().rtmLoadingStatus() === "long"
+                        ? "正在加载运行时…"
+                        : (rolling().isRolling!() ? "正在试投…" : "试投")}
+                    </span>
+                  )}
+                </Show>
+                <Show when={resultDisplaying?.summary()}>
+                  {(resultSummary) => (
+                    <>
+                      <span>➔</span>
+                      <span
+                        class={(
+                          (level) => level && `text-color-${level}`
+                        )(resultSummary().level)}
+                      >
+                        {resultSummary().text}
+                      </span>
+                    </>
+                  )}
+                </Show>
+              </span>
+            </Show>
+          </span>
         );
       },
       PopperContent: createPopperContent({
@@ -154,11 +142,11 @@ export function createDicexpComponent(
         StepsRepresentation,
       }),
     }, {
+      baseStyleProviders: opts.baseStyleProviders,
       innerNoAutoOpenClass: opts.innerNoAutoOpenClass,
       openable: everRolled,
       autoOpenShouldCollapse: false,
 
-      popperContentStyleProvider: styleProviderForPopperContent,
       popperBackgroundColor: () => opts.backgroundColor,
       maskTintColor: () => gray500,
     });

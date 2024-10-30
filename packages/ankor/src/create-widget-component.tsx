@@ -74,7 +74,6 @@ export function createWidgetComponent(parts: {
   openable?: () => boolean;
   autoOpenShouldCollapse?: boolean;
 
-  popperContentStyleProvider?: StyleProvider;
   popperBackgroundColor: () => ComputedColor;
   maskTintColor: () => ComputedColor;
 }): Component {
@@ -214,8 +213,10 @@ export function createWidgetComponent(parts: {
   });
 
   function handlePortalRef({ shadowRoot }: { shadowRoot: ShadowRoot }) {
-    if (opts.popperContentStyleProvider) {
-      adoptStyle(shadowRoot, opts.popperContentStyleProvider);
+    if (opts.baseStyleProviders) {
+      for (const p of opts.baseStyleProviders) {
+        adoptStyle(shadowRoot, p);
+      }
     }
   }
 

@@ -2,8 +2,6 @@ import { Component, createSignal, Match, Show, Switch } from "solid-js";
 
 import * as Ankor from "ankor";
 
-import { createStyleProviderFromCSSText } from "@rolludejo/web-internal/shadow-root";
-
 import { HorizontalRule, PinButton } from "../support/mod";
 import { ProcessedProperties } from "./props-for-create-dicexp-component";
 import {
@@ -12,10 +10,7 @@ import {
   StepsRepresentationComponent,
 } from "./external-components";
 
-import styles from "./PopperContent.scss?inline";
 import { errorKindToText } from "./evaluation";
-
-export const styleProvider = createStyleProviderFromCSSText(styles);
 
 export function createPopperContent(opts: {
   code: () => string;
@@ -32,9 +27,9 @@ export function createPopperContent(opts: {
       createSignal(false);
 
     return (
-      <div class="widget-content">
-        <div class="header">
-          <div class="left-area">
+      <div class="flex flex-col min-w-[12rem] font-sans text-gray-400">
+        <div class="flex justify-between items-center px-2 leading-6">
+          <div class="flex items-center gap-2">
             <PinButton
               displayMode={props.displayMode}
               onClick={props.handlerForClickOnPinIcon}
@@ -65,8 +60,8 @@ export function createPopperContent(opts: {
                 <Show when={resultDisplaying!.repr()}>
                   {(resultRepr) => (
                     <>
-                      <div class="code-line">
-                        <code class="code">
+                      <div class="text-gray-300 my-1">
+                        <code class="text-sm font-mono">
                           {opts.code()}
                         </code>
                         {" ➔"}
@@ -77,7 +72,7 @@ export function createPopperContent(opts: {
                 </Show>
               </Match>
               <Match when={rolling?.isRolling()}>
-                <div class="center-aligner">
+                <div class="flex justify-center items-center">
                   <opts.Loading />
                 </div>
               </Match>
@@ -91,7 +86,7 @@ export function createPopperContent(opts: {
               resultDisplaying?.environment()}
             fallback={<div style={{ height: "0.5rem" }} />}
           >
-            <div class="extra-info">
+            <div class="flex flex-col items-end pb-[0.5rem] text-xs text-slate-300">
               <div>
                 <Show
                   when={resultDisplaying!.statistics()?.timeConsumption}
@@ -118,7 +113,7 @@ export function createPopperContent(opts: {
                 >
                   {" "}
                   <span
-                    class="more"
+                    class="underline cursor-pointer select-none"
                     onClick={() => setShowsMoreInExtraInfo(true)}
                   >
                     …
