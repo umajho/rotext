@@ -21,7 +21,7 @@ export function createDemoPreviewRenderer(
     rendererOpts.updateNavigationText(`[[${rawAddrW.currentValue}]]`);
 
     return {
-      isReadyForAutoOpen: false,
+      isAutoOpenable: false,
       render: (el, renderOpts) => {
         const dispose = render(() => {
           const address = createSignalGetterFromWatchable(rawAddrW);

@@ -28,7 +28,7 @@ export function createDemoRefContentRenderer(
     rendererOpts.updateNavigationText(`>>${rawAddrW.currentValue}`);
 
     return {
-      isReadyForAutoOpen: true,
+      isAutoOpenable: true,
       render: (el, renderOpts) => {
         const dispose = render(() => {
           const rawAddr = createSignalGetterFromWatchable(rawAddrW);

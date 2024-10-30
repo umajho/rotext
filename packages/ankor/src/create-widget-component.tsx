@@ -72,6 +72,7 @@ export function createWidgetComponent(parts: {
 }, opts: {
   baseStyleProviders?: StyleProvider[];
   openable?: () => boolean;
+  autoOpenable?: boolean;
   autoOpenShouldCollapse?: boolean;
 
   popperBackgroundColor: () => ComputedColor;
@@ -190,6 +191,7 @@ export function createWidgetComponent(parts: {
     }
 
     if (
+      opts.autoOpenable &&
       woAgent_.level === 1 &&
       !closest(labelEl, (el) => el.classList.contains(NO_AUTO_OPEN_CLASS))
     ) {

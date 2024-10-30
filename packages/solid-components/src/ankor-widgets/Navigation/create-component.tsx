@@ -47,7 +47,7 @@ export type InnerRenderer = (
    * 一般而言，评判是否准备好自动打开的标准是 “资源是否已经存在于本地，无需发起
    * 网络请求”。
    */
-  isReadyForAutoOpen: boolean;
+  isAutoOpenable: boolean;
   /**
    * 只会被调用一次。
    */
@@ -177,6 +177,7 @@ export function createNavigationComponent(
       },
     }, {
       baseStyleProviders: opts.baseStyleProviders,
+      autoOpenable: renderer.isAutoOpenable,
 
       popperBackgroundColor: () => opts.backgroundColor,
       maskTintColor: () => gray500,
