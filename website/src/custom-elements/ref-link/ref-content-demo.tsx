@@ -1,4 +1,11 @@
-import { Component, createSignal, JSX, Match, Switch } from "solid-js";
+import {
+  Component,
+  createEffect,
+  createMemo,
+  JSX,
+  Match,
+  Switch,
+} from "solid-js";
 import { render } from "solid-js/web";
 
 import {
@@ -8,27 +15,41 @@ import {
 
 import { AnkorWidgetNavigationInnerRenderer } from "@rotext/solid-components/internal";
 
+import { createSignalGetterFromWatchable } from "../hooks";
+
 import { styleProvider as styleProviderForPreflight } from "../../styles/preflight";
 
 export function createDemoRefContentRenderer(
-  opts: { proseClass: string; proseStyleProvider: StyleProvider },
+  createRendererOpts: { proseClass: string; proseStyleProvider: StyleProvider },
 ): AnkorWidgetNavigationInnerRenderer {
-  return (el, rawAddr, rOpts) => {
-    const dispose = render(() => {
-      const [address, setAddress] = createSignal(parseAddress(rawAddr));
-      rOpts.onAddressChange((rawAddr) => setAddress(parseAddress(rawAddr)));
-      return (
-        <ShadowRootAttacher
-          styleProviders={[styleProviderForPreflight, opts.proseStyleProvider]}
-        >
-          <AddressDescription
-            address={address()}
-            proseClass={opts.proseClass}
-          />
-        </ShadowRootAttacher>
-      );
-    }, el);
-    rOpts.onCleanup(dispose);
+  const { proseClass, proseStyleProvider } = createRendererOpts;
+
+  return (rawAddrW, rendererOpts) => {
+    rendererOpts.updateNavigationText(`>>${rawAddrW.currentValue}`);
+
+    return {
+      isReadyForAutoOpen: true,
+      render: (el, renderOpts) => {
+        const dispose = render(() => {
+          const rawAddr = createSignalGetterFromWatchable(rawAddrW);
+          const address = createMemo(() => parseAddress(rawAddr()));
+          createEffect(() =>
+            rendererOpts.updateNavigationText(`>>${rawAddr()}`)
+          );
+          return (
+            <ShadowRootAttacher
+              styleProviders={[styleProviderForPreflight, proseStyleProvider]}
+            >
+              <AddressDescription address={address()} proseClass={proseClass} />
+            </ShadowRootAttacher>
+          );
+        }, el);
+        renderOpts.onCleanup(dispose);
+      },
+      navigate: () => {
+        window.alert(`演示：请当作前往了 >>${rawAddrW.currentValue}。`);
+      },
+    };
   };
 }
 

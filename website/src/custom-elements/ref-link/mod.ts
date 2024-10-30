@@ -4,7 +4,12 @@ import {
 
 import { styleProvider as styleProviderForTuanProse } from "../../styles/tuan-prose";
 
-import { INNER_NO_AUTO_OPEN_CLASS, PROSE_CLASS, TAG_NAME_MAP } from "../consts";
+import {
+  CLASSES_FOR_NAVIGATION_ACTION,
+  INNER_NO_AUTO_OPEN_CLASS,
+  PROSE_CLASS,
+  TAG_NAME_MAP,
+} from "../consts";
 import { getBackgroundColor } from "../utils";
 
 import { createDemoRefContentRenderer } from "./ref-content-demo";
@@ -17,6 +22,7 @@ export function registerCustomElementForRefLink() {
     baseStyleProviders: [styleProviderForPreflight, styleProviderForTailwind],
     classes: {
       forLabelWrapper: "font-mono underline text-[#789922]", // `#789922` is futaba-green.
+      forNavigationAction: CLASSES_FOR_NAVIGATION_ACTION,
     },
     backgroundColor: getBackgroundColor(),
     innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,

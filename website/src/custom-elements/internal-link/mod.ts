@@ -4,7 +4,12 @@ import {
 
 import { styleProvider as styleProviderForTuanProse } from "../../styles/tuan-prose";
 
-import { INNER_NO_AUTO_OPEN_CLASS, PROSE_CLASS, TAG_NAME_MAP } from "../consts";
+import {
+  CLASSES_FOR_NAVIGATION_ACTION,
+  INNER_NO_AUTO_OPEN_CLASS,
+  PROSE_CLASS,
+  TAG_NAME_MAP,
+} from "../consts";
 import { getBackgroundColor } from "../utils";
 
 import { createDemoPreviewRenderer } from "./preview-demo";
@@ -17,6 +22,7 @@ export function registerCustomElementForInternalLink() {
     baseStyleProviders: [styleProviderForPreflight, styleProviderForTailwind],
     classes: {
       forLabelWrapper: "underline text-blue-600",
+      forNavigationAction: CLASSES_FOR_NAVIGATION_ACTION,
     },
     backgroundColor: getBackgroundColor(),
     innerNoAutoOpenClass: INNER_NO_AUTO_OPEN_CLASS,

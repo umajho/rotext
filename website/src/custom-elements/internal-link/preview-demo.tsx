@@ -1,3 +1,4 @@
+import { createEffect } from "solid-js";
 import { render } from "solid-js/web";
 
 import {
@@ -7,21 +8,39 @@ import {
 
 import { AnkorWidgetNavigationInnerRenderer } from "@rotext/solid-components/internal";
 
+import { createSignalGetterFromWatchable } from "../hooks";
+
 import { styleProvider as styleProviderForPreflight } from "../../styles/preflight";
 
 export function createDemoPreviewRenderer(
-  opts: { proseClass: string; proseStyleProvider: StyleProvider },
+  createRendererOpts: { proseClass: string; proseStyleProvider: StyleProvider },
 ): AnkorWidgetNavigationInnerRenderer {
-  return (el, rawAddr, rOpts) => {
-    const dispose = render(() => {
-      return (
-        <ShadowRootAttacher
-          styleProviders={[styleProviderForPreflight, opts.proseStyleProvider]}
-        >
-          <span>{`TODO: ${rawAddr}`}</span>
-        </ShadowRootAttacher>
-      );
-    }, el);
-    rOpts.onCleanup(dispose);
+  const { proseClass: _, proseStyleProvider } = createRendererOpts;
+
+  return (rawAddrW, rendererOpts) => {
+    rendererOpts.updateNavigationText(`[[${rawAddrW.currentValue}]]`);
+
+    return {
+      isReadyForAutoOpen: false,
+      render: (el, renderOpts) => {
+        const dispose = render(() => {
+          const address = createSignalGetterFromWatchable(rawAddrW);
+          createEffect(() =>
+            rendererOpts.updateNavigationText(`[[${address()}]]`)
+          );
+          return (
+            <ShadowRootAttacher
+              styleProviders={[styleProviderForPreflight, proseStyleProvider]}
+            >
+              <span>{`TODO: ${address()}`}</span>
+            </ShadowRootAttacher>
+          );
+        }, el);
+        renderOpts.onCleanup(dispose);
+      },
+      navigate: () => {
+        window.alert(`TODO: 前往 [[${rawAddrW.currentValue}]]。`);
+      },
+    };
   };
 }
