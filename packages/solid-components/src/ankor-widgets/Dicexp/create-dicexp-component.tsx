@@ -143,6 +143,7 @@ export function createDicexpComponent(
     }, {
       baseStyleProviders: opts.baseStyleProviders,
       openable: everRolled,
+      autoOpenable: true,
       autoOpenShouldCollapse: false,
 
       popperBackgroundColor: () => opts.backgroundColor,
