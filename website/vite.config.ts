@@ -12,7 +12,7 @@ export default defineConfig({
     solidPlugin(),
   ],
   optimizeDeps: {
-    exclude: ["@rolludejo/web-internal"],
+    exclude: ["@rolludejo/internal-web-shared"],
   },
   server: {
     port: 3000,

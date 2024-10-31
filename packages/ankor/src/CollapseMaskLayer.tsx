@@ -2,9 +2,9 @@ import { Component, JSX } from "solid-js";
 
 import { HiSolidChevronDoubleDown } from "solid-icons/hi";
 
-import { ShadowRootAttacher } from "@rolludejo/web-internal/shadow-root";
+import { ShadowRootAttacher } from "@rolludejo/internal-web-shared/shadow-root";
 
-import { ComputedColor } from "@rolludejo/web-internal/styling";
+import { ComputedColor } from "@rolludejo/internal-web-shared/styling";
 
 const styles = {
   "collapse-mask-layer": { position: "relative" },

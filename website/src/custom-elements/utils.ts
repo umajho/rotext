@@ -2,7 +2,7 @@ import {
   ComputedColor,
   getComputedColor,
   getComputedCSSValueOfClass,
-} from "@rolludejo/web-internal/styling";
+} from "@rolludejo/internal-web-shared/styling";
 
 let backgroundColorCache: ComputedColor | undefined;
 /**

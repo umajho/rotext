@@ -1,9 +1,9 @@
 import { Component } from "solid-js";
 import { customElement } from "solid-element";
 
-import { StyleProvider } from "@rolludejo/web-internal/shadow-root";
+import { StyleProvider } from "@rolludejo/internal-web-shared/shadow-root";
 
-import { ComputedColor } from "@rolludejo/web-internal/styling";
+import { ComputedColor } from "@rolludejo/internal-web-shared/styling";
 
 import { createStepsRepresentationComponent } from "./steps-representation";
 import {

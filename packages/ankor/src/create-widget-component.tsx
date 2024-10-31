@@ -11,13 +11,16 @@ import {
 } from "solid-js";
 import { Portal } from "solid-js/web";
 
-import { adoptStyle, StyleProvider } from "@rolludejo/web-internal/shadow-root";
+import {
+  adoptStyle,
+  StyleProvider,
+} from "@rolludejo/internal-web-shared/shadow-root";
 
 import {
   ComputedColor,
   computedColorToCSSValue,
   getSizeInPx,
-} from "@rolludejo/web-internal/styling";
+} from "@rolludejo/internal-web-shared/styling";
 
 import { createWidgetOwnerAgent, WidgetOwnerAgent } from "./widget-owner-agent";
 import { closest, closestContainer, mixColor } from "./utils";

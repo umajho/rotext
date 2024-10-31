@@ -62,7 +62,7 @@
     "update-deps": "pnpm up -Li"
   },
   "peerDependencies": {
-    "@rolludejo/web-internal": "^0.3.0",
+    "@rolludejo/internal-web-shared": "^0.4.0",
     "ankor": "workspace:*",
     "solid-element": "^1.8.1",
     "solid-icons": "^1.0.11",

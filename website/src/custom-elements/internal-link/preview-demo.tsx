@@ -4,7 +4,7 @@ import { render } from "solid-js/web";
 import {
   ShadowRootAttacher,
   StyleProvider,
-} from "@rolludejo/web-internal/shadow-root";
+} from "@rolludejo/internal-web-shared/shadow-root";
 
 import { AnkorWidgetNavigationInnerRenderer } from "@rotext/solid-components/internal";
 

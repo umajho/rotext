@@ -34,6 +34,6 @@ export default defineConfig({
     target: "esnext",
   },
   optimizeDeps: {
-    exclude: ["@rolludejo/web-internal"],
+    exclude: ["@rolludejo/internal-web-shared"],
   },
 });

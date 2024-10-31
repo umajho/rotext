@@ -1,7 +1,7 @@
 import { Component } from "solid-js";
 import { customElement, getCurrentElement, noShadowDOM } from "solid-element";
 
-import { ShadowRootAttacher } from "@rolludejo/web-internal/shadow-root";
+import { ShadowRootAttacher } from "@rolludejo/internal-web-shared/shadow-root";
 
 import { styleProvider as styleProviderForPreflight } from "../../../styles/preflight";
 import { styleProvider as styleProviderForTailwind } from "../../../styles/tailwind";

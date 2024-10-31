@@ -32,6 +32,6 @@
 
 通过第二个参数（`opts`）的 `baseStyleProviders` 字段提供。
 
-`StyleProvider` 来自 [`@rolludejo/web-internal`]。
+`StyleProvider` 来自 [`@rolludejo/internal-web-shared`]。
 
-[`@rolludejo/web-internal`]: https://www.npmjs.com/package/@rolludejo/web-internal
+[`@rolludejo/internal-web-shared`]: https://www.npmjs.com/package/@rolludejo/internal-web-shared

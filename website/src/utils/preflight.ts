@@ -1,4 +1,4 @@
-import { createStyleProviderFromCSSText } from "@rolludejo/web-internal/shadow-root";
+import { createStyleProviderFromCSSText } from "@rolludejo/internal-web-shared/shadow-root";
 
 export const styleProviderForPreflight = (() => {
   const preflightEl = document.getElementById("preflight") as HTMLStyleElement;

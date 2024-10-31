@@ -7,7 +7,7 @@ import * as Ankor from "ankor";
 import {
   createStyleProviderFromCSSText,
   ShadowRootAttacher,
-} from "@rolludejo/web-internal/shadow-root";
+} from "@rolludejo/internal-web-shared/shadow-root";
 
 import styles from "./PinButton.scss?inline";
 

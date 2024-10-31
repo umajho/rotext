@@ -9,8 +9,8 @@ import {
 
 import * as Ankor from "ankor";
 
-import { StyleProvider } from "@rolludejo/web-internal/shadow-root";
-import { ComputedColor } from "@rolludejo/web-internal/styling";
+import { StyleProvider } from "@rolludejo/internal-web-shared/shadow-root";
+import { ComputedColor } from "@rolludejo/internal-web-shared/styling";
 
 import { gray500, mouseDownNoDoubleClickToSelect } from "../../utils/mod";
 

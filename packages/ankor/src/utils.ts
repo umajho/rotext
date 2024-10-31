@@ -1,4 +1,4 @@
-import { ComputedColor } from "@rolludejo/web-internal/styling";
+import { ComputedColor } from "@rolludejo/internal-web-shared/styling";
 
 export function mixColor(
   colorA: ComputedColor,

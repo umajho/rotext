@@ -1,4 +1,4 @@
-import { createStyleProviderFromCSSText } from "@rolludejo/web-internal/shadow-root";
+import { createStyleProviderFromCSSText } from "@rolludejo/internal-web-shared/shadow-root";
 
 import { mountStyle } from "./utils/mod";
 

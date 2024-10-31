@@ -3,7 +3,7 @@ import { Component, createSignal, onMount } from "solid-js";
 
 import { NO_AUTO_OPEN_CLASS } from "ankor";
 
-import { adoptStyle } from "@rolludejo/web-internal/shadow-root";
+import { adoptStyle } from "@rolludejo/internal-web-shared/shadow-root";
 
 import { styleProvider as styleProviderForPreflight } from "../../styles/preflight";
 import { styleProvider as styleProviderForTailwind } from "../../styles/tailwind";

@@ -3,7 +3,7 @@ import { Component, Show } from "solid-js";
 import {
   createStyleProviderFromCSSText,
   ShadowRootAttacher,
-} from "@rolludejo/web-internal/shadow-root";
+} from "@rolludejo/internal-web-shared/shadow-root";
 
 import styles from "./ErrorAlert.scss?inline";
 

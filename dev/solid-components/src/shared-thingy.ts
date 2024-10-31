@@ -1,7 +1,7 @@
 import {
   createStyleProviderFromCSSText,
   StyleProvider,
-} from "@rolludejo/web-internal/shadow-root";
+} from "@rolludejo/internal-web-shared/shadow-root";
 
 import styles from "./App.module.css";
 import tailwind from "./App.css?inline";
@@ -9,7 +9,7 @@ import tailwind from "./App.css?inline";
 import {
   getComputedColor,
   getComputedCSSValueOfClass,
-} from "@rolludejo/web-internal/styling";
+} from "@rolludejo/internal-web-shared/styling";
 
 export const BACKGROUND_COLOR = getComputedColor(
   getComputedCSSValueOfClass("background-color", styles["App"]!),
