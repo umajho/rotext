@@ -6,17 +6,17 @@
 
   $futaba-green: #789922;
 
-  @apply font-sans text-gray-300 font-light leading-[2rem];
+  @apply font-sans text-gray-300 font-light text-sm md:text-base leading-[1.6rem];
 
   //======== BLOCK LEVEL ========
 
   p {
     &:first-child {
-      @apply mb-4;
+      @apply mb-2 md:mb-4;
     }
 
     &:not(:first-child) {
-      @apply my-4;
+      @apply my-2 md:my-4;
     }
   }
 
@@ -44,29 +44,29 @@
   }
 
   h1 {
-    @apply font-extrabold text-4xl mb-6;
-    @apply w-full pb-2 border-b border-gray-500;
+    @apply font-extrabold text-3xl md:text-4xl mb-3 md:mb-6;
+    @apply w-full pb-1 md:pb-2 border-b border-gray-500;
   }
 
   h2 {
-    @apply font-bold text-3xl mb-4;
-    @apply w-full pb-2 border-b-[0.5px] border-gray-500;
+    @apply font-bold text-2xl md:text-3xl mb-2 md:mb-4;
+    @apply w-full pb-1 md:pb-2 border-b-[0.5px] border-gray-500;
   }
 
   h3 {
-    @apply text-2xl mb-2;
+    @apply text-xl md:text-2xl mb-1 md:mb-2;
   }
 
   h4 {
-    @apply text-xl mb-2;
+    @apply text-lg md:text-xl mb-1 md:mb-2;
   }
 
   h5 {
-    @apply text-lg mb-1;
+    @apply text-[1.0625rem] max-md:leading-[1.625rem] md:text-lg mb-0.5 md:mb-1;
   }
 
   h6 {
-    @apply text-base mb-1;
+    @apply text-base mb-0.5 md:mb-1;
   }
 
   h3,
@@ -78,45 +78,45 @@
 
   :not(h1, h2, h3, h4, h5, h6) {
     &+h1 {
-      @apply mt-8;
+      @apply mt-4 md:mt-8;
     }
 
     &+h2 {
-      @apply mt-6;
+      @apply mt-3 md:mt-6;
     }
 
     &+h3,
     &+h4 {
-      @apply mt-4;
+      @apply mt-2 md:mt-4;
     }
 
     &+h5,
     &+h6 {
-      @apply mt-2;
+      @apply mt-1 md:mt-2;
     }
   }
 
   blockquote {
-    @apply border-l-[6px] py-1 px-4 mb-4 bg-black bg-opacity-25 font-normal;
+    @apply border-l-[6px] py-0.5 md:py-1 px-2 md:px-4 mb-2 md:mb-4 bg-black bg-opacity-25 font-normal;
     border-left-color: $futaba-green;
     // color: $futaba-green;
     background-color: rgba($futaba-green, .05);
 
     &:not(:first-child) {
-      @apply mt-4;
+      @apply mt-2 md:mt-4;
     }
   }
 
 
   ul,
   ol {
-    @apply ml-8;
+    @apply ml-4 md:ml-8;
   }
 
   ul,
   ol,
   dl {
-    @apply mb-4;
+    @apply mb-2 md:mb-4;
   }
 
   ul {
@@ -128,10 +128,10 @@
   }
 
   li {
-    @apply pl-1 mb-2;
+    @apply pl-0.5 md:pl-1 mb-1 md:mb-2;
 
     &:not(:first-child) {
-      @apply mt-2;
+      @apply mt-1 md:mt-2;
     }
   }
 
@@ -140,15 +140,15 @@
   }
 
   dd {
-    @apply ml-4;
+    @apply ml-2 md:ml-4;
   }
 
   dt,
   dd {
-    @apply mb-1;
+    @apply mb-0.5 md:mb-1;
 
     &:not(:first-child) {
-      @apply mt-1;
+      @apply mt-0.5 md:mt-1;
     }
   }
 
@@ -157,7 +157,7 @@
   }
 
   table {
-    @apply my-4 w-full;
+    @apply my-2 md:my-4 w-full;
 
     caption {
       @apply font-black text-white;
@@ -169,7 +169,7 @@
 
     th,
     td {
-      @apply border border-[#444] px-6 py-2;
+      @apply border border-[#444] px-3 md:px-6 py-1 md:py-2;
     }
 
     th {
