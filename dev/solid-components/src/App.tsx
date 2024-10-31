@@ -1,87 +1,17 @@
 import "./App.css";
 import styles from "./App.module.css";
 
-import { type Component, createSignal, Index, onMount } from "solid-js";
+import { type Component, createSignal, Index } from "solid-js";
 
 import * as Ankor from "ankor";
 
-import { registerCustomElementForStepsRepresentation } from "@dicexp/solid-components";
+import { DicexpEvaluation } from "@rotext/solid-components/internal";
 
-import {
-  getComputedColor,
-  getComputedCSSValueOfClass,
-} from "@rolludejo/web-internal/styling";
+import { registerCustomElementForRefLink } from "./ref-link-thingy";
+import { registerCustomElementsForDicexp } from "./dicexp-thingy";
 
-import {
-  DicexpEvaluation,
-  ElementLayoutChangeObserver,
-  getDefaultDicexpStyleProviders,
-  getDefaultRefLinkStyleProviders,
-  MultiObserver,
-  registerCustomElementForAnkorWidgetDicexp,
-  registerCustomElementForAnkorWidgetRefLink,
-} from "@rotext/solid-components/internal";
-
-import { EvaluatingWorkerManager } from "@dicexp/naive-evaluator-in-worker";
-
-import DicexpEvaluatorWorker from "./dicexp-naive-evaluator.worker?worker";
-
-const WIDGET_OWNER_CLASS = "widget-owner";
-
-const BACKGROUND_COLOR = getComputedColor(
-  getComputedCSSValueOfClass("background-color", styles["App"]!),
-)!;
-
-registerCustomElementForAnkorWidgetRefLink("ro-widget-ref-link", {
-  styleProviders: getDefaultRefLinkStyleProviders(),
-  backgroundColor: BACKGROUND_COLOR,
-  widgetOwnerClass: WIDGET_OWNER_CLASS,
-  refContentRenderer: (el, addr, onAddressChange) => {
-    el.innerText = JSON.stringify(addr);
-    el.style.color = "white";
-    onAddressChange(() => el.innerText = JSON.stringify(addr));
-  },
-});
-registerCustomElementForStepsRepresentation("steps-representation");
-registerCustomElementForAnkorWidgetDicexp("ro-widget-dicexp", {
-  styleProviders: getDefaultDicexpStyleProviders(),
-  backgroundColor: BACKGROUND_COLOR,
-  widgetOwnerClass: WIDGET_OWNER_CLASS,
-  evaluatorProvider: {
-    default: () => {
-      const createWorker = () => new DicexpEvaluatorWorker();
-      return new Promise(
-        (resolve) => {
-          let resolved = false;
-          const workerManager = new EvaluatingWorkerManager(
-            createWorker,
-            (ready) => {
-              if (resolved || !ready) return;
-              resolve(workerManager);
-              resolved = true;
-            },
-            {
-              newEvaluatorOptions: {
-                randomSourceMaker: "xorshift7",
-              },
-            },
-          );
-        },
-      );
-    },
-  },
-  Loading: () => "loading…",
-  ErrorAlert: (props) => <div>{JSON.stringify(props)}</div>,
-  tagNameForStepsRepresentation: "steps-representation",
-});
-registerCustomElementForAnkorWidgetDicexp("ro-widget-dicexp-no-runtime", {
-  styleProviders: getDefaultDicexpStyleProviders(),
-  backgroundColor: BACKGROUND_COLOR,
-  widgetOwnerClass: WIDGET_OWNER_CLASS,
-  Loading: () => "loading…",
-  ErrorAlert: (props) => <div>{JSON.stringify(props)}</div>,
-  tagNameForStepsRepresentation: "steps-representation",
-});
+registerCustomElementForRefLink();
+registerCustomElementsForDicexp();
 
 declare module "solid-js" {
   namespace JSX {
@@ -111,18 +41,6 @@ const App: Component = () => (
 export default App;
 
 const Left: Component = () => {
-  let ownerEl!: HTMLDivElement,
-    anchorEl!: HTMLDivElement;
-
-  onMount(() => {
-    registerWidgetOwnerEx(anchorEl, {
-      extraObservers: [...ownerEl.querySelectorAll(".resize-observee ")]
-        .map((el) =>
-          new ElementLayoutChangeObserver(el as HTMLElement, { resize: true })
-        ),
-    });
-  });
-
   const forgedResults: DicexpEvaluation[] = [
     { result: ["value", 42], repr: ["vp", 42] },
     {
@@ -161,10 +79,19 @@ const Left: Component = () => {
     { result: ["error", "parse", "?"] },
   ];
 
+  const widgetOwnerData = JSON.stringify(
+    {
+      level: 1,
+    } satisfies Ankor.WidgetOwnerRaw,
+  );
+
   return (
-    <div ref={ownerEl} class={`${WIDGET_OWNER_CLASS}`}>
-      <div ref={anchorEl} class="relative z-10" />
-      <div class="flex flex-col min-h-screen">
+    <div
+      class={`${Ankor.WIDGET_OWNER_CLASS}`}
+      data-ankor-widget-owner={widgetOwnerData}
+    >
+      <div class={`${Ankor.ANCHOR_CLASS} relative z-10`} />
+      <div class={`${Ankor.CONTENT_CLASS} flex flex-col min-h-screen`}>
         <div class="h-[33vh]">
           <ro-widget-dicexp code="d100" />
         </div>
@@ -204,34 +131,46 @@ const Left: Component = () => {
 };
 
 const LeftInner: Component = () => {
-  let anchorEl!: HTMLDivElement;
-
-  onMount(() => registerWidgetOwnerEx(anchorEl));
+  const widgetOwnerData = JSON.stringify(
+    {
+      level: 1,
+    } satisfies Ankor.WidgetOwnerRaw,
+  );
 
   return (
     <div
-      class={`${WIDGET_OWNER_CLASS} bg-slate-800`}
+      class={Ankor.WIDGET_OWNER_CLASS}
+      data-ankor-widget-owner={widgetOwnerData}
     >
-      <div ref={anchorEl} class="relative z-10" />
-      <ro-widget-dicexp code="d100" />
-      <ro-widget-dicexp code="d100" />
-      <div class="h-[50vh]" />
-      <ro-widget-dicexp code="d100" />
-      <ro-widget-dicexp code="d100" />
+      <div
+        class={`${Ankor.CONTENT_CLASS} bg-slate-800`}
+      >
+        <div class={`${Ankor.ANCHOR_CLASS} relative z-10`} />
+        <ro-widget-dicexp code="d100" />
+        <ro-widget-dicexp code="d100" />
+        <div class="h-[50vh]" />
+        <ro-widget-dicexp code="d100" />
+        <ro-widget-dicexp code="d100" />
+      </div>
     </div>
   );
 };
 
 const Right: Component = () => {
-  let anchorEl!: HTMLDivElement;
-
   const [shouldDisplay, setShouldDisplay] = createSignal(true);
 
-  onMount(() => registerWidgetOwnerEx(anchorEl));
+  const widgetOwnerData = JSON.stringify(
+    {
+      level: 1,
+    } satisfies Ankor.WidgetOwnerRaw,
+  );
 
   return (
-    <div class={`${WIDGET_OWNER_CLASS} bg-stone-950`}>
-      <div ref={anchorEl} class="relative z-10" />
+    <div
+      class={`${Ankor.WIDGET_OWNER_CLASS} bg-stone-950`}
+      data-ankor-widget-owner={widgetOwnerData}
+    >
+      <div class={`${Ankor.ANCHOR_CLASS} relative z-10`} />
       <div class="h-[50vh]" />
       <label>
         <input
@@ -240,7 +179,10 @@ const Right: Component = () => {
           onClick={() => setShouldDisplay(!shouldDisplay())}
         />显示
       </label>
-      <div style={{ display: shouldDisplay() ? undefined : "none" }}>
+      <div
+        class={Ankor.CONTENT_CLASS}
+        style={{ display: shouldDisplay() ? undefined : "none" }}
+      >
         <ro-widget-ref-link address="TP.foo" />
         <ro-widget-dicexp code="d100" />
         <ro-widget-dicexp code="d100" />
@@ -252,20 +194,3 @@ const Right: Component = () => {
     </div>
   );
 };
-
-function registerWidgetOwnerEx(anchorEl: HTMLElement, opts?: {
-  extraObservers?: {
-    subscribe: (cb: () => void) => void;
-    unsubscribe: (cb: () => void) => void;
-  }[];
-}) {
-  const ownerEl: HTMLElement = anchorEl.closest("." + WIDGET_OWNER_CLASS)!;
-  const observer = new ElementLayoutChangeObserver(ownerEl, { resize: true });
-  Ankor.registerWidgetOwner(ownerEl, {
-    popperAnchorElement: anchorEl,
-    level: 1,
-    layoutChangeObserver: opts?.extraObservers?.length
-      ? new MultiObserver([observer, ...opts.extraObservers])
-      : observer,
-  });
-}

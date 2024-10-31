@@ -33,4 +33,7 @@ export default defineConfig({
   build: {
     target: "esnext",
   },
+  optimizeDeps: {
+    exclude: ["@rolludejo/web-internal"],
+  },
 });
