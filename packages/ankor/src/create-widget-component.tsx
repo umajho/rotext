@@ -11,6 +11,7 @@ import {
 } from "solid-js";
 import { Portal } from "solid-js/web";
 
+import { findClosestElementEx } from "@rolludejo/internal-web-shared/dom";
 import {
   adoptStyle,
   StyleProvider,
@@ -23,7 +24,7 @@ import {
 } from "@rolludejo/internal-web-shared/styling";
 
 import { createWidgetOwnerAgent, WidgetOwnerAgent } from "./widget-owner-agent";
-import { closest, closestContainer, mixColor } from "./utils";
+import { closestContainer, mixColor } from "./utils";
 import CollapseMaskLayer from "./CollapseMaskLayer";
 import PopperContainer from "./PopperContainer";
 import { NO_AUTO_OPEN_CLASS } from "./consts";
@@ -196,7 +197,10 @@ export function createWidgetComponent(parts: {
     if (
       opts.autoOpenable &&
       woAgent_.level === 1 &&
-      !closest(labelEl, (el) => el.classList.contains(NO_AUTO_OPEN_CLASS))
+      !findClosestElementEx(
+        labelEl,
+        (el) => el.classList.contains(NO_AUTO_OPEN_CLASS),
+      )
     ) {
       autoOpen(!!opts.autoOpenShouldCollapse);
     }
