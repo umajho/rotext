@@ -145,7 +145,7 @@ export default (() => {
     <div class="flex max-h-full h-fit justify-center p-2 sm:p-4 lg:p-6 2xl:p-8">
       <Card
         class="w-full"
-        bodyClass="max-sm:px-1 h-full !pt-0"
+        bodyClass="max-sm:px-1 h-full !pt-0 !gap-0"
       >
         <Show when={isLoading()}>
           <div class="flex w-full h-screen justify-center items-center">
@@ -153,40 +153,38 @@ export default (() => {
           </div>
         </Show>
         <div class={`contents ${isLoading() ? "hidden" : ""}`}>
-          <div class="flex h-fit items-center px-2">
+          <div class="flex h-fit items-center px-2 py-1">
             <div class="flex-1" />
-            <div>
-              <Show
-                when={verificationStatistics()}
-                fallback={
-                  <Button
-                    size="xs"
-                    onClick={verifyAllOutputsOfOriginalInputs}
-                  >
-                    验证本页全部示例输出
-                  </Button>
-                }
-              >
-                {(statistics) => (
-                  <>
-                    本页示例输出验证结果：匹配{" "}
-                    <span class="text-green-500">{statistics().matches}
-                    </span>，不匹配{" "}
-                    <span class="text-red-500">
-                      {statistics().mismatches}
-                    </span>
-                    <Show when={verificationStatisticsUnverified()}>
-                      {(unverified) => (
-                        <>
-                          ，尚未验证{" "}
-                          <span class="text-gray-500">{unverified()}</span>
-                        </>
-                      )}
-                    </Show>。
-                  </>
-                )}
-              </Show>
-            </div>
+            <Show
+              when={verificationStatistics()}
+              fallback={
+                <Button
+                  size="xs"
+                  onClick={verifyAllOutputsOfOriginalInputs}
+                >
+                  验证本页全部示例输出
+                </Button>
+              }
+            >
+              {(statistics) => (
+                <div>
+                  本页示例输出验证结果：匹配{" "}
+                  <span class="text-green-500">{statistics().matches}
+                  </span>，不匹配{" "}
+                  <span class="text-red-500">
+                    {statistics().mismatches}
+                  </span>
+                  <Show when={verificationStatisticsUnverified()}>
+                    {(unverified) => (
+                      <>
+                        ，尚未验证{" "}
+                        <span class="text-gray-500">{unverified()}</span>
+                      </>
+                    )}
+                  </Show>。
+                </div>
+              )}
+            </Show>
           </div>
           <div class="max-h-full h-fit overflow-y-scroll overflow-x-hidden">
             <div
