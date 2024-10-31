@@ -1,3 +1,5 @@
+import { findClosestElementEx } from "@rolludejo/internal-web-shared/dom";
+
 export function debounceEventHandler<Ev extends Event>(
   handler: (ev: Ev) => void,
 ) {
@@ -22,3 +24,13 @@ export function debounceEventHandler<Ev extends Event>(
 }
 
 export const SUPPORTS_DVH = CSS.supports?.("height", "1dvh");
+
+/**
+ * 可能不完全准确，但目前足够了。
+ */
+export function closestScrollContainer(el: HTMLElement): HTMLElement | null {
+  return findClosestElementEx(el, (el) => {
+    const overflowY = getComputedStyle(el).overflowY;
+    return overflowY === "auto" || overflowY === "scroll";
+  });
+}

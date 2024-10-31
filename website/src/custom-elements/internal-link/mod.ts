@@ -11,7 +11,7 @@ import {
 } from "../consts";
 import { getBackgroundColor } from "../utils";
 
-import { createDemoPreviewRenderer } from "./preview-demo";
+import { createDemoPreviewRenderer } from "./preview";
 
 import { styleProvider as styleProviderForPreflight } from "../../styles/preflight";
 import { styleProvider as styleProviderForTailwind } from "../../styles/tailwind";

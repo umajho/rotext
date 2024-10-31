@@ -15,6 +15,7 @@ import { Button, Card, Loading } from "../../components/ui/mod";
 import "../../styles/tuan-prose";
 import { syntaxReferenceResourceManager } from "../../resource-managers/syntax-reference";
 import { getSyntaxReferencePathOfHeading } from "../../utils/syntax-reference";
+import { initializeGlobal } from "../../global";
 
 import { registerCustomElement as registerCustomElementForRotextPreview } from "./RotextExample/mod";
 
@@ -38,6 +39,8 @@ function getFixtures(
 registerCustomElementForRotextPreview("x-rotext-example", { getFixtures });
 
 export default (() => {
+  initializeGlobal({ navigator: useNavigate() });
+
   if (contentContainerEl) {
     throw new Error("unreachable");
   }
