@@ -7,7 +7,7 @@ import {
   parse as parseHTML,
 } from "node-html-parser"; // TODO!!: 最终去除此依赖。
 
-import { Navigation } from "../src/types/navigation";
+import { Navigation } from "../src/resource-managers/syntax-reference";
 
 import { parseMarkdown } from "./internal/marked";
 
