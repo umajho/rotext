@@ -1,6 +1,8 @@
 import { Component } from "solid-js";
 import { customElement, getCurrentElement, noShadowDOM } from "solid-element";
 
+import * as Ankor from "ankor";
+
 import { ShadowRootAttacher } from "@rolludejo/internal-web-shared/shadow-root";
 
 import { styleProvider as styleProviderForPreflight } from "../../../styles/preflight";
@@ -11,20 +13,17 @@ import { styleProvider as styleProviderForTuanProse } from "../../../styles/tuan
 import { createRotextExampleStore } from "./create-store";
 
 import { MainCard } from "./MainCard";
+import { findClosestElementEx } from "@rolludejo/internal-web-shared";
 
-export function registerCustomElement(tag: string, opts: {
-  getFixtures: (fixtureNames: Set<string>) => { [fixtureName: string]: string };
-}) {
+export function registerCustomElement(tag: string) {
   customElement(
     tag,
     { input: "", expected: null, "use-fixtures": "" },
-    createRotextExampleComponent(opts),
+    createRotextExampleComponent(),
   );
 }
 
-function createRotextExampleComponent(opts: {
-  getFixtures: (fixtureNames: Set<string>) => { [fixtureName: string]: string };
-}): Component<
+function createRotextExampleComponent(): Component<
   { input: string; expected: string | null; "use-fixtures": string }
 > {
   return (props) => {
@@ -34,7 +33,11 @@ function createRotextExampleComponent(opts: {
       ? props["use-fixtures"].split(",")
       : null;
     const fixtures = fixtureNames
-      ? opts.getFixtures(new Set(fixtureNames))
+      ? getFixtures(
+        findClosestElementEx(getCurrentElement(), (el) =>
+          el.classList.contains(Ankor.CONTENT_CLASS))!,
+        new Set(fixtureNames),
+      )
       : null;
 
     const store = createRotextExampleStore({
@@ -64,4 +67,19 @@ function createRotextExampleComponent(opts: {
       </ShadowRootAttacher>
     );
   };
+}
+
+function getFixtures(
+  contentContainerEl: HTMLElement,
+  fixtureNames: Set<string>,
+): { [fixtureName: string]: string } {
+  const els = contentContainerEl.querySelectorAll("x-rotext-example-fixture");
+  const qualifiedEls = [...els]
+    .filter((el) => fixtureNames.has(el.getAttribute("name")!));
+
+  return Object.fromEntries(
+    qualifiedEls.map((
+      el,
+    ) => [el.getAttribute("name")!, el.getAttribute("input")!]),
+  );
 }

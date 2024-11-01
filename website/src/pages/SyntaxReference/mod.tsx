@@ -5,10 +5,11 @@ import {
   createResource,
   createSignal,
   on,
-  onCleanup,
   Show,
 } from "solid-js";
 import { useLocation, useNavigate, useParams } from "@solidjs/router";
+
+import * as Ankor from "ankor";
 
 import { Button, Card, Loading } from "../../components/ui/mod";
 
@@ -19,35 +20,12 @@ import { initializeGlobal } from "../../global";
 
 import { registerCustomElement as registerCustomElementForRotextPreview } from "./RotextExample/mod";
 
-// XXX: 一个标签页里只会有一个页面，所以把它作为全局变量也没有问题。
-let contentContainerEl!: HTMLDivElement;
-
-function getFixtures(
-  fixtureNames: Set<string>,
-): { [fixtureName: string]: string } {
-  const els = contentContainerEl.querySelectorAll("x-rotext-example-fixture");
-  const qualifiedEls = [...els]
-    .filter((el) => fixtureNames.has(el.getAttribute("name")!));
-
-  return Object.fromEntries(
-    qualifiedEls.map((
-      el,
-    ) => [el.getAttribute("name")!, el.getAttribute("input")!]),
-  );
-}
-
-registerCustomElementForRotextPreview("x-rotext-example", { getFixtures });
+registerCustomElementForRotextPreview("x-rotext-example");
 
 export default (() => {
   initializeGlobal({ navigator: useNavigate() });
 
-  if (contentContainerEl) {
-    throw new Error("unreachable");
-  }
-  onCleanup(() => {
-    // @ts-ignore
-    contentContainerEl = undefined;
-  });
+  let contentContainerEl!: HTMLDivElement;
 
   const params = useParams();
   const pageName = createMemo(() => decodeURIComponent(params.pageName!));
@@ -192,7 +170,7 @@ export default (() => {
           <div class="max-h-full h-fit overflow-y-scroll overflow-x-hidden">
             <div
               ref={contentContainerEl}
-              class="p-4 tuan-background tuan-prose break-all"
+              class={`${Ankor.CONTENT_CLASS} p-4 tuan-background tuan-prose break-all`}
             />
           </div>
         </div>
