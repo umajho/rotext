@@ -1,6 +1,5 @@
 import {
   Component,
-  createContext,
   createEffect,
   createMemo,
   createResource,
@@ -11,7 +10,6 @@ import {
   Show,
   Suspense,
   Switch,
-  useContext,
 } from "solid-js";
 import {
   RouteSectionProps,
@@ -29,7 +27,6 @@ import {
   Navigation,
   syntaxReferenceResourceManager,
 } from "../resource-managers/syntax-reference";
-import { getSyntaxReferencePathOfHeading } from "../utils/syntax-reference";
 import { SUPPORTS_DVH } from "../utils/mod";
 import { useRotextProcessorsStore } from "../contexts/rotext-processors-store";
 import { RotextProcessorName } from "../hooks/rotext-processors-store";
@@ -162,9 +159,6 @@ const NavBar: Component<{
   );
 };
 
-const SyntaxReferenceIndexContext = //
-  createContext<{ [heading: string]: string }>();
-
 const NavMenu: Component<{
   onClickMenuItem: () => boolean | void;
 }> = (props) => {
@@ -177,8 +171,6 @@ const NavMenu: Component<{
 
   const [syntaxReferenceNavigation] = //
     createResource(syntaxReferenceResourceManager.getNavigation);
-  const [headingToPageMap] = //
-    createResource(syntaxReferenceResourceManager.getHeadingToPageMap);
 
   return (
     <ul class="menu w-full">
@@ -217,8 +209,7 @@ const NavMenu: Component<{
         <details open>
           <summary>语法参考（WIP）</summary>
           <Show
-            when={syntaxReferenceNavigation.state === "ready" &&
-              headingToPageMap.state === "ready"}
+            when={syntaxReferenceNavigation.state === "ready"}
             fallback={
               <ul>
                 <li class="disabled">
@@ -229,11 +220,9 @@ const NavMenu: Component<{
               </ul>
             }
           >
-            <SyntaxReferenceIndexContext.Provider value={headingToPageMap()!}>
-              <NavMenuList
-                navigationList={syntaxReferenceNavigation()!.children ?? []}
-              />
-            </SyntaxReferenceIndexContext.Provider>
+            <NavMenuList
+              navigationList={syntaxReferenceNavigation()!.children ?? []}
+            />
           </Show>
         </details>
       </li>
@@ -301,20 +290,16 @@ const NavMenuListItemInnerLeaf: Component<{
   const navigate = useNavigate();
   const location = useLocation();
 
-  const index = useContext(SyntaxReferenceIndexContext)!;
-
   const heading = () => props.navigation.realName ?? props.navigation.name;
-  const path = createMemo(() =>
-    getSyntaxReferencePathOfHeading(heading(), { index })
-  );
+  const pathWithAnchor = createMemo(() => `/syntax-reference/${heading()}`);
+  const path = createMemo(() => pathWithAnchor().split("#")[0]);
 
-  const match = () =>
-    `${decodeURIComponent(location.pathname)}` === path().path;
+  const match = () => `${decodeURIComponent(location.pathname)}` === path();
 
   return (
     <a
       class={`${match() ? "active" : ""}`}
-      onClick={() => navigate(path().pathWithAnchor)}
+      onClick={() => navigate(pathWithAnchor())}
     >
       {props.navigation.name}
     </a>

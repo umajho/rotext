@@ -29,9 +29,9 @@ const extInternalLink: TokenizerAndRendererExtension = {
   renderer: (token) => {
     return toHTML(
       h(
-        "x-internal-link-tmp",
-        token.pageName ? { attrs: { "page-name": token.pageName } } : {},
-        token.displayName,
+        "x-internal-link",
+        { attrs: { "address": token.pageName ?? token.displayName } },
+        h("span", { attrs: { slot: "content" } }, token.displayName),
       ),
     );
   },

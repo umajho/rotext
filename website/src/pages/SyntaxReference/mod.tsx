@@ -15,7 +15,6 @@ import { Button, Card, Loading } from "../../components/ui/mod";
 
 import "../../styles/tuan-prose";
 import { syntaxReferenceResourceManager } from "../../resource-managers/syntax-reference";
-import { getSyntaxReferencePathOfHeading } from "../../utils/syntax-reference";
 import { initializeGlobal, updateGlobalCurrentPageName } from "../../global";
 
 export default (() => {
@@ -45,30 +44,13 @@ export default (() => {
       return page;
     },
   );
-  const [headingToPageMap] = //
-    createResource(syntaxReferenceResourceManager.getHeadingToPageMap);
+
   createEffect(
-    on([pageHTMLRaw, headingToPageMap], ([pageHTMLRaw, headingToPageMap]) => {
+    on([pageHTMLRaw], ([pageHTMLRaw]) => {
       contentContainerEl.innerHTML = pageHTMLRaw ?? "";
 
-      if (!headingToPageMap) return;
       if (!isIndexLoaded()) {
         setIsIndexLoaded(true);
-      }
-
-      const linkEls = //
-        contentContainerEl.querySelectorAll("x-internal-link-tmp");
-      for (const linkEl of linkEls) {
-        const heading = linkEl.getAttribute("page-name") ?? linkEl.textContent!;
-        const { pathWithAnchor } = getSyntaxReferencePathOfHeading(heading, {
-          index: headingToPageMap,
-        });
-
-        const aEl = document.createElement("a");
-        aEl.append(...linkEl.childNodes);
-        aEl.addEventListener("click", () => navigate(pathWithAnchor));
-
-        linkEl.replaceWith(aEl);
       }
 
       if (location.hash) {
@@ -121,6 +103,12 @@ export default (() => {
     }
   }
 
+  const widgetOwnerData = JSON.stringify(
+    {
+      level: 1,
+    } satisfies Ankor.WidgetOwnerRaw,
+  );
+
   return (
     <div class="flex max-h-full h-fit justify-center sm:p-4 lg:p-6 2xl:p-8">
       <Card
@@ -168,9 +156,10 @@ export default (() => {
           </div>
           <div
             class={`${Ankor.WIDGET_OWNER_CLASS} max-h-full h-fit overflow-y-scroll overflow-x-hidden`}
+            data-ankor-widget-owner={widgetOwnerData}
           >
             <div class="p-4 tuan-background tuan-prose break-all">
-              <div class={Ankor.ANCHOR_CLASS} />
+              <div class={`${Ankor.ANCHOR_CLASS} relative z-10`} />
               <div class={Ankor.CONTENT_CLASS} ref={contentContainerEl} />
             </div>
           </div>

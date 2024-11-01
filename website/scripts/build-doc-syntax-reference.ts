@@ -72,10 +72,10 @@ async function main() {
     return result[1];
   })();
 
+  console.log();
   const filesNotLinkedByNavigation = Object.entries(infos)
     .filter(
-      ([_, info]) =>
-        [...info.headings].every((h) => !targetsInNavigation.has(h)),
+      ([p, _]) => !targetsInNavigation.has(/(.*)\.md/.exec(p)![1]!),
     ).map(([filePath, _]) => filePath);
   if (filesNotLinkedByNavigation.length) {
     console.error(
@@ -127,7 +127,7 @@ function parseNavigationHTML(
     }
 
     const name = heading.child.innerText;
-    const realName = (heading.child as HTMLElement).getAttribute?.("page-name");
+    const realName = (heading.child as HTMLElement).getAttribute?.("address");
 
     const nav: Navigation = {
       ...(heading.child.rawTagName ? {} : { isPlain: true }),
@@ -202,7 +202,7 @@ function extractHeadings(dom: HTMLElement, opts: {
       isChildValid = true;
     } else if (
       opts.allowedContent.singleInternalLink &&
-      child.rawTagName === "x-internal-link-tmp"
+      child.rawTagName === "x-internal-link"
     ) {
       isChildValid = true;
     }
@@ -271,7 +271,7 @@ async function collectFileInfos(
 
   const infos: { [name: string]: FileInfo } = {};
 
-  const seenHeadings = new Set<string>();
+  const seenTargets = new Set<string>();
 
   for (const filePath of filePaths) {
     const fileText =
@@ -293,8 +293,11 @@ async function collectFileInfos(
     const indexableHeadings = headings
       .map((h) => h.child.rawText.trim())
       .filter((h) => !opts.ignoredHeadings.has(h));
+
+    const fileName = path.parse(filePath).name;
+    const pageName = /(.*)\.md/.exec(filePath)![1]!;
+
     {
-      const fileName = path.parse(filePath).name;
       const h1Content = indexableHeadings[0];
 
       if (h1Content !== fileName) {
@@ -305,17 +308,37 @@ async function collectFileInfos(
       }
     }
 
+    const seenLocalTargets = new Set<string>();
+    seenTargets.add(pageName);
     for (const heading of indexableHeadings) {
-      if (seenHeadings.has(heading)) {
+      const fullTarget = `${pageName}#${heading}`;
+      if (seenTargets.has(fullTarget)) {
         return ["error", `duplicate heading: “${heading}”`];
       }
-      seenHeadings.add(heading);
+      seenTargets.add(fullTarget);
+      seenLocalTargets.add(`#${heading}`);
     }
 
+    const missingLocalTargets = new Set<string>();
     const internalLinkTargets = new Set<string>();
-    for (const el of fileHTML.querySelectorAll("x-internal-link-tmp")) {
-      const target = el.getAttribute("page-name") ?? el.textContent;
-      internalLinkTargets.add(target);
+    for (const el of fileHTML.querySelectorAll("x-internal-link")) {
+      const target = el.getAttribute("address") ?? el.textContent;
+      if (target.startsWith("#")) {
+        if (!seenLocalTargets.has(target)) {
+          missingLocalTargets.add(target);
+        }
+      } else {
+        internalLinkTargets.add(target);
+      }
+    }
+
+    if (missingLocalTargets.size) {
+      return [
+        "error",
+        "missing local internal link targets for page " +
+        `${JSON.stringify(pageName)}: ` +
+        `${[...missingLocalTargets].join(", ")}`,
+      ];
     }
 
     infos[filePath] = {
@@ -328,13 +351,13 @@ async function collectFileInfos(
 
   const missingTargets = new Set<string>();
   for (const target of [...opts.targetsInNavigation]) {
-    if (!seenHeadings.has(target)) {
+    if (!seenTargets.has(target)) {
       missingTargets.add(target);
     }
   }
   for (const [_, { internalLinkTargets }] of Object.entries(infos)) {
     for (const target of internalLinkTargets) {
-      if (!seenHeadings.has(target)) {
+      if (!seenTargets.has(target)) {
         missingTargets.add(target);
       }
     }

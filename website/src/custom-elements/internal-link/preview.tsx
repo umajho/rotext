@@ -66,6 +66,13 @@ export function createDemoPreviewRenderer(
             }));
           });
 
+          const widgetOwnerData = JSON.stringify(
+            {
+              // FIXME!!!: 目前只是用来占位。正确的值应该根据其外层的挂件来计算。
+              level: 1,
+            } satisfies Ankor.WidgetOwnerRaw,
+          );
+
           return (
             <ShadowRootAttacher
               styleProviders={[
@@ -74,7 +81,10 @@ export function createDemoPreviewRenderer(
                 proseStyleProvider,
               ]}
             >
-              <div class={Ankor.WIDGET_OWNER_CLASS}>
+              <div
+                class={Ankor.WIDGET_OWNER_CLASS}
+                data-ankor-widget-owner={widgetOwnerData}
+              >
                 <div class={`${Ankor.CONTENT_CLASS} p-2 md:p-4`}>
                   <div class={`${Ankor.ANCHOR_CLASS} relative z-10`} />
                   <div
