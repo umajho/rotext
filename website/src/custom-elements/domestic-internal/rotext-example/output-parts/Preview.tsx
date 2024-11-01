@@ -12,14 +12,9 @@ import { Idiomorph } from "idiomorph/dist/idiomorph.esm.js";
 
 import * as Ankor from "ankor";
 
-import {
-  PROSE_CLASS,
-  registerCustomElementsOnce,
-} from "../../../../custom-elements/mod";
+import { PROSE_CLASS } from "../../../mod";
 
 export type PreviewContent = ["html", string];
-
-registerCustomElementsOnce();
 
 export const Preview: Component<{
   content: () => PreviewContent;

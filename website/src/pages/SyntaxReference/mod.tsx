@@ -16,21 +16,20 @@ import { Button, Card, Loading } from "../../components/ui/mod";
 import "../../styles/tuan-prose";
 import { syntaxReferenceResourceManager } from "../../resource-managers/syntax-reference";
 import { getSyntaxReferencePathOfHeading } from "../../utils/syntax-reference";
-import { initializeGlobal } from "../../global";
-
-import { registerCustomElement as registerCustomElementForRotextPreview } from "./RotextExample/mod";
-
-registerCustomElementForRotextPreview("x-rotext-example");
+import { initializeGlobal, updateGlobalCurrentPageName } from "../../global";
 
 export default (() => {
-  initializeGlobal({ navigator: useNavigate() });
-
   let contentContainerEl!: HTMLDivElement;
 
   const params = useParams();
   const pageName = createMemo(() => decodeURIComponent(params.pageName!));
   const navigate = useNavigate();
   const location = useLocation();
+
+  initializeGlobal({ currentPageName: null, navigator: navigate });
+  createEffect(on([pageName], ([pageName]) => {
+    updateGlobalCurrentPageName(pageName);
+  }));
 
   const [isIndexLoaded, setIsIndexLoaded] = createSignal(false);
 
@@ -167,11 +166,13 @@ export default (() => {
               )}
             </Show>
           </div>
-          <div class="max-h-full h-fit overflow-y-scroll overflow-x-hidden">
-            <div
-              ref={contentContainerEl}
-              class={`${Ankor.CONTENT_CLASS} p-4 tuan-background tuan-prose break-all`}
-            />
+          <div
+            class={`${Ankor.WIDGET_OWNER_CLASS} max-h-full h-fit overflow-y-scroll overflow-x-hidden`}
+          >
+            <div class="p-4 tuan-background tuan-prose break-all">
+              <div class={Ankor.ANCHOR_CLASS} />
+              <div class={Ankor.CONTENT_CLASS} ref={contentContainerEl} />
+            </div>
           </div>
         </div>
       </Card>

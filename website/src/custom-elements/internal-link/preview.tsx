@@ -1,4 +1,10 @@
-import { createEffect, createMemo } from "solid-js";
+import {
+  createEffect,
+  createMemo,
+  createResource,
+  on,
+  onMount,
+} from "solid-js";
 import { render } from "solid-js/web";
 
 import * as Ankor from "ankor";
@@ -14,8 +20,11 @@ import { AnkorWidgetNavigationInnerRenderer } from "@rotext/solid-components/int
 import { createSignalGetterFromWatchable } from "../hooks";
 
 import { styleProvider as styleProviderForPreflight } from "../../styles/preflight";
+import { styleProvider as styleProviderForTailwind } from "../../styles/tailwind";
+
 import { closestScrollContainer } from "../../utils/mod";
 import Global from "../../global";
+import { syntaxReferenceResourceManager } from "../../resource-managers/syntax-reference";
 
 export function createDemoPreviewRenderer(
   createRendererOpts: { proseClass: string; proseStyleProvider: StyleProvider },
@@ -40,11 +49,40 @@ export function createDemoPreviewRenderer(
           );
           const address = createMemo(() => parseAddress(rawAddr()));
 
+          let contentContainerEl!: HTMLDivElement;
+
+          const [pageHTMLRaw] = createResource(() => {
+            const page = address().page;
+            if (!page) return null;
+            return syntaxReferenceResourceManager.getPage(page);
+          });
+          onMount(() => {
+            createEffect(on([pageHTMLRaw], ([pageHTMLRaw]) => {
+              if (!pageHTMLRaw) {
+                contentContainerEl.innerHTML = "TODO";
+              } else {
+                contentContainerEl.innerHTML = pageHTMLRaw;
+              }
+            }));
+          });
+
           return (
             <ShadowRootAttacher
-              styleProviders={[styleProviderForPreflight, proseStyleProvider]}
+              styleProviders={[
+                styleProviderForPreflight,
+                styleProviderForTailwind,
+                proseStyleProvider,
+              ]}
             >
-              <span>{`TODO: ${rawAddr()}`}</span>
+              <div class={Ankor.WIDGET_OWNER_CLASS}>
+                <div class={`${Ankor.CONTENT_CLASS} p-2 md:p-4`}>
+                  <div class={`${Ankor.ANCHOR_CLASS} relative z-10`} />
+                  <div
+                    ref={contentContainerEl}
+                    class="tuan-background tuan-prose break-all"
+                  />
+                </div>
+              </div>
             </ShadowRootAttacher>
           );
         }, el);
@@ -58,7 +96,7 @@ export function createDemoPreviewRenderer(
         // 类其他属性里。
         // 对于导航类挂件（如本挂件及引用链接）：在最外层有多个 widget owner 时
         // （比如在一个串中），应当额外考虑目标地址是否已经处于页面当中（已经加载）。
-        const currentPage = window.location.pathname.split("/").at(-1);
+        const currentPage = Global.currentPageName!;
 
         const { page, section } = parseAddress(rawAddrW.currentValue);
 

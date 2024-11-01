@@ -3,6 +3,7 @@ import { customElement, getCurrentElement, noShadowDOM } from "solid-element";
 
 import * as Ankor from "ankor";
 
+import { findClosestElementEx } from "@rolludejo/internal-web-shared/dom";
 import { ShadowRootAttacher } from "@rolludejo/internal-web-shared/shadow-root";
 
 import { styleProvider as styleProviderForPreflight } from "../../../styles/preflight";
@@ -13,7 +14,6 @@ import { styleProvider as styleProviderForTuanProse } from "../../../styles/tuan
 import { createRotextExampleStore } from "./create-store";
 
 import { MainCard } from "./MainCard";
-import { findClosestElementEx } from "@rolludejo/internal-web-shared";
 
 export function registerCustomElement(tag: string) {
   customElement(

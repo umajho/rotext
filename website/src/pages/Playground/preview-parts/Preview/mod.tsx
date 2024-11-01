@@ -16,10 +16,7 @@ import * as Ankor from "ankor";
 import { ErrorAlert } from "@rotext/solid-components/internal";
 
 import { debounceEventHandler } from "../../../../utils/mod";
-import {
-  PROSE_CLASS,
-  registerCustomElementsOnce,
-} from "../../../../custom-elements/mod";
+import { PROSE_CLASS } from "../../../../custom-elements/mod";
 
 import { ActiveLines, EditorStore, TopLine } from "../../editor-store";
 import { createAutoResetCounter } from "../../../../hooks/auto-reset-counter";
@@ -27,8 +24,6 @@ import { RotextProcessResult } from "../../../../processors/mod";
 
 import { LookupList, LookupListRaw } from "./internal-types";
 import * as ScrollUtils from "./scroll-utils";
-
-registerCustomElementsOnce();
 
 const CONTENT_ROOT_CLASS = "previewer-content-root";
 

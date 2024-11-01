@@ -4,6 +4,7 @@ import { render } from "solid-js/web";
 
 import { RotextProcessorName } from "./hooks/rotext-processors-store";
 import { RotextProcessorsStoreProvider } from "./contexts/rotext-processors-store";
+import { registerCustomElementsOnce } from "./custom-elements/mod";
 
 import { Root } from "./components/layout";
 
@@ -18,6 +19,8 @@ if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
     "Root element not found. Did you forget to add it to your index.html? Or maybe the id attribute got misspelled?",
   );
 }
+
+registerCustomElementsOnce();
 
 render(() => {
   return (

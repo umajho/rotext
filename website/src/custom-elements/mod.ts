@@ -9,6 +9,8 @@ import { registerCustomElement as registerCustomElementForScratchOff } from "./d
 import { registerCustomElement as registerCustomElementForCollapse } from "./domestic/Collapse";
 import { registerCustomElement as registerCustomElementForCodeBlock } from "./domestic/CodeBlock";
 
+import { registerCustomElement as registerCustomElementForRotextPreview } from "./domestic-internal/rotext-example/mod";
+
 let hasRegistered = false;
 
 export function registerCustomElementsOnce() {
@@ -21,4 +23,6 @@ export function registerCustomElementsOnce() {
   registerCustomElementForScratchOff(TAG_NAME_MAP["scratch-off"]);
   registerCustomElementForCollapse(TAG_NAME_MAP["collapse"]);
   registerCustomElementForCodeBlock(TAG_NAME_MAP["code-block"]);
+
+  registerCustomElementForRotextPreview("x-rotext-example");
 }
