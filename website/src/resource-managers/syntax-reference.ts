@@ -2,10 +2,7 @@ const PATH_PREFIX = import.meta.env.BASE_URL +
   "static/generated/syntax-reference";
 const PATHS = {
   NAVIGATION: `${PATH_PREFIX}/navigation.json`,
-  /**
-   * TODO!!: 目前只剩下被 `getPage` 拿来判断页面是否存在的功能，实际可以移除掉。
-   */
-  FILES_HEADINGS: `${PATH_PREFIX}/files-headings.json`,
+  PAGES_OF_SYNTAX_REFERENCES: `${PATH_PREFIX}/pages-of-syntax-references.json`,
   page: (pageName: string) => `${PATH_PREFIX}/${pageName}.inc.html`,
 };
 
@@ -16,7 +13,7 @@ export interface Navigation {
   children?: Navigation[];
 }
 
-type PageToHeadingsMap = { [pageName: string]: string[] };
+type Pages = Set<string>;
 
 function createSyntaxReferenceResourceManager() {
   async function fetchNavigation() {
@@ -28,15 +25,14 @@ function createSyntaxReferenceResourceManager() {
       .then((v) => navigationCache = v);
   }
 
-  async function fetchPageToHeadingsMap(): Promise<PageToHeadingsMap> {
-    return await (await fetch(PATHS.FILES_HEADINGS)).json();
+  async function fetchPagesOfSyntaxReferences(): Promise<Pages> {
+    return new Set(
+      await (await fetch(PATHS.PAGES_OF_SYNTAX_REFERENCES)).json(),
+    );
   }
-  let pageToHeadingsMapCache:
-    | PageToHeadingsMap
-    | Promise<PageToHeadingsMap>
-    | undefined;
-  async function getPageToHeadingsMap(): Promise<PageToHeadingsMap> {
-    return pageToHeadingsMapCache ??= fetchPageToHeadingsMap()
+  let pageToHeadingsMapCache: Pages | Promise<Pages> | undefined;
+  async function getPagesOfSyntaxReferences(): Promise<Pages> {
+    return pageToHeadingsMapCache ??= fetchPagesOfSyntaxReferences()
       .then((v) => pageToHeadingsMapCache = v);
   }
 
@@ -45,13 +41,13 @@ function createSyntaxReferenceResourceManager() {
   }
   const pageCaches: { [pageName: string]: string | Promise<string> } = {};
   async function getPage(pageName: string): Promise<string | null> {
-    const map = await getPageToHeadingsMap();
-    if (!(pageName in map)) return null;
+    const pages = await getPagesOfSyntaxReferences();
+    if (!(pages.has(pageName))) return null;
     return pageCaches[pageName] ??= fetchPage(pageName)
       .then((v) => pageCaches[pageName] = v);
   }
 
-  return { getNavigation, getPageToHeadingsMap, getPage };
+  return { getNavigation, getPage };
 }
 
 export const syntaxReferenceResourceManager =

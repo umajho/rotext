@@ -381,13 +381,12 @@ async function writeFiles(
   );
 
   await fs.writeFile(
-    path.join(PATHS.GENERATED_SYNTAX_REFERENCE_FOLDER, "files-headings.json"),
+    path.join(
+      PATHS.GENERATED_SYNTAX_REFERENCE_FOLDER,
+      "pages-of-syntax-references.json",
+    ),
     JSON.stringify(
-      Object.fromEntries(
-        Object.entries(opts.infos).map((
-          [k, v],
-        ) => [removeFilePathExtension(k), [...v.headings]]),
-      ),
+      Object.keys(opts.infos).map(removeFilePathExtension),
     ),
   );
 
