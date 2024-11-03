@@ -35,8 +35,8 @@ render(() => {
           component={lazy(() => import("./pages/Playground/mod"))}
         />
         <Route
-          path="/syntax-reference/*pageName"
-          component={lazy(() => import("./pages/SyntaxReference/mod"))}
+          path="/wiki/*pageName"
+          component={lazy(() => import("./pages/Wiki/mod"))}
         />
 
         <Route path="*" component={NotFoundPage} />

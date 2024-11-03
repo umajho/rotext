@@ -24,7 +24,8 @@ import { styleProvider as styleProviderForTailwind } from "../../styles/tailwind
 
 import { closestScrollContainer } from "../../utils/mod";
 import Global from "../../global";
-import { syntaxReferenceResourceManager } from "../../resource-managers/syntax-reference";
+import { wikiResourceManager } from "../../resource-managers/wiki";
+import { navigateToWiki } from "../../utils/navigation";
 
 export function createDemoPreviewRenderer(
   createRendererOpts: { proseClass: string; proseStyleProvider: StyleProvider },
@@ -32,7 +33,11 @@ export function createDemoPreviewRenderer(
   const { proseClass: _, proseStyleProvider } = createRendererOpts;
 
   return (rawAddrW, rendererOpts) => {
-    rendererOpts.updateNavigationText(`[[${rawAddrW.currentValue}]]`);
+    {
+      const authRawAddrCurValue = //
+        getAuthenticFullPageNameOrAnchor(rawAddrW.currentValue);
+      rendererOpts.updateNavigationText(`[[${authRawAddrCurValue}]]`);
+    }
 
     let el!: HTMLElement;
 
@@ -44,8 +49,11 @@ export function createDemoPreviewRenderer(
         el = el_;
         const dispose = render(() => {
           const rawAddr = createSignalGetterFromWatchable(rawAddrW);
+          const authRawAddr = createMemo(() =>
+            getAuthenticFullPageNameOrAnchor(rawAddr())
+          );
           createEffect(() =>
-            rendererOpts.updateNavigationText(`[[${rawAddr()}]]`)
+            rendererOpts.updateNavigationText(`[[${authRawAddr()}]]`)
           );
           const address = createMemo(() => parseAddress(rawAddr()));
 
@@ -54,7 +62,7 @@ export function createDemoPreviewRenderer(
           const [pageHTMLRaw] = createResource(() => {
             const page = address().page;
             if (!page) return null;
-            return syntaxReferenceResourceManager.getPage(page);
+            return wikiResourceManager.getPage(page);
           });
           onMount(() => {
             createEffect(on([pageHTMLRaw], ([pageHTMLRaw]) => {
@@ -112,9 +120,9 @@ export function createDemoPreviewRenderer(
 
         if (page && page !== currentPage) {
           if (section) {
-            Global.navigator!(`/syntax-reference/${page}#${section}`);
+            navigateToWiki(`${page}#${section}`);
           } else {
-            Global.navigator!(`/syntax-reference/${page}`);
+            navigateToWiki(page);
           }
         } else if (section) {
           const els = getContentElementAndScrollContainerElement(el);
@@ -169,4 +177,9 @@ function closestWidgetOwnerElement(el: HTMLElement) {
     el,
     (el) => el.classList.contains(Ankor.WIDGET_OWNER_CLASS),
   );
+}
+
+function getAuthenticFullPageNameOrAnchor(address: string) {
+  if (address.startsWith("#")) return address;
+  return wikiResourceManager.getAuthenticFullPageName(address);
 }

@@ -2,7 +2,6 @@ import {
   Component,
   createEffect,
   createMemo,
-  createResource,
   createSignal,
   For,
   Match,
@@ -23,10 +22,7 @@ import { HiSolidArrowTopRightOnSquare, HiSolidBars3 } from "solid-icons/hi";
 
 import { Button, Dropdown, DropdownItem, Loading } from "./ui/mod";
 
-import {
-  Navigation,
-  syntaxReferenceResourceManager,
-} from "../resource-managers/syntax-reference";
+import { Navigation, wikiResourceManager } from "../resource-managers/wiki";
 import { SUPPORTS_DVH } from "../utils/mod";
 import { useRotextProcessorsStore } from "../contexts/rotext-processors-store";
 import { RotextProcessorName } from "../hooks/rotext-processors-store";
@@ -168,10 +164,6 @@ const NavMenu: Component<{
 
   const navigate = useNavigate();
   const matchPlayground = useMatch(() => "/playground");
-
-  const [syntaxReferenceNavigation] = //
-    createResource(syntaxReferenceResourceManager.getNavigation);
-
   return (
     <ul class="menu w-full">
       <p class="menu-title">解析器 & 渲染器</p>
@@ -192,7 +184,7 @@ const NavMenu: Component<{
           </option>
         </select>
       </li>
-      <p class="menu-title">导航</p>
+      <p class="menu-title">实验场</p>
       <li>
         <a
           class={`${matchPlayground() ? "active" : ""}`}
@@ -205,27 +197,10 @@ const NavMenu: Component<{
           实验场
         </a>
       </li>
-      <li>
-        <details open>
-          <summary>语法参考（WIP）</summary>
-          <Show
-            when={syntaxReferenceNavigation.state === "ready"}
-            fallback={
-              <ul>
-                <li class="disabled">
-                  <div class="flex justify-center disabled">
-                    <Loading />
-                  </div>
-                </li>
-              </ul>
-            }
-          >
-            <NavMenuList
-              navigationList={syntaxReferenceNavigation()!.children ?? []}
-            />
-          </Show>
-        </details>
-      </li>
+      <p class="menu-title">Wiki</p>
+      <NavMenuList
+        navigationList={wikiResourceManager.getNavigations()}
+      />
     </ul>
   );
 };
@@ -290,8 +265,8 @@ const NavMenuListItemInnerLeaf: Component<{
   const navigate = useNavigate();
   const location = useLocation();
 
-  const heading = () => props.navigation.realName ?? props.navigation.name;
-  const pathWithAnchor = createMemo(() => `/syntax-reference/${heading()}`);
+  const page = () => props.navigation.realName ?? props.navigation.name;
+  const pathWithAnchor = createMemo(() => `/wiki/${page()}`);
   const path = createMemo(() => pathWithAnchor().split("#")[0]);
 
   const match = () => `${decodeURIComponent(location.pathname)}` === path();

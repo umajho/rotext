@@ -4,7 +4,8 @@
     "Dicexp",
     "Inlines",
     "rotext",
-    "unescapes"
+    "unescapes",
+    "navigations"
   ],
   "json.schemas": [
     {
