@@ -21,6 +21,7 @@ async function main(args_: string[]) {
     options: {
       "input": { type: "string", short: "i" },
       "output": { type: "string", short: "o" },
+      "dry-run": { type: "boolean", default: false },
     },
     args: args_,
   });
@@ -52,7 +53,9 @@ async function main(args_: string[]) {
     process.exit(1);
   }
 
-  await writeFiles({ output: args.output, namespaceMap: nsMap });
+  if (!args["dry-run"]) {
+    await writeFiles({ output: args.output, namespaceMap: nsMap });
+  }
 }
 
 function checkPages(
