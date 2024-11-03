@@ -59,17 +59,18 @@ export function createDemoPreviewRenderer(
 
           let contentContainerEl!: HTMLDivElement;
 
-          const [pageHTMLRaw] = createResource(() => {
+          const [pageHTML] = createResource(() => {
             const page = address().page;
             if (!page) return null;
             return wikiResourceManager.getPage(page);
           });
           onMount(() => {
-            createEffect(on([pageHTMLRaw], ([pageHTMLRaw]) => {
-              if (!pageHTMLRaw) {
+            createEffect(on([pageHTML], ([pageHTML]) => {
+              if (!pageHTML) {
                 contentContainerEl.innerHTML = "TODO";
               } else {
-                contentContainerEl.innerHTML = pageHTMLRaw;
+                contentContainerEl.innerHTML = "";
+                contentContainerEl.append(pageHTML.cloneNode(true));
               }
             }));
           });

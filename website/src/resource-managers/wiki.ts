@@ -50,8 +50,10 @@ async function fetchPage(fullPageName: string): Promise<string> {
   const [ns, pageName] = fullPageName.split(":");
   return (await fetch(PATHS.page(`${ns}/${pageName}`))).text();
 }
-const pageCaches: { [fullPageName: string]: string | Promise<string> } = {};
-async function getPage(fullPageName: string): Promise<string | null> {
+const pageCaches: {
+  [fullPageName: string]: DocumentFragment | Promise<DocumentFragment>;
+} = {};
+async function getPage(fullPageName: string): Promise<DocumentFragment | null> {
   const authenticFullPageName = getAuthenticFullPageName(fullPageName);
   if (!authenticFullPageName) return null;
 
@@ -59,7 +61,11 @@ async function getPage(fullPageName: string): Promise<string | null> {
     return null;
   }
   return pageCaches[authenticFullPageName] ??= fetchPage(authenticFullPageName)
-    .then((v) => pageCaches[authenticFullPageName] = v);
+    .then((v) => {
+      const tEl = document.createElement("template");
+      tEl.innerHTML = v;
+      return pageCaches[authenticFullPageName] = tEl.content;
+    });
 }
 
 function getAuthenticFullPageName(

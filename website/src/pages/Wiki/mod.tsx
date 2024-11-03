@@ -32,7 +32,7 @@ export default (() => {
 
   const [isIndexLoaded, setIsIndexLoaded] = createSignal(false);
 
-  const [pageHTMLRaw] = createResource(
+  const [pageHTML] = createResource(
     pageName,
     async (pageName) => {
       const page = await wikiResourceManager.getPage(pageName);
@@ -46,8 +46,11 @@ export default (() => {
   );
 
   createEffect(
-    on([pageHTMLRaw], ([pageHTMLRaw]) => {
-      contentContainerEl.innerHTML = pageHTMLRaw ?? "";
+    on([pageHTML], ([pageHTML]) => {
+      contentContainerEl.innerHTML = "";
+      if (pageHTML) {
+        contentContainerEl.append(pageHTML.cloneNode(true));
+      }
 
       if (!isIndexLoaded()) {
         setIsIndexLoaded(true);
@@ -62,11 +65,11 @@ export default (() => {
       }
     }),
   );
-  createEffect(on([() => pageHTMLRaw.loading], ([loading]) => {
+  createEffect(on([() => pageHTML.loading], ([loading]) => {
     if (loading) contentContainerEl.innerHTML = "";
   }));
 
-  const isLoading = () => pageHTMLRaw.loading || !isIndexLoaded();
+  const isLoading = () => pageHTML.loading || !isIndexLoaded();
 
   const [verificationStatistics, setVerificationStatistics] = createSignal<
     { total: number; matches: number; mismatches: number } | null
@@ -78,7 +81,7 @@ export default (() => {
       statistics.mismatches;
     return unverified || null;
   });
-  createEffect(on([pageHTMLRaw], () => setVerificationStatistics(null)));
+  createEffect(on([pageHTML], () => setVerificationStatistics(null)));
   function verifyAllOutputsOfOriginalInputs() {
     const rotextExampleEls = [
       ...contentContainerEl.querySelectorAll("x-rotext-example"),
