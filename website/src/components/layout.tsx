@@ -24,6 +24,7 @@ import { Button, Dropdown, DropdownItem, Loading } from "./ui/mod";
 
 import { Navigation, wikiResourceManager } from "../resource-managers/wiki";
 import { SUPPORTS_DVH } from "../utils/mod";
+import { navigateToWiki } from "../utils/navigation";
 import { useRotextProcessorsStore } from "../contexts/rotext-processors-store";
 import { RotextProcessorName } from "../hooks/rotext-processors-store";
 
@@ -262,19 +263,17 @@ const NavMenuListItemInnerBranch: Component<{
 const NavMenuListItemInnerLeaf: Component<{
   navigation: Navigation;
 }> = (props) => {
-  const navigate = useNavigate();
   const location = useLocation();
 
   const page = () => props.navigation.realName ?? props.navigation.name;
-  const pathWithAnchor = createMemo(() => `/wiki/${page()}`);
-  const path = createMemo(() => pathWithAnchor().split("#")[0]);
+  const path = createMemo(() => page().split("#")[0]);
 
   const match = () => `${decodeURIComponent(location.pathname)}` === path();
 
   return (
     <a
       class={`${match() ? "active" : ""}`}
-      onClick={() => navigate(pathWithAnchor())}
+      onClick={() => navigateToWiki(page())}
     >
       {props.navigation.name}
     </a>

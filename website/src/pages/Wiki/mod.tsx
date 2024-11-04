@@ -16,6 +16,7 @@ import { Button, Card, Loading } from "../../components/ui/mod";
 import "../../styles/tuan-prose";
 import { wikiResourceManager } from "../../resource-managers/wiki";
 import { initializeGlobal, updateGlobalCurrentPageName } from "../../global";
+import { navigateToWiki } from "../../utils/navigation";
 
 export default (() => {
   let contentContainerEl!: HTMLDivElement;
@@ -28,6 +29,10 @@ export default (() => {
   initializeGlobal({ currentPageName: null, navigator: navigate });
   createEffect(on([pageName], ([pageName]) => {
     updateGlobalCurrentPageName(pageName);
+
+    if (pageName !== wikiResourceManager.getAuthenticFullPageName(pageName)) {
+      navigateToWiki(pageName);
+    }
   }));
 
   const [isIndexLoaded, setIsIndexLoaded] = createSignal(false);
