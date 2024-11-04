@@ -35,6 +35,11 @@ export default (() => {
     }
   }));
 
+  const sourceLink = createMemo(() => {
+    const pagePath = pageName().replace(":", "/");
+    return `https://github.com/umajho/rotext/blob/main/docs/wiki/${pagePath}.md?plain=1`;
+  });
+
   const [isIndexLoaded, setIsIndexLoaded] = createSignal(false);
 
   const [pageHTML] = createResource(
@@ -129,8 +134,13 @@ export default (() => {
           </div>
         </Show>
         <div class={`contents ${isLoading() ? "hidden" : ""}`}>
-          <div class="flex h-fit items-center px-2 py-1">
-            <div class="flex-1" />
+          <div class="flex h-fit justify-between items-center px-2 py-1">
+            <a
+              class="underline text-blue-600 hover:text-blue-800 visited:text-purple-600"
+              href={sourceLink()}
+            >
+              前往源代码
+            </a>
             <Show
               when={verificationStatistics()}
               fallback={
