@@ -1,4 +1,5 @@
 import {
+  Component,
   createEffect,
   createMemo,
   createResource,
@@ -49,60 +50,12 @@ export function createDemoPreviewRenderer(
         el = el_;
         const dispose = render(() => {
           const rawAddr = createSignalGetterFromWatchable(rawAddrW);
-          const authRawAddr = createMemo(() =>
-            getAuthenticFullPageNameOrAnchor(rawAddr())
-          );
-          createEffect(() =>
-            rendererOpts.updateNavigationText(`[[${authRawAddr()}]]`)
-          );
-          const address = createMemo(() => parseAddress(rawAddr()));
-
-          let contentContainerEl!: HTMLDivElement;
-
-          const [pageHTML] = createResource(() => {
-            const page = address().page;
-            if (!page) return null;
-            return wikiResourceManager.getPage(page);
-          });
-          onMount(() => {
-            createEffect(on([pageHTML], ([pageHTML]) => {
-              if (!pageHTML) {
-                contentContainerEl.innerHTML = "TODO";
-              } else {
-                contentContainerEl.innerHTML = "";
-                contentContainerEl.append(pageHTML.cloneNode(true));
-              }
-            }));
-          });
-
-          const widgetOwnerData = JSON.stringify(
-            {
-              // FIXME!!!: 目前只是用来占位。正确的值应该根据其外层的挂件来计算。
-              level: 1,
-            } satisfies Ankor.WidgetOwnerRaw,
-          );
-
           return (
-            <ShadowRootAttacher
-              styleProviders={[
-                styleProviderForPreflight,
-                styleProviderForTailwind,
-                proseStyleProvider,
-              ]}
-            >
-              <div
-                class={Ankor.WIDGET_OWNER_CLASS}
-                data-ankor-widget-owner={widgetOwnerData}
-              >
-                <div class={`${Ankor.CONTENT_CLASS} p-2 md:p-4`}>
-                  <div class={`${Ankor.ANCHOR_CLASS} relative z-10`} />
-                  <div
-                    ref={contentContainerEl}
-                    class="tuan-background tuan-prose break-all"
-                  />
-                </div>
-              </div>
-            </ShadowRootAttacher>
+            <Preview
+              rawAddress={rawAddr()}
+              proseStyleProvider={proseStyleProvider}
+              updateNavigationText={rendererOpts.updateNavigationText}
+            />
           );
         }, el);
         renderOpts.onCleanup(dispose);
@@ -147,6 +100,67 @@ export function createDemoPreviewRenderer(
     };
   };
 }
+
+const Preview: Component<{
+  rawAddress: string;
+
+  proseStyleProvider: StyleProvider;
+  updateNavigationText: (v: string) => void;
+}> = (props) => {
+  const authRawAddr = createMemo(() =>
+    getAuthenticFullPageNameOrAnchor(props.rawAddress)
+  );
+  createEffect(() => props.updateNavigationText(`[[${authRawAddr()}]]`));
+  const address = createMemo(() => parseAddress(props.rawAddress));
+
+  let contentContainerEl!: HTMLDivElement;
+
+  const [pageHTML] = createResource(() => {
+    const page = address().page;
+    if (!page) return null;
+    return wikiResourceManager.getPage(page);
+  });
+  onMount(() => {
+    createEffect(on([pageHTML], ([pageHTML]) => {
+      if (!pageHTML) {
+        contentContainerEl.innerHTML = "TODO";
+      } else {
+        contentContainerEl.innerHTML = "";
+        contentContainerEl.append(pageHTML.cloneNode(true));
+      }
+    }));
+  });
+
+  const widgetOwnerData = JSON.stringify(
+    {
+      // FIXME!!!: 目前只是用来占位。正确的值应该根据其外层的挂件来计算。
+      level: 1,
+    } satisfies Ankor.WidgetOwnerRaw,
+  );
+
+  return (
+    <ShadowRootAttacher
+      styleProviders={[
+        styleProviderForPreflight,
+        styleProviderForTailwind,
+        props.proseStyleProvider,
+      ]}
+    >
+      <div
+        class={Ankor.WIDGET_OWNER_CLASS}
+        data-ankor-widget-owner={widgetOwnerData}
+      >
+        <div class={`${Ankor.CONTENT_CLASS} p-2 md:p-4`}>
+          <div class={`${Ankor.ANCHOR_CLASS} relative z-10`} />
+          <div
+            ref={contentContainerEl}
+            class="tuan-background tuan-prose break-all"
+          />
+        </div>
+      </div>
+    </ShadowRootAttacher>
+  );
+};
 
 interface Address {
   page: string | null;
