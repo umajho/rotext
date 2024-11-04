@@ -1,8 +1,8 @@
 set fallback
 
 prepare:
-	just build-wiki
 	just build-rotext
+	just build-wiki
 
 dev: prepare
 	pnpm run dev
