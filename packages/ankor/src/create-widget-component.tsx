@@ -8,6 +8,7 @@ import {
   onCleanup,
   onMount,
   Show,
+  untrack,
 } from "solid-js";
 import { Portal } from "solid-js/web";
 
@@ -55,6 +56,10 @@ export interface PopperContainerProperties {
 
 export interface PopperContentProperties {
   displayMode: () => DisplayMode;
+  /**
+   * XXX: 只有在挂载后（执行 `onMount` 起）才被定义（不为 `undefined`）。
+   */
+  widgetOwnerAgentGetter: () => WidgetOwnerAgent | undefined;
 
   handlerForTouchEndOnPinIcon: () => void;
   handlerForClickOnPinIcon: () => void;
@@ -295,6 +300,7 @@ export function createWidgetComponent(parts: {
               <div ref={popperEl}>
                 <PopperContent
                   displayMode={displayMode}
+                  widgetOwnerAgentGetter={() => untrack(woAgent)}
                   handlerForTouchEndOnPinIcon={pinningTogglerTouchEndHandler}
                   handlerForClickOnPinIcon={pinningToggleHandler}
                 />

@@ -1,8 +1,13 @@
 import { ANCHOR_CLASS, CONTENT_CLASS, WIDGET_OWNER_CLASS } from "./consts";
 
+type AddressInWidgetOwner =
+  | ["reference" | "internal", string]
+  | ["special", "live" | "never"];
+
 interface WidgetOwner {
   anchorElement: HTMLElement;
   level: number;
+  address: AddressInWidgetOwner;
   layoutChangeObserver: LayoutChangeObserver;
 
   controller: WidgetOwnerController;
@@ -20,6 +25,15 @@ export interface WidgetOwnerRaw {
    * 所属层级，`1` 为最顶层。
    */
   level: number;
+
+  /**
+   * 内容的地址，不含锚，可以不存在（赋予 `null`）。
+   *
+   * 元组的第一项代表地址的类型，可以为：
+   * - `"reference"`：用于帖子。
+   * - `"internal"`：用于 wiki 页面。
+   */
+  address: AddressInWidgetOwner;
 }
 
 const elementToWidgetOwnerMap = new WeakMap<Node, WidgetOwner>();
@@ -40,6 +54,8 @@ function initializeAgentOwner(widgetOwnerEl: HTMLElement): WidgetOwner {
       console.error("bad level", { level });
       throw new Error("bad level");
     }
+
+    const address = woRaw.address;
 
     const anchorSelector = `.${ANCHOR_CLASS}`;
     const anchorElement = //
@@ -72,6 +88,7 @@ function initializeAgentOwner(widgetOwnerEl: HTMLElement): WidgetOwner {
     wo = {
       anchorElement,
       level,
+      address,
       layoutChangeObserver,
       controller,
     };

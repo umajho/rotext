@@ -15,7 +15,7 @@ import { Button, Card, Loading } from "../../components/ui/mod";
 
 import "../../styles/tuan-prose";
 import { wikiResourceManager } from "../../resource-managers/wiki";
-import { initializeGlobal, updateGlobalCurrentPageName } from "../../global";
+import { initializeGlobal } from "../../global";
 import { navigateToWiki } from "../../utils/navigation";
 
 export default (() => {
@@ -26,10 +26,8 @@ export default (() => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  initializeGlobal({ currentPageName: null, navigator: navigate });
+  initializeGlobal({ navigator: navigate });
   createEffect(on([pageName], ([pageName]) => {
-    updateGlobalCurrentPageName(pageName);
-
     if (pageName !== wikiResourceManager.getAuthenticFullPageName(pageName)) {
       navigateToWiki(pageName);
     }
@@ -119,6 +117,7 @@ export default (() => {
   const widgetOwnerData = JSON.stringify(
     {
       level: 1,
+      address: ["internal", pageName()],
     } satisfies Ankor.WidgetOwnerRaw,
   );
 

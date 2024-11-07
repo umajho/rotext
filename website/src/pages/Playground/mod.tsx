@@ -6,7 +6,7 @@ import { initializeGlobal } from "../../global";
 import MainCard from "./MainCard";
 
 export default (() => {
-  initializeGlobal({ currentPageName: null, navigator: useNavigate() });
+  initializeGlobal({ navigator: useNavigate() });
 
   return (
     <div class="w-full h-full xl:pr-2">

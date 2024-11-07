@@ -1,4 +1,5 @@
 import {
+  batch,
   Component,
   createMemo,
   createSignal,
@@ -34,9 +35,11 @@ export type InnerRenderer = (
      *   会如此。）
      * - `创建[[页面]]`/`[[页面]]可能不存在`。（确定页面不存在时。）
      */
-    updateNavigationText: (
-      text: string | null,
-      opts?: { isDisabled?: boolean },
+    updateNavigation: (
+      opts: {
+        text: string;
+        action: (() => void) | null;
+      },
     ) => void;
   },
 ) => {
@@ -53,9 +56,12 @@ export type InnerRenderer = (
    */
   render: (
     el: HTMLElement,
-    opts: { onCleanup: (listener: () => void) => void },
+    opts: {
+      widgetOwnerAgent: Ankor.WidgetOwnerAgent;
+
+      onCleanup: (listener: () => void) => void;
+    },
   ) => void;
-  navigate: () => void;
 };
 
 export interface CreateNavigationComponentOptions {
@@ -95,11 +101,13 @@ export function createNavigationComponent(
 
     const addrW = createWatchableFromSignalGetter(() => outerProps.address);
     const [navText, setNavText] = createSignal<string | null>(null);
-    const [isNavTextDisabled, setIsNavTextDisabled] = createSignal(false);
+    const [navAction, setNavAction] = createSignal<(() => void) | null>(null);
     const renderer = opts.innerPreviewRenderer(addrW, {
-      updateNavigationText: (text, opts) => {
-        setNavText(text);
-        setIsNavTextDisabled(!!opts?.isDisabled);
+      updateNavigation: (opts) => {
+        batch(() => {
+          setNavText(opts.text);
+          setNavAction(() => opts.action);
+        });
       },
     });
 
@@ -134,6 +142,7 @@ export function createNavigationComponent(
         const cleanupListeners: (() => void)[] = [];
         onMount(() => {
           renderer.render(refEl, {
+            widgetOwnerAgent: props.widgetOwnerAgentGetter()!,
             onCleanup: (cb) => cleanupListeners.push(cb),
           });
         });
@@ -141,7 +150,7 @@ export function createNavigationComponent(
 
         const navActionClass = createMemo(() => {
           let cls = ["select-none"];
-          const isDisabled = isNavTextDisabled();
+          const isDisabled = !navAction();
           const status = isDisabled ? "disabled" : "enabled";
           cls.push(opts.classes.forNavigationAction[status]);
           cls.push(isDisabled ? "cursor-default" : "cursor-pointer");
@@ -163,7 +172,7 @@ export function createNavigationComponent(
                 {(navText) => (
                   <div
                     class={navActionClass()}
-                    onClick={() => !isNavTextDisabled() && renderer.navigate()}
+                    onClick={() => navAction?.()?.()}
                   >
                     {navText()}
                   </div>

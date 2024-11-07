@@ -82,6 +82,7 @@ const Left: Component = () => {
   const widgetOwnerData = JSON.stringify(
     {
       level: 1,
+      address: ["internal", "DEV"],
     } satisfies Ankor.WidgetOwnerRaw,
   );
 
@@ -134,6 +135,7 @@ const LeftInner: Component = () => {
   const widgetOwnerData = JSON.stringify(
     {
       level: 1,
+      address: ["internal", "DEV"],
     } satisfies Ankor.WidgetOwnerRaw,
   );
 
@@ -162,6 +164,7 @@ const Right: Component = () => {
   const widgetOwnerData = JSON.stringify(
     {
       level: 1,
+      address: ["internal", "DEV"],
     } satisfies Ankor.WidgetOwnerRaw,
   );
 

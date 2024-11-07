@@ -127,6 +127,7 @@ const Preview: Component<
   const widgetOwnerData = JSON.stringify(
     {
       level: 1,
+      address: ["special", "live"],
     } satisfies Ankor.WidgetOwnerRaw,
   );
 

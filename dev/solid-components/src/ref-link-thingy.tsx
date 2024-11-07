@@ -17,7 +17,12 @@ export function registerCustomElementForRefLink() {
     backgroundColor: BACKGROUND_COLOR,
     label: ["text", (address) => `>>${address}`],
     innerPreviewRenderer: (rawAddrW, rendererOpts) => {
-      rendererOpts.updateNavigationText(`>>${rawAddrW.currentValue}`);
+      rendererOpts.updateNavigation({
+        text: `>>${rawAddrW.currentValue}`,
+        action: () => {
+          window.alert(`演示：请当作前往了 >>${rawAddrW.currentValue}。`);
+        },
+      });
 
       return {
         isAutoOpenable: true,
@@ -25,9 +30,6 @@ export function registerCustomElementForRefLink() {
           el.innerText = JSON.stringify(rawAddrW.currentValue);
           el.style.color = "white";
           rawAddrW.onChange((value) => el.innerText = JSON.stringify(value));
-        },
-        navigate: () => {
-          window.alert(`演示：请当作前往了 >>${rawAddrW.currentValue}。`);
         },
       };
     },

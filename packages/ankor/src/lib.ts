@@ -8,6 +8,7 @@ export {
 
 export {
   getWidgetOwnerController,
+  type WidgetOwnerAgent,
   type WidgetOwnerController,
   type WidgetOwnerRaw,
 } from "./widget-owner-agent";

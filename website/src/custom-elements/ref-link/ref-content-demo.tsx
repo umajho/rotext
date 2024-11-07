@@ -4,6 +4,7 @@ import {
   createMemo,
   JSX,
   Match,
+  on,
   Switch,
 } from "solid-js";
 import { render } from "solid-js/web";
@@ -16,6 +17,7 @@ import {
 import { AnkorWidgetNavigationInnerRenderer } from "@rotext/solid-components/internal";
 
 import { createSignalGetterFromWatchable } from "../hooks";
+import { navigateToPost } from "../../utils/navigation";
 
 import { styleProvider as styleProviderForPreflight } from "../../styles/preflight";
 
@@ -25,16 +27,18 @@ export function createDemoRefContentRenderer(
   const { proseClass, proseStyleProvider } = createRendererOpts;
 
   return (rawAddrW, rendererOpts) => {
-    rendererOpts.updateNavigationText(`>>${rawAddrW.currentValue}`);
-
     return {
       isAutoOpenable: true,
       render: (el, renderOpts) => {
         const dispose = render(() => {
           const rawAddr = createSignalGetterFromWatchable(rawAddrW);
           const address = createMemo(() => parseAddress(rawAddr()));
-          createEffect(() =>
-            rendererOpts.updateNavigationText(`>>${rawAddr()}`)
+          createEffect(
+            on([rawAddr], ([rawAddr]) =>
+              rendererOpts.updateNavigation({
+                text: `>>${rawAddr}`,
+                action: () => navigateToPost(rawAddr),
+              })),
           );
           return (
             <ShadowRootAttacher
@@ -45,9 +49,6 @@ export function createDemoRefContentRenderer(
           );
         }, el);
         renderOpts.onCleanup(dispose);
-      },
-      navigate: () => {
-        window.alert(`演示：请当作前往了 >>${rawAddrW.currentValue}。`);
       },
     };
   };
