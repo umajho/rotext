@@ -5,6 +5,7 @@ import {
   createResource,
   on,
   onMount,
+  Show,
 } from "solid-js";
 import { render } from "solid-js/web";
 
@@ -26,6 +27,7 @@ import { styleProvider as styleProviderForTailwind } from "../../styles/tailwind
 import { closestScrollContainer } from "../../utils/mod";
 import { wikiResourceManager } from "../../resource-managers/wiki";
 import { navigateToAddress, navigateToWiki } from "../../utils/navigation";
+import { Loading } from "../../components/ui/mod";
 
 export function createDemoPreviewRenderer(
   createRendererOpts: { proseClass: string; proseStyleProvider: StyleProvider },
@@ -118,6 +120,7 @@ export function createDemoPreviewRenderer(
               parentLevel={widgetOwnerAgent.level}
               address={addr()}
               content={content()}
+              isLoading={content.loading}
               proseStyleProvider={proseStyleProvider}
             />
           );
@@ -171,6 +174,7 @@ const Preview: Component<{
   parentLevel: number;
   address: Address;
   content?: PreviewContent;
+  isLoading: boolean;
 
   proseStyleProvider: StyleProvider;
 }> = (props) => {
@@ -238,8 +242,16 @@ const Preview: Component<{
         props.proseStyleProvider,
       ]}
     >
+      <Show when={props.isLoading}>
+        <div class="flex w-full justify-center items-center p-8">
+          <Loading />
+        </div>
+      </Show>
       <div
-        class={Ankor.WIDGET_OWNER_CLASS}
+        class={[
+          Ankor.WIDGET_OWNER_CLASS,
+          ...(props.isLoading ? ["hidden"] : []),
+        ].join(" ")}
         data-ankor-widget-owner={widgetOwnerData()}
       >
         <div class={`${Ankor.CONTENT_CLASS} p-2 md:p-4`}>
