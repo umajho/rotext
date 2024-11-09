@@ -225,6 +225,9 @@ const NavMenuList: Component<{
 const NavMenuListItem: Component<{
   navigation: Navigation;
 }> = (props) => {
+  const location = useLocation();
+  const pathName = createMemo(() => decodeURIComponent(location.pathname));
+
   return (
     <li>
       <Switch>
@@ -239,6 +242,7 @@ const NavMenuListItem: Component<{
         <Match when={true}>
           <NavMenuListItemInnerLeaf
             navigation={props.navigation}
+            pathName={pathName()}
           />
         </Match>
       </Switch>
@@ -262,13 +266,19 @@ const NavMenuListItemInnerBranch: Component<{
 
 const NavMenuListItemInnerLeaf: Component<{
   navigation: Navigation;
+
+  /** 为防止重复计算，从外部传入。 */
+  pathName: string;
 }> = (props) => {
-  const location = useLocation();
+  const fullName = createMemo(() =>
+    props.navigation.realName ?? props.navigation.name
+  );
+  const page = createMemo(() =>
+    wikiResourceManager.getAuthenticFullPageName(fullName()) ?? fullName()
+  );
+  const path = createMemo(() => `/wiki/${page().split("#")[0]}`);
 
-  const page = () => props.navigation.realName ?? props.navigation.name;
-  const path = createMemo(() => page().split("#")[0]);
-
-  const match = () => `${decodeURIComponent(location.pathname)}` === path();
+  const match = () => props.pathName === path();
 
   return (
     <a
