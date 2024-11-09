@@ -5,9 +5,27 @@ type AddressInWidgetOwner =
   | ["special", "live" | "never"];
 
 interface WidgetOwner {
+  rawData: string;
+
   anchorElement: HTMLElement;
+
+  /**
+   * 所属层级。详见 `WidgetOwnerRaw` 中同名属性的文档。
+   *
+   * 来源于属性 `data-ankor-widget-owner`。在且仅在每次创建（包括已创建过而直接
+   * 返回创建过的实例的情况）WidgetOwnerAgent 时更新，该更新不存在通知方式。因此，
+   * 更新某 WidgetOwner 的元素的前述属性之值的前置条件是：此时属于该 WidgetOwner
+   * 的所有挂件都应将被清除。典型的情况：单页面应用在同一路由下从一个页面切换到
+   * 另一个页面。
+   */
   level: number;
+  /**
+   * 内容的地址。详见 `WidgetOwnerRaw` 中同名属性的文档。
+   *
+   * 来源于属性 `data-ankor-widget-owner`。有关更新的行为同 `level` 属性。
+   */
   address: AddressInWidgetOwner;
+
   layoutChangeObserver: LayoutChangeObserver;
 
   controller: WidgetOwnerController;
@@ -44,17 +62,18 @@ function initializeAgentOwner(widgetOwnerEl: HTMLElement): WidgetOwner {
     throw new Error("not widget owner");
   }
 
+  const currentRawData = widgetOwnerEl.dataset["ankorWidgetOwner"]!;
+
   let wo = elementToWidgetOwnerMap.get(widgetOwnerEl);
-  if (!wo) {
-    const woRaw: WidgetOwnerRaw = //
-      JSON.parse(widgetOwnerEl.dataset["ankorWidgetOwner"]!);
+  if (wo && currentRawData !== wo.rawData) {
+    const woRaw: WidgetOwnerRaw = JSON.parse(currentRawData);
 
-    const level = woRaw.level;
-    if (!(Number.isInteger(level) && level > 0)) {
-      console.error("bad level", { level });
-      throw new Error("bad level");
-    }
+    wo.level = mustBeValidLevel(woRaw.level);
+    wo.address = woRaw.address;
+  } else if (!wo) {
+    const woRaw: WidgetOwnerRaw = JSON.parse(currentRawData);
 
+    const level = mustBeValidLevel(woRaw.level);
     const address = woRaw.address;
 
     const anchorSelector = `.${ANCHOR_CLASS}`;
@@ -86,6 +105,7 @@ function initializeAgentOwner(widgetOwnerEl: HTMLElement): WidgetOwner {
     };
 
     wo = {
+      rawData: currentRawData,
       anchorElement,
       level,
       address,
@@ -97,6 +117,17 @@ function initializeAgentOwner(widgetOwnerEl: HTMLElement): WidgetOwner {
   }
 
   return wo;
+}
+
+/**
+ * @throws
+ */
+function mustBeValidLevel(level: number): number {
+  if (!(Number.isInteger(level) && level > 0)) {
+    console.error("bad level", { level });
+    throw new Error("bad level");
+  }
+  return level;
 }
 
 export type WidgetOwnerAgent = ReturnType<typeof createWidgetOwnerAgent>;

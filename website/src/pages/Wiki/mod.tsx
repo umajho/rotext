@@ -114,11 +114,13 @@ export default (() => {
     }
   }
 
-  const widgetOwnerData = JSON.stringify(
-    {
-      level: 1,
-      address: ["internal", pageName()],
-    } satisfies Ankor.WidgetOwnerRaw,
+  const widgetOwnerData = createMemo(() =>
+    JSON.stringify(
+      {
+        level: 1,
+        address: ["internal", pageName()],
+      } satisfies Ankor.WidgetOwnerRaw,
+    )
   );
 
   return (
@@ -173,7 +175,7 @@ export default (() => {
           </div>
           <div
             class={`${Ankor.WIDGET_OWNER_CLASS} max-h-full h-fit overflow-y-scroll overflow-x-hidden`}
-            data-ankor-widget-owner={widgetOwnerData}
+            data-ankor-widget-owner={widgetOwnerData()}
           >
             <div class="p-4 tuan-background tuan-prose break-all">
               <div class={`${Ankor.ANCHOR_CLASS} relative z-10`} />

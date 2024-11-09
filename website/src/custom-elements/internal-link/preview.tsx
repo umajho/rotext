@@ -220,13 +220,15 @@ const Preview: Component<{
     }));
   });
 
-  const widgetOwnerData = JSON.stringify(((): Ankor.WidgetOwnerRaw => {
-    const page = props.address.page;
-    return {
-      level: props.parentLevel + 1,
-      address: page ? ["internal", page] : ["special", "never"],
-    };
-  })());
+  const widgetOwnerData = createMemo(() =>
+    JSON.stringify(((): Ankor.WidgetOwnerRaw => {
+      const page = props.address.page;
+      return {
+        level: props.parentLevel + 1,
+        address: page ? ["internal", page] : ["special", "never"],
+      };
+    })())
+  );
 
   return (
     <ShadowRootAttacher
@@ -238,7 +240,7 @@ const Preview: Component<{
     >
       <div
         class={Ankor.WIDGET_OWNER_CLASS}
-        data-ankor-widget-owner={widgetOwnerData}
+        data-ankor-widget-owner={widgetOwnerData()}
       >
         <div class={`${Ankor.CONTENT_CLASS} p-2 md:p-4`}>
           <div class={`${Ankor.ANCHOR_CLASS} relative z-10`} />
