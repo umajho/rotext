@@ -1,8 +1,9 @@
 import {
+  Accessor,
   Component,
   createEffect,
   createMemo,
-  createResource,
+  createSignal,
   on,
   onMount,
   Show,
@@ -27,7 +28,7 @@ import { styleProvider as styleProviderForTailwind } from "../../styles/tailwind
 import { closestScrollContainer } from "../../utils/mod";
 import { wikiResourceManager } from "../../resource-managers/wiki";
 import { navigateToAddress, navigateToWiki } from "../../utils/navigation";
-import { Loading } from "../../components/ui/mod";
+import { Button, Loading } from "../../components/ui/mod";
 
 export function createDemoPreviewRenderer(
   createRendererOpts: { proseClass: string; proseStyleProvider: StyleProvider },
@@ -88,39 +89,22 @@ export function createDemoPreviewRenderer(
 
           const addr = createMemo(() => parseAddress(rawAddr()));
 
-          const [content] = createResource(
-            async (): Promise<PreviewContent> => {
-              let fullPageName = addr().page;
-              const heading = addr().heading;
-              if (!fullPageName) {
-                switch (widgetOwnerAgent.address[0]) {
-                  case "reference":
-                    return ["todo"];
-                  case "internal":
-                    fullPageName = widgetOwnerAgent.address[1];
-                    break;
-                  case "special": {
-                    if (widgetOwnerAgent.address[1] === "live") return ["live"];
-                    return ["not_capable"];
-                  }
-                  default:
-                    widgetOwnerAgent.address satisfies never;
-                }
-              }
-              const page = await wikiResourceManager.getPage(fullPageName!);
-              if (!page) return ["page_not_found"];
-              const cutContent = cutAndCloneContentForPreview(page, heading);
-              if (!cutContent) return ["heading_not_found"];
-              return ["ok", cutContent];
-            },
-          );
+          const [content, { reload: reloadPreviewContent_ }] =
+            createPreviewContent(
+              addr,
+              { parentAddress: widgetOwnerAgent.address },
+            );
+          function reloadPreviewContent() {
+            reloadPreviewContent_(addr());
+          }
 
           return (
             <Preview
               parentLevel={widgetOwnerAgent.level}
               address={addr()}
               content={content()}
-              isLoading={content.loading}
+              isLoading={!content()}
+              reloadPreviewContent={reloadPreviewContent}
               proseStyleProvider={proseStyleProvider}
             />
           );
@@ -131,8 +115,10 @@ export function createDemoPreviewRenderer(
   };
 }
 
+type ParentAddress = ["reference" | "internal", string] | ["special", string];
+
 function navigate(address: string, opts: {
-  parentAddress: ["reference" | "internal", string] | ["special", string];
+  parentAddress: ParentAddress;
   isParentOutmost: boolean;
 
   tryScrollToHeading?: (heading: string) => boolean;
@@ -168,13 +154,87 @@ type PreviewContent =
   | ["live"]
   /** 由于其他原因无法提供预览。 */
   | ["not_capable"]
+  /** 输入变更。 */
+  | ["input_changed"]
   | ["todo"];
+
+/**
+ * 由于 `reload` 只会在
+ */
+function createPreviewContent(
+  address: Accessor<Address>,
+  opts: GetPreviewContentOptions,
+): [Accessor<PreviewContent | null>, { reload: (address: Address) => void }] {
+  let initialAddress = address();
+  let currentAddressInString = stringifyAddress(initialAddress);
+  const [content, setContent] = createSignal<PreviewContent | null>(null);
+
+  createEffect(
+    on([address], () => setContent(["input_changed"]), { defer: true }),
+  );
+
+  async function updatePreviewAddress(
+    address: Address,
+    opts: GetPreviewContentOptions,
+  ) {
+    const addressInString = stringifyAddress(address);
+    currentAddressInString = addressInString;
+    const content = await getPreviewContent(address, opts);
+    if (currentAddressInString !== addressInString) return;
+    setContent(content);
+  }
+
+  // 不 await。
+  updatePreviewAddress(initialAddress, opts);
+
+  return [content, {
+    reload: (address) => {
+      updatePreviewAddress(address, opts);
+    },
+  }];
+}
+
+interface GetPreviewContentOptions {
+  parentAddress: ParentAddress;
+}
+
+async function getPreviewContent(
+  address: Address,
+  opts: GetPreviewContentOptions,
+): Promise<PreviewContent> {
+  let fullPageName = address.page;
+  const heading = address.heading;
+  if (!fullPageName) {
+    switch (opts.parentAddress[0]) {
+      case "reference":
+        return ["todo"];
+      case "internal":
+        fullPageName = opts.parentAddress[1];
+        break;
+      case "special": {
+        if (opts.parentAddress[1] === "live") return ["live"];
+        return ["not_capable"];
+      }
+      default:
+        opts.parentAddress satisfies never;
+    }
+  }
+  const page = await wikiResourceManager.getPage(fullPageName!);
+  if (!page) return ["page_not_found"];
+  const cutContent = cutAndCloneContentForPreview(page, heading);
+  if (!cutContent) return ["heading_not_found"];
+  return ["ok", cutContent];
+}
+
+const HINT_CLASS = "flex justify-center h-full text-gray-400 font-black";
 
 const Preview: Component<{
   parentLevel: number;
   address: Address;
-  content?: PreviewContent;
+  content: PreviewContent | null;
   isLoading: boolean;
+
+  reloadPreviewContent: () => void;
 
   proseStyleProvider: StyleProvider;
 }> = (props) => {
@@ -199,7 +259,7 @@ const Preview: Component<{
         return;
       }
 
-      let hint: string;
+      let hint: string | undefined;
       switch (content[0]) {
         case "page_not_found":
           hint = "（页面不存在）";
@@ -216,11 +276,13 @@ const Preview: Component<{
         case "todo":
           hint = "（TODO）";
           break;
+        case "input_changed":
+          break; // 此情况的 hint 不放在 `contentContainerEl` 里。
         default:
           content satisfies never;
       }
 
-      contentContainerEl.append(createHintElement(hint!));
+      hint && contentContainerEl.append(createHintElement(hint));
     }));
   });
 
@@ -256,6 +318,20 @@ const Preview: Component<{
       >
         <div class={`${Ankor.CONTENT_CLASS} p-2 md:p-4`}>
           <div class={`${Ankor.ANCHOR_CLASS} relative z-10`} />
+          <Show when={props.content?.[0] === "input_changed"}>
+            <div class={HINT_CLASS}>
+              输入变更，
+              <Button
+                class="inline-flex"
+                type="primary"
+                size="xs"
+                onClick={props.reloadPreviewContent}
+              >
+                刷新
+              </Button>
+              。
+            </div>
+          </Show>
           <div
             ref={contentContainerEl}
             class="tuan-background tuan-prose break-all"
@@ -277,6 +353,10 @@ function parseAddress(raw: string): Address {
     page: page || null,
     heading: heading ?? null,
   };
+}
+function stringifyAddress(address: Address): string {
+  if (!address.heading) return address.page ?? "";
+  return `${address.page ?? ""}#${address.heading}`;
 }
 
 function getContentElementAndScrollContainerElement(el: HTMLElement) {
@@ -358,10 +438,7 @@ function cutAndCloneContentForPreview(
 }
 
 function createHintElement(hint: string) {
-  return createDivElement({
-    textContent: hint!,
-    class: "flex justify-center h-full text-gray-400 font-black",
-  });
+  return createDivElement({ textContent: hint!, class: HINT_CLASS });
 }
 
 function createDivElement(opts: { textContent: string; class: string }) {
