@@ -15,7 +15,7 @@ export const MainCard: Component<{
 
   return (
     <>
-      <div class="relative">
+      <div class="relative isolate">
         <div class="absolute z-10 left-4">
           <div class="bg-indigo-800 px-8 py-2 rounded-lg">
             示例
