@@ -1,4 +1,5 @@
 import {
+  batch,
   Component,
   createEffect,
   createMemo,
@@ -25,7 +26,7 @@ import {
 } from "@rolludejo/internal-web-shared/styling";
 
 import { createWidgetOwnerAgent, WidgetOwnerAgent } from "./widget-owner-agent";
-import { closestContainer, mixColor } from "./utils";
+import { mixColor } from "./utils";
 import CollapseMaskLayer from "./CollapseMaskLayer";
 import PopperContainer from "./PopperContainer";
 import { NO_AUTO_OPEN_CLASS } from "./consts";
@@ -95,14 +96,10 @@ export function createWidgetComponent(parts: {
   let rootEl!: HTMLDivElement;
 
   // 在执行 handleMount 时必定存在
-  let labelEl!: HTMLSpanElement,
-    pinAnchorEl: HTMLDivElement;
+  let labelEl!: HTMLSpanElement;
   // 视情况存在
   let popperContainerEl: HTMLDivElement,
     popperEl: HTMLDivElement;
-
-  let [isCleaningUp, setIsCleaningUp] = createSignal(false);
-  onCleanup(() => setIsCleaningUp(true));
 
   const backgroundColorCSSValue = createMemo(() =>
     computedColorToCSSValue(opts.popperBackgroundColor())
@@ -114,7 +111,6 @@ export function createWidgetComponent(parts: {
     createSignal<ElementPosition | null>({ topPx: 0, leftPx: 0 });
 
   const [canCollapse, setCanCollapse] = createSignal(false);
-  const [collapseHeightPx, setCollapseHeightPx] = createSignal(0);
 
   const maskBaseColor = createMemo((): ComputedColor =>
     mixColor(opts.popperBackgroundColor(), 2 / 3, opts.maskTintColor(), 1 / 3)
@@ -136,69 +132,88 @@ export function createWidgetComponent(parts: {
     collapsible: canCollapse,
   });
 
+  const [popperWidthPx, setPopperWidthPx] = createSignal<number | null>(null);
+  const [popperHeightPx, setPopperHeightPx] = createSignal<number | null>(null);
+
   onMount(() => {
     const shadowRoot = rootEl.getRootNode() as ShadowRoot;
-
-    if (opts.baseStyleProviders) {
-      for (const p of opts.baseStyleProviders) {
-        adoptStyle(shadowRoot, p);
-      }
-    }
-
     const woAgent_ = createWidgetOwnerAgent(shadowRoot.host as HTMLElement);
     setWOAgent(woAgent_);
 
-    const closestContainerEl = closestContainer(labelEl)!;
-    const calculateAndSetPopperPosition = () => {
-      setPopperPosition(
-        calculatePopperPosition({
-          label: labelEl,
-          popperAnchor: woAgent_.anchorElement,
-          closestContainer: closestContainerEl,
-        }),
-      );
-    };
-    createEffect(on(
-      [() => displayMode() === "floating"],
-      ([isFloating]) => {
-        woAgent_.layoutChangeObserver
-          [isFloating ? "subscribe" : "unsubscribe"](
-            calculateAndSetPopperPosition,
-          );
-        if (isFloating) {
-          calculateAndSetPopperPosition();
+    { //==== 采纳样式 ====
+      if (opts.baseStyleProviders) {
+        for (const p of opts.baseStyleProviders) {
+          adoptStyle(shadowRoot, p);
         }
-      },
-    ));
-    onCleanup(() =>
-      woAgent_.layoutChangeObserver.unsubscribe(
-        calculateAndSetPopperPosition,
-      )
-    );
+      }
+    }
 
-    // 这里是确认 openable 这个 “决定能否打开的函数” 在不在
-    if (opts.openable) {
+    { //==== 持续计算悬浮框位置 ====
+      function handleLayoutChange() {
+        const popperWidthPx_ = untrack(popperWidthPx);
+        if (popperWidthPx_ !== null) {
+          // `popperWidthPx_` 若为 `null`，代表此时悬浮框还未准备好。将由追踪
+          // `popperWidthPx` 的 `createEffect` 来处理后续准备好时的情况。
+
+          updatePopperPosition(popperWidthPx_);
+        }
+      }
+      function updatePopperPosition(popperWidthPx: number) {
+        setPopperPosition(
+          calculatePopperPosition({
+            label: labelEl,
+            popperAnchor: woAgent_.anchorElement,
+          }, { popperWidthPx }),
+        );
+      }
+      createEffect(on(
+        [() => displayMode() === "closed"],
+        ([isClosed]) => {
+          woAgent_.layoutChangeObserver
+            [isClosed ? "unsubscribe" : "subscribe"](handleLayoutChange);
+          if (!isClosed) {
+            handleLayoutChange();
+          }
+        },
+      ));
+      onCleanup(() =>
+        woAgent_.layoutChangeObserver.unsubscribe(handleLayoutChange)
+      );
+      createEffect(on([popperWidthPx], ([popperWidthPx]) => {
+        if (popperWidthPx !== null) {
+          updatePopperPosition(popperWidthPx);
+        }
+      }));
+    }
+
+    //==== 同步元素大小 ====
+    if (opts.openable) { // 确认 openable 这个 “决定能否打开的函数” 在不在。
       // 挂件内容的大小，目前只有在需要折叠时才需要侦测（判断是否能折叠）；
-      // 挂件容器的大小，目前只有在折叠时才需要侦测（确定遮盖的高度）。
-
       const { size: popperSize } = createSizeSyncer(
         () => popperEl,
-        { removed: () => displayMode() !== "pinned" },
+        { removed: () => displayMode() === "closed" },
       );
       createEffect(on(
         [popperSize],
         ([size]) => setCanCollapse((size?.heightPx ?? 0) > COLLAPSE_HEIGHT_PX),
       ));
+      // 挂件容器的大小（比如用来确定遮盖的高度）。
       const { size: popperContainerSize } = createSizeSyncer(
         () => popperContainerEl,
-        { removed: () => (displayMode() !== "pinned") || !collapsed() },
+        { removed: () => displayMode() === "closed" },
       );
       createEffect(on(
         [popperContainerSize],
-        ([size]) => setCollapseHeightPx(size?.heightPx ?? 0),
+        ([size]) => {
+          batch(() => {
+            setPopperWidthPx(size?.widthPx ?? null);
+            setPopperHeightPx(size?.heightPx ?? null);
+          });
+        },
       ));
     }
 
+    //==== 自动打开 ====
     if (
       opts.autoOpenable &&
       woAgent_.level === 1 &&
@@ -210,10 +225,11 @@ export function createWidgetComponent(parts: {
       autoOpen(!!opts.autoOpenShouldCollapse);
     }
 
-    // 这里是确认 openable 这个 “决定能否打开的函数” 在不在
-    if (opts.openable) {
-      // 套入 ShadowRootAttacher 后，“直接在 JSX 上视情况切换事件处理器与 undefined” 的
-      // 方案对 Dicexp 失效了（但对 RefLink 还有效）。这里通过手动添加/去处来 workaround。
+    //==== Workarounds ====
+    if (opts.openable) { // 确认 openable 这个 “决定能否打开的函数” 在不在。
+      // 套入 ShadowRootAttacher 后，“直接在 JSX 上视情况切换事件处理器与
+      // undefined” 的方案对 Dicexp 失效了（但对 RefLink 还有效）。这里通过手动添
+      // 加/去处来 workaround。
       createEffect(on([opts.openable], ([openable]) => {
         if (openable) {
           labelEl.addEventListener("mouseenter", enterHandler);
@@ -250,50 +266,40 @@ export function createWidgetComponent(parts: {
           />
         </span>
 
-        <div
-          ref={pinAnchorEl}
-          style={{ display: displayMode() === "pinned" ? undefined : "none" }}
+        <Dummy
+          shouldBeShown={displayMode() === "pinned"}
+          widthPx={popperWidthPx()}
+          heightPx={popperHeightPx()}
         />
         <Portal
           ref={handlePortalRef}
-          mount={isCleaningUp() || displayMode() === "pinned"
-            ? pinAnchorEl
-            : woAgent()?.anchorElement}
+          mount={woAgent()?.anchorElement}
           useShadow={true}
         >
           <Show when={displayMode() !== "closed"}>
             <PopperContainer
               ref={popperContainerEl}
               style={{
-                ...(displayMode() === "pinned"
-                  ? {
-                    width: "fit-content",
-                  }
-                  : {
-                    position: "absolute",
-                    ...(((popperPosition) =>
-                      popperPosition
-                        ? {
-                          top: `${popperPosition.topPx}px`,
-                          left: `${popperPosition.leftPx}px`,
-                        }
-                        : { display: "none" })(popperPosition())),
-                  }),
+                position: "absolute",
+                ...(((pos) =>
+                  pos
+                    ? { transform: `translate(${pos.leftPx}px,${pos.topPx}px)` }
+                    : { display: "none" })(popperPosition())),
                 "background-color": backgroundColorCSSValue(),
-                ...(collapsed()
-                  ? {
+                ...(collapsed() &&
+                  {
                     "overflow-y": "hidden",
                     height: `${COLLAPSE_HEIGHT_PX}px`,
-                  }
-                  : {}),
+                  }),
+                ...(displayMode() === "floating" && { "z-index": 10 }),
               }}
               onMouseEnter={enterHandler}
               onMouseLeave={leaveHandler}
             >
               <Show when={collapsed()}>
                 <CollapseMaskLayer
-                  containerHeightPx={collapseHeightPx}
-                  backgroundColor={maskBaseColor}
+                  containerHeightPx={popperHeightPx()}
+                  backgroundColor={maskBaseColor()}
                   onExpand={expand}
                 />
               </Show>
@@ -313,11 +319,29 @@ export function createWidgetComponent(parts: {
   };
 }
 
+const Dummy: Component<{
+  shouldBeShown: boolean;
+  widthPx: number | null;
+  heightPx: number | null;
+}> = (props) => {
+  return (
+    <div
+      style={{
+        ...(!props.shouldBeShown && { display: "none" }),
+        ...(props.widthPx && { width: `${props.widthPx}px` }),
+        ...(props.heightPx && { height: `${props.heightPx}px` }),
+      }}
+    />
+  );
+};
+
 function calculatePopperPosition(
   els: {
     label: HTMLElement;
     popperAnchor: HTMLElement;
-    closestContainer: HTMLElement;
+  },
+  opts: {
+    popperWidthPx: number;
   },
 ): ElementPosition | null {
   if (!els.label.offsetParent) {
@@ -328,15 +352,13 @@ function calculatePopperPosition(
 
   const labelRect = els.label.getBoundingClientRect();
   const anchorRect = els.popperAnchor.getBoundingClientRect();
-  const closestContainerRect = els.closestContainer.getBoundingClientRect();
-  const closestContainerPaddingLeftPx = parseFloat(
-    getComputedStyle(els.closestContainer).paddingLeft,
-  );
 
   return {
     topPx: labelRect.bottom - anchorRect.top,
-    leftPx: closestContainerRect.left + closestContainerPaddingLeftPx -
-      anchorRect.left,
+    leftPx: Math.min(
+      labelRect.left - anchorRect.left,
+      anchorRect.width - opts.popperWidthPx,
+    ),
   };
 }
 

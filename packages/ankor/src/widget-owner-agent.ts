@@ -160,7 +160,9 @@ interface LayoutChangeObserver {
 function createLayoutChangeObserver(el: HTMLElement): LayoutChangeObserver {
   const cbs = new Set<() => void>();
   function notify() {
-    [...cbs].forEach((cb) => cb());
+    for (const cb of cbs) {
+      cb();
+    }
   }
 
   const contentResizeObserver = new ResizeObserver(notify);

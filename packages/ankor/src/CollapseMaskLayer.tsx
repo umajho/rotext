@@ -1,4 +1,4 @@
-import { Component, JSX } from "solid-js";
+import { Component, createMemo, JSX } from "solid-js";
 
 import { HiSolidChevronDoubleDown } from "solid-icons/hi";
 
@@ -46,17 +46,20 @@ const styles = {
 
 const CollapseMaskLayer: Component<
   {
-    containerHeightPx: () => number | undefined;
-    backgroundColor: () => ComputedColor;
+    containerHeightPx: number | null;
+    backgroundColor: ComputedColor;
     onExpand: () => void;
   }
 > = (
   props,
 ) => {
-  const { r, g, b } = props.backgroundColor();
-  const baseColorRGB = `${r}, ${g}, ${b}`;
-  const topColor = `rgba(${baseColorRGB}, 0)`;
-  const bottomColor = `rgb(${baseColorRGB})`;
+  const background = createMemo(() => {
+    const { r, g, b } = props.backgroundColor;
+    const baseColorRGB = `${r}, ${g}, ${b}`;
+    const topColor = `rgba(${baseColorRGB}, 0)`;
+    const bottomColor = `rgb(${baseColorRGB})`;
+    return `linear-gradient(${topColor}, ${bottomColor})`;
+  });
 
   return (
     <ShadowRootAttacher>
@@ -64,7 +67,8 @@ const CollapseMaskLayer: Component<
         <div
           style={{
             ...styles["pointer-masker"],
-            height: `${props.containerHeightPx()}px`,
+            ...(props.containerHeightPx &&
+              { height: `${props.containerHeightPx}px` }),
           }}
         >
           <div style={styles["space-taker"]} />
@@ -77,12 +81,7 @@ const CollapseMaskLayer: Component<
                 <HiSolidChevronDoubleDown color="white" />
               </div>
             </div>
-            <div
-              style={{
-                ...styles["mask-area"],
-                background: `linear-gradient(${topColor}, ${bottomColor})`,
-              }}
-            />
+            <div style={{ ...styles["mask-area"], background: background() }} />
           </div>
         </div>
       </div>
