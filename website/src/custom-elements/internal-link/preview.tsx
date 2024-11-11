@@ -158,9 +158,6 @@ type PreviewContent =
   | ["input_changed"]
   | ["todo"];
 
-/**
- * 由于 `reload` 只会在
- */
 function createPreviewContent(
   address: Accessor<Address>,
   opts: GetPreviewContentOptions,
