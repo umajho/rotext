@@ -13,6 +13,7 @@ import { Idiomorph } from "idiomorph/dist/idiomorph.esm.js";
 import * as Ankor from "ankor";
 
 import { PROSE_CLASS } from "../../../mod";
+import { Address } from "../../../../utils/address";
 
 export type PreviewContent = ["html", string];
 
@@ -33,11 +34,9 @@ export const Preview: Component<{
   });
 
   const widgetOwnerData = JSON.stringify(
-    {
-      level: 1,
-      address: ["special", "live"],
-    } satisfies Ankor.WidgetOwnerRaw,
+    { level: 1 } satisfies Ankor.WidgetOwnerRaw,
   );
+  const addressData = JSON.stringify(["live"] satisfies Address);
 
   return (
     <div
@@ -48,6 +47,7 @@ export const Preview: Component<{
         "tuan-background",
       ].join(" ")}
       data-ankor-widget-owner={widgetOwnerData}
+      data-address={addressData}
     >
       <div class={`${Ankor.ANCHOR_CLASS} relative z-10`} />
       <div

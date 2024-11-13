@@ -1,10 +1,7 @@
 import { ANCHOR_CLASS, CONTENT_CLASS, WIDGET_OWNER_CLASS } from "./consts";
 
-type AddressInWidgetOwner =
-  | ["reference" | "internal", string]
-  | ["special", "live" | "never"];
-
 interface WidgetOwner {
+  element: HTMLElement;
   rawData: string;
 
   anchorElement: HTMLElement;
@@ -19,12 +16,6 @@ interface WidgetOwner {
    * 另一个页面。
    */
   level: number;
-  /**
-   * 内容的地址。详见 `WidgetOwnerRaw` 中同名属性的文档。
-   *
-   * 来源于属性 `data-ankor-widget-owner`。有关更新的行为同 `level` 属性。
-   */
-  address: AddressInWidgetOwner;
 
   layoutChangeObserver: LayoutChangeObserver;
 
@@ -43,15 +34,6 @@ export interface WidgetOwnerRaw {
    * 所属层级，`1` 为最顶层。
    */
   level: number;
-
-  /**
-   * 内容的地址，不含锚，可以不存在（赋予 `null`）。
-   *
-   * 元组的第一项代表地址的类型，可以为：
-   * - `"reference"`：用于帖子。
-   * - `"internal"`：用于 wiki 页面。
-   */
-  address: AddressInWidgetOwner;
 }
 
 const elementToWidgetOwnerMap = new WeakMap<Node, WidgetOwner>();
@@ -69,12 +51,10 @@ function initializeAgentOwner(widgetOwnerEl: HTMLElement): WidgetOwner {
     const woRaw: WidgetOwnerRaw = JSON.parse(currentRawData);
 
     wo.level = mustBeValidLevel(woRaw.level);
-    wo.address = woRaw.address;
   } else if (!wo) {
     const woRaw: WidgetOwnerRaw = JSON.parse(currentRawData);
 
     const level = mustBeValidLevel(woRaw.level);
-    const address = woRaw.address;
 
     const anchorSelector = `.${ANCHOR_CLASS}`;
     const anchorElement = //
@@ -105,10 +85,10 @@ function initializeAgentOwner(widgetOwnerEl: HTMLElement): WidgetOwner {
     };
 
     wo = {
+      element: widgetOwnerEl,
       rawData: currentRawData,
       anchorElement,
       level,
-      address,
       layoutChangeObserver,
       controller,
     };

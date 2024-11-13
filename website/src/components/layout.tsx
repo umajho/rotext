@@ -24,7 +24,8 @@ import { Button, Dropdown, DropdownItem, Loading } from "./ui/mod";
 
 import { Navigation, wikiResourceManager } from "../resource-managers/wiki";
 import { SUPPORTS_DVH } from "../utils/mod";
-import { navigateToWiki } from "../utils/navigation";
+import { Address } from "../utils/address";
+import { navigateToAddress } from "../utils/navigation";
 import { useRotextProcessorsStore } from "../contexts/rotext-processors-store";
 import { RotextProcessorName } from "../hooks/rotext-processors-store";
 
@@ -273,17 +274,27 @@ const NavMenuListItemInnerLeaf: Component<{
   const fullName = createMemo(() =>
     props.navigation.realName ?? props.navigation.name
   );
-  const page = createMemo(() =>
+  const pageWithAnchor = createMemo(() =>
     wikiResourceManager.getAuthenticFullPageName(fullName()) ?? fullName()
   );
-  const path = createMemo(() => `/wiki/${page().split("#")[0]}`);
+  const pageAndAnchor = createMemo(() => {
+    const parts = pageWithAnchor().split("#", 2);
+    return {
+      page: parts[0]!,
+      anchor: parts[1] ?? null,
+    };
+  });
+  const address = createMemo(
+    (): Address => ["internal", pageAndAnchor().page, pageAndAnchor().anchor],
+  );
 
+  const path = createMemo(() => `/wiki/${pageAndAnchor().page}`);
   const match = () => props.pathName === path();
 
   return (
     <a
       class={`${match() ? "active" : ""}`}
-      onClick={() => navigateToWiki(page())}
+      onClick={() => navigateToAddress(address())}
     >
       {props.navigation.name}
     </a>

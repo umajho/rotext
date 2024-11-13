@@ -16,7 +16,8 @@ import { Button, Card, Loading } from "../../components/ui/mod";
 import "../../styles/tuan-prose";
 import { wikiResourceManager } from "../../resource-managers/wiki";
 import { initializeGlobal } from "../../global";
-import { navigateToWiki } from "../../utils/navigation";
+import { navigateToAddress } from "../../utils/navigation";
+import { Address } from "../../utils/address";
 
 export default (() => {
   let contentContainerEl!: HTMLDivElement;
@@ -29,7 +30,7 @@ export default (() => {
   initializeGlobal({ navigator: navigate });
   createEffect(on([pageName], ([pageName]) => {
     if (pageName !== wikiResourceManager.getAuthenticFullPageName(pageName)) {
-      navigateToWiki(pageName);
+      navigateToAddress(["internal", pageName, location.hash || null]);
     }
   }));
 
@@ -55,6 +56,7 @@ export default (() => {
 
   createEffect(
     on([pageHTML], ([pageHTML]) => {
+      contentContainerEl.parentElement!.scrollTop = 0;
       contentContainerEl.innerHTML = "";
       if (pageHTML) {
         contentContainerEl.append(pageHTML.cloneNode(true));
@@ -63,18 +65,19 @@ export default (() => {
       if (!isIndexLoaded()) {
         setIsIndexLoaded(true);
       }
-
-      if (location.hash) {
-        const targetID = decodeURIComponent(location.hash).slice(1);
-        const target = document.getElementById(targetID);
-        target?.scrollIntoView();
-      } else {
-        contentContainerEl.parentElement!.scrollTop = 0;
-      }
     }),
   );
   createEffect(on([() => pageHTML.loading], ([loading]) => {
     if (loading) contentContainerEl.innerHTML = "";
+  }));
+  createEffect(on([() => location.hash], ([hash]) => {
+    if (hash) {
+      const targetID = decodeURIComponent(hash).slice(1);
+      const target = document.getElementById(targetID);
+      target?.scrollIntoView();
+    } else {
+      contentContainerEl.parentElement!.scrollTop = 0;
+    }
   }));
 
   const isLoading = () => pageHTML.loading || !isIndexLoaded();
@@ -116,11 +119,11 @@ export default (() => {
 
   const widgetOwnerData = createMemo(() =>
     JSON.stringify(
-      {
-        level: 1,
-        address: ["internal", pageName()],
-      } satisfies Ankor.WidgetOwnerRaw,
+      { level: 1 } satisfies Ankor.WidgetOwnerRaw,
     )
+  );
+  const addressData = createMemo(() =>
+    JSON.stringify(["internal", pageName(), null] satisfies Address)
   );
 
   return (
@@ -176,6 +179,7 @@ export default (() => {
           <div
             class={`${Ankor.WIDGET_OWNER_CLASS} max-h-full h-fit overflow-y-scroll overflow-x-hidden`}
             data-ankor-widget-owner={widgetOwnerData()}
+            data-address={addressData()}
           >
             <div class="p-4 tuan-background tuan-prose break-all">
               <div class={`${Ankor.ANCHOR_CLASS} relative z-10`} />

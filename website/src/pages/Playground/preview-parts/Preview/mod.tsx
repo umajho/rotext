@@ -16,11 +16,12 @@ import * as Ankor from "ankor";
 import { ErrorAlert } from "@rotext/solid-components/internal";
 
 import { debounceEventHandler } from "../../../../utils/mod";
+import { Address } from "../../../../utils/address";
 import { PROSE_CLASS } from "../../../../custom-elements/mod";
-
-import { ActiveLines, EditorStore, TopLine } from "../../editor-store";
 import { createAutoResetCounter } from "../../../../hooks/auto-reset-counter";
 import { RotextProcessResult } from "../../../../processors/mod";
+
+import { ActiveLines, EditorStore, TopLine } from "../../editor-store";
 
 import { LookupList, LookupListRaw } from "./internal-types";
 import * as ScrollUtils from "./scroll-utils";
@@ -125,11 +126,9 @@ const Preview: Component<
   })();
 
   const widgetOwnerData = JSON.stringify(
-    {
-      level: 1,
-      address: ["special", "live"],
-    } satisfies Ankor.WidgetOwnerRaw,
+    { level: 1 } satisfies Ankor.WidgetOwnerRaw,
   );
+  const addressData = JSON.stringify(["live"] satisfies Address);
 
   //==== 组件 ====
   return (
@@ -137,6 +136,7 @@ const Preview: Component<
       ref={widgetOwnerEl}
       class={`${Ankor.WIDGET_OWNER_CLASS} contents`}
       data-ankor-widget-owner={widgetOwnerData}
+      data-address={addressData}
     >
       <div
         class={[

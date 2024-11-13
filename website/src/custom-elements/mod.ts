@@ -1,8 +1,8 @@
 export { PROSE_CLASS, TAG_NAME_MAP } from "./consts";
 import { TAG_NAME_MAP } from "./consts";
 
-import { registerCustomElementForRefLink } from "./ref-link/mod";
-import { registerCustomElementForInternalLink } from "./internal-link/mod";
+import { registerCustomElementForRefLink } from "./navigation/ref-link/mod";
+import { registerCustomElementForInternalLink } from "./navigation/internal-link/mod";
 import { registerCustomElementsForDicexp } from "./dicexp/mod";
 
 import { registerCustomElement as registerCustomElementForScratchOff } from "./domestic/ScratchOff";

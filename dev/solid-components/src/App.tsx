@@ -80,10 +80,7 @@ const Left: Component = () => {
   ];
 
   const widgetOwnerData = JSON.stringify(
-    {
-      level: 1,
-      address: ["internal", "DEV"],
-    } satisfies Ankor.WidgetOwnerRaw,
+    { level: 1 } satisfies Ankor.WidgetOwnerRaw,
   );
 
   return (
@@ -133,10 +130,7 @@ const Left: Component = () => {
 
 const LeftInner: Component = () => {
   const widgetOwnerData = JSON.stringify(
-    {
-      level: 1,
-      address: ["internal", "DEV"],
-    } satisfies Ankor.WidgetOwnerRaw,
+    { level: 1 } satisfies Ankor.WidgetOwnerRaw,
   );
 
   return (
@@ -162,10 +156,7 @@ const Right: Component = () => {
   const [shouldDisplay, setShouldDisplay] = createSignal(true);
 
   const widgetOwnerData = JSON.stringify(
-    {
-      level: 1,
-      address: ["internal", "DEV"],
-    } satisfies Ankor.WidgetOwnerRaw,
+    { level: 1 } satisfies Ankor.WidgetOwnerRaw,
   );
 
   return (
