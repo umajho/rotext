@@ -9,7 +9,7 @@ export const HorizontalRule: Component<{ color: JSX.CSSProperties["color"] }> =
         width: "100%",
         height: 0,
         margin: 0,
-        color: props.color,
+        "border-top-color": props.color,
         "border-style": "solid",
         "border-width": 0,
         "border-top-width": "1px",

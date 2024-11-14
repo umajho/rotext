@@ -179,7 +179,7 @@ export function createNavigationComponent(
                 )}
               </Show>
             </div>
-            <HorizontalRule color="white" />
+            <HorizontalRule color="#fffa" />
             <div ref={refEl} />
           </div>
         );

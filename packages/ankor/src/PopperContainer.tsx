@@ -19,7 +19,7 @@ const PopperContainer: Component<PopperContainerProperties> = (
     <div
       ref={props.ref}
       class={props.class ?? ""}
-      style={{ border: "1px solid white", ...props.style }}
+      style={{ border: "1px solid #fffa", ...props.style }}
       onMouseEnter={props.onMouseEnter}
       onMouseLeave={props.onMouseLeave}
     >

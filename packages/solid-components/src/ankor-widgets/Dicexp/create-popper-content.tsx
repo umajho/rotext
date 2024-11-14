@@ -38,7 +38,7 @@ export function createPopperContent(opts: {
             <span>掷骰</span>
           </div>
         </div>
-        <HorizontalRule color="white" />
+        <HorizontalRule color="#fffa" />
         <div style={{ padding: "0.5rem 0.5rem 0 0.5rem" }}>
           <div style={{ padding: "0 0.5rem 0 0.5rem" }}>
             <Switch>
