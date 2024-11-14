@@ -107,17 +107,7 @@ export function createWidgetComponent(parts: {
     mixColor(opts.popperBackgroundColor(), 2 / 3, opts.maskTintColor(), 1 / 3)
   );
 
-  const {
-    displayMode,
-    collapsed,
-    enterHandler,
-    leaveHandler,
-    pinningTogglerTouchEndHandler,
-    pinningToggleHandler,
-    labelClickHandler,
-    autoOpen,
-    expand,
-  } = createDisplayModeFSM({
+  const dmFSM = createDisplayModeFSM({
     initialDisplayMode: "closed",
     openable: opts.openable,
     collapsible: canCollapse,
@@ -150,7 +140,7 @@ export function createWidgetComponent(parts: {
         }
       }
       createEffect(on([popperWidthPx], ([popperWidthPx]) => {
-        if (displayMode() !== "floating") return;
+        if (dmFSM.displayMode() !== "floating") return;
         if (popperWidthPx !== null) {
           doUpdatePopperPosition(popperWidthPx);
         }
@@ -164,7 +154,7 @@ export function createWidgetComponent(parts: {
         );
       }
       createEffect(on(
-        [() => displayMode() === "floating"],
+        [() => dmFSM.displayMode() === "floating"],
         ([isFloating]) => {
           if (isFloating) {
             woAgent.layoutChangeObserver.subscribe(updatePopperPosition);
@@ -185,7 +175,7 @@ export function createWidgetComponent(parts: {
       // 挂件内容的大小，目前只有在需要折叠时才需要侦测（判断是否能折叠）；
       const { size: popperSize } = createSizeSyncer(
         () => popperEl,
-        { enabled: () => displayMode() === "pinned" },
+        { enabled: () => dmFSM.displayMode() === "pinned" },
       );
       createEffect(on(
         [popperSize],
@@ -196,7 +186,7 @@ export function createWidgetComponent(parts: {
       // - 确定挂件悬浮时的横向位置。
       const { size: popperContainerSize } = createSizeSyncer(
         () => popperContainerEl,
-        { enabled: () => displayMode() !== "closed" },
+        { enabled: () => dmFSM.displayMode() !== "closed" },
       );
       createEffect(on(
         [popperContainerSize],
@@ -218,7 +208,7 @@ export function createWidgetComponent(parts: {
         (el) => el.classList.contains(NO_AUTO_OPEN_CLASS),
       )
     ) {
-      autoOpen(!!opts.autoOpenShouldCollapse);
+      dmFSM.autoOpen(!!opts.autoOpenShouldCollapse);
     }
 
     //==== Workarounds ====
@@ -228,11 +218,11 @@ export function createWidgetComponent(parts: {
       // 加/去处来 workaround。
       createEffect(on([opts.openable], ([openable]) => {
         if (openable) {
-          labelEl.addEventListener("mouseenter", enterHandler);
-          labelEl.addEventListener("mouseleave", leaveHandler);
+          labelEl.addEventListener("mouseenter", dmFSM.handleEnter);
+          labelEl.addEventListener("mouseleave", dmFSM.handleLeave);
         } else {
-          labelEl.removeEventListener("mouseenter", enterHandler);
-          labelEl.removeEventListener("mouseleave", leaveHandler);
+          labelEl.removeEventListener("mouseenter", dmFSM.handleEnter);
+          labelEl.removeEventListener("mouseleave", dmFSM.handleLeave);
         }
       }));
     }
@@ -244,22 +234,26 @@ export function createWidgetComponent(parts: {
         <span ref={labelEl} class="widget-label">
           <LabelContent
             cursor={opts.openable?.()
-              ? (displayMode() === "pinned"
+              ? (dmFSM.displayMode() === "pinned"
                 ? (canCollapse()
-                  ? (collapsed() ? "zoom-in" : "zoom-out")
+                  ? (dmFSM.collapsed() ? "zoom-in" : "zoom-out")
                   : undefined)
                 : "zoom-in")
               : undefined}
-            onTogglePopper={opts.openable?.() ? labelClickHandler : undefined}
+            onTogglePopper={opts.openable?.()
+              ? dmFSM.handleClickLabel
+              : undefined}
           />
         </span>
 
         <div
           ref={pinAnchorEl}
-          style={{ display: displayMode() === "pinned" ? undefined : "none" }}
+          style={{
+            display: dmFSM.displayMode() === "pinned" ? undefined : "none",
+          }}
         />
         <Portal
-          mount={displayMode() === "pinned"
+          mount={dmFSM.displayMode() === "pinned"
             ? pinAnchorEl
             : woAgent()?.anchorElement}
         >
@@ -267,29 +261,30 @@ export function createWidgetComponent(parts: {
             styleProviders={opts.baseStyleProviders}
             preventHostStyleInheritance={true}
           >
-            <Show when={displayMode() !== "closed"}>
+            <Show when={dmFSM.displayMode() !== "closed"}>
               <PopperContainerEx
                 ref={popperContainerEl}
                 popperPosition={popperPosition()}
                 backgroundColorCSSValue={backgroundColorCSSValue()}
-                collapsed={collapsed() ?? false}
-                displayMode={displayMode()}
-                onMouseEnter={enterHandler}
-                onMouseLeave={leaveHandler}
+                collapsed={dmFSM.collapsed() ?? false}
+                displayMode={dmFSM.displayMode()}
+                onMouseEnter={dmFSM.handleEnter}
+                onMouseLeave={dmFSM.handleLeave}
               >
-                <Show when={collapsed()}>
+                <Show when={dmFSM.collapsed()}>
                   <CollapseMaskLayer
                     containerHeightPx={popperHeightPx()}
                     backgroundColor={maskBaseColor()}
-                    onExpand={expand}
+                    onExpand={dmFSM.expand}
                   />
                 </Show>
                 <div ref={popperEl}>
                   <PopperContent
-                    displayMode={displayMode}
+                    displayMode={dmFSM.displayMode}
                     widgetOwnerAgentGetter={() => untrack(woAgent)}
-                    handlerForTouchEndOnPinIcon={pinningTogglerTouchEndHandler}
-                    handlerForClickOnPinIcon={pinningToggleHandler}
+                    handlerForTouchEndOnPinIcon={dmFSM
+                      .handleTouchPinningTogglerEnd}
+                    handlerForClickOnPinIcon={dmFSM.handleTogglePinning}
                   />
                 </div>
               </PopperContainerEx>
@@ -504,13 +499,13 @@ function createDisplayModeFSM(
     displayMode,
     collapsed: () => opts.collapsible() && collapsed(),
 
-    enterHandler: handleEnter,
-    leaveHandler: handleLeave,
+    handleEnter,
+    handleLeave,
 
-    pinningTogglerTouchEndHandler: handleTouchPinningTogglerEnd,
-    pinningToggleHandler: handleTogglePinning,
+    handleTouchPinningTogglerEnd,
+    handleTogglePinning,
 
-    labelClickHandler: handleClickLabel,
+    handleClickLabel,
 
     autoOpen,
 
