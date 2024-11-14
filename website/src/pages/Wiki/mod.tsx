@@ -9,9 +9,11 @@ import {
 } from "solid-js";
 import { useLocation, useNavigate, useParams } from "@solidjs/router";
 
+import { HiSolidCodeBracket } from "solid-icons/hi";
+
 import * as Ankor from "ankor";
 
-import { Button, Card, Loading } from "../../components/ui/mod";
+import { Loading, Menu, MenuItem } from "../../components/ui/mod";
 
 import "../../styles/tuan-prose";
 import { wikiResourceManager } from "../../resource-managers/wiki";
@@ -127,37 +129,38 @@ export default (() => {
   );
 
   return (
-    <div class="flex max-h-full h-fit justify-center sm:p-4 lg:p-6 2xl:p-8">
-      <Card
-        class="w-full max-sm:rounded-b-none"
-        bodyClass="max-sm:px-0 h-full max-sm:pb-1 !pt-0 !gap-0"
-      >
-        <Show when={isLoading()}>
-          <div class="flex w-full h-screen justify-center items-center">
-            <Loading />
-          </div>
-        </Show>
-        <div class={`contents ${isLoading() ? "hidden" : ""}`}>
-          <div class="flex h-fit justify-between items-center px-2 py-1">
-            <a
-              class="underline text-blue-600 hover:text-blue-800 visited:text-purple-600"
-              href={sourceLink()}
-            >
-              前往源代码
-            </a>
+    <div class="flex flex-col h-full justify-start sm:px-4 lg:px-6 2xl:px-8 gap-2">
+      <Show when={isLoading()}>
+        <div class="flex w-full h-screen justify-center items-center">
+          <Loading />
+        </div>
+      </Show>
+      <div class={`contents h-full w-full ${isLoading() ? "hidden" : ""}`}>
+        <div class="flex justify-between content-center w-full">
+          <Menu horizontal={true} size="xs" class="bg-base-100">
+            <MenuItem>
+              <a
+                class="tooltip tooltip-bottom"
+                href={sourceLink()}
+                data-tip="前往源代码"
+              >
+                <HiSolidCodeBracket size={18} />
+              </a>
+            </MenuItem>
+          </Menu>
+          <Menu horizontal={true} size="xs" class="bg-base-100">
             <Show
               when={verificationStatistics()}
               fallback={
-                <Button
-                  size="xs"
-                  onClick={verifyAllOutputsOfOriginalInputs}
-                >
-                  验证本页全部示例输出
-                </Button>
+                <MenuItem>
+                  <a onClick={verifyAllOutputsOfOriginalInputs}>
+                    验证本页全部示例输出
+                  </a>
+                </MenuItem>
               }
             >
               {(statistics) => (
-                <div>
+                <span class="flex items-center">
                   本页示例输出验证结果：匹配{" "}
                   <span class="text-green-500">{statistics().matches}
                   </span>，不匹配{" "}
@@ -171,23 +174,23 @@ export default (() => {
                         <span class="text-gray-500">{unverified()}</span>
                       </>
                     )}
-                  </Show>。
-                </div>
+                  </Show>
+                </span>
               )}
             </Show>
-          </div>
-          <div
-            class={`${Ankor.WIDGET_OWNER_CLASS} max-h-full h-fit overflow-y-scroll overflow-x-hidden`}
-            data-ankor-widget-owner={widgetOwnerData()}
-            data-address={addressData()}
-          >
-            <div class="p-4 tuan-background tuan-prose break-all">
-              <div class={`${Ankor.ANCHOR_CLASS} relative z-10`} />
-              <div class={Ankor.CONTENT_CLASS} ref={contentContainerEl} />
-            </div>
+          </Menu>
+        </div>
+        <div
+          class={`flex-1 ${Ankor.WIDGET_OWNER_CLASS} overflow-y-scroll overflow-x-hidden`}
+          data-ankor-widget-owner={widgetOwnerData()}
+          data-address={addressData()}
+        >
+          <div class="p-4 tuan-background tuan-prose break-all">
+            <div class={`${Ankor.ANCHOR_CLASS} relative z-10`} />
+            <div class={Ankor.CONTENT_CLASS} ref={contentContainerEl} />
           </div>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }) satisfies Component;

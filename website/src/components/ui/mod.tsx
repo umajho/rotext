@@ -210,6 +210,33 @@ export const DropdownItem: Component<{ children: JSX.Element }> = (props) => {
   return <li>{props.children}</li>;
 };
 
+export const Menu: Component<{
+  children: JSX.Element;
+  horizontal?: boolean;
+  size?: "xs";
+  class?: string;
+}> = (props) => {
+  const classes = () =>
+    [
+      props.horizontal ? "menu-horizontal" : "",
+      (props.size ? `menu-${props.size}` : "") satisfies
+        | ""
+        | "menu-xs",
+      props.class ?? "",
+    ].join(" ");
+  return (
+    <ul class={`menu rounded-box ${classes()}`}>
+      {props.children}
+    </ul>
+  );
+};
+
+export const MenuItem: Component<{
+  children: JSX.Element;
+}> = (props) => {
+  return <li class="flex justify-center">{props.children}</li>;
+};
+
 export const Button: Component<
   {
     children?: JSX.Element;
