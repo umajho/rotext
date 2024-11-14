@@ -1,6 +1,16 @@
-import { Component } from "solid-js";
+import { Component, JSX } from "solid-js";
 
-import { PopperContainerProperties } from "./create-widget-component";
+interface PopperContainerProperties {
+  ref: HTMLDivElement | undefined;
+
+  class?: string;
+  style?: JSX.CSSProperties;
+
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
+
+  children: JSX.Element;
+}
 
 const PopperContainer: Component<PopperContainerProperties> = (
   props,

@@ -2,7 +2,6 @@ export {
   createWidgetComponent,
   type DisplayMode,
   type LabelContentComponent,
-  type PopperContainerProperties,
   type PopperContentProperties,
 } from "./create-widget-component";
 

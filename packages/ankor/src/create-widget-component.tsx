@@ -17,6 +17,7 @@ import { Portal } from "solid-js/web";
 import { findClosestElementEx } from "@rolludejo/internal-web-shared/dom";
 import {
   adoptStyle,
+  ShadowRootAttacher,
   StyleProvider,
 } from "@rolludejo/internal-web-shared/shadow-root";
 
@@ -42,18 +43,6 @@ export interface LabelContentComponent {
   cursor: JSX.CSSProperties["cursor"];
 
   onTogglePopper?: () => void;
-}
-
-export interface PopperContainerProperties {
-  ref: HTMLDivElement | undefined;
-
-  class?: string;
-  style?: JSX.CSSProperties;
-
-  onMouseEnter: () => void;
-  onMouseLeave: () => void;
-
-  children: JSX.Element;
 }
 
 export interface PopperContentProperties {
@@ -95,6 +84,7 @@ export function createWidgetComponent(parts: {
   const { LabelContent, PopperContent } = parts;
 
   let rootEl!: HTMLDivElement;
+  let pinAnchorEl!: HTMLDivElement;
 
   // 在执行 handleMount 时必定存在
   let labelEl!: HTMLSpanElement;
@@ -149,17 +139,23 @@ export function createWidgetComponent(parts: {
       }
     }
 
-    { //==== 持续计算悬浮框位置 ====
-      function handleLayoutChange() {
+    { //==== 持续计算悬浮时悬浮框位置 ====
+      function updatePopperPosition() {
         const popperWidthPxOnce = untrack(popperWidthPx);
         if (popperWidthPxOnce !== null) {
           // 代表此时悬浮框还未准备好。将由追踪 signal `popperWidthPx` 的
           // `createEffect` 来处理后续准备好时的情况。
 
-          updatePopperPosition(popperWidthPxOnce);
+          doUpdatePopperPosition(popperWidthPxOnce);
         }
       }
-      function updatePopperPosition(popperWidthPx: number) {
+      createEffect(on([popperWidthPx], ([popperWidthPx]) => {
+        if (displayMode() !== "floating") return;
+        if (popperWidthPx !== null) {
+          doUpdatePopperPosition(popperWidthPx);
+        }
+      }));
+      function doUpdatePopperPosition(popperWidthPx: number) {
         setPopperPosition(
           calculatePopperPosition({
             label: labelEl,
@@ -168,23 +164,20 @@ export function createWidgetComponent(parts: {
         );
       }
       createEffect(on(
-        [() => displayMode() === "closed"],
-        ([isClosed]) => {
-          woAgent.layoutChangeObserver
-            [isClosed ? "unsubscribe" : "subscribe"](handleLayoutChange);
-          if (!isClosed) {
-            handleLayoutChange();
+        [() => displayMode() === "floating"],
+        ([isFloating]) => {
+          if (isFloating) {
+            woAgent.layoutChangeObserver.subscribe(updatePopperPosition);
+            updatePopperPosition();
+          } else {
+            woAgent.layoutChangeObserver.unsubscribe(updatePopperPosition);
+            setPopperPosition(null);
           }
         },
       ));
       onCleanup(() =>
-        woAgent.layoutChangeObserver.unsubscribe(handleLayoutChange)
+        woAgent.layoutChangeObserver.unsubscribe(updatePopperPosition)
       );
-      createEffect(on([popperWidthPx], ([popperWidthPx]) => {
-        if (popperWidthPx !== null) {
-          updatePopperPosition(popperWidthPx);
-        }
-      }));
     }
 
     //==== 同步元素大小 ====
@@ -192,13 +185,15 @@ export function createWidgetComponent(parts: {
       // 挂件内容的大小，目前只有在需要折叠时才需要侦测（判断是否能折叠）；
       const { size: popperSize } = createSizeSyncer(
         () => popperEl,
-        { enabled: () => displayMode() !== "closed" },
+        { enabled: () => displayMode() === "pinned" },
       );
       createEffect(on(
         [popperSize],
         ([size]) => setCanCollapse((size?.heightPx ?? 0) > COLLAPSE_HEIGHT_PX),
       ));
-      // 挂件容器的大小（比如用来确定遮盖的高度）。
+      // 挂件容器的大小，用来：
+      // - 确定遮盖的高度；
+      // - 确定挂件悬浮时的横向位置。
       const { size: popperContainerSize } = createSizeSyncer(
         () => popperContainerEl,
         { enabled: () => displayMode() !== "closed" },
@@ -243,14 +238,6 @@ export function createWidgetComponent(parts: {
     }
   });
 
-  function handlePortalRef({ shadowRoot }: { shadowRoot: ShadowRoot }) {
-    if (opts.baseStyleProviders) {
-      for (const p of opts.baseStyleProviders) {
-        adoptStyle(shadowRoot, p);
-      }
-    }
-  }
-
   return () => {
     return (
       <div ref={rootEl} style={{ display: "inline-grid" }}>
@@ -267,72 +254,99 @@ export function createWidgetComponent(parts: {
           />
         </span>
 
-        <Dummy
-          shouldBeShown={displayMode() === "pinned"}
-          widthPx={popperWidthPx()}
-          heightPx={popperHeightPx()}
+        <div
+          ref={pinAnchorEl}
+          style={{ display: displayMode() === "pinned" ? undefined : "none" }}
         />
         <Portal
-          ref={handlePortalRef}
-          mount={woAgent()?.anchorElement}
-          useShadow={true}
+          mount={displayMode() === "pinned"
+            ? pinAnchorEl
+            : woAgent()?.anchorElement}
         >
-          <Show when={displayMode() !== "closed"}>
-            <PopperContainer
-              ref={popperContainerEl}
-              style={{
-                position: "absolute",
-                ...(((pos) =>
-                  pos
-                    ? { transform: `translate(${pos.leftPx}px,${pos.topPx}px)` }
-                    : { display: "none" })(popperPosition())),
-                "background-color": backgroundColorCSSValue(),
-                ...(collapsed() &&
-                  {
-                    "overflow-y": "hidden",
-                    height: `${COLLAPSE_HEIGHT_PX}px`,
-                  }),
-                ...(displayMode() === "floating" && { "z-index": 10 }),
-              }}
-              onMouseEnter={enterHandler}
-              onMouseLeave={leaveHandler}
-            >
-              <Show when={collapsed()}>
-                <CollapseMaskLayer
-                  containerHeightPx={popperHeightPx()}
-                  backgroundColor={maskBaseColor()}
-                  onExpand={expand}
-                />
-              </Show>
-              <div ref={popperEl}>
-                <PopperContent
-                  displayMode={displayMode}
-                  widgetOwnerAgentGetter={() => untrack(woAgent)}
-                  handlerForTouchEndOnPinIcon={pinningTogglerTouchEndHandler}
-                  handlerForClickOnPinIcon={pinningToggleHandler}
-                />
-              </div>
-            </PopperContainer>
-          </Show>
+          <ShadowRootAttacher
+            styleProviders={opts.baseStyleProviders}
+            preventHostStyleInheritance={true}
+          >
+            <Show when={displayMode() !== "closed"}>
+              <PopperContainerEx
+                ref={popperContainerEl}
+                popperPosition={popperPosition()}
+                backgroundColorCSSValue={backgroundColorCSSValue()}
+                collapsed={collapsed() ?? false}
+                displayMode={displayMode()}
+                onMouseEnter={enterHandler}
+                onMouseLeave={leaveHandler}
+              >
+                <Show when={collapsed()}>
+                  <CollapseMaskLayer
+                    containerHeightPx={popperHeightPx()}
+                    backgroundColor={maskBaseColor()}
+                    onExpand={expand}
+                  />
+                </Show>
+                <div ref={popperEl}>
+                  <PopperContent
+                    displayMode={displayMode}
+                    widgetOwnerAgentGetter={() => untrack(woAgent)}
+                    handlerForTouchEndOnPinIcon={pinningTogglerTouchEndHandler}
+                    handlerForClickOnPinIcon={pinningToggleHandler}
+                  />
+                </div>
+              </PopperContainerEx>
+            </Show>
+          </ShadowRootAttacher>
         </Portal>
       </div>
     );
   };
 }
 
-const Dummy: Component<{
-  shouldBeShown: boolean;
-  widthPx: number | null;
-  heightPx: number | null;
+const PopperContainerEx: Component<{
+  ref: HTMLDivElement;
+
+  popperPosition: ElementPosition | null;
+  backgroundColorCSSValue: string;
+  collapsed: boolean;
+  displayMode: DisplayMode;
+
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
+
+  children: JSX.Element;
 }> = (props) => {
+  const style = createMemo(() => {
+    const style: JSX.CSSProperties = {};
+
+    if (props.displayMode === "pinned") {
+      style.width = "fit-content";
+    } else {
+      // 如果改成只在悬浮（且存在 `props.popperPosition`）时进行设置，则在
+      // Chrome 及 Firefox 下打开悬浮框时页面会发生位移。Safari 下则一切正常。
+      style.position = "absolute";
+    }
+    if (props.displayMode === "floating" && props.popperPosition) {
+      style.transform =
+        `translate(${props.popperPosition.leftPx}px,${props.popperPosition.topPx}px)`;
+      style["z-index"] = 10;
+    }
+    style["background-color"] = props.backgroundColorCSSValue;
+    if (props.collapsed) {
+      style["overflow-y"] = "hidden";
+      style.height = `${COLLAPSE_HEIGHT_PX}px`;
+    }
+
+    return style;
+  });
+
   return (
-    <div
-      style={{
-        ...(!props.shouldBeShown && { display: "none" }),
-        ...(props.widthPx && { width: `${props.widthPx}px` }),
-        ...(props.heightPx && { height: `${props.heightPx}px` }),
-      }}
-    />
+    <PopperContainer
+      ref={props.ref}
+      style={style()}
+      onMouseEnter={props.onMouseEnter}
+      onMouseLeave={props.onMouseLeave}
+    >
+      {props.children}
+    </PopperContainer>
   );
 };
 
