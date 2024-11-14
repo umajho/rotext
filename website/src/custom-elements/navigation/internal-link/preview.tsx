@@ -42,9 +42,9 @@ export function createDemoPreviewRenderer(
       // 虽然可以在缓存已存在时允许自动打开，但为了页面的整洁，决定还是不自动打
       // 开任何内部链接挂件。
       isAutoOpenable: false,
-      render: (el_, renderOpts) => {
+      render: (elIn, renderOpts) => {
         widgetOwnerAgent = renderOpts.widgetOwnerAgent;
-        el = el_;
+        el = elIn;
         const dispose = render(() => {
           const rawAddr = createSignalGetterFromWatchable(rawAddrW);
 
@@ -112,10 +112,11 @@ export function createDemoPreviewRenderer(
             });
           }));
 
-          const [content, { reload: reloadPreviewContent_ }] =
-            createPreviewContent(() => addr().authentic);
+          const [content, contentOpts] = createPreviewContent(() =>
+            addr().authentic
+          );
           function reloadPreviewContent() {
-            reloadPreviewContent_(addr().authentic);
+            contentOpts.reload(addr().authentic);
           }
 
           return (

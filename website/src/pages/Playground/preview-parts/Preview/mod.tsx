@@ -351,31 +351,30 @@ function setUpHighlight(
     </Show>
   );
 
-  createEffect(on([props.activeLines, props.lookupList], () => {
-    const lookupList_ = props.lookupList();
-    if (!lookupList_?.length) return;
-    const activeLines_ = props.activeLines();
-    if (!activeLines_) return;
+  createEffect(
+    on([props.activeLines, props.lookupList], ([activeLines, lookupList]) => {
+      if (!lookupList?.length || !activeLines) return;
 
-    const topLineIndex =
-      ScrollUtils.getScrollLocalByLine(lookupList_, activeLines_[0])
-        .indexInLookupList;
-    const bottomLineIndex = activeLines_[0] === activeLines_[1]
-      ? topLineIndex
-      : ScrollUtils.getScrollLocalByLine(lookupList_, activeLines_[1])
-        .indexInLookupList;
+      const topLineIndex =
+        ScrollUtils.getScrollLocalByLine(lookupList, activeLines[0])
+          .indexInLookupList;
+      const bottomLineIndex = activeLines[0] === activeLines[1]
+        ? topLineIndex
+        : ScrollUtils.getScrollLocalByLine(lookupList, activeLines[1])
+          .indexInLookupList;
 
-    const topLineItem = lookupList_[topLineIndex]!;
-    const bottomLineItem = topLineIndex === bottomLineIndex
-      ? topLineItem
-      : lookupList_[bottomLineIndex]!;
+      const topLineItem = lookupList[topLineIndex]!;
+      const bottomLineItem = topLineIndex === bottomLineIndex
+        ? topLineItem
+        : lookupList[bottomLineIndex]!;
 
-    setTopPx(topLineItem.offsetTop);
-    setHeightPx(
-      bottomLineItem.offsetTop + bottomLineItem.element.offsetHeight -
-        topLineItem.offsetTop,
-    );
-  }));
+      setTopPx(topLineItem.offsetTop);
+      setHeightPx(
+        bottomLineItem.offsetTop + bottomLineItem.element.offsetHeight -
+          topLineItem.offsetTop,
+      );
+    }),
+  );
 
   props.setHighlightElement(el);
 }

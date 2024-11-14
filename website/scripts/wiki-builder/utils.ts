@@ -148,21 +148,21 @@ export function extractTargetsInNavigation(
   nsAliasMap: NamespaceAliasMap,
 ): Set<string> {
   const targets = new Set<string>();
-  extractTargetsInNavigation_(targets, navigation, nsAliasMap);
+  doIt(targets, navigation, nsAliasMap);
   return targets;
-}
 
-function extractTargetsInNavigation_(
-  targets: Set<string>,
-  navigation: Navigation,
-  nsAliasMap: NamespaceAliasMap,
-) {
-  if (!navigation.isPlain) {
-    const name = navigation.realName ?? navigation.name;
-    targets.add(name);
-  }
+  function doIt(
+    targets: Set<string>,
+    navigation: Navigation,
+    nsAliasMap: NamespaceAliasMap,
+  ) {
+    if (!navigation.isPlain) {
+      const name = navigation.realName ?? navigation.name;
+      targets.add(name);
+    }
 
-  for (const child of navigation.children ?? []) {
-    extractTargetsInNavigation_(targets, child, nsAliasMap);
+    for (const child of navigation.children ?? []) {
+      doIt(targets, child, nsAliasMap);
+    }
   }
 }

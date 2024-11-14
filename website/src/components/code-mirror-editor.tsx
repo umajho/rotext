@@ -1,4 +1,11 @@
-import { Accessor, createEffect, createSignal, JSX, onMount } from "solid-js";
+import {
+  Accessor,
+  createEffect,
+  createSignal,
+  JSX,
+  on,
+  onMount,
+} from "solid-js";
 
 import { basicSetup, EditorView } from "codemirror";
 import { Extension } from "@codemirror/state";
@@ -20,22 +27,19 @@ export function createCodeMirrorEditor(
   const [view, setView] = createSignal<EditorView>();
 
   let dispatchedBySelf = false, changedBySelf = false;
-  createEffect(() => {
-    const doc = props.doc();
-
+  createEffect(on([props.doc, view], ([doc, view]) => {
     if (changedBySelf) {
       changedBySelf = false;
       return;
     }
 
-    const view_ = view();
-    if (!view_) return;
+    if (!view) return;
 
     dispatchedBySelf = true;
-    view_.dispatch({
-      changes: { from: 0, to: view_.state.doc.length, insert: doc },
+    view.dispatch({
+      changes: { from: 0, to: view.state.doc.length, insert: doc },
     });
-  });
+  }));
 
   onMount(() => {
     const extSync = EditorView.updateListener.of((update) => {

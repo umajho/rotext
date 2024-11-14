@@ -16,23 +16,23 @@ import {
   NamespaceAliasMap,
 } from "./utils";
 
-async function main(args_: string[]) {
-  const { values: args } = parseArgs({
+async function main(args: string[]) {
+  const { values: opts } = parseArgs({
     options: {
       "input": { type: "string", short: "i" },
       "output": { type: "string", short: "o" },
       "dry-run": { type: "boolean", default: false },
     },
-    args: args_,
+    args: args,
   });
 
-  if (!args.input || !args.output) throw new Error("bad arguments");
+  if (!opts.input || !opts.output) throw new Error("bad arguments");
 
   let hasErrors = false;
 
   const nsMap: NamespaceMap = new Map() as NamespaceMap;
 
-  for (const ns of await discoverNamespaces(args.input)) {
+  for (const ns of await discoverNamespaces(opts.input)) {
     const result = await collectNamespace(ns);
     if (result[0] !== "ok") {
       console.error(result[1]);
@@ -53,8 +53,8 @@ async function main(args_: string[]) {
     process.exit(1);
   }
 
-  if (!args["dry-run"]) {
-    await writeFiles({ output: args.output, namespaceMap: nsMap });
+  if (!opts["dry-run"]) {
+    await writeFiles({ output: opts.output, namespaceMap: nsMap });
   }
 }
 
@@ -135,8 +135,8 @@ function checkTarget(target: string, opts: {
     authenticTarget = result[1];
   }
 
-  const [authenticPageName_, heading] = authenticTarget.split("#", 2);
-  const authenticPageName = authenticPageName_!;
+  const [authenticPageName, heading] = authenticTarget.split("#", 2);
+  if (!authenticPageName) throw new Error("unreachable");
   if (
     (!opts.pageMap.has(authenticPageName)) ||
     (heading !== undefined &&

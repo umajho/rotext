@@ -82,13 +82,12 @@ const Editor: EditorSolution = (props) => {
     });
     setScrollHandler(() => debounceEventHandler(scrollHandler));
 
-    createEffect(on([lookupData], () => {
-      const lookupData_ = lookupData();
-      if (!lookupData_ || !lookupData_.lines.length) return;
+    createEffect(on([lookupData], ([lookupData]) => {
+      if (!lookupData || !lookupData.lines.length) return;
 
       // TODO: 以 “没有折行的单行高度” 作为 “滚动到底部时余留下来的唯一一行的高度”？
-      const lastHeight = lookupData_.offsetBottom -
-        lookupData_.lines[lookupData_.lines.length - 1]!.offsetTop;
+      const lastHeight = lookupData.offsetBottom -
+        lookupData.lines[lookupData.lines.length - 1]!.offsetTop;
       setBlankHeightAtEnd(
         Math.max(scrollContainerEl.offsetHeight - lastHeight, 0),
       );
@@ -409,8 +408,8 @@ function createActiveLinesTracker(
   function handleSelectionChange() {
     if (!opts.contentContainerEl.childNodes.length) return;
 
-    const lookupData_ = opts.lookupData();
-    if (!lookupData_) return;
+    const lookupData = opts.lookupData();
+    if (!lookupData) return;
 
     const selection = document.getSelection();
     if (!selection?.rangeCount) return;
@@ -423,12 +422,12 @@ function createActiveLinesTracker(
     }
 
     const startLineNumber = getLineNumberByY(
-      lookupData_.lines,
-      getNodeOffestTopInRangeAt(range, "start", opts.contentContainerEl),
+      lookupData.lines,
+      getNodeOffsetTopInRangeAt(range, "start", opts.contentContainerEl),
     );
     const endLineNumber = getLineNumberByY(
-      lookupData_.lines,
-      getNodeOffestTopInRangeAt(range, "end", opts.contentContainerEl),
+      lookupData.lines,
+      getNodeOffsetTopInRangeAt(range, "end", opts.contentContainerEl),
     );
 
     opts.setActiveLines([startLineNumber, endLineNumber]);
@@ -459,26 +458,25 @@ function createHighlight(opts: {
     { topPx: number; bottomPx: number }
   >();
 
-  createEffect(on([opts.lookupData, opts.activeLines], () => {
-    const lookupData_ = opts.lookupData();
-    if (!lookupData_) return;
-    const activeLines_ = opts.activeLines();
-    if (!activeLines_) return;
+  createEffect(
+    on([opts.lookupData, opts.activeLines], ([lookupData, activeLines]) => {
+      if (!lookupData || !activeLines) return;
 
-    let [startLine, endLine] = activeLines_;
-    startLine = Math.min(startLine, lookupData_.lines.length);
-    endLine = Math.min(endLine, lookupData_.lines.length);
+      let [startLine, endLine] = activeLines;
+      startLine = Math.min(startLine, lookupData.lines.length);
+      endLine = Math.min(endLine, lookupData.lines.length);
 
-    const startLineOffsetTop = lookupData_.lines[startLine - 1]!.offsetTop;
-    const endLineOffsetBottom = endLine < lookupData_.lines.length
-      ? lookupData_.lines[endLine - 1 + 1]!.offsetTop
-      : opts.contentContainerEl.getBoundingClientRect().height;
+      const startLineOffsetTop = lookupData.lines[startLine - 1]!.offsetTop;
+      const endLineOffsetBottom = endLine < lookupData.lines.length
+        ? lookupData.lines[endLine - 1 + 1]!.offsetTop
+        : opts.contentContainerEl.getBoundingClientRect().height;
 
-    setActiveLinesOffsets({
-      topPx: startLineOffsetTop,
-      bottomPx: endLineOffsetBottom,
-    });
-  }));
+      setActiveLinesOffsets({
+        topPx: startLineOffsetTop,
+        bottomPx: endLineOffsetBottom,
+      });
+    }),
+  );
 
   opts.setHighlightElement(() => (
     <Show when={activeLinesOffsets()}>
@@ -495,7 +493,7 @@ function createHighlight(opts: {
   ));
 }
 
-function getNodeOffestTopInRangeAt(
+function getNodeOffsetTopInRangeAt(
   range: Range,
   position: "start" | "end",
   containerEl: HTMLElement,
@@ -562,19 +560,18 @@ function createScrollSyncer(opts: {
     opts.setTopLine({ number, setFrom: "editor" });
   }
 
-  createEffect(on([opts.topLine], () => {
-    const topLine = opts.topLine();
+  createEffect(on([opts.topLine], ([topLine]) => {
     if (topLine.setFrom === "editor") return;
 
-    const lookupData_ = opts.lookupData();
-    if (!lookupData_) return;
+    const lookupData = opts.lookupData();
+    if (!lookupData) return;
 
     const line = topLine.number;
     const lineInt = line | 0;
-    const offsetTop = lookupData_.lines[lineInt - 1]!.offsetTop;
-    const offsetBottom = lineInt < lookupData_.lines.length
-      ? lookupData_.lines[lineInt - 1 + 1]!.offsetTop
-      : lookupData_.offsetBottom;
+    const offsetTop = lookupData.lines[lineInt - 1]!.offsetTop;
+    const offsetBottom = lineInt < lookupData.lines.length
+      ? lookupData.lines[lineInt - 1 + 1]!.offsetTop
+      : lookupData.offsetBottom;
 
     // XXX: 没有考虑内容顶部与滚动容器顶部之间有空隙的情况
     const newScrollTop = Math.min(

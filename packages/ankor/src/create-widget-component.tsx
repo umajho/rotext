@@ -1,4 +1,5 @@
 import {
+  Accessor,
   batch,
   Component,
   createEffect,
@@ -137,8 +138,8 @@ export function createWidgetComponent(parts: {
 
   onMount(() => {
     const shadowRoot = rootEl.getRootNode() as ShadowRoot;
-    const woAgent_ = createWidgetOwnerAgent(shadowRoot.host as HTMLElement);
-    setWOAgent(woAgent_);
+    const woAgent = createWidgetOwnerAgent(shadowRoot.host as HTMLElement);
+    setWOAgent(woAgent);
 
     { //==== 采纳样式 ====
       if (opts.baseStyleProviders) {
@@ -150,26 +151,26 @@ export function createWidgetComponent(parts: {
 
     { //==== 持续计算悬浮框位置 ====
       function handleLayoutChange() {
-        const popperWidthPx_ = untrack(popperWidthPx);
-        if (popperWidthPx_ !== null) {
-          // `popperWidthPx_` 若为 `null`，代表此时悬浮框还未准备好。将由追踪
-          // `popperWidthPx` 的 `createEffect` 来处理后续准备好时的情况。
+        const popperWidthPxOnce = untrack(popperWidthPx);
+        if (popperWidthPxOnce !== null) {
+          // 代表此时悬浮框还未准备好。将由追踪 signal `popperWidthPx` 的
+          // `createEffect` 来处理后续准备好时的情况。
 
-          updatePopperPosition(popperWidthPx_);
+          updatePopperPosition(popperWidthPxOnce);
         }
       }
       function updatePopperPosition(popperWidthPx: number) {
         setPopperPosition(
           calculatePopperPosition({
             label: labelEl,
-            popperAnchor: woAgent_.anchorElement,
+            popperAnchor: woAgent.anchorElement,
           }, { popperWidthPx }),
         );
       }
       createEffect(on(
         [() => displayMode() === "closed"],
         ([isClosed]) => {
-          woAgent_.layoutChangeObserver
+          woAgent.layoutChangeObserver
             [isClosed ? "unsubscribe" : "subscribe"](handleLayoutChange);
           if (!isClosed) {
             handleLayoutChange();
@@ -177,7 +178,7 @@ export function createWidgetComponent(parts: {
         },
       ));
       onCleanup(() =>
-        woAgent_.layoutChangeObserver.unsubscribe(handleLayoutChange)
+        woAgent.layoutChangeObserver.unsubscribe(handleLayoutChange)
       );
       createEffect(on([popperWidthPx], ([popperWidthPx]) => {
         if (popperWidthPx !== null) {
@@ -216,7 +217,7 @@ export function createWidgetComponent(parts: {
     //==== 自动打开 ====
     if (
       opts.autoOpenable &&
-      woAgent_.level === 1 &&
+      woAgent.level === 1 &&
       !findClosestElementEx(
         labelEl,
         (el) => el.classList.contains(NO_AUTO_OPEN_CLASS),
@@ -505,9 +506,14 @@ function createDisplayModeFSM(
   };
 }
 
+/**
+ * XXX: `el` 并非 reactive，只是由于外部调用此函数时，el 可能作为 `<Show/>` 之内
+ * 的 ref，不作为函数的话其值就固定了。（可能是 `on={false}` 时的 `undefined`，也
+ * 可能指向先前 `on={true}` 时创建的旧元素。）
+ */
 function createSizeSyncer(
-  el: () => HTMLElement,
-  opts: { removed: () => boolean },
+  elGetter: () => HTMLElement,
+  opts: { removed: Accessor<boolean> },
 ) {
   const [size, setSize] = createSignal<ElementSize | null>(null);
 
@@ -526,13 +532,12 @@ function createSizeSyncer(
     });
   }
   let resizeObserverForPopper: ResizeObserver | null = null;
-  createEffect(on([opts.removed], () => {
-    if (!opts.removed()) {
-      const el_ = el();
-
-      syncSize(el_);
-      resizeObserverForPopper = new ResizeObserver(() => syncSize(el_));
-      resizeObserverForPopper.observe(el_);
+  createEffect(on([opts.removed], ([removed]) => {
+    const el = elGetter();
+    if (!removed) {
+      syncSize(el);
+      resizeObserverForPopper = new ResizeObserver(() => syncSize(el));
+      resizeObserverForPopper.observe(el);
     } else {
       setSize(null);
       resizeObserverForPopper?.disconnect();

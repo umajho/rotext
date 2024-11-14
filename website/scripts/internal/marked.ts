@@ -169,8 +169,8 @@ function parseExampleContent(raw: string) {
     return g!.slice(1, 3) as [string, string];
   });
 
-  for (const [key_, value] of partPairs) {
-    const key = key_ || "expected";
+  for (let [key, value] of partPairs) {
+    key ||= "expected";
     if (key in content) {
       throw new Error(`duplicate example content key “${key}”`);
     }

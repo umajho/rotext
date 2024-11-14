@@ -6,8 +6,8 @@ import { createSignal } from "solid-js";
  * 监听器获取的计数总是为 0。因此，这里将 `thresholdMs` 的默认值设置为 `100`。
  */
 export function createAutoResetCounter(thresholdMs = 100) {
-  const [value, setValue_] = createSignal(0);
-  const [hardValue, setHardValue_] = createSignal(0);
+  const [value, setValueInternal] = createSignal(0);
+  const [hardValue, setHardValueInternal] = createSignal(0);
 
   let lastChangeTime = 0;
   let checking = false;
@@ -19,7 +19,7 @@ export function createAutoResetCounter(thresholdMs = 100) {
     }
 
     if (!hardValue() && performance.now() - lastChangeTime >= thresholdMs) {
-      setValue_(0);
+      setValueInternal(0);
       checking = false;
       return;
     }
@@ -28,7 +28,7 @@ export function createAutoResetCounter(thresholdMs = 100) {
 
   function setValue(value: number) {
     value = Math.max(value, 0);
-    setValue_(value);
+    setValueInternal(value);
     lastChangeTime = performance.now();
 
     if (!checking && value) {
@@ -39,7 +39,7 @@ export function createAutoResetCounter(thresholdMs = 100) {
 
   function setHardValue(hardValue: number) {
     hardValue = Math.max(hardValue, 0);
-    setHardValue_(hardValue);
+    setHardValueInternal(hardValue);
     lastChangeTime = performance.now();
 
     if (!checking && !hardValue && value()) {
