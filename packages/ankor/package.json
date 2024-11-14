@@ -34,12 +34,12 @@
   },
   "peerDependencies": {
     "@rolludejo/internal-web-shared": "^0.4.0",
-    "solid-element": "^1.8.1",
-    "solid-icons": "^1.0.11",
-    "solid-js": "^1.8.18"
+    "solid-element": "^1.9.1",
+    "solid-icons": "^1.1.0",
+    "solid-js": "^1.9.3"
   },
   "devDependencies": {
-    "typescript": "^5.1.6"
+    "typescript": "^5.6.3"
   },
   "keywords": [
     "solid"
