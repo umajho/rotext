@@ -192,7 +192,7 @@ export function createWidgetComponent(parts: {
       // 挂件内容的大小，目前只有在需要折叠时才需要侦测（判断是否能折叠）；
       const { size: popperSize } = createSizeSyncer(
         () => popperEl,
-        { removed: () => displayMode() === "closed" },
+        { enabled: () => displayMode() !== "closed" },
       );
       createEffect(on(
         [popperSize],
@@ -201,7 +201,7 @@ export function createWidgetComponent(parts: {
       // 挂件容器的大小（比如用来确定遮盖的高度）。
       const { size: popperContainerSize } = createSizeSyncer(
         () => popperContainerEl,
-        { removed: () => displayMode() === "closed" },
+        { enabled: () => displayMode() !== "closed" },
       );
       createEffect(on(
         [popperContainerSize],
@@ -513,7 +513,7 @@ function createDisplayModeFSM(
  */
 function createSizeSyncer(
   elGetter: () => HTMLElement,
-  opts: { removed: Accessor<boolean> },
+  opts: { enabled: Accessor<boolean> },
 ) {
   const [size, setSize] = createSignal<ElementSize | null>(null);
 
@@ -532,9 +532,9 @@ function createSizeSyncer(
     });
   }
   let resizeObserverForPopper: ResizeObserver | null = null;
-  createEffect(on([opts.removed], ([removed]) => {
+  createEffect(on([opts.enabled], ([enabled]) => {
     const el = elGetter();
-    if (!removed) {
+    if (enabled) {
       syncSize(el);
       resizeObserverForPopper = new ResizeObserver(() => syncSize(el));
       resizeObserverForPopper.observe(el);
