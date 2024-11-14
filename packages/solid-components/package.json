@@ -26,27 +26,27 @@
         "default": "./dist/index/index.js"
       }
     },
-    "./ankor-widgets/Navigation": {
-      "import": {
-        "types": "./dist/ankor-widgets/Navigation/index.d.ts",
-        "default": "./dist/ankor-widgets/Navigation/index.js"
-      }
-    },
     "./ankor-widgets/Dicexp": {
       "import": {
         "types": "./dist/ankor-widgets/Dicexp/index.d.ts",
         "default": "./dist/ankor-widgets/Dicexp/index.js"
       }
     },
+    "./ankor-widgets/Navigation": {
+      "import": {
+        "types": "./dist/ankor-widgets/Navigation/index.d.ts",
+        "default": "./dist/ankor-widgets/Navigation/index.js"
+      }
+    },
     "./internal": "./internal.ts"
   },
   "typesVersions": {
     "*": {
-      "ankor-widgets/Navigation": [
-        "./dist/ankor-widgets/Navigation/index.d.ts"
-      ],
       "ankor-widgets/Dicexp": [
         "./dist/ankor-widgets/Dicexp/index.d.ts"
+      ],
+      "ankor-widgets/Navigation": [
+        "./dist/ankor-widgets/Navigation/index.d.ts"
       ]
     }
   },
@@ -73,21 +73,21 @@
     "@dicexp/naive-evaluator": "^0.5.0",
     "@dicexp/naive-evaluator-in-worker": "^0.5.0",
     "autoprefixer": "^10.4.20",
-    "concurrently": "^8.2.0",
-    "esbuild": "^0.18.20",
-    "esbuild-plugin-solid": "^0.5.0",
-    "esbuild-sass-plugin": "^2.16.0",
-    "jsdom": "^22.1.0",
+    "concurrently": "^9.1.0",
+    "esbuild": "^0.24.0",
+    "esbuild-plugin-solid": "^0.6.0",
+    "esbuild-sass-plugin": "^3.3.1",
+    "jsdom": "^25.0.1",
     "postcss": "^8.4.49",
     "postcss-modules": "^6.0.1",
     "sass": "^1.80.7",
     "tailwindcss": "^3.4.14",
-    "tsup": "^7.1.0",
+    "tsup": "^8.3.5",
     "tsup-preset-solid": "^2.2.0",
     "typescript": "^5.6.3",
     "vite": "^5.4.11",
     "vite-plugin-solid": "^2.10.2",
-    "vitest": "^0.33.0"
+    "vitest": "^2.1.5"
   },
   "keywords": [
     "solid"
