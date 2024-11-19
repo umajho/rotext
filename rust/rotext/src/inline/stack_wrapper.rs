@@ -1,4 +1,4 @@
-use crate::{events::InlineEvent, utils::stack::Stack};
+use crate::{events::ev, utils::stack::Stack, Event};
 
 use super::types::EndCondition;
 
@@ -82,11 +82,11 @@ pub struct TopLeafCodeSpan {
     pub backticks: usize,
 }
 impl TopLeafCodeSpan {
-    pub fn make_enter_event(&self) -> InlineEvent {
-        InlineEvent::EnterCodeSpan
+    pub fn make_enter_event(&self) -> Event {
+        ev!(Inline, EnterCodeSpan)
     }
 
-    pub fn make_exit_event(&self) -> InlineEvent {
-        InlineEvent::ExitInline
+    pub fn make_exit_event(&self) -> Event {
+        ev!(Inline, ExitInline)
     }
 }

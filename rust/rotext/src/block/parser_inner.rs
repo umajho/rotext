@@ -1,8 +1,8 @@
 use crate::{
-    events::BlockEvent,
-    types::Tym,
-    types::{BlockId, LineNumber},
+    events::ev,
+    types::{BlockId, LineNumber, Tym},
     utils::{internal::array_queue::ArrayQueue, stack::Stack},
+    Event,
 };
 
 #[cfg(feature = "block-id")]
@@ -21,7 +21,8 @@ pub struct ParserInner<TStack: Stack<StackEntry>> {
 
     pub stack: StackWrapper<TStack>,
 
-    to_yield: ArrayQueue<MAX_TO_YIELD, BlockEvent>,
+    /// 承载的事件属于 `Block` 分组。
+    to_yield: ArrayQueue<MAX_TO_YIELD, Event>,
 
     #[cfg(feature = "block-id")]
     block_id_generator: BlockIdGenerator,
@@ -48,7 +49,8 @@ impl<TStack: Stack<StackEntry>> ParserInner<TStack> {
 
     pub fn enforce_to_yield_mark(&self, _: Tym<MAX_TO_YIELD>) {}
 
-    pub fn pop_to_be_yielded(&mut self) -> Option<BlockEvent> {
+    /// 返回的事件属于 `Block` 分组。
+    pub fn pop_to_be_yielded(&mut self) -> Option<Event> {
         self.to_yield.pop_front()
     }
 
@@ -91,11 +93,12 @@ impl<TStack: Stack<StackEntry>> CursorContext for ParserInner<TStack> {
     }
 }
 impl<TStack: Stack<StackEntry>> YieldContext for ParserInner<TStack> {
+    /// `ev` 是属于 `Block` 分组的事件。
     #[must_use]
-    fn r#yield(&mut self, ev: BlockEvent) -> Tym<1> {
-        self.has_just_entered_table = matches!(ev, BlockEvent::EnterTable(..));
+    fn r#yield(&mut self, ev_to_yield: Event) -> Tym<1> {
+        self.has_just_entered_table = matches!(ev_to_yield, ev!(Block, EnterTable(..)));
 
-        self.to_yield.push_back(ev);
+        self.to_yield.push_back(ev_to_yield);
 
         Tym::<1>::new()
     }

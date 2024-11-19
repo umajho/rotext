@@ -1,9 +1,9 @@
-pub fn create_block_id_to_lines_map(all_events: &[rotext::BlendEvent]) -> String {
+pub fn create_block_id_to_lines_map(all_events: &[rotext::Event]) -> String {
     let mut result = String::new();
 
     for ev in all_events.iter() {
         match ev {
-            rotext::BlendEvent::ThematicBreak(data) => {
+            rotext::Event::ThematicBreak(data) => {
                 write_id_and_line_range(
                     &mut result,
                     data.id.value(),
@@ -11,7 +11,7 @@ pub fn create_block_id_to_lines_map(all_events: &[rotext::BlendEvent]) -> String
                     data.line.value(),
                 );
             }
-            rotext::BlendEvent::ExitBlock(data) => {
+            rotext::Event::ExitBlock(data) => {
                 write_id_and_line_range(
                     &mut result,
                     data.id.value(),

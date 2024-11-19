@@ -1,16 +1,19 @@
 #[cfg(test)]
 mod tests;
 
+#[cfg(debug_assertions)]
+use crate::events::is_event_of;
 use crate::{
-    events::{BlendEvent, BlockEvent, Event, InlineInputEvent},
+    events::{ev, Event},
     inline::{self},
     utils::{internal::peekable::Peekable, stack::Stack},
 };
 
+/// `TBlockParser` 迭代的事件应该属于 `Block` 分组。
 #[allow(clippy::large_enum_variant)]
 enum State<
     'a,
-    TBlockParser: Iterator<Item = crate::Result<BlockEvent>>,
+    TBlockParser: Iterator<Item = crate::Result<Event>>,
     TInlineStack: Stack<inline::StackEntry>,
 > {
     /// Option 仅用于处理所有权，`None` 为无效状态。
@@ -26,7 +29,7 @@ enum State<
 /// 的事件” 截取为单独的流提供给使用者。使用者需要将提供的那些流映射为新的流。
 pub struct BlockEventStreamInlineSegmentMapper<
     'a,
-    TBlockParser: Iterator<Item = crate::Result<BlockEvent>>,
+    TBlockParser: Iterator<Item = crate::Result<Event>>,
     TInlineStack: Stack<inline::StackEntry>,
 > {
     input: &'a [u8],
@@ -35,7 +38,7 @@ pub struct BlockEventStreamInlineSegmentMapper<
 
 impl<
         'a,
-        TBlockParser: Iterator<Item = crate::Result<BlockEvent>>,
+        TBlockParser: Iterator<Item = crate::Result<Event>>,
         TInlineStack: Stack<inline::StackEntry>,
     > BlockEventStreamInlineSegmentMapper<'a, TBlockParser, TInlineStack>
 {
@@ -46,8 +49,9 @@ impl<
         }
     }
 
+    /// 返回的事件属于 `Blend` 分组。
     #[inline(always)]
-    fn next(&mut self) -> Option<crate::Result<BlendEvent>> {
+    fn next(&mut self) -> Option<crate::Result<Event>> {
         let ret = loop {
             match self.state {
                 State::Normal(ref mut block_parser) => {
@@ -56,7 +60,7 @@ impl<
                         Some(Err(err)) => return Some(Err(err)),
                         None => return None,
                     };
-                    if next.opens_inline_phase() {
+                    if next.is_block_event_that_opens_inline_phase() {
                         let block_parser = unsafe { block_parser.take().unwrap_unchecked() };
                         let segment_stream = WhileInlineSegment::new(block_parser);
                         let inline_parser = inline::Parser::new(self.input);
@@ -64,10 +68,14 @@ impl<
                             inline_parser,
                             segment_stream: Some(Peekable::new(segment_stream)),
                         };
-                        break Ok(BlendEvent::try_from(Event::from(next)).unwrap());
-                    } else {
-                        break Ok(BlendEvent::try_from(Event::from(next)).unwrap());
                     }
+
+                    debug_assert!(!matches!(next, ev!(Block, Unparsed(_))));
+                    #[cfg(debug_assertions)]
+                    debug_assert!(is_event_of!(Blend, next));
+                    // 排除掉 `Unparsed`（不会在本状态中遇到），属于 `Block` 分组
+                    // 的事件都属于 `Blend` 分组，因此分组正确。
+                    break Ok(next);
                 }
                 State::ParsingInline {
                     ref mut inline_parser,
@@ -76,7 +84,11 @@ impl<
                     match inline_parser.next(unsafe { segment_stream.as_mut().unwrap_unchecked() })
                     {
                         Some(Ok(next)) => {
-                            break Ok(BlendEvent::try_from(Event::from(next)).unwrap());
+                            #[cfg(debug_assertions)]
+                            debug_assert!(is_event_of!(Blend, next));
+                            // 属于 `Inline` 分组的事件都属于 `Blend` 分组，因此
+                            // 分组正确。
+                            break Ok(next);
                         }
                         Some(Err(err)) => break Err(err),
                         None => {
@@ -89,7 +101,11 @@ impl<
                             self.state = State::Normal(Some(block_parser));
 
                             if let Some(ev) = leftover {
-                                break Ok(BlendEvent::try_from(Event::from(ev)).unwrap());
+                                #[cfg(debug_assertions)]
+                                debug_assert!(is_event_of!(Blend, ev));
+                                // `leftover` 也能保证属于 `Blend` 分组，因此分
+                                // 组正确。
+                                break Ok(ev);
                             }
                         }
                     }
@@ -103,25 +119,36 @@ impl<
 
 impl<
         'a,
-        TBlockParser: Iterator<Item = crate::Result<BlockEvent>>,
+        // 承载的事件属于 `Block` 分组。
+        TBlockParser: Iterator<Item = crate::Result<Event>>,
         TInlineStack: Stack<inline::StackEntry>,
     > Iterator for BlockEventStreamInlineSegmentMapper<'a, TBlockParser, TInlineStack>
 {
-    type Item = crate::Result<BlendEvent>;
+    /// 承载的事件属于 `Blend` 分组。
+    type Item = crate::Result<Event>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.next()
     }
 }
 
-pub struct WhileInlineSegment<TBlockParser: Iterator<Item = crate::Result<BlockEvent>>> {
+pub struct WhileInlineSegment<
+    // 承载的事件属于 `Block` 分组。
+    TBlockParser: Iterator<Item = crate::Result<Event>>,
+> {
     block_parser: TBlockParser,
 
-    leftover: Option<BlockEvent>,
+    /// 承载的事件属于 `Block` 分组，且不会是 `Unparsed`。即承载的事件也属于
+    /// `Blend` 分组。
+    leftover: Option<Event>,
     error: Option<crate::Error>,
 }
 
-impl<TBlockParser: Iterator<Item = crate::Result<BlockEvent>>> WhileInlineSegment<TBlockParser> {
+impl<
+        // 承载的事件属于 `Block` 分组。
+        TBlockParser: Iterator<Item = crate::Result<Event>>,
+    > WhileInlineSegment<TBlockParser>
+{
     fn new(block_parser: TBlockParser) -> Self {
         Self {
             block_parser,
@@ -130,19 +157,23 @@ impl<TBlockParser: Iterator<Item = crate::Result<BlockEvent>>> WhileInlineSegmen
         }
     }
 
-    fn drop(self) -> (TBlockParser, Option<BlockEvent>, Option<crate::Error>) {
+    /// 作为元组第二个元素返回的事件属于 `Block` 分组。
+    fn drop(self) -> (TBlockParser, Option<Event>, Option<crate::Error>) {
         (self.block_parser, self.leftover, self.error)
     }
 
+    /// 返回的事件属于 `InlineInput` 分组。
     #[inline(always)]
-    fn next(&mut self) -> Option<InlineInputEvent> {
+    fn next(&mut self) -> Option<Event> {
         match self.block_parser.next() {
             Some(Ok(ev)) => {
-                if ev.closes_inline_phase() {
+                if ev.is_block_event_that_closes_inline_phase() {
                     self.leftover = Some(ev);
                     None
                 } else {
-                    Some(InlineInputEvent::try_from(Event::from(ev)).unwrap())
+                    #[cfg(debug_assertions)]
+                    debug_assert!(is_event_of!(InlineInput, ev));
+                    Some(ev)
                 }
             }
             Some(Err(err)) => {
@@ -154,10 +185,13 @@ impl<TBlockParser: Iterator<Item = crate::Result<BlockEvent>>> WhileInlineSegmen
     }
 }
 
-impl<TBlockParser: Iterator<Item = crate::Result<BlockEvent>>> Iterator
-    for WhileInlineSegment<TBlockParser>
+impl<
+        // 承载的事件属于 `Block` 分组。
+        TBlockParser: Iterator<Item = crate::Result<Event>>,
+    > Iterator for WhileInlineSegment<TBlockParser>
 {
-    type Item = InlineInputEvent;
+    /// 属于 `InlineInput` 分组。
+    type Item = Event;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.next()

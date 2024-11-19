@@ -1,7 +1,8 @@
 use crate::{
-    events::{BlockEvent, ExitBlock, NewLine},
+    events::{ev, ExitBlock, NewLine},
     types::{BlockId, LineNumber},
     utils::stack::Stack,
+    Event,
 };
 
 pub struct StackWrapper<TStack: Stack<StackEntry>> {
@@ -166,15 +167,17 @@ pub struct StackEntryItemLike {
     pub r#type: GeneralItemLike,
 }
 impl StackEntryItemLike {
-    pub fn make_enter_event(&self) -> BlockEvent {
+    /// 返回的事件属于 `Block` 分组。
+    pub fn make_enter_event(&self) -> Event {
         match self.r#type {
-            GeneralItemLike::LI => BlockEvent::EnterListItem(self.meta.id.into()),
-            GeneralItemLike::DT => BlockEvent::EnterDescriptionTerm(self.meta.id.into()),
-            GeneralItemLike::DD => BlockEvent::EnterDescriptionDetails(self.meta.id.into()),
+            GeneralItemLike::LI => ev!(Block, EnterListItem(self.meta.id.into())),
+            GeneralItemLike::DT => ev!(Block, EnterDescriptionTerm(self.meta.id.into())),
+            GeneralItemLike::DD => ev!(Block, EnterDescriptionDetails(self.meta.id.into())),
         }
     }
 
-    pub fn make_exit_event(self, line_end: LineNumber) -> BlockEvent {
+    /// 返回的事件属于 `Block` 分组。
+    pub fn make_exit_event(self, line_end: LineNumber) -> Event {
         self.meta.make_exit_event(line_end)
     }
 }
@@ -185,16 +188,18 @@ pub struct StackEntryItemLikeContainer {
     pub r#type: ItemLikeContainer,
 }
 impl StackEntryItemLikeContainer {
-    pub fn make_enter_event(&self) -> BlockEvent {
+    /// 返回的事件属于 `Block` 分组。
+    pub fn make_enter_event(&self) -> Event {
         match self.r#type {
-            ItemLikeContainer::BlockQuote => BlockEvent::EnterBlockQuote(self.meta.id.into()),
-            ItemLikeContainer::OL => BlockEvent::EnterOrderedList(self.meta.id.into()),
-            ItemLikeContainer::UL => BlockEvent::EnterUnorderedList(self.meta.id.into()),
-            ItemLikeContainer::DL => BlockEvent::EnterDescriptionList(self.meta.id.into()),
+            ItemLikeContainer::BlockQuote => ev!(Block, EnterBlockQuote(self.meta.id.into())),
+            ItemLikeContainer::OL => ev!(Block, EnterOrderedList(self.meta.id.into())),
+            ItemLikeContainer::UL => ev!(Block, EnterUnorderedList(self.meta.id.into())),
+            ItemLikeContainer::DL => ev!(Block, EnterDescriptionList(self.meta.id.into())),
         }
     }
 
-    pub fn make_exit_event(self, line_end: LineNumber) -> BlockEvent {
+    /// 返回的事件属于 `Block` 分组。
+    pub fn make_exit_event(self, line_end: LineNumber) -> Event {
         self.meta.make_exit_event(line_end)
     }
 }
@@ -203,11 +208,13 @@ pub struct StackEntryTable {
     pub meta: Meta,
 }
 impl StackEntryTable {
-    pub fn make_enter_event(&self) -> BlockEvent {
-        BlockEvent::EnterTable(self.meta.id.into())
+    /// 返回的事件属于 `Block` 分组。
+    pub fn make_enter_event(&self) -> Event {
+        ev!(Block, EnterTable(self.meta.id.into()))
     }
 
-    pub fn make_exit_event(self, line_end: LineNumber) -> BlockEvent {
+    /// 返回的事件属于 `Block` 分组。
+    pub fn make_exit_event(self, line_end: LineNumber) -> Event {
         self.meta.make_exit_event(line_end)
     }
 }
@@ -222,12 +229,16 @@ impl Meta {
         Self { id, line_start }
     }
 
-    fn make_exit_event(self, line_end: LineNumber) -> BlockEvent {
-        BlockEvent::ExitBlock(ExitBlock {
-            id: self.id,
-            start_line: self.line_start,
-            end_line: line_end,
-        })
+    /// 返回的事件属于 `Block` 分组。
+    fn make_exit_event(self, line_end: LineNumber) -> Event {
+        ev!(
+            Block,
+            ExitBlock(ExitBlock {
+                id: self.id,
+                start_line: self.line_start,
+                end_line: line_end,
+            })
+        )
     }
 }
 
@@ -281,11 +292,13 @@ pub struct TopLeafParagraph {
     pub new_line: Option<NewLine>,
 }
 impl TopLeafParagraph {
-    pub fn make_enter_event(&self) -> BlockEvent {
-        BlockEvent::EnterParagraph(self.meta.id.into())
+    /// 返回的事件属于 `Block` 分组。
+    pub fn make_enter_event(&self) -> Event {
+        ev!(Block, EnterParagraph(self.meta.id.into()))
     }
 
-    pub fn make_exit_event(self, line_end: LineNumber) -> BlockEvent {
+    /// 返回的事件属于 `Block` 分组。
+    pub fn make_exit_event(self, line_end: LineNumber) -> Event {
         self.meta.make_exit_event(line_end)
     }
 }
@@ -299,19 +312,21 @@ pub struct TopLeafHeading {
     pub has_content_before: bool,
 }
 impl TopLeafHeading {
-    pub fn make_enter_event(&self) -> BlockEvent {
+    /// 返回的事件属于 `Block` 分组。
+    pub fn make_enter_event(&self) -> Event {
         match self.level {
-            1 => BlockEvent::EnterHeading1(self.meta.id.into()),
-            2 => BlockEvent::EnterHeading2(self.meta.id.into()),
-            3 => BlockEvent::EnterHeading3(self.meta.id.into()),
-            4 => BlockEvent::EnterHeading4(self.meta.id.into()),
-            5 => BlockEvent::EnterHeading5(self.meta.id.into()),
-            6 => BlockEvent::EnterHeading6(self.meta.id.into()),
+            1 => ev!(Block, EnterHeading1(self.meta.id.into())),
+            2 => ev!(Block, EnterHeading2(self.meta.id.into())),
+            3 => ev!(Block, EnterHeading3(self.meta.id.into())),
+            4 => ev!(Block, EnterHeading4(self.meta.id.into())),
+            5 => ev!(Block, EnterHeading5(self.meta.id.into())),
+            6 => ev!(Block, EnterHeading6(self.meta.id.into())),
             _ => unreachable!(),
         }
     }
 
-    pub fn make_exit_event(self, line_end: LineNumber) -> BlockEvent {
+    /// 返回的事件属于 `Block` 分组。
+    pub fn make_exit_event(self, line_end: LineNumber) -> Event {
         self.meta.make_exit_event(line_end)
     }
 }
@@ -337,11 +352,13 @@ pub enum TopLeafCodeBlockStateInCode {
     Normal,
 }
 impl TopLeafCodeBlock {
-    pub fn make_enter_event(&self) -> BlockEvent {
-        BlockEvent::EnterCodeBlock(self.meta.id.into())
+    /// 返回的事件属于 `Block` 分组。
+    pub fn make_enter_event(&self) -> Event {
+        ev!(Block, EnterCodeBlock(self.meta.id.into()))
     }
 
-    pub fn make_exit_event(self, line_end: LineNumber) -> BlockEvent {
+    /// 返回的事件属于 `Block` 分组。
+    pub fn make_exit_event(self, line_end: LineNumber) -> Event {
         self.meta.make_exit_event(line_end)
     }
 }

@@ -1,5 +1,7 @@
 #![allow(incomplete_features)]
 #![feature(generic_const_exprs)]
+#![feature(proc_macro_hygiene)]
+#![feature(stmt_expr_attributes)]
 
 mod blend;
 mod block;
@@ -16,7 +18,7 @@ pub(crate) mod test_suites;
 #[cfg(test)]
 pub(crate) mod test_support;
 
-pub use events::{BlendEvent, BlockEvent, Event};
+pub use events::Event;
 pub use rendering::{HtmlRenderer, NewHtmlRendererOptions};
 pub use types::{Error, Result};
 

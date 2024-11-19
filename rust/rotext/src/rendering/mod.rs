@@ -1,8 +1,8 @@
 mod tests;
 
-use crate::events::BlendEvent;
 use crate::events::BlockWithId;
 use crate::events::VerbatimEscaping;
+use crate::Event;
 
 macro_rules! write_data_block_id_attribute_if_applicable {
     ($self:ident, $data:ident) => {
@@ -84,7 +84,8 @@ impl<'a> HtmlRenderer<'a> {
         }
     }
 
-    pub fn render(mut self, mut input_stream: impl Iterator<Item = BlendEvent>) -> String {
+    /// `input_stream` 的迭代对象是属于 `Blend` 分组的事件。
+    pub fn render(mut self, mut input_stream: impl Iterator<Item = Event>) -> String {
         let mut stack: Vec<StackEntry> = vec![];
 
         loop {
@@ -93,8 +94,12 @@ impl<'a> HtmlRenderer<'a> {
             };
 
             if let Some(StackEntry::Table(table_state)) = stack.last_mut() {
+                #[rotext_internal_macros::ensure_cases_for_event(
+                    prefix = Event,
+                    group = Blend,
+                )]
                 match ev {
-                    BlendEvent::IndicateTableRow => {
+                    Event::IndicateTableRow => {
                         match table_state {
                             TableState::AtBeginning => self.result.extend(b"<tr>"),
                             TableState::InCaption => self.result.extend(b"</caption><tr>"),
@@ -105,7 +110,7 @@ impl<'a> HtmlRenderer<'a> {
                         *table_state = TableState::InRow;
                         continue;
                     }
-                    BlendEvent::IndicateTableCaption => {
+                    Event::IndicateTableCaption => {
                         match table_state {
                             TableState::AtBeginning => self.result.extend(b"<caption>"),
                             _ => unreachable!(),
@@ -113,7 +118,7 @@ impl<'a> HtmlRenderer<'a> {
                         *table_state = TableState::InCaption;
                         continue;
                     }
-                    BlendEvent::IndicateTableHeaderCell => {
+                    Event::IndicateTableHeaderCell => {
                         match table_state {
                             TableState::AtBeginning => self.result.extend(b"<tr><th>"),
                             TableState::InCaption => self.result.extend(b"</caption><tr><th>"),
@@ -124,7 +129,7 @@ impl<'a> HtmlRenderer<'a> {
                         *table_state = TableState::InHeaderCell;
                         continue;
                     }
-                    BlendEvent::IndicateTableDataCell => {
+                    Event::IndicateTableDataCell => {
                         match table_state {
                             TableState::AtBeginning => self.result.extend(b"<tr><td>"),
                             TableState::InCaption => self.result.extend(b"</caption><tr><td>"),
@@ -135,7 +140,7 @@ impl<'a> HtmlRenderer<'a> {
                         *table_state = TableState::InDataCell;
                         continue;
                     }
-                    BlendEvent::ExitBlock(_) => {
+                    Event::ExitBlock(_) => {
                         let top = stack.pop().unwrap();
                         match top {
                             StackEntry::Normal(top) => {
@@ -176,15 +181,19 @@ impl<'a> HtmlRenderer<'a> {
                 }
             }
 
+            #[rotext_internal_macros::ensure_cases_for_event(
+                prefix = Event,
+                group = Blend,
+            )]
             match ev {
-                BlendEvent::Raw(content) => self.write_raw_html(&self.input[content]),
-                BlendEvent::NewLine(_) => self.result.extend(b"<br>"),
-                BlendEvent::Text(content)
-                | BlendEvent::VerbatimEscaping(VerbatimEscaping { content, .. }) => {
+                Event::Raw(content) => self.write_raw_html(&self.input[content]),
+                Event::NewLine(_) => self.result.extend(b"<br>"),
+                Event::Text(content)
+                | Event::VerbatimEscaping(VerbatimEscaping { content, .. }) => {
                     self.write_escaped_html_text(&self.input[content]);
                 }
 
-                BlendEvent::ExitBlock(_) | BlendEvent::ExitInline => {
+                Event::ExitBlock(_) | Event::ExitInline => {
                     let top = stack.pop().unwrap();
                     match top {
                         StackEntry::Normal(top) => {
@@ -202,53 +211,46 @@ impl<'a> HtmlRenderer<'a> {
                 }
 
                 #[allow(unused_variables)]
-                BlendEvent::ThematicBreak(data) => {
+                Event::ThematicBreak(data) => {
                     self.result.extend(b"<hr");
                     write_data_block_id_attribute_if_applicable!(self, data);
                     self.result.push(b'>');
                 }
 
-                BlendEvent::EnterParagraph(data) => self.push_simple_block(&mut stack, b"p", &data),
-                BlendEvent::EnterHeading1(data) => self.push_simple_block(&mut stack, b"h1", &data),
-                BlendEvent::EnterHeading2(data) => self.push_simple_block(&mut stack, b"h2", &data),
-                BlendEvent::EnterHeading3(data) => self.push_simple_block(&mut stack, b"h3", &data),
-                BlendEvent::EnterHeading4(data) => self.push_simple_block(&mut stack, b"h4", &data),
-                BlendEvent::EnterHeading5(data) => self.push_simple_block(&mut stack, b"h5", &data),
-                BlendEvent::EnterHeading6(data) => self.push_simple_block(&mut stack, b"h6", &data),
-                BlendEvent::EnterBlockQuote(data) => {
+                Event::EnterParagraph(data) => self.push_simple_block(&mut stack, b"p", &data),
+                Event::EnterHeading1(data) => self.push_simple_block(&mut stack, b"h1", &data),
+                Event::EnterHeading2(data) => self.push_simple_block(&mut stack, b"h2", &data),
+                Event::EnterHeading3(data) => self.push_simple_block(&mut stack, b"h3", &data),
+                Event::EnterHeading4(data) => self.push_simple_block(&mut stack, b"h4", &data),
+                Event::EnterHeading5(data) => self.push_simple_block(&mut stack, b"h5", &data),
+                Event::EnterHeading6(data) => self.push_simple_block(&mut stack, b"h6", &data),
+                Event::EnterBlockQuote(data) => {
                     self.push_simple_block(&mut stack, b"blockquote", &data)
                 }
-                BlendEvent::EnterOrderedList(data) => {
-                    self.push_simple_block(&mut stack, b"ol", &data)
-                }
-                BlendEvent::EnterUnorderedList(data) => {
-                    self.push_simple_block(&mut stack, b"ul", &data)
-                }
-                BlendEvent::EnterListItem(data) => self.push_simple_block(&mut stack, b"li", &data),
-                BlendEvent::EnterDescriptionList(data) => {
+                Event::EnterOrderedList(data) => self.push_simple_block(&mut stack, b"ol", &data),
+                Event::EnterUnorderedList(data) => self.push_simple_block(&mut stack, b"ul", &data),
+                Event::EnterListItem(data) => self.push_simple_block(&mut stack, b"li", &data),
+                Event::EnterDescriptionList(data) => {
                     self.push_simple_block(&mut stack, b"dl", &data)
                 }
-                BlendEvent::EnterDescriptionTerm(data) => {
+                Event::EnterDescriptionTerm(data) => {
                     self.push_simple_block(&mut stack, b"dt", &data)
                 }
-                BlendEvent::EnterDescriptionDetails(data) => {
+                Event::EnterDescriptionDetails(data) => {
                     self.push_simple_block(&mut stack, b"dd", &data)
                 }
                 #[allow(unused_variables)]
-                BlendEvent::EnterCodeBlock(data) => {
+                Event::EnterCodeBlock(data) => {
                     self.result.push(b'<');
                     self.result.extend(self.tag_name_map.code_block);
 
                     self.result.extend(br#" info-string=""#);
                     loop {
                         match input_stream.next().unwrap() {
-                            BlendEvent::Text(content)
-                            | BlendEvent::VerbatimEscaping(VerbatimEscaping { content, .. }) => {
-                                self.write_escaped_double_quoted_attribute_value(
-                                    &self.input[content],
-                                )
-                            }
-                            BlendEvent::IndicateCodeBlockCode => break,
+                            Event::Text(content)
+                            | Event::VerbatimEscaping(VerbatimEscaping { content, .. }) => self
+                                .write_escaped_double_quoted_attribute_value(&self.input[content]),
+                            Event::IndicateCodeBlockCode => break,
                             _ => unreachable!(),
                         }
                     }
@@ -256,16 +258,13 @@ impl<'a> HtmlRenderer<'a> {
                     self.result.extend(br#"" content=""#);
                     loop {
                         match input_stream.next().unwrap() {
-                            BlendEvent::Text(content)
-                            | BlendEvent::VerbatimEscaping(VerbatimEscaping { content, .. }) => {
-                                self.write_escaped_double_quoted_attribute_value(
-                                    &self.input[content],
-                                )
-                            }
-                            BlendEvent::NewLine(_) => {
+                            Event::Text(content)
+                            | Event::VerbatimEscaping(VerbatimEscaping { content, .. }) => self
+                                .write_escaped_double_quoted_attribute_value(&self.input[content]),
+                            Event::NewLine(_) => {
                                 self.result.extend(b"&#10;");
                             }
-                            BlendEvent::ExitBlock(exit_block) => {
+                            Event::ExitBlock(exit_block) => {
                                 #[cfg(feature = "block-id")]
                                 {
                                     debug_assert_eq!(data.id, exit_block.id);
@@ -286,27 +285,27 @@ impl<'a> HtmlRenderer<'a> {
                     self.result.push(b'>');
                 }
                 #[allow(unused_variables)]
-                BlendEvent::EnterTable(data) => {
+                Event::EnterTable(data) => {
                     self.result.extend(b"<table");
                     write_data_block_id_attribute_if_applicable!(self, data);
                     self.result.push(b'>');
                     stack.push(TableState::AtBeginning.into())
                 }
 
-                BlendEvent::IndicateCodeBlockCode
-                | BlendEvent::IndicateTableCaption
-                | BlendEvent::IndicateTableRow
-                | BlendEvent::IndicateTableHeaderCell
-                | BlendEvent::IndicateTableDataCell => unreachable!(),
+                Event::IndicateCodeBlockCode
+                | Event::IndicateTableCaption
+                | Event::IndicateTableRow
+                | Event::IndicateTableHeaderCell
+                | Event::IndicateTableDataCell => unreachable!(),
 
-                BlendEvent::RefLink(content) => {
+                Event::RefLink(content) => {
                     self.write_empty_element_with_single_attribute(
                         self.tag_name_map.ref_link,
                         b"address",
                         &self.input[content],
                     );
                 }
-                BlendEvent::Dicexp(content) => {
+                Event::Dicexp(content) => {
                     self.write_empty_element_with_single_attribute(
                         self.tag_name_map.dicexp,
                         b"code",
@@ -314,11 +313,11 @@ impl<'a> HtmlRenderer<'a> {
                     );
                 }
 
-                BlendEvent::EnterCodeSpan => self.push_simple_inline(&mut stack, b"code"),
-                BlendEvent::EnterStrong => self.push_simple_inline(&mut stack, b"strong"),
-                BlendEvent::EnterStrikethrough => self.push_simple_inline(&mut stack, b"s"),
+                Event::EnterCodeSpan => self.push_simple_inline(&mut stack, b"code"),
+                Event::EnterStrong => self.push_simple_inline(&mut stack, b"strong"),
+                Event::EnterStrikethrough => self.push_simple_inline(&mut stack, b"s"),
 
-                BlendEvent::EnterInternalLink(address) => {
+                Event::EnterInternalLink(address) => {
                     self.write_opening_tag_with_single_attribute(
                         self.tag_name_map.internal_link,
                         b"address",
@@ -327,7 +326,7 @@ impl<'a> HtmlRenderer<'a> {
                     self.write_opening_tag_with_single_attribute(b"span", b"slot", b"content");
                     stack.push(StackEntry::InternalLink);
                 }
-            };
+            }
         }
 
         debug_assert!(stack.is_empty());

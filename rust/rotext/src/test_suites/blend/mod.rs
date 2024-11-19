@@ -7,11 +7,12 @@ use support::GroupedCases;
 
 use crate::{
     test_support::{report_panicked_cases, FailedCase, FailureReason},
-    BlendEvent,
+    Event,
 };
 
 pub trait Context {
-    fn parse(input: &str) -> impl Iterator<Item = crate::Result<BlendEvent>>;
+    /// 返回的事件应该都属于 `Blend` 分组。
+    fn parse(input: &str) -> impl Iterator<Item = crate::Result<Event>>;
 }
 
 pub fn run<TContext: Context + RefUnwindSafe>(ctx: &TContext) {

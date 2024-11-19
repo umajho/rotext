@@ -1,4 +1,4 @@
-use crate::{utils::stack::Stack, BlockEvent};
+use crate::{utils::stack::Stack, Event};
 
 use super::{
     stack_wrapper::{StackEntryItemLike, StackEntryItemLikeContainer, StackWrapper},
@@ -54,7 +54,8 @@ pub enum ExitingAndThen {
         item_like: StackEntryItemLike,
     },
     ExpectBracedOpening,
-    YieldAndExpectBracedOpening(BlockEvent),
+    /// 包含属于 `Block` 分组的事件。
+    YieldAndExpectBracedOpening(Event),
     YieldBasedOnContextAndExpectBracedOpening,
     End,
 }

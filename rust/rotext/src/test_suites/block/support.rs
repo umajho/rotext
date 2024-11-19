@@ -217,7 +217,7 @@ pub fn assert_parse_ok_and_output_matches_with_stack<TContext: Context>(
 ) {
     let actual: Vec<_> = TContext::parse(input)
         .map(|ev| -> EventCase {
-            let ev: Event = ev.unwrap().into();
+            let ev: Event = ev.unwrap();
             (
                 EventType::from(ev.discriminant()),
                 ev.content(input.as_bytes()),

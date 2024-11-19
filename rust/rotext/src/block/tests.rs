@@ -25,7 +25,8 @@ impl<TStack: Stack<StackEntry>> Context<TStack> {
     }
 }
 impl<TStack: Stack<StackEntry>> test_suites::block::Context for Context<TStack> {
-    fn parse(input: &str) -> impl Iterator<Item = crate::Result<crate::BlockEvent>> {
+    /// 返回的事件都属于 `Block` 分组。
+    fn parse(input: &str) -> impl Iterator<Item = crate::Result<crate::Event>> {
         let block_parser: Parser<TStack> = Parser::new(input.as_bytes());
 
         block_parser

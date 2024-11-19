@@ -26,9 +26,9 @@ macro_rules! case {
     };
 }
 
-macro_rules! event {
+macro_rules! __event {
     (VerbatimEscaping ($start:literal..$end:literal)) => {
-        $crate::events::BlendEvent::VerbatimEscaping($crate::events::VerbatimEscaping {
+        $crate::events::Event::VerbatimEscaping($crate::events::VerbatimEscaping {
             content: $start..$end,
             is_closed_forcedly: false,
             line_after: $crate::types::LineNumber::new_invalid(),
@@ -36,47 +36,47 @@ macro_rules! event {
     };
 
     (NewLine (..)) => {
-        $crate::events::BlendEvent::NewLine($crate::events::NewLine {
+        $crate::events::Event::NewLine($crate::events::NewLine {
             line_after: $crate::types::LineNumber::new_invalid(),
         })
     };
 
     (Text ($start:literal..$end:literal)) => {
-        $crate::events::BlendEvent::Text($start..$end)
+        $crate::events::Event::Text($start..$end)
     };
 
     (IndicateCodeBlockCode ()) => {
-        $crate::events::BlendEvent::IndicateCodeBlockCode
+        $crate::events::Event::IndicateCodeBlockCode
     };
     (IndicateTableCaption ()) => {
-        $crate::events::BlendEvent::IndicateTableCaption
+        $crate::events::Event::IndicateTableCaption
     };
     (IndicateTableRow ()) => {
-        $crate::events::BlendEvent::IndicateTableRow
+        $crate::events::Event::IndicateTableRow
     };
     (IndicateTableHeaderCell ()) => {
-        $crate::events::BlendEvent::IndicateTableHeaderCell
+        $crate::events::Event::IndicateTableHeaderCell
     };
     (IndicateTableDataCell ()) => {
-        $crate::events::BlendEvent::IndicateTableDataCell
+        $crate::events::Event::IndicateTableDataCell
     };
 
     (ExitBlock (..)) => {
-        $crate::events::BlendEvent::ExitBlock($crate::events::ExitBlock {
+        $crate::events::Event::ExitBlock($crate::events::ExitBlock {
             id: $crate::types::BlockId::new_invalid(),
             start_line: $crate::types::LineNumber::new_invalid(),
             end_line: $crate::types::LineNumber::new_invalid(),
         })
     };
     (ExitBlock (.., id = $id:literal)) => {
-        $crate::events::BlendEvent::ExitBlock($crate::events::ExitBlock {
+        $crate::events::Event::ExitBlock($crate::events::ExitBlock {
             id: $crate::types::BlockId::new($id),
             start_line: $crate::types::LineNumber::new_invalid(),
             end_line: $crate::types::LineNumber::new_invalid(),
         })
     };
     (ExitBlock (.., id = $id:literal, lns = $ln_s:literal..=$ln_e:literal)) => {
-        $crate::events::BlendEvent::ExitBlock($crate::events::ExitBlock {
+        $crate::events::Event::ExitBlock($crate::events::ExitBlock {
             id: $crate::types::BlockId::new($id),
             start_line: $crate::types::LineNumber::new($ln_s),
             end_line: $crate::types::LineNumber::new($ln_e),
@@ -84,59 +84,60 @@ macro_rules! event {
     };
 
     (ThematicBreak (..)) => {
-        $crate::events::BlendEvent::ThematicBreak($crate::events::ThematicBreak {
+        $crate::events::Event::ThematicBreak($crate::events::ThematicBreak {
             id: $crate::types::BlockId::new_invalid(),
             line: $crate::types::LineNumber::new_invalid(),
         })
     };
     (ThematicBreak (.., id = $id:literal)) => {
-        $crate::events::BlendEvent::ThematicBreak($crate::events::ThematicBreak {
+        $crate::events::Event::ThematicBreak($crate::events::ThematicBreak {
             id: $crate::types::BlockId::new($id),
             line: $crate::types::LineNumber::new_invalid(),
         })
     };
     (ThematicBreak (.., id = $id:literal, ln = $ln:literal)) => {
-        $crate::events::BlendEvent::ThematicBreak($crate::events::ThematicBreak {
+        $crate::events::Event::ThematicBreak($crate::events::ThematicBreak {
             id: $crate::types::BlockId::new($id),
             line: $crate::types::LineNumber::new($ln),
         })
     };
 
     (RefLink ($start:literal..$end:literal)) => {
-        $crate::events::BlendEvent::RefLink($start..$end)
+        $crate::events::Event::RefLink($start..$end)
     };
     (Dicexp ($start:literal..$end:literal)) => {
-        $crate::events::BlendEvent::Dicexp($start..$end)
+        $crate::events::Event::Dicexp($start..$end)
     };
 
     (EnterInternalLink ($start:literal..$end:literal)) => {
-        $crate::events::BlendEvent::EnterInternalLink($start..$end)
+        $crate::events::Event::EnterInternalLink($start..$end)
     };
 
     (@inline $v:tt (..)) => {
-        $crate::events::BlendEvent::$v
+        $crate::events::Event::$v
     };
 
     ($v:tt (..)) => {
-        $crate::events::BlendEvent::$v($crate::events::BlockWithId {
+        $crate::events::Event::$v($crate::events::BlockWithId {
             id: $crate::types::BlockId::new_invalid(),
         })
     };
     ($v:tt (.., id = $id:literal)) => {
-        $crate::events::BlendEvent::$v($crate::events::BlockWithId {
+        $crate::events::Event::$v($crate::events::BlockWithId {
             id: $crate::types::BlockId::new($id),
         })
     };
 }
 
+/// 用于在编写测试用例时快速列举一系列属于 `Blend` 分组的事件。
 macro_rules! events {
     ($(($($ev:tt)*)),*,) => {
-        vec![$($crate::rendering::tests::support::event!($($ev)*)),*]
+        vec![$($crate::rendering::tests::support::__event!($($ev)*)),*]
     };
 }
 
+pub(super) use __event;
 pub(super) use case;
-pub(super) use event;
 pub(super) use events;
 
 use super::*;
@@ -151,7 +152,8 @@ pub(super) struct CaseOptions<'a> {
 #[allow(dead_code)]
 pub(super) struct Case<'a> {
     pub input: &'static str,
-    pub input_events: Vec<BlendEvent>,
+    /// 属于 `Blend` 分组的事件。
+    pub input_events: Vec<Event>,
     pub expected: &'static str,
 
     #[allow(dead_code)]

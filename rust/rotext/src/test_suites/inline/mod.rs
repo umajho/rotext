@@ -5,14 +5,15 @@ use std::panic::RefUnwindSafe;
 use support::GroupedCases;
 
 use crate::{
-    events::InlineEvent,
     test_support::{report_panicked_cases, FailedCase, FailureReason},
+    Event,
 };
 
 pub mod support;
 
 pub trait Context {
-    fn parse(input: &str) -> impl Iterator<Item = crate::Result<InlineEvent>>;
+    /// 返回的事件应该都属于 `Inline` 分组。
+    fn parse(input: &str) -> Vec<Event>;
 }
 
 pub fn run<TContext: Context + RefUnwindSafe>(ctx: &TContext) {

@@ -1,4 +1,4 @@
-use crate::{events::InlineEvent, test_suites, BlendEvent, Event};
+use crate::{events::is_event_of, test_suites, Event};
 
 mod for_mod_leaf {
     mod for_mod_ref_link {
@@ -97,7 +97,9 @@ impl Context {
     }
 }
 impl test_suites::inline::Context for Context {
-    fn parse(input: &str) -> impl Iterator<Item = crate::Result<InlineEvent>> {
+    /// 返回的事件都属于 `Inline` 分组。
+    fn parse(input: &str) -> Vec<Event> {
+        // [parse] 返回的结果是一系列 `Blend` 分组的事件。
         let evs: crate::Result<Vec<_>> = crate::parse(input.as_bytes()).collect();
         let evs = match evs {
             Ok(evs) => evs,
@@ -105,10 +107,10 @@ impl test_suites::inline::Context for Context {
         };
 
         let evs = if !evs.is_empty() {
-            if !matches!(evs.first(), Some(BlendEvent::EnterParagraph(_))) {
+            if !matches!(evs.first(), Some(Event::EnterParagraph(_))) {
                 panic!("the input should be a paragraph!")
             }
-            if !matches!(evs.last(), Some(BlendEvent::ExitBlock(_))) {
+            if !matches!(evs.last(), Some(Event::ExitBlock(_))) {
                 unreachable!()
             }
             evs[1..evs.len() - 1].to_vec()
@@ -116,12 +118,13 @@ impl test_suites::inline::Context for Context {
             evs
         };
 
-        if evs.iter().any(|ev| matches!(ev, BlendEvent::ExitBlock(_))) {
-            panic!("the input should be ONE paragraph!")
+        if evs.iter().any(|ev| matches!(ev, Event::ExitBlock(_))) {
+            panic!("the input should be ONE paragraph! input: {:?}", evs)
         }
 
-        evs.into_iter()
-            .map(|ev| -> crate::Result<InlineEvent> { Ok(Event::from(ev).try_into().unwrap()) })
+        evs.iter()
+            .for_each(|item| debug_assert!(is_event_of!(Inline, item)));
+        evs
     }
 }
 

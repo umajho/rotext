@@ -1,8 +1,9 @@
-use crate::{events::InlineEvent, types::Tym};
+use crate::{events::Event, types::Tym};
 
 pub trait YieldContext {
+    /// `ev` 是属于 `Inline` 分组的事件。
     #[must_use]
-    fn r#yield(&mut self, ev: InlineEvent) -> Tym<1>;
+    fn r#yield(&mut self, ev: Event) -> Tym<1>;
 }
 
 #[derive(Debug, PartialEq, Eq)]

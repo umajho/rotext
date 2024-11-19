@@ -1,7 +1,9 @@
+#[cfg(debug_assertions)]
+use crate::events::is_event_of;
 use crate::{
-    events::InlineEvent,
     types::Tym,
     utils::{internal::array_queue::ArrayQueue, stack::Stack},
+    Event,
 };
 
 use super::{
@@ -14,7 +16,8 @@ const MAX_TO_YIELD: usize = 4;
 pub struct ParserInner<TStack: Stack<StackEntry>> {
     pub stack: StackWrapper<TStack>,
 
-    to_yield: ArrayQueue<MAX_TO_YIELD, InlineEvent>,
+    /// 承载的事件属于 `Inline` 分组。
+    to_yield: ArrayQueue<MAX_TO_YIELD, Event>,
 
     /// XXX: 要确保 `cursor` 到达 `input.len()`，以让 `state` 变为 [State::Idle]。
     pub to_skip_input: ToSkipInputEvents,
@@ -31,13 +34,17 @@ impl<TStack: Stack<StackEntry>> ParserInner<TStack> {
 
     pub fn enforce_to_yield_mark(&self, _: Tym<MAX_TO_YIELD>) {}
 
-    pub fn pop_to_be_yielded(&mut self) -> Option<InlineEvent> {
+    /// 返回的事件属于 `Inline` 分组。
+    pub fn pop_to_be_yielded(&mut self) -> Option<Event> {
         self.to_yield.pop_front()
     }
 }
 impl<TStack: Stack<StackEntry>> YieldContext for ParserInner<TStack> {
+    /// `ev` 是属于 `Inline` 分组的事件。
     #[must_use]
-    fn r#yield(&mut self, ev: InlineEvent) -> Tym<1> {
+    fn r#yield(&mut self, ev: Event) -> Tym<1> {
+        #[cfg(debug_assertions)]
+        debug_assert!(is_event_of!(Inline, ev));
         self.to_yield.push_back(ev);
         Tym::<1>::new()
     }

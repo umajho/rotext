@@ -14,9 +14,10 @@ pub use stack_wrapper::StackEntry;
 
 use crate::{
     common::m,
-    events::{BlockEvent, ThematicBreak},
+    events::{ev, ThematicBreak},
     types::{cast_tym, Tym, TYM_UNIT},
     utils::{internal::string::count_continuous_character, stack::Stack},
+    Event,
 };
 
 use state::{
@@ -59,7 +60,8 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
         }
     }
 
-    pub fn next(&mut self) -> Option<crate::Result<BlockEvent>> {
+    /// 返回的事件属于 `Block` 分组。
+    pub fn next(&mut self) -> Option<crate::Result<Event>> {
         #[cfg(debug_assertions)]
         {
             assert!(!self.is_errored);
@@ -210,7 +212,8 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
             return Ok((cast_tym!(tym), None));
         }
 
-        let mut to_be_yielded_based_on_context: Option<BlockEvent> = None;
+        // 是属于 `Block` 分组的事件。
+        let mut to_be_yielded_based_on_context: Option<Event> = None;
 
         let (is_done, should_exit_top) = match exiting.until {
             ExitingUntil::OnlyNItemLikesRemain {
@@ -229,7 +232,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
             } => (inner.stack.top_is_table(), should_also_exit_table),
             ExitingUntil::TopIsAwareOfDoublePipes => {
                 if inner.stack.top_is_table() {
-                    to_be_yielded_based_on_context = Some(BlockEvent::IndicateTableDataCell);
+                    to_be_yielded_based_on_context = Some(ev!(Block, IndicateTableDataCell));
                     (true, false)
                 } else {
                     (false, true)
@@ -313,7 +316,8 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
 }
 
 impl<'a, TStack: Stack<StackEntry>> Iterator for Parser<'a, TStack> {
-    type Item = crate::Result<BlockEvent>;
+    /// 承载的事件属于 `Block` 分组。
+    type Item = crate::Result<Event>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.next()
@@ -400,7 +404,7 @@ mod branch {
                             meta: Meta::new(id, inner.current_line()),
                             r#type: ItemLikeContainer::BlockQuote,
                         })?;
-                    inner.r#yield(BlockEvent::EnterBlockQuote(id.into()))
+                    inner.r#yield(ev!(Block, EnterBlockQuote(id.into())))
                 }
             };
 
@@ -594,27 +598,30 @@ mod branch {
                             ExitingUntil::TopIsTable {
                                 should_also_exit_table: false,
                             },
-                            ExitingAndThen::YieldAndExpectBracedOpening(
-                                BlockEvent::IndicateTableCaption,
-                            ),
+                            ExitingAndThen::YieldAndExpectBracedOpening(ev!(
+                                Block,
+                                IndicateTableCaption
+                            )),
                         )
                         .into(),
                         TableRelatedEnd::TableRowIndicator => Exiting::new(
                             ExitingUntil::TopIsTable {
                                 should_also_exit_table: false,
                             },
-                            ExitingAndThen::YieldAndExpectBracedOpening(
-                                BlockEvent::IndicateTableRow,
-                            ),
+                            ExitingAndThen::YieldAndExpectBracedOpening(ev!(
+                                Block,
+                                IndicateTableRow
+                            )),
                         )
                         .into(),
                         TableRelatedEnd::TableHeaderCellIndicator => Exiting::new(
                             ExitingUntil::TopIsTable {
                                 should_also_exit_table: false,
                             },
-                            ExitingAndThen::YieldAndExpectBracedOpening(
-                                BlockEvent::IndicateTableHeaderCell,
-                            ),
+                            ExitingAndThen::YieldAndExpectBracedOpening(ev!(
+                                Block,
+                                IndicateTableHeaderCell
+                            )),
                         )
                         .into(),
                         TableRelatedEnd::DoublePipes => Exiting::new(
@@ -751,10 +758,13 @@ mod leaf {
             inner: &mut ParserInner<TStack>,
         ) -> crate::Result<Tym<1>> {
             let id = inner.pop_block_id();
-            let tym = inner.r#yield(BlockEvent::ThematicBreak(ThematicBreak {
-                id,
-                line: inner.current_line(),
-            }));
+            let tym = inner.r#yield(ev!(
+                Block,
+                ThematicBreak(ThematicBreak {
+                    id,
+                    line: inner.current_line(),
+                })
+            ));
 
             Ok(tym)
         }
@@ -815,7 +825,7 @@ mod leaf {
             }
 
             let tym_a = if !content.is_empty() {
-                inner.r#yield(BlockEvent::Unparsed(content))
+                inner.r#yield(ev!(Block, Unparsed(content)))
             } else {
                 TYM_UNIT.into()
             };
@@ -886,7 +896,7 @@ mod leaf {
                     );
 
                     let tym_a = if !content.is_empty() {
-                        inner.r#yield(BlockEvent::Text(content))
+                        inner.r#yield(ev!(Block, Text(content)))
                     } else {
                         TYM_UNIT.into()
                     };
@@ -897,7 +907,7 @@ mod leaf {
                             top_leaf.state = TopLeafCodeBlockState::InCode(
                                 TopLeafCodeBlockStateInCode::AtFirstLineBeginning,
                             );
-                            inner.r#yield(BlockEvent::IndicateCodeBlockCode)
+                            inner.r#yield(ev!(Block, IndicateCodeBlockCode))
                         }
                         line::verbatim::End::VerbatimEscaping(verbatim_escaping) => {
                             line::global_phase::process_verbatim_escaping(inner, verbatim_escaping)
@@ -942,7 +952,7 @@ mod leaf {
 
                     let tym_a = if let Some(new_line) = new_line {
                         if !matches!(end, line::verbatim::End::Eof) {
-                            inner.r#yield(BlockEvent::NewLine(new_line))
+                            inner.r#yield(ev!(Block, NewLine(new_line)))
                         } else {
                             TYM_UNIT.into()
                         }
@@ -951,7 +961,7 @@ mod leaf {
                     };
 
                     let tym_b = if !content.is_empty() {
-                        inner.r#yield(BlockEvent::Text(content))
+                        inner.r#yield(ev!(Block, Text(content)))
                     } else {
                         TYM_UNIT.into()
                     };
@@ -1004,7 +1014,7 @@ mod leaf {
             top_leaf: TopLeafCodeBlock,
         ) -> Tym<2> {
             let tym_a = if matches!(top_leaf.state, TopLeafCodeBlockState::InInfoString) {
-                inner.r#yield(BlockEvent::IndicateCodeBlockCode)
+                inner.r#yield(ev!(Block, IndicateCodeBlockCode))
             } else {
                 TYM_UNIT.into()
             };
@@ -1066,7 +1076,7 @@ mod leaf {
                 let tym_a = inner.r#yield(ev);
 
                 let tym_b = if !content.is_empty() {
-                    inner.r#yield(BlockEvent::Unparsed(content))
+                    inner.r#yield(ev!(Block, Unparsed(content)))
                 } else {
                     TYM_UNIT.into()
                 };
@@ -1130,7 +1140,7 @@ mod leaf {
                 !content.is_empty() || top_leaf.new_line.is_none() || end.is_verbatim_escaping();
             let tym_ab = if is_still_in_paragraph {
                 let tym_a = if let Some(new_line) = top_leaf.new_line {
-                    inner.r#yield(BlockEvent::NewLine(new_line))
+                    inner.r#yield(ev!(Block, NewLine(new_line)))
                 } else {
                     if inner.current_expecting.spaces_before() > 0 {
                         // 在一行的中间，那就不能忽略空格。
@@ -1143,7 +1153,7 @@ mod leaf {
                 inner.stack.push_top_leaf(top_leaf.into());
 
                 let tym_b = if !content.is_empty() {
-                    inner.r#yield(BlockEvent::Unparsed(content))
+                    inner.r#yield(ev!(Block, Unparsed(content)))
                 } else {
                     TYM_UNIT.into()
                 };

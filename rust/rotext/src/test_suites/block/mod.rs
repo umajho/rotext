@@ -7,11 +7,12 @@ use support::{case, GroupedCases};
 
 use crate::{
     test_support::{report_panicked_cases, FailedCase, FailureReason},
-    BlockEvent,
+    Event,
 };
 
 pub trait Context {
-    fn parse(input: &str) -> impl Iterator<Item = crate::Result<BlockEvent>>;
+    /// 返回的事件应该都属于 `Block` 分组。
+    fn parse(input: &str) -> impl Iterator<Item = crate::Result<Event>>;
 }
 
 pub fn run<TContext: Context + RefUnwindSafe>(ctx: &TContext) {

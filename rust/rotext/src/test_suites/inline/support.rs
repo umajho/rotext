@@ -3,7 +3,6 @@ use std::panic::{catch_unwind, RefUnwindSafe};
 use crate::{
     events::EventType,
     test_support::{FailedCase, FailureReason},
-    Event,
 };
 
 macro_rules! case {
@@ -169,8 +168,8 @@ pub fn assert_parse_ok_and_output_matches_with_stack<TContext: Context>(
     expected: &Vec<EventMatcher>,
 ) {
     let actual: Vec<_> = TContext::parse(input)
+        .into_iter()
         .map(|ev| -> EventCase {
-            let ev: Event = ev.unwrap().into();
             (
                 EventType::from(ev.discriminant()),
                 ev.content(input.as_bytes()),

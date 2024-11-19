@@ -1,7 +1,5 @@
 use std::ops::Range;
 
-use subenum::subenum;
-
 use crate::types::{BlockId, LineNumber};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -58,129 +56,134 @@ impl From<u8> for EventType {
     }
 }
 
-#[subenum(BlockEvent, InlineInputEvent, InlineEvent, BlendEvent)]
+#[rotext_internal_macros::simple_sub_enum_for_event(
+    current_mod_path = crate::events,
+    enum_guard_macro_name = ev,
+    debug_group_tester_macro_name = is_event_of,
+    Block | InlineInput | Inline | Blend
+)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Event {
     /// 留给下个阶段解析。
-    #[subenum(BlockEvent, InlineInputEvent)]
+    #[groups(Block | InlineInput)]
     Unparsed(Range<usize>) = EventType::Unparsed as u8,
 
     /// 原封不动地渲染至输出。
-    #[subenum(InlineEvent, BlendEvent)]
+    #[groups(Inline | Blend)]
     Raw(Range<usize>) = EventType::Raw as u8,
 
     /// 逐字转义。
     ///
     /// NOTE: 内容包含开头和结尾各可能存在的一个空格，省略上述空格的处理是在块级
     /// 阶段将 VerbatimEscaping 变换为 Text 时进行。
-    #[subenum(BlockEvent, InlineInputEvent, InlineEvent, BlendEvent)]
+    #[groups(Block | InlineInput | Inline | Blend)]
     VerbatimEscaping(VerbatimEscaping) = EventType::VerbatimEscaping as u8,
 
     /// 换行，在全局阶段由 CR 与 LF 而来。
-    #[subenum(BlockEvent, InlineInputEvent, InlineEvent, BlendEvent)]
+    #[groups(Block | InlineInput | Inline | Blend)]
     NewLine(NewLine) = EventType::NewLine as u8,
 
     /// 文本。
-    #[subenum(BlockEvent, InlineEvent, BlendEvent)]
+    #[groups(Block | Inline | Blend)]
     Text(Range<usize>) = EventType::Text as u8,
 
     /// 分割线。
-    #[subenum(BlockEvent, BlendEvent)]
+    #[groups(Block | Blend)]
     ThematicBreak(ThematicBreak) = EventType::ThematicBreak as u8,
 
     /// 进入段落。
-    #[subenum(BlockEvent, BlendEvent)]
+    #[groups(Block | Blend)]
     EnterParagraph(BlockWithId) = EventType::EnterParagraph as u8,
     /// 进入一级标题。
-    #[subenum(BlockEvent, BlendEvent)]
+    #[groups(Block | Blend)]
     EnterHeading1(BlockWithId) = EventType::EnterHeading1 as u8,
     /// 进入二级标题。
-    #[subenum(BlockEvent, BlendEvent)]
+    #[groups(Block | Blend)]
     EnterHeading2(BlockWithId) = EventType::EnterHeading2 as u8,
     /// 进入三级标题。
-    #[subenum(BlockEvent, BlendEvent)]
+    #[groups(Block | Blend)]
     EnterHeading3(BlockWithId) = EventType::EnterHeading3 as u8,
     /// 进入四级标题。
-    #[subenum(BlockEvent, BlendEvent)]
+    #[groups(Block | Blend)]
     EnterHeading4(BlockWithId) = EventType::EnterHeading4 as u8,
     /// 进入五级标题。
-    #[subenum(BlockEvent, BlendEvent)]
+    #[groups(Block | Blend)]
     EnterHeading5(BlockWithId) = EventType::EnterHeading5 as u8,
     /// 进入六级标题。
-    #[subenum(BlockEvent, BlendEvent)]
+    #[groups(Block | Blend)]
     EnterHeading6(BlockWithId) = EventType::EnterHeading6 as u8,
     /// 进入块引用
-    #[subenum(BlockEvent, BlendEvent)]
+    #[groups(Block | Blend)]
     EnterBlockQuote(BlockWithId) = EventType::EnterBlockQuote as u8,
     /// 进入有序列表
-    #[subenum(BlockEvent, BlendEvent)]
+    #[groups(Block | Blend)]
     EnterOrderedList(BlockWithId) = EventType::EnterOrderedList as u8,
     /// 进入无序列表
-    #[subenum(BlockEvent, BlendEvent)]
+    #[groups(Block | Blend)]
     EnterUnorderedList(BlockWithId) = EventType::EnterUnorderedList as u8,
     /// 进入列表项
-    #[subenum(BlockEvent, BlendEvent)]
+    #[groups(Block | Blend)]
     EnterListItem(BlockWithId) = EventType::EnterListItem as u8,
     /// 进入描述列表
-    #[subenum(BlockEvent, BlendEvent)]
+    #[groups(Block | Blend)]
     EnterDescriptionList(BlockWithId) = EventType::EnterDescriptionList as u8,
     /// 进入描述术语
-    #[subenum(BlockEvent, BlendEvent)]
+    #[groups(Block | Blend)]
     EnterDescriptionTerm(BlockWithId) = EventType::EnterDescriptionTerm as u8,
     /// 进入描述详情
-    #[subenum(BlockEvent, BlendEvent)]
+    #[groups(Block | Blend)]
     EnterDescriptionDetails(BlockWithId) = EventType::EnterDescriptionDetails as u8,
     /// 进入代码块。
-    #[subenum(BlockEvent, BlendEvent)]
+    #[groups(Block | Blend)]
     EnterCodeBlock(BlockWithId) = EventType::EnterCodeBlock as u8,
     /// 进入表格。
-    #[subenum(BlockEvent, BlendEvent)]
+    #[groups(Block | Blend)]
     EnterTable(BlockWithId) = EventType::EnterTable as u8,
 
     /// 指示到达代码块的代码部分。
-    #[subenum(BlockEvent, BlendEvent)]
+    #[groups(Block | Blend)]
     IndicateCodeBlockCode = EventType::IndicateCodeBlockCode as u8,
     /// 指示到达表格标题。
-    #[subenum(BlockEvent, BlendEvent)]
+    #[groups(Block | Blend)]
     IndicateTableCaption = EventType::IndicateTableCaption as u8,
     /// 指示到达（新）表格行。
-    #[subenum(BlockEvent, BlendEvent)]
+    #[groups(Block | Blend)]
     IndicateTableRow = EventType::IndicateTableRow as u8,
     /// 指示到达（新）表格头部单元格。
-    #[subenum(BlockEvent, BlendEvent)]
+    #[groups(Block | Blend)]
     IndicateTableHeaderCell = EventType::IndicateTableHeaderCell as u8,
     /// 指示到达（新）表格数据单元格。
-    #[subenum(BlockEvent, BlendEvent)]
+    #[groups(Block | Blend)]
     IndicateTableDataCell = EventType::IndicateTableDataCell as u8,
 
     /// 退出一层块级的 “进入…”。
-    #[subenum(BlockEvent, BlendEvent)]
+    #[groups(Block | Blend)]
     ExitBlock(ExitBlock) = EventType::ExitBlock as u8,
 
     /// 引用链接。
-    #[subenum(InlineEvent, BlendEvent)]
+    #[groups(Inline | Blend)]
     RefLink(Range<usize>) = EventType::RefLink as u8,
     /// Dicexp。
-    #[subenum(InlineEvent, BlendEvent)]
+    #[groups(Inline | Blend)]
     Dicexp(Range<usize>) = EventType::Dicexp as u8,
 
     /// 进入行内代码。
-    #[subenum(InlineEvent, BlendEvent)]
+    #[groups(Inline | Blend)]
     EnterCodeSpan = EventType::EnterCodeSpan as u8,
     /// 进入加粗强调。
-    #[subenum(InlineEvent, BlendEvent)]
+    #[groups(Inline | Blend)]
     EnterStrong = EventType::EnterStrong as u8,
     /// 进入删除线。
-    #[subenum(InlineEvent, BlendEvent)]
+    #[groups(Inline | Blend)]
     EnterStrikethrough = EventType::EnterStrikethrough as u8,
 
     // 进入内部链接。
-    #[subenum(InlineEvent, BlendEvent)]
+    #[groups(Inline | Blend)]
     EnterInternalLink(Range<usize>) = EventType::EnterInternalLink as u8,
 
     /// 退出一层行内的 “进入…”。
-    #[subenum(InlineEvent, BlendEvent)]
+    #[groups(Inline | Blend)]
     ExitInline = EventType::ExitInline as u8,
 }
 
@@ -301,21 +304,27 @@ impl Event {
     }
 }
 
-impl BlockEvent {
-    pub fn opens_inline_phase(&self) -> bool {
+impl Event {
+    pub fn is_block_event_that_opens_inline_phase(&self) -> bool {
+        #[cfg(debug_assertions)]
+        debug_assert!(is_event_of!(Block, self));
+
         matches!(
             self,
-            BlockEvent::EnterParagraph(_)
-                | BlockEvent::EnterHeading1(_)
-                | BlockEvent::EnterHeading2(_)
-                | BlockEvent::EnterHeading3(_)
-                | BlockEvent::EnterHeading4(_)
-                | BlockEvent::EnterHeading5(_)
-                | BlockEvent::EnterHeading6(_)
+            ev!(Block, EnterParagraph(_))
+                | ev!(Block, EnterHeading1(_))
+                | ev!(Block, EnterHeading2(_))
+                | ev!(Block, EnterHeading3(_))
+                | ev!(Block, EnterHeading4(_))
+                | ev!(Block, EnterHeading5(_))
+                | ev!(Block, EnterHeading6(_))
         )
     }
 
-    pub fn closes_inline_phase(&self) -> bool {
-        matches!(self, BlockEvent::ExitBlock(_))
+    pub fn is_block_event_that_closes_inline_phase(&self) -> bool {
+        #[cfg(debug_assertions)]
+        debug_assert!(is_event_of!(Block, self));
+
+        matches!(self, ev!(Block, ExitBlock(_)))
     }
 }

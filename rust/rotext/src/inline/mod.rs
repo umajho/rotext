@@ -9,14 +9,17 @@ pub use stack_wrapper::StackEntry;
 
 use std::ops::Range;
 
-use crate::{events::NewLine, utils::internal::peekable::Peekable};
+use crate::{
+    events::{ev, NewLine},
+    utils::internal::peekable::Peekable,
+    Event,
+};
 use parser_inner::{ParserInner, ToSkipInputEvents};
 use stack_wrapper::{TopLeaf, TopLeafCodeSpan};
 use types::{Cursor, YieldContext};
 
 use crate::{
     common::{is_valid_character_in_name, m},
-    events::{InlineEvent, InlineInputEvent},
     types::{Tym, TYM_UNIT},
     utils::{
         internal::{
@@ -52,10 +55,12 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
         }
     }
 
+    /// `event_stream` 的迭代对象是属于 `InlineInput` 分组的事件。返回的事件属于
+    /// `Inline` 分组。
     pub fn next(
         &mut self,
-        event_stream: &mut Peekable<2, impl Iterator<Item = InlineInputEvent>>,
-    ) -> Option<crate::Result<InlineEvent>> {
+        event_stream: &mut Peekable<2, impl Iterator<Item = Event>>,
+    ) -> Option<crate::Result<Event>> {
         loop {
             if let Some(ev) = self.inner.pop_to_be_yielded() {
                 break Some(Ok(ev));
@@ -87,7 +92,7 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                         if self.inner.to_skip_input.count == 0 {
                             if let Some(cursor_value) = self.inner.to_skip_input.cursor_value.take()
                             {
-                                let InlineInputEvent::Unparsed(content) = next else {
+                                let ev!(InlineInput, Unparsed(content)) = next else {
                                     unreachable!()
                                 };
                                 let input = &self.full_input[..content.end];
@@ -98,17 +103,21 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                         continue;
                     }
 
-                    let to_yield = match next {
-                        InlineInputEvent::Unparsed(content) => {
+                    let to_yield = #[rotext_internal_macros::ensure_cases_for_event(
+                        prefix = Event,
+                        group = InlineInput,
+                    )]
+                    match next {
+                        Event::Unparsed(content) => {
                             let input = &self.full_input[..content.end];
                             let cursor = Cursor::new(content.start);
                             self.state = State::Parsing { input, cursor };
                             continue;
                         }
-                        InlineInputEvent::VerbatimEscaping(verbatim_escaping) => {
-                            InlineEvent::VerbatimEscaping(verbatim_escaping)
+                        Event::VerbatimEscaping(verbatim_escaping) => {
+                            ev!(Inline, VerbatimEscaping(verbatim_escaping))
                         }
-                        InlineInputEvent::NewLine(new_line) => InlineEvent::NewLine(new_line),
+                        Event::NewLine(new_line) => ev!(Inline, NewLine(new_line)),
                     };
 
                     break Some(Ok(to_yield));
@@ -129,11 +138,12 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
         }
     }
 
+    /// `event_stream` 的迭代对象是属于 `InlineInput` 分组的事件。
     fn parse(
         input: &[u8],
         cursor: &mut Cursor,
         inner: &mut ParserInner<TInlineStack>,
-        event_stream: &mut Peekable<2, impl Iterator<Item = InlineInputEvent>>,
+        event_stream: &mut Peekable<2, impl Iterator<Item = Event>>,
     ) -> crate::Result<Tym<4>> {
         match inner.stack.pop_top_leaf() {
             None => Self::parse_normal(input, cursor, inner, event_stream),
@@ -144,16 +154,18 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
         }
     }
 
+    /// `event_stream` 的迭代对象是属于 `InlineInput` 分组的事件。
     fn parse_normal(
         input: &[u8],
         cursor: &mut Cursor,
         inner: &mut ParserInner<TInlineStack>,
-        event_stream: &mut Peekable<2, impl Iterator<Item = InlineInputEvent>>,
+        event_stream: &mut Peekable<2, impl Iterator<Item = Event>>,
     ) -> crate::Result<Tym<4>> {
         let end_condition = inner.stack.make_end_condition();
 
         let text_start = cursor.value();
-        let (text_end, to_yield_after_text): (usize, Option<InlineEvent>) = loop {
+        // `to_yield_after_text` 是属于 `Inline` 分组的事件。
+        let (text_end, to_yield_after_text): (usize, Option<Event>) = loop {
             let Some(char) = input.get(cursor.value()) else {
                 break (cursor.value(), None);
             };
@@ -162,25 +174,21 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                 m!('\\') if cursor.value() < input.len() - 1 => {
                     break special::process_backslash_escaping(input, cursor);
                 }
-                m!('\\') => match event_stream.peek(0) {
-                    Some(InlineInputEvent::NewLine(new_line)) => {
-                        let new_line = new_line.clone();
-                        break special::process_hard_break_mark(input, cursor, inner, new_line);
-                    }
-                    _ => {
+                m!('\\') => {
+                    let Some(ev!(InlineInput, NewLine(new_line))) = event_stream.peek(0) else {
                         cursor.move_forward(1);
                         continue;
-                    }
-                },
-                m!('_') if cursor.value() == input.len() - 1 => match event_stream.peek(0) {
-                    Some(InlineInputEvent::NewLine(_)) => {
-                        break special::process_lines_joint_mark(input, cursor, inner);
-                    }
-                    _ => {
+                    };
+                    let new_line = new_line.clone();
+                    break special::process_hard_break_mark(input, cursor, inner, new_line);
+                }
+                m!('_') if cursor.value() == input.len() - 1 => {
+                    let Some(ev!(InlineInput, NewLine(_))) = event_stream.peek(0) else {
                         cursor.move_forward(1);
                         continue;
-                    }
-                },
+                    };
+                    break special::process_lines_joint_mark(input, cursor, inner);
+                }
                 m!('&') if input.get(cursor.value() + 1) == Some(&m!('#')) => {
                     match special::process_potential_numeric_character_reference(input, cursor) {
                         Some(result) => {
@@ -213,7 +221,7 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
 
                         cursor.move_forward("['".len());
                         inner.stack.push_entry(StackEntry::Strong)?;
-                        let to_yield_after_text = InlineEvent::EnterStrong;
+                        let to_yield_after_text = ev!(Inline, EnterStrong);
 
                         break (text_end, Some(to_yield_after_text));
                     }
@@ -222,7 +230,7 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
 
                         cursor.move_forward("[~".len());
                         inner.stack.push_entry(StackEntry::Strikethrough)?;
-                        let to_yield_after_text = InlineEvent::EnterStrikethrough;
+                        let to_yield_after_text = ev!(Inline, EnterStrikethrough);
 
                         break (text_end, Some(to_yield_after_text));
                     }
@@ -255,7 +263,7 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
 
                         cursor.move_forward(2);
                         inner.stack.pop_entry();
-                        let to_yield_after_text = InlineEvent::ExitInline;
+                        let to_yield_after_text = ev!(Inline, ExitInline);
 
                         break (text_end, Some(to_yield_after_text));
                     }
@@ -289,7 +297,7 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
         } else if let Some(entry) = inner.stack.pop_entry() {
             let tym = match entry {
                 StackEntry::Strong | StackEntry::Strikethrough | StackEntry::InternalLink => {
-                    inner.r#yield(InlineEvent::ExitInline)
+                    inner.r#yield(ev!(Inline, ExitInline))
                 }
             };
 
@@ -306,7 +314,7 @@ fn yield_text_if_not_empty<TInlineStack: Stack<StackEntry>>(
     inner: &mut ParserInner<TInlineStack>,
 ) -> Tym<1> {
     if end > start {
-        inner.r#yield(InlineEvent::Text(start..end))
+        inner.r#yield(ev!(Inline, Text(start..end)))
     } else {
         TYM_UNIT.into()
     }
@@ -316,41 +324,43 @@ mod special {
 
     use super::*;
 
-    pub fn process_backslash_escaping(
-        input: &[u8],
-        cursor: &mut Cursor,
-    ) -> (usize, Option<InlineEvent>) {
+    /// 返回的事件属于 `Inline` 分组。
+    pub fn process_backslash_escaping(input: &[u8], cursor: &mut Cursor) -> (usize, Option<Event>) {
         let text_end = cursor.value();
 
         let target_first_byte = unsafe { *input.get_unchecked(cursor.value() + 1) };
         let target_utf8_length = get_byte_length_by_first_char(target_first_byte);
 
-        let to_yield_after_text =
-            InlineEvent::Text((cursor.value() + 1)..(cursor.value() + 1 + target_utf8_length));
+        let to_yield_after_text = ev!(
+            Inline,
+            Text((cursor.value() + 1)..(cursor.value() + 1 + target_utf8_length))
+        );
         cursor.move_forward(1 + target_utf8_length);
 
         (text_end, Some(to_yield_after_text))
     }
 
+    /// 返回的事件属于 `Inline` 分组。
     pub fn process_hard_break_mark<TInlineStack: Stack<StackEntry>>(
         _input: &[u8],
         cursor: &mut Cursor,
         inner: &mut ParserInner<TInlineStack>,
         new_line: NewLine,
-    ) -> (usize, Option<InlineEvent>) {
+    ) -> (usize, Option<Event>) {
         let text_end = cursor.value();
         cursor.move_forward(1);
         inner.to_skip_input = ToSkipInputEvents::new_one();
-        let to_yield_after_text = InlineEvent::NewLine(new_line);
+        let to_yield_after_text = ev!(Inline, NewLine(new_line));
 
         (text_end, Some(to_yield_after_text))
     }
 
+    /// 返回的事件属于 `Inline` 分组。
     pub fn process_lines_joint_mark<TInlineStack: Stack<StackEntry>>(
         _input: &[u8],
         cursor: &mut Cursor,
         inner: &mut ParserInner<TInlineStack>,
-    ) -> (usize, Option<InlineEvent>) {
+    ) -> (usize, Option<Event>) {
         let text_end = cursor.value();
         cursor.move_forward(1);
         inner.to_skip_input = ToSkipInputEvents::new_one();
@@ -358,10 +368,11 @@ mod special {
         (text_end, None)
     }
 
+    /// 返回的事件属于 `Inline` 分组。
     pub fn process_potential_numeric_character_reference(
         input: &[u8],
         cursor: &mut Cursor,
-    ) -> Option<(usize, Option<InlineEvent>)> {
+    ) -> Option<(usize, Option<Event>)> {
         let start = cursor.value();
         cursor.move_forward(2);
 
@@ -387,7 +398,7 @@ mod special {
         while let Some(char) = input.get(cursor.value()) {
             if *char == m!(';') {
                 cursor.move_forward(1);
-                let to_yield_after_text = InlineEvent::Raw(start..cursor.value());
+                let to_yield_after_text = ev!(Inline, Raw(start..cursor.value()));
                 return Some((start, Some(to_yield_after_text)));
             } else if (is_hex && !char.is_ascii_hexdigit()) || (!is_hex && !char.is_ascii_digit()) {
                 break;
@@ -405,17 +416,18 @@ mod leaf {
     pub mod ref_link {
         use super::*;
 
+        /// 返回的事件属于 `Inline` 分组。
         pub fn process_potential(
             input: &[u8],
             cursor: &mut Cursor,
-        ) -> Option<(usize, Option<InlineEvent>)> {
+        ) -> Option<(usize, Option<Event>)> {
             let maybe_text_end = cursor.value();
             cursor.move_forward(">>".len());
             let start = cursor.value();
 
             let ref_link_content = advance_until_potential_content_ends(input, cursor);
             if let Some(()) = ref_link_content {
-                let to_yield_after_text = InlineEvent::RefLink(start..cursor.value());
+                let to_yield_after_text = ev!(Inline, RefLink(start..cursor.value()));
                 Some((maybe_text_end, Some(to_yield_after_text)))
             } else {
                 cursor.set_value(cursor.value() - 1);
@@ -497,6 +509,8 @@ mod leaf {
     pub mod dicexp {
         use super::*;
 
+        /// 返回的事件属于 `Inline` 分组。
+        ///
         /// TODO: 支持多行。
         ///
         /// NOTE: 为什么 `dicexp` 不能像 `code_span` 那样相对简单地支持多行：
@@ -509,12 +523,12 @@ mod leaf {
         /// 后者的事件只能传递一整块范围的内容，而多行内容的范围并不连续，因此无
         /// 法传递。未来可能会让 `dicexp` 的事件也以 Enter/Exit 的形式表示，在那
         /// 之前 dicexp 无法支持多行。
-        pub fn process(input: &[u8], cursor: &mut Cursor) -> (usize, Option<InlineEvent>) {
+        pub fn process(input: &[u8], cursor: &mut Cursor) -> (usize, Option<Event>) {
             let text_end = cursor.value();
 
             cursor.move_forward("[=".len());
             let content = leaf::dicexp::advance_until_ends(input, cursor);
-            let to_yield_after_text = InlineEvent::Dicexp(content);
+            let to_yield_after_text = ev!(Inline, Dicexp(content));
 
             (text_end, Some(to_yield_after_text))
         }
@@ -549,11 +563,12 @@ mod leaf {
     pub mod code_span {
         use super::*;
 
+        /// 返回的事件属于 `Inline` 分组。
         pub fn process<TInlineStack: Stack<StackEntry>>(
             input: &[u8],
             cursor: &mut Cursor,
             inner: &mut ParserInner<TInlineStack>,
-        ) -> (usize, Option<InlineEvent>) {
+        ) -> (usize, Option<Event>) {
             let text_end = cursor.value();
 
             let backticks =
@@ -622,7 +637,7 @@ mod leaf {
             }
 
             inner.stack.push_top_leaf(top_leaf.into());
-            let tym = inner.r#yield(InlineEvent::Text(start..cursor.value()));
+            let tym = inner.r#yield(ev!(Inline, Text(start..cursor.value())));
             Ok(tym.into())
         }
     }
@@ -631,12 +646,13 @@ mod leaf {
 
         use super::*;
 
+        /// `event_stream` 的迭代对象是属于 `InlineInput` 分组的事件。
         pub fn process_and_yield_potential<TInlineStack: Stack<StackEntry>>(
             input: &[u8],
             text_start: usize,
             cursor: &mut Cursor,
             inner: &mut ParserInner<TInlineStack>,
-            event_stream: &mut Peekable<2, impl Iterator<Item = InlineInputEvent>>,
+            event_stream: &mut Peekable<2, impl Iterator<Item = Event>>,
         ) -> crate::Result<Option<Tym<4>>> {
             let maybe_text_end = cursor.value();
             cursor.move_forward("[[".len());
@@ -648,7 +664,7 @@ mod leaf {
                 if let Found::Indicator(indicator, index_after) = found {
                     cursor.set_value(index_after);
                     let address = content.clone();
-                    let address_ev = InlineEvent::Text(content);
+                    let address_ev = ev!(Inline, Text(content));
                     let tym_a =
                         process_before_indicator(text_start, maybe_text_end, inner, address)?;
                     let tym_b = process_indicator(inner, address_ev, indicator)?;
@@ -661,13 +677,13 @@ mod leaf {
             }
 
             let maybe_address_ve = {
-                let Some(InlineInputEvent::VerbatimEscaping(ve)) = event_stream.peek(0) else {
+                let Some(ev!(InlineInput, VerbatimEscaping(ve))) = event_stream.peek(0) else {
                     return Ok(None);
                 };
                 ve.clone()
             };
             let after_address = {
-                let Some(InlineInputEvent::Unparsed(content)) = event_stream.peek(1) else {
+                let Some(ev!(InlineInput, Unparsed(content))) = event_stream.peek(1) else {
                     return Ok(None);
                 };
                 content.clone()
@@ -689,7 +705,7 @@ mod leaf {
             };
 
             let address = maybe_address_ve.content.clone();
-            let address_ev = InlineEvent::VerbatimEscaping(maybe_address_ve);
+            let address_ev = ev!(Inline, VerbatimEscaping(maybe_address_ve));
             let tym_a = process_before_indicator(text_start, maybe_text_end, inner, address)?;
             let tym_b = process_indicator(inner, address_ev, indicator)?;
             Ok(Some(tym_a.add(tym_b)))
@@ -702,21 +718,21 @@ mod leaf {
             address: Range<usize>,
         ) -> crate::Result<Tym<2>> {
             let tym_a = yield_text_if_not_empty(text_start, text_end, inner);
-            let tym_b = inner.r#yield(InlineEvent::EnterInternalLink(address.clone()));
+            let tym_b = inner.r#yield(ev!(Inline, EnterInternalLink(address.clone())));
             Ok(tym_a.add(tym_b))
         }
 
-        /// `address_ev` 应该是 [InlineEvent::Text] 或
-        /// [InlineEvent::VerbatimEscaping]。
+        /// `address_ev` 是属于 Inline 分组的事件，其具体应该是
+        /// [Event::Text] 或  [Event::VerbatimEscaping]。
         fn process_indicator<TInlineStack: Stack<StackEntry>>(
             inner: &mut ParserInner<TInlineStack>,
-            address_ev: InlineEvent,
+            address_ev: Event,
             indicator: Indicator,
         ) -> crate::Result<Tym<2>> {
             let tym = match indicator {
                 Indicator::Closing => {
                     let tym_c1 = inner.r#yield(address_ev);
-                    let tym_c2 = inner.r#yield(InlineEvent::ExitInline);
+                    let tym_c2 = inner.r#yield(ev!(Inline, ExitInline));
                     tym_c1.add(tym_c2)
                 }
                 Indicator::Separator => {

@@ -1,6 +1,5 @@
 use syn::{self, Token};
 
-#[allow(unused)]
 pub fn expect_key_value_path_pair(
     input: &syn::parse::ParseStream,
     key: &'static str,

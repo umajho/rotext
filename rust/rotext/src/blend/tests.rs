@@ -1,4 +1,4 @@
-use crate::{test_suites, BlendEvent};
+use crate::{test_suites, Event};
 
 struct Context;
 impl Context {
@@ -7,7 +7,8 @@ impl Context {
     }
 }
 impl test_suites::blend::Context for Context {
-    fn parse(input: &str) -> impl Iterator<Item = crate::Result<BlendEvent>> {
+    /// 返回的事件都属于 `Blend` 分组。
+    fn parse(input: &str) -> impl Iterator<Item = crate::Result<Event>> {
         crate::parse(input.as_bytes())
     }
 }
