@@ -4,11 +4,7 @@ pub fn render_events_in_debug_format(input: &[u8], all_events: &Vec<rotext::Even
 
     for event in all_events {
         // output.push_str(&format!("{:?}\n", event));
-        output.push_str(&format!(
-            "{:?} {:?}\n",
-            event,
-            rotext::Event::from(event.clone()).content(input)
-        ));
+        output.push_str(&format!("{:?} {:?}\n", event, event.clone().content(input)));
     }
 
     output

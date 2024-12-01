@@ -92,7 +92,7 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                         if self.inner.to_skip_input.count == 0 {
                             if let Some(cursor_value) = self.inner.to_skip_input.cursor_value.take()
                             {
-                                let ev!(InlineInput, Unparsed(content)) = next else {
+                                let ev!(InlineInput, __Unparsed(content)) = next else {
                                     unreachable!()
                                 };
                                 let input = &self.full_input[..content.end];
@@ -107,8 +107,10 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                         prefix = Event,
                         group = InlineInput,
                     )]
+                    // NOTE: rust-analyzer 会错误地认为这里的 `match` 没有覆盖到
+                    // 全部分支，实际上并不存在问题。
                     match next {
-                        Event::Unparsed(content) => {
+                        Event::__Unparsed(content) => {
                             let input = &self.full_input[..content.end];
                             let cursor = Cursor::new(content.start);
                             self.state = State::Parsing { input, cursor };
@@ -683,7 +685,7 @@ mod leaf {
                 ve.clone()
             };
             let after_address = {
-                let Some(ev!(InlineInput, Unparsed(content))) = event_stream.peek(1) else {
+                let Some(ev!(InlineInput, __Unparsed(content))) = event_stream.peek(1) else {
                     return Ok(None);
                 };
                 content.clone()

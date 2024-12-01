@@ -6,7 +6,7 @@ use crate::types::{BlockId, LineNumber};
 #[repr(u8)]
 pub enum EventType {
     // 在块级阶段产出，由行内阶段消耗。
-    Unparsed = 255,
+    __Unparsed = 255,
 
     // 在块级阶段与行内阶段产出。
     Raw = 254, // TODO: 也许不应该有，而是为 NCR 专门创建一个（或两个）事件？
@@ -56,6 +56,11 @@ impl From<u8> for EventType {
     }
 }
 
+/// 解析产出的事件。
+///
+/// 对于不同的场景，用到的事件种类也不同。事件依照这些场景被分配到了不同的组别。
+/// 对于本 crate 的外部使用者，只会接触到 Blend 组别的事件。为了防止误用，并非
+/// Blend 组别的事件名称会有 “__” 前缀，代表其为内部事件。
 #[rotext_internal_macros::simple_sub_enum_for_event(
     current_mod_path = crate::events,
     enum_guard_macro_name = ev,
@@ -66,8 +71,10 @@ impl From<u8> for EventType {
 #[repr(u8)]
 pub enum Event {
     /// 留给下个阶段解析。
+    ///
+    /// 本事件是唯一不属于 Blend 分组的事件。
     #[groups(Block | InlineInput)]
-    Unparsed(Range<usize>) = EventType::Unparsed as u8,
+    __Unparsed(Range<usize>) = EventType::__Unparsed as u8,
 
     /// 原封不动地渲染至输出。
     #[groups(Inline | Blend)]
@@ -230,7 +237,7 @@ impl Event {
 
     pub fn content<'a>(&self, input: &'a [u8]) -> Option<&'a str> {
         let result = match self {
-            Event::Unparsed(content)
+            Event::__Unparsed(content)
             | Event::Raw(content)
             | Event::VerbatimEscaping(VerbatimEscaping { content, .. })
             | Event::Text(content)

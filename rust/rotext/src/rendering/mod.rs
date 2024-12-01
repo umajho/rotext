@@ -185,6 +185,8 @@ impl<'a> HtmlRenderer<'a> {
                 prefix = Event,
                 group = Blend,
             )]
+            // NOTE: rust-analyzer 会错误地认为这里的 `match` 没有覆盖到全部分支，
+            // 实际上并不存在问题。
             match ev {
                 Event::Raw(content) => self.write_raw_html(&self.input[content]),
                 Event::NewLine(_) => self.result.extend(b"<br>"),

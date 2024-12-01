@@ -54,7 +54,7 @@ impl<TStack: Stack<StackEntry>> YieldContext for ParserInner<TStack> {
 pub struct ToSkipInputEvents {
     pub count: usize,
     /// 若非 `None`，则在 [count] 归零时（减去之后）断言下一个输入事件为
-    /// [InlineInputEvent::Unparsed]，并将 cursor 以指定的值初始化。
+    /// [Event::__Unparsed]，并将 cursor 以指定的值初始化。
     pub cursor_value: Option<usize>,
 }
 

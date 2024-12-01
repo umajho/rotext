@@ -40,11 +40,11 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                         ```"},],
                     vec![
                         (EventType::EnterParagraph, None),
-                        (EventType::Unparsed, Some("``")),
+                        (EventType::__Unparsed, Some("``")),
                         (EventType::NewLine, None),
-                        (EventType::Unparsed, Some("code")),
+                        (EventType::__Unparsed, Some("code")),
                         (EventType::NewLine, None),
-                        (EventType::Unparsed, Some("```")),
+                        (EventType::__Unparsed, Some("```")),
                         (EventType::ExitBlock, None),
                     ]
                 ),

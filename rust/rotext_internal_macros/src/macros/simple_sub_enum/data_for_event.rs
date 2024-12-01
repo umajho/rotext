@@ -9,7 +9,7 @@ use lazy_static::lazy_static;
 /// [^1]: 自动生成的 `ensurer` 系列宏只能使用函数风格，导致 formatter 忽略宏的
 /// 内部。
 static EVENT_TO_GROUP_RAW: &[(&str, &[&str])] = &[
-    ("Unparsed", &["Block", "InlineInput"]),
+    ("__Unparsed", &["Block", "InlineInput"]),
     ("Raw", &["Inline", "Blend"]),
     (
         "VerbatimEscaping",

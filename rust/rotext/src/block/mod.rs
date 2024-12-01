@@ -825,7 +825,7 @@ mod leaf {
             }
 
             let tym_a = if !content.is_empty() {
-                inner.r#yield(ev!(Block, Unparsed(content)))
+                inner.r#yield(ev!(Block, __Unparsed(content)))
             } else {
                 TYM_UNIT.into()
             };
@@ -1076,7 +1076,7 @@ mod leaf {
                 let tym_a = inner.r#yield(ev);
 
                 let tym_b = if !content.is_empty() {
-                    inner.r#yield(ev!(Block, Unparsed(content)))
+                    inner.r#yield(ev!(Block, __Unparsed(content)))
                 } else {
                     TYM_UNIT.into()
                 };
@@ -1153,7 +1153,7 @@ mod leaf {
                 inner.stack.push_top_leaf(top_leaf.into());
 
                 let tym_b = if !content.is_empty() {
-                    inner.r#yield(ev!(Block, Unparsed(content)))
+                    inner.r#yield(ev!(Block, __Unparsed(content)))
                 } else {
                     TYM_UNIT.into()
                 };

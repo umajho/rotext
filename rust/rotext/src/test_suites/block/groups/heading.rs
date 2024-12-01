@@ -14,7 +14,7 @@ pub fn groups_heading() -> Vec<GroupedCases> {
                     vec!["= a ="],
                     vec![
                         (EventType::EnterHeading1, None),
-                        (EventType::Unparsed, Some("a")),
+                        (EventType::__Unparsed, Some("a")),
                         (EventType::ExitBlock, None),
                     ]
                 ),
@@ -28,7 +28,7 @@ pub fn groups_heading() -> Vec<GroupedCases> {
                     ],
                     vec![
                         (EventType::EnterHeading2, None),
-                        (EventType::Unparsed, Some("a")),
+                        (EventType::__Unparsed, Some("a")),
                         (EventType::ExitBlock, None),
                     ]
                 ),
@@ -36,7 +36,7 @@ pub fn groups_heading() -> Vec<GroupedCases> {
                     vec!["=== a ==="],
                     vec![
                         (EventType::EnterHeading3, None),
-                        (EventType::Unparsed, Some("a")),
+                        (EventType::__Unparsed, Some("a")),
                         (EventType::ExitBlock, None),
                     ]
                 ),
@@ -44,7 +44,7 @@ pub fn groups_heading() -> Vec<GroupedCases> {
                     vec!["==== a ===="],
                     vec![
                         (EventType::EnterHeading4, None),
-                        (EventType::Unparsed, Some("a")),
+                        (EventType::__Unparsed, Some("a")),
                         (EventType::ExitBlock, None),
                     ]
                 ),
@@ -52,7 +52,7 @@ pub fn groups_heading() -> Vec<GroupedCases> {
                     vec!["===== a ====="],
                     vec![
                         (EventType::EnterHeading5, None),
-                        (EventType::Unparsed, Some("a")),
+                        (EventType::__Unparsed, Some("a")),
                         (EventType::ExitBlock, None),
                     ]
                 ),
@@ -60,7 +60,7 @@ pub fn groups_heading() -> Vec<GroupedCases> {
                     vec!["====== a ======"],
                     vec![
                         (EventType::EnterHeading6, None),
-                        (EventType::Unparsed, Some("a")),
+                        (EventType::__Unparsed, Some("a")),
                         (EventType::ExitBlock, None),
                     ]
                 ),
@@ -68,7 +68,7 @@ pub fn groups_heading() -> Vec<GroupedCases> {
                     vec!["== a"],
                     vec![
                         (EventType::EnterHeading2, None),
-                        (EventType::Unparsed, Some("a")),
+                        (EventType::__Unparsed, Some("a")),
                         (EventType::ExitBlock, None),
                     ]
                 ),
@@ -76,7 +76,7 @@ pub fn groups_heading() -> Vec<GroupedCases> {
                     vec!["== a ="],
                     vec![
                         (EventType::EnterHeading2, None),
-                        (EventType::Unparsed, Some("a =")),
+                        (EventType::__Unparsed, Some("a =")),
                         (EventType::ExitBlock, None),
                     ]
                 ),
@@ -84,7 +84,7 @@ pub fn groups_heading() -> Vec<GroupedCases> {
                     vec!["== a ==="],
                     vec![
                         (EventType::EnterHeading2, None),
-                        (EventType::Unparsed, Some("a ===")),
+                        (EventType::__Unparsed, Some("a ===")),
                         (EventType::ExitBlock, None),
                     ]
                 ),
@@ -100,10 +100,10 @@ pub fn groups_heading() -> Vec<GroupedCases> {
                     ],
                     vec![
                         (EventType::EnterHeading2, None),
-                        (EventType::Unparsed, Some("a")),
+                        (EventType::__Unparsed, Some("a")),
                         (EventType::ExitBlock, None),
                         (EventType::EnterParagraph, None),
-                        (EventType::Unparsed, Some("b")),
+                        (EventType::__Unparsed, Some("b")),
                         (EventType::ExitBlock, None),
                     ]
                 ),
@@ -119,10 +119,10 @@ pub fn groups_heading() -> Vec<GroupedCases> {
                     ],
                     vec![
                         (EventType::EnterHeading2, None),
-                        (EventType::Unparsed, Some("a")),
+                        (EventType::__Unparsed, Some("a")),
                         (EventType::ExitBlock, None),
                         (EventType::EnterHeading3, None),
-                        (EventType::Unparsed, Some("b")),
+                        (EventType::__Unparsed, Some("b")),
                         (EventType::ExitBlock, None),
                     ]
                 ),
@@ -130,7 +130,7 @@ pub fn groups_heading() -> Vec<GroupedCases> {
                     vec!["==a =="],
                     vec![
                         (EventType::EnterParagraph, None),
-                        (EventType::Unparsed, Some("==a ==")),
+                        (EventType::__Unparsed, Some("==a ==")),
                         (EventType::ExitBlock, None),
                     ]
                 ),
@@ -138,7 +138,7 @@ pub fn groups_heading() -> Vec<GroupedCases> {
                     vec!["== a=="],
                     vec![
                         (EventType::EnterHeading2, None),
-                        (EventType::Unparsed, Some("a==")),
+                        (EventType::__Unparsed, Some("a==")),
                         (EventType::ExitBlock, None),
                     ]
                 ),
@@ -146,7 +146,7 @@ pub fn groups_heading() -> Vec<GroupedCases> {
                     vec!["== a ==b"],
                     vec![
                         (EventType::EnterHeading2, None),
-                        (EventType::Unparsed, Some("a ==b")),
+                        (EventType::__Unparsed, Some("a ==b")),
                         (EventType::ExitBlock, None),
                     ]
                 ),
@@ -154,7 +154,7 @@ pub fn groups_heading() -> Vec<GroupedCases> {
                     vec!["== a == b =="],
                     vec![
                         (EventType::EnterHeading2, None),
-                        (EventType::Unparsed, Some("a == b")),
+                        (EventType::__Unparsed, Some("a == b")),
                         (EventType::ExitBlock, None),
                     ]
                 ),
@@ -162,7 +162,7 @@ pub fn groups_heading() -> Vec<GroupedCases> {
                     vec!["======= a ======="],
                     vec![
                         (EventType::EnterParagraph, None),
-                        (EventType::Unparsed, Some("======= a =======")),
+                        (EventType::__Unparsed, Some("======= a =======")),
                         (EventType::ExitBlock, None),
                     ]
                 ),
@@ -178,9 +178,9 @@ pub fn groups_heading() -> Vec<GroupedCases> {
                     vec!["== a<`c`>b =="],
                     vec![
                         (EventType::EnterHeading2, None),
-                        (EventType::Unparsed, Some("a")),
+                        (EventType::__Unparsed, Some("a")),
                         (EventType::VerbatimEscaping, Some("c")),
-                        (EventType::Unparsed, Some("b")),
+                        (EventType::__Unparsed, Some("b")),
                         (EventType::ExitBlock, None),
                     ]
                 ),
@@ -193,7 +193,7 @@ pub fn groups_heading() -> Vec<GroupedCases> {
                     vec!["=="],
                     vec![
                         (EventType::EnterParagraph, None),
-                        (EventType::Unparsed, Some("==")),
+                        (EventType::__Unparsed, Some("==")),
                         (EventType::ExitBlock, None),
                     ]
                 ),
@@ -201,7 +201,7 @@ pub fn groups_heading() -> Vec<GroupedCases> {
                     vec!["== =="],
                     vec![
                         (EventType::EnterHeading2, None),
-                        (EventType::Unparsed, Some("==")),
+                        (EventType::__Unparsed, Some("==")),
                         (EventType::ExitBlock, None),
                     ]
                 ),
@@ -216,7 +216,7 @@ pub fn groups_heading() -> Vec<GroupedCases> {
                     vec!["== =", "==  =", "==   ="],
                     vec![
                         (EventType::EnterHeading2, None),
-                        (EventType::Unparsed, Some("=")),
+                        (EventType::__Unparsed, Some("=")),
                         (EventType::ExitBlock, None),
                     ]
                 ),
@@ -224,7 +224,7 @@ pub fn groups_heading() -> Vec<GroupedCases> {
                     vec!["== ===", "==  ===", "==   ==="],
                     vec![
                         (EventType::EnterHeading2, None),
-                        (EventType::Unparsed, Some("===")),
+                        (EventType::__Unparsed, Some("===")),
                         (EventType::ExitBlock, None),
                     ]
                 ),

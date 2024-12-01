@@ -70,11 +70,11 @@ impl<
                         };
                     }
 
-                    debug_assert!(!matches!(next, ev!(Block, Unparsed(_))));
+                    debug_assert!(!matches!(next, ev!(Block, __Unparsed(_))));
                     #[cfg(debug_assertions)]
                     debug_assert!(is_event_of!(Blend, next));
-                    // 排除掉 `Unparsed`（不会在本状态中遇到），属于 `Block` 分组
-                    // 的事件都属于 `Blend` 分组，因此分组正确。
+                    // 排除掉 `__Unparsed`（不会在本状态中遇到），属于 `Block` 分
+                    // 组的事件都属于 `Blend` 分组，因此分组正确。
                     break Ok(next);
                 }
                 State::ParsingInline {

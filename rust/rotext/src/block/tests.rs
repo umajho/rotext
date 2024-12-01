@@ -69,7 +69,7 @@ fn it_works_with_array_stack() {
             (EventType::EnterBlockQuote, None),
             (EventType::EnterBlockQuote, None),
             (EventType::EnterParagraph, None),
-            (EventType::Unparsed, Some("foo")),
+            (EventType::__Unparsed, Some("foo")),
             (EventType::ExitBlock, None),
             (EventType::ExitBlock, None),
             (EventType::ExitBlock, None),
