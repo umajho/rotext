@@ -88,15 +88,16 @@ pub fn parse_and_render(
         }
     };
 
-    let renderer = rotext::HtmlRenderer::new(
+    let html = rotext::SimpleHtmlRenderer::render_as_string(
         input,
+        all_events.clone().into_iter(),
         rotext::NewHtmlRendererOptions {
             tag_name_map,
             initial_output_string_capacity: input.len() * 3,
             should_include_block_ids,
         },
-    );
-    let html: String = renderer.render(all_events.clone().into_iter());
+    )
+    .unwrap();
 
     let block_id_to_lines_map = create_block_id_to_lines_map(&all_events);
 
