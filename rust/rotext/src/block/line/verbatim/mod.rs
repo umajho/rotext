@@ -50,11 +50,6 @@ impl From<VerbatimEscaping> for End {
         Self::VerbatimEscaping(value)
     }
 }
-impl End {
-    pub fn is_verbatim_escaping(&self) -> bool {
-        matches!(self, End::VerbatimEscaping(_))
-    }
-}
 
 pub struct AtLineBeginning {
     pub indent: usize,
