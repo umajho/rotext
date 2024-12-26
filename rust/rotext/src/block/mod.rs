@@ -315,7 +315,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
     }
 }
 
-impl<'a, TStack: Stack<StackEntry>> Iterator for Parser<'a, TStack> {
+impl<TStack: Stack<StackEntry>> Iterator for Parser<'_, TStack> {
     /// 承载的事件属于 `Block` 分组。
     type Item = crate::Result<Event>;
 

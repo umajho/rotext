@@ -32,7 +32,7 @@ pub struct TagNameMap<'a> {
     pub dicexp: &'a [u8],
     pub internal_link: &'a [u8],
 }
-impl<'a> Default for TagNameMap<'a> {
+impl Default for TagNameMap<'_> {
     fn default() -> Self {
         Self {
             code_block: b"x-code-block",
@@ -67,7 +67,7 @@ enum TableState {
     InHeaderCell,
     InDataCell,
 }
-impl<'a> From<TableState> for StackEntry<'a> {
+impl From<TableState> for StackEntry<'_> {
     fn from(val: TableState) -> Self {
         StackEntry::Table(val)
     }

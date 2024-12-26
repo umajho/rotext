@@ -118,11 +118,10 @@ impl<
 }
 
 impl<
-        'a,
         // 承载的事件属于 `Block` 分组。
         TBlockParser: Iterator<Item = crate::Result<Event>>,
         TInlineStack: Stack<inline::StackEntry>,
-    > Iterator for BlockEventStreamInlineSegmentMapper<'a, TBlockParser, TInlineStack>
+    > Iterator for BlockEventStreamInlineSegmentMapper<'_, TBlockParser, TInlineStack>
 {
     /// 承载的事件属于 `Blend` 分组。
     type Item = crate::Result<Event>;
