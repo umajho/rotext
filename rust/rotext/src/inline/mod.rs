@@ -646,6 +646,8 @@ mod leaf {
 
     pub mod internal_link {
 
+        use std::ops::Range;
+
         use super::*;
 
         /// `event_stream` 的迭代对象是属于 `InlineInput` 分组的事件。
@@ -659,16 +661,16 @@ mod leaf {
             let maybe_text_end = cursor.value();
             cursor.move_forward("[[".len());
 
-            let (content, found) = parse_first_input(input, cursor);
-
-            if let Some(content) = content {
-                let content = (content.start_index)..(content.end_index + 1);
-                if let Found::Indicator(indicator, index_after) = found {
-                    cursor.set_value(index_after);
-                    let address = content.clone();
-                    let address_ev = ev!(Inline, Text(content));
-                    let tym_a =
-                        process_before_indicator(text_start, maybe_text_end, inner, address)?;
+            if let (Some(slot_content), after_slot) = parse_first_slot_non_verbatim(input, cursor) {
+                if let AfterSlot::Indicator {
+                    indicator,
+                    index_after_indicator,
+                } = after_slot
+                {
+                    cursor.set_value(index_after_indicator);
+                    let address = slot_content.clone();
+                    let address_ev = ev!(Inline, Text(slot_content));
+                    let tym_a = process_first_slot(text_start, maybe_text_end, inner, address)?;
                     let tym_b = process_indicator(inner, address_ev, indicator)?;
                     return Ok(Some(tym_a.add(tym_b)));
                 }
@@ -678,13 +680,13 @@ mod leaf {
                 return Ok(None);
             }
 
-            let maybe_address_ve = {
+            let slot = {
                 let Some(ev!(InlineInput, VerbatimEscaping(ve))) = event_stream.peek(0) else {
                     return Ok(None);
                 };
                 ve.clone()
             };
-            let after_address = {
+            let after_slot = {
                 let Some(ev!(InlineInput, __Unparsed(content))) = event_stream.peek(1) else {
                     return Ok(None);
                 };
@@ -693,9 +695,11 @@ mod leaf {
 
             // SAFETY: `after_address.end` < `full_input.len()`.
             // TODO: 不管怎样，现在的实现也太丑陋了，未来应该重构掉这里的 unsafe。
-            let input = unsafe { std::slice::from_raw_parts(input.as_ptr(), after_address.end) };
-            let Found::Indicator(indicator, index_after) =
-                parse_leading_indicator(input, after_address.start)
+            let input = unsafe { std::slice::from_raw_parts(input.as_ptr(), after_slot.end) };
+            let AfterSlot::Indicator {
+                indicator,
+                index_after_indicator,
+            } = parse_leading_indicator(input, after_slot.start)
             else {
                 return Ok(None);
             };
@@ -703,17 +707,17 @@ mod leaf {
             cursor.set_value(input.len());
             inner.to_skip_input = ToSkipInputEvents {
                 count: 2,
-                cursor_value: Some(index_after),
+                cursor_value: Some(index_after_indicator),
             };
 
-            let address = maybe_address_ve.content.clone();
-            let address_ev = ev!(Inline, VerbatimEscaping(maybe_address_ve));
-            let tym_a = process_before_indicator(text_start, maybe_text_end, inner, address)?;
+            let address = slot.content.clone();
+            let address_ev = ev!(Inline, VerbatimEscaping(slot));
+            let tym_a = process_first_slot(text_start, maybe_text_end, inner, address)?;
             let tym_b = process_indicator(inner, address_ev, indicator)?;
             Ok(Some(tym_a.add(tym_b)))
         }
 
-        fn process_before_indicator<TInlineStack: Stack<StackEntry>>(
+        fn process_first_slot<TInlineStack: Stack<StackEntry>>(
             text_start: usize,
             text_end: usize,
             inner: &mut ParserInner<TInlineStack>,
@@ -746,20 +750,13 @@ mod leaf {
         }
 
         #[derive(Debug)]
-        struct Content {
-            /// 第一处非空白字符的位置。
-            start_index: usize,
-            /// 最后一处非空白字符的位置。
-            ///
-            /// [Content] 转换为 [Range] 时，这里要 +1。
-            end_index: usize,
-        }
-
-        #[derive(Debug)]
-        enum Found {
+        enum AfterSlot {
             /// 第二个值是第一个值代表内容之后的索引（第二个 `]` 或 `|` 之后的索
             /// 引）。
-            Indicator(Indicator, usize),
+            Indicator {
+                indicator: Indicator,
+                index_after_indicator: usize,
+            },
             Nothing,
         }
 
@@ -771,10 +768,26 @@ mod leaf {
             Separator,
         }
 
+        /// 解析第一个槽位的内容。（不将逐字内容视为有效的槽位内容。）
+        ///
         /// NOTE: cursor 只移动到第一处非空白字符之前。
-        fn parse_first_input(input: &[u8], cursor: &mut Cursor) -> (Option<Content>, Found) {
-            let mut content: Option<Content> = None;
-            let mut found = Found::Nothing;
+        fn parse_first_slot_non_verbatim(
+            input: &[u8],
+            cursor: &mut Cursor,
+        ) -> (Option<Range<usize>>, AfterSlot) {
+            #[derive(Debug)]
+            struct MiniInclusiveRange {
+                start: usize,
+                end: usize,
+            }
+            impl Into<Range<usize>> for MiniInclusiveRange {
+                fn into(self) -> Range<usize> {
+                    self.start..(self.end + 1)
+                }
+            }
+
+            let mut slot_content: Option<MiniInclusiveRange> = None;
+            let mut after_slot = AfterSlot::Nothing;
 
             while let Some(&char) = input.get(cursor.value()) {
                 if is_whitespace!(char) {
@@ -790,40 +803,41 @@ mod leaf {
                 match char {
                     char if is_whitespace!(char) => continue,
                     m!(']') if input.get(i + 1) == Some(&m!(']')) => {
-                        if content.is_some() {
-                            found = Found::Indicator(Indicator::Closing, i + 2);
-                            return (content, found);
+                        if slot_content.is_some() {
+                            after_slot = AfterSlot::Indicator {
+                                indicator: Indicator::Closing,
+                                index_after_indicator: i + 2,
+                            };
+                            return (slot_content.map(|r| r.into()), after_slot);
                         } else {
-                            return (None, Found::Nothing);
+                            return (None, AfterSlot::Nothing);
                         }
                     }
                     m!('|') => {
-                        if content.is_some() {
-                            found = Found::Indicator(Indicator::Separator, i + 1);
-                            return (content, found);
+                        if slot_content.is_some() {
+                            after_slot = AfterSlot::Indicator {
+                                indicator: Indicator::Separator,
+                                index_after_indicator: i + 1,
+                            };
+                            return (slot_content.map(|r| r.into()), after_slot);
                         } else {
-                            return (None, Found::Nothing);
+                            return (None, AfterSlot::Nothing);
                         }
                     }
                     char if !is_valid_character_in_name(*char) => {
-                        return (None, Found::Nothing);
+                        return (None, AfterSlot::Nothing);
                     }
-                    _ => match content {
-                        Some(ref mut content) => content.end_index = i,
-                        None => {
-                            content = Some(Content {
-                                start_index: i,
-                                end_index: i,
-                            })
-                        }
+                    _ => match slot_content {
+                        Some(ref mut slot_content) => slot_content.end = i,
+                        None => slot_content = Some(MiniInclusiveRange { start: i, end: i }),
                     },
                 }
             }
 
-            (content, found)
+            (slot_content.map(|r| r.into()), after_slot)
         }
 
-        fn parse_leading_indicator(input: &[u8], mut i: usize) -> Found {
+        fn parse_leading_indicator(input: &[u8], mut i: usize) -> AfterSlot {
             while let Some(&char) = input.get(i) {
                 if is_whitespace!(char) {
                     i += 1;
@@ -833,18 +847,22 @@ mod leaf {
             }
 
             if i == input.len() {
-                return Found::Nothing;
+                return AfterSlot::Nothing;
             }
             debug_assert!(i < input.len());
 
             // SAFETY: `start_index` < `input.len()`.
             let char = unsafe { input.get_unchecked(i) };
             match char {
-                m!(']') if input.get(i + 1) == Some(&m!(']')) => {
-                    Found::Indicator(Indicator::Closing, i + 2)
-                }
-                m!('|') => Found::Indicator(Indicator::Separator, i + 1),
-                _ => Found::Nothing,
+                m!(']') if input.get(i + 1) == Some(&m!(']')) => AfterSlot::Indicator {
+                    indicator: Indicator::Closing,
+                    index_after_indicator: i + 2,
+                },
+                m!('|') => AfterSlot::Indicator {
+                    indicator: Indicator::Separator,
+                    index_after_indicator: i + 1,
+                },
+                _ => AfterSlot::Nothing,
             }
         }
     }
