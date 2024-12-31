@@ -20,6 +20,7 @@ use types::{Cursor, YieldContext};
 
 use crate::{
     common::{is_valid_character_in_name, m},
+    events::VerbatimEscaping,
     types::{Tym, TYM_UNIT},
     utils::{
         internal::{
@@ -646,8 +647,6 @@ mod leaf {
 
     pub mod wiki_link {
 
-        use std::ops::Range;
-
         use super::*;
 
         /// `event_stream` 的迭代对象是属于 `InlineInput` 分组的事件。
@@ -661,57 +660,49 @@ mod leaf {
             let maybe_text_end = cursor.value();
             cursor.move_forward("[[".len());
 
-            if let (Some(slot_content), after_slot) = parse_first_slot_non_verbatim(input, cursor) {
-                if let AfterSlot::Indicator {
+            let (address, address_ev, indicator) = if let (Some(slot_content), after_slot) =
+                parse_first_slot_for_non_verbatim(input, cursor)
+            {
+                let AfterSlot::Indicator {
                     indicator,
                     index_after_indicator,
                 } = after_slot
-                {
-                    cursor.set_value(index_after_indicator);
-                    let address = slot_content.clone();
-                    let address_ev = ev!(Inline, Text(slot_content));
-                    let tym_a = process_first_slot(text_start, maybe_text_end, inner, address)?;
-                    let tym_b = process_indicator(inner, address_ev, indicator)?;
-                    return Ok(Some(tym_a.add(tym_b)));
-                }
-
-                // 有内容（标题）但没找到指示标记时，不视为Wiki链接。
-                // 如：`[[f<`oo`>]]`、`[[f\noo]]` 都不被视为Wiki链接。
-                return Ok(None);
-            }
-
-            let slot = {
-                let Some(ev!(InlineInput, VerbatimEscaping(ve))) = event_stream.peek(0) else {
+                else {
+                    // 有内容（标题）但没找到指示标记时，不视为Wiki链接。
+                    // 如：`[[f<`oo`>]]`、`[[f\noo]]` 都不被视为Wiki链接。
                     return Ok(None);
                 };
-                ve.clone()
-            };
-            let after_slot = {
-                let Some(ev!(InlineInput, __Unparsed(content))) = event_stream.peek(1) else {
+
+                cursor.set_value(index_after_indicator);
+                let address = slot_content.clone();
+                let address_ev = ev!(Inline, Text(slot_content));
+
+                (address, address_ev, indicator)
+            } else {
+                let Some((
+                    slot,
+                    AfterSlot::Indicator {
+                        indicator,
+                        index_after_indicator,
+                    },
+                )) = parse_first_slot_for_verbatim(input, event_stream)
+                else {
                     return Ok(None);
                 };
-                content.clone()
+
+                // 跳过当前正在处理的事件（即以 “[[” 结尾的事件）以及作为第一个槽位的逐字转译的事件。
+                // 由于完成跳过后会设置游标，这里不用再用 `cursor.set_value` 来设置游标。
+                inner.to_skip_input = ToSkipInputEvents {
+                    count: 2,
+                    cursor_value: Some(index_after_indicator),
+                };
+
+                let address = slot.content.clone();
+                let address_ev = ev!(Inline, VerbatimEscaping(slot));
+
+                (address, address_ev, indicator)
             };
 
-            // SAFETY: `after_address.end` < `full_input.len()`.
-            // TODO: 不管怎样，现在的实现也太丑陋了，未来应该重构掉这里的 unsafe。
-            let input = unsafe { std::slice::from_raw_parts(input.as_ptr(), after_slot.end) };
-            let AfterSlot::Indicator {
-                indicator,
-                index_after_indicator,
-            } = parse_leading_indicator(input, after_slot.start)
-            else {
-                return Ok(None);
-            };
-
-            cursor.set_value(input.len());
-            inner.to_skip_input = ToSkipInputEvents {
-                count: 2,
-                cursor_value: Some(index_after_indicator),
-            };
-
-            let address = slot.content.clone();
-            let address_ev = ev!(Inline, VerbatimEscaping(slot));
             let tym_a = process_first_slot(text_start, maybe_text_end, inner, address)?;
             let tym_b = process_indicator(inner, address_ev, indicator)?;
             Ok(Some(tym_a.add(tym_b)))
@@ -771,7 +762,7 @@ mod leaf {
         /// 解析第一个槽位的内容。（不将逐字内容视为有效的槽位内容。）
         ///
         /// NOTE: cursor 只移动到第一处非空白字符之前。
-        fn parse_first_slot_non_verbatim(
+        fn parse_first_slot_for_non_verbatim(
             input: &[u8],
             cursor: &mut Cursor,
         ) -> (Option<Range<usize>>, AfterSlot) {
@@ -835,6 +826,33 @@ mod leaf {
             }
 
             (slot_content.map(|r| r.into()), after_slot)
+        }
+
+        fn parse_first_slot_for_verbatim(
+            input: &[u8],
+            event_stream: &mut Peekable<2, impl Iterator<Item = Event>>,
+        ) -> Option<(VerbatimEscaping, AfterSlot)> {
+            let slot = {
+                let Some(ev!(InlineInput, VerbatimEscaping(ve))) = event_stream.peek(0) else {
+                    return None;
+                };
+                ve.clone()
+            };
+            let after_slot = {
+                let Some(ev!(InlineInput, __Unparsed(after_slot_content))) = event_stream.peek(1)
+                else {
+                    return None;
+                };
+
+                // SAFETY: `after_slot.end` < `full_input.len()`.
+                // TODO: 不管怎样，现在的实现也太丑陋了，未来应该重构掉这里的 unsafe。
+                let input =
+                    unsafe { std::slice::from_raw_parts(input.as_ptr(), after_slot_content.end) };
+
+                parse_leading_indicator(input, after_slot_content.start)
+            };
+
+            Some((slot, after_slot))
         }
 
         fn parse_leading_indicator(input: &[u8], mut i: usize) -> AfterSlot {
