@@ -237,7 +237,7 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                         break (text_end, Some(to_yield_after_text));
                     }
                     Some(m!('[')) => {
-                        match leaf::internal_link::process_and_yield_potential(
+                        match leaf::wiki_link::process_and_yield_potential(
                             input,
                             text_start,
                             cursor,
@@ -258,7 +258,7 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                 &char => {
                     if ((end_condition.on_strong_closing && char == m!('\''))
                         || (end_condition.on_strikethrough_closing && char == m!('~'))
-                        || (end_condition.on_internal_link_closing && char == m!(']')))
+                        || (end_condition.on_wiki_link_closing && char == m!(']')))
                         && input.get(cursor.value() + 1) == Some(&m!(']'))
                     {
                         let text_end = cursor.value();
@@ -298,7 +298,7 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
             (tym, None)
         } else if let Some(entry) = inner.stack.pop_entry() {
             let tym = match entry {
-                StackEntry::Strong | StackEntry::Strikethrough | StackEntry::InternalLink => {
+                StackEntry::Strong | StackEntry::Strikethrough | StackEntry::WikiLink => {
                     inner.r#yield(ev!(Inline, ExitInline))
                 }
             };
@@ -644,7 +644,7 @@ mod leaf {
         }
     }
 
-    pub mod internal_link {
+    pub mod wiki_link {
 
         use std::ops::Range;
 
@@ -675,8 +675,8 @@ mod leaf {
                     return Ok(Some(tym_a.add(tym_b)));
                 }
 
-                // 有内容（标题）但没找到指示标记时，不视为内部链接。
-                // 如：`[[f<`oo`>]]`、`[[f\noo]]` 都不被视为内部链接。
+                // 有内容（标题）但没找到指示标记时，不视为Wiki链接。
+                // 如：`[[f<`oo`>]]`、`[[f\noo]]` 都不被视为Wiki链接。
                 return Ok(None);
             }
 
@@ -724,7 +724,7 @@ mod leaf {
             address: Range<usize>,
         ) -> crate::Result<Tym<2>> {
             let tym_a = yield_text_if_not_empty(text_start, text_end, inner);
-            let tym_b = inner.r#yield(ev!(Inline, EnterInternalLink(address.clone())));
+            let tym_b = inner.r#yield(ev!(Inline, EnterWikiLink(address.clone())));
             Ok(tym_a.add(tym_b))
         }
 
@@ -742,7 +742,7 @@ mod leaf {
                     tym_c1.add(tym_c2)
                 }
                 Indicator::Separator => {
-                    inner.stack.push_entry(StackEntry::InternalLink)?;
+                    inner.stack.push_entry(StackEntry::WikiLink)?;
                     TYM_UNIT.into()
                 }
             };

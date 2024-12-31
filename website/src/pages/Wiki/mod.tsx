@@ -32,7 +32,7 @@ export default (() => {
   initializeGlobal({ navigator: navigate });
   createEffect(on([pageName], ([pageName]) => {
     if (pageName !== wikiResourceManager.getAuthenticFullPageName(pageName)) {
-      navigateToAddress(["internal", pageName, location.hash || null]);
+      navigateToAddress(["wiki", pageName, location.hash || null]);
     }
   }));
 
@@ -125,7 +125,7 @@ export default (() => {
     )
   );
   const addressData = createMemo(() =>
-    JSON.stringify(["internal", pageName(), null] satisfies Address)
+    JSON.stringify(["wiki", pageName(), null] satisfies Address)
   );
 
   return (

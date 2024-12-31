@@ -285,7 +285,7 @@ const NavMenuListItemInnerLeaf: Component<{
     };
   });
   const address = createMemo(
-    (): Address => ["internal", pageAndAnchor().page, pageAndAnchor().anchor],
+    (): Address => ["wiki", pageAndAnchor().page, pageAndAnchor().anchor],
   );
 
   const path = createMemo(() => `/wiki/${pageAndAnchor().page}`);

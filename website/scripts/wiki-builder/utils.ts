@@ -28,7 +28,7 @@ export function extractHeadings(dom: HTMLElement, opts: {
   ensuresHierarchy: true;
   allowedContent: {
     singleTextNode: true;
-    singleInternalLink: boolean;
+    singleWikiLink: boolean;
   };
 }): ["ok", Heading[]] | ["error", string] {
   let currentLevel = 0;
@@ -69,8 +69,8 @@ export function extractHeadings(dom: HTMLElement, opts: {
     if (opts.allowedContent.singleTextNode && !child.rawTagName) {
       isChildValid = true;
     } else if (
-      opts.allowedContent.singleInternalLink &&
-      child.rawTagName === "x-internal-link"
+      opts.allowedContent.singleWikiLink &&
+      child.rawTagName === "x-wiki-link"
     ) {
       isChildValid = true;
     }

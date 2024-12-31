@@ -53,8 +53,8 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
             Some(StackEntry::Strikethrough) => {
                 end_condition.on_strikethrough_closing = true;
             }
-            Some(StackEntry::InternalLink) => {
-                end_condition.on_internal_link_closing = true;
+            Some(StackEntry::WikiLink) => {
+                end_condition.on_wiki_link_closing = true;
             }
             None => {}
         }
@@ -66,7 +66,7 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
 pub enum StackEntry {
     Strong,
     Strikethrough,
-    InternalLink,
+    WikiLink,
 }
 
 pub enum TopLeaf {

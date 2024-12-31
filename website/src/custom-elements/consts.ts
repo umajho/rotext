@@ -4,7 +4,7 @@ export const TAG_NAME_MAP = {
   "dicexp": "x-dicexp",
   "collapse": "x-collapse",
   "code-block": "x-code-block",
-  "internal-link": "x-internal-link",
+  "wiki-link": "x-wiki-link",
 };
 
 export const PROSE_CLASS = "tuan-prose";

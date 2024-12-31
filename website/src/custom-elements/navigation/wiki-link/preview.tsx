@@ -40,7 +40,7 @@ export function createDemoPreviewRenderer(
 
     return {
       // 虽然可以在缓存已存在时允许自动打开，但为了页面的整洁，决定还是不自动打
-      // 开任何内部链接挂件。
+      // 开任何Wiki链接挂件。
       isAutoOpenable: false,
       render: (elIn, renderOpts) => {
         widgetOwnerAgent = renderOpts.widgetOwnerAgent;
@@ -76,14 +76,14 @@ export function createDemoPreviewRenderer(
             const authentic = ((): Address => {
               switch (local[0]) {
                 case "anchor":
-                  if (parent[0] === "internal") {
+                  if (parent[0] === "wiki") {
                     const authentic: Address = [...parent];
                     authentic[2] = local[1];
                     return authentic;
                   } else {
                     return parent;
                   }
-                case "internal":
+                case "wiki":
                   return local;
               }
             })();
@@ -278,14 +278,14 @@ const Preview: Component<{
 };
 
 type LocalAddress =
-  | Extract<Address, { 0: "internal" }>
+  | Extract<Address, { 0: "wiki" }>
   | ["anchor", string | null];
 
 function parseLocalAddress(raw: string): LocalAddress {
   const [page, anchor] = raw.split("#", 2);
 
   if (page) {
-    return ["internal", page, anchor || null];
+    return ["wiki", page, anchor || null];
   } else {
     return ["anchor", anchor ?? null];
   }

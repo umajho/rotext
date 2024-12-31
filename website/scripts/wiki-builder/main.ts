@@ -81,7 +81,7 @@ function checkPages(
 
     for (const [pageName, page] of Object.entries(ns.pages)) {
       const currentPageFullName = `${nsName}:${pageName}`;
-      for (const target of page.internalLinkTargets) {
+      for (const target of page.wikiLinkTargets) {
         const result = checkTarget(target, {
           pageMap,
           namespaceAliasMap: nsAliasMap,

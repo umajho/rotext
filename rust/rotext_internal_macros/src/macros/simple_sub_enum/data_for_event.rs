@@ -45,7 +45,7 @@ static EVENT_TO_GROUP_RAW: &[(&str, &[&str])] = &[
     ("EnterCodeSpan", &["Inline", "Blend"]),
     ("EnterStrong", &["Inline", "Blend"]),
     ("EnterStrikethrough", &["Inline", "Blend"]),
-    ("EnterInternalLink", &["Inline", "Blend"]),
+    ("EnterWikiLink", &["Inline", "Blend"]),
     ("ExitInline", &["Inline", "Blend"]),
 ];
 

@@ -6,7 +6,7 @@ import { extractHeadings } from "./utils";
 
 export interface Page {
   headings: Set<string>;
-  internalLinkTargets: Set<string>;
+  wikiLinkTargets: Set<string>;
 
   html: string;
 }
@@ -29,7 +29,7 @@ export function buildPage(
     ensuresHierarchy: true,
     allowedContent: {
       singleTextNode: true,
-      singleInternalLink: false,
+      singleWikiLink: false,
     },
   });
   if (headingsResult[0] === "error") {
@@ -64,12 +64,12 @@ export function buildPage(
     }
   }
 
-  const internalLinkTargets = dom.querySelectorAll("x-internal-link")
+  const wikiLinkTargets = dom.querySelectorAll("x-wiki-link")
     .map((el) => el.getAttribute("address")!);
 
   return ["ok", {
     headings: new Set(headingSet),
-    internalLinkTargets: new Set(internalLinkTargets),
+    wikiLinkTargets: new Set(wikiLinkTargets),
 
     html,
   }];

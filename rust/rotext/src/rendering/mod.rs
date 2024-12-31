@@ -30,7 +30,7 @@ pub struct TagNameMap<'a> {
 
     pub ref_link: &'a [u8],
     pub dicexp: &'a [u8],
-    pub internal_link: &'a [u8],
+    pub wiki_link: &'a [u8],
 }
 impl Default for TagNameMap<'_> {
     fn default() -> Self {
@@ -39,7 +39,7 @@ impl Default for TagNameMap<'_> {
 
             ref_link: b"x-ref-link",
             dicexp: b"x-dicexp",
-            internal_link: b"x-internal-link",
+            wiki_link: b"x-wiki-link",
         }
     }
 }
@@ -58,7 +58,7 @@ pub struct HtmlRenderer<'a, W: std::io::Write> {
 enum StackEntry<'a> {
     Normal(&'a [u8]),
     Table(TableState),
-    InternalLink,
+    WikiLink,
 }
 enum TableState {
     AtBeginning,
@@ -207,9 +207,9 @@ impl<'a, W: std::io::Write> HtmlRenderer<'a, W> {
                             self.writer.write_all(top)?;
                             self.writer.write_all(b">")?;
                         }
-                        StackEntry::InternalLink => {
+                        StackEntry::WikiLink => {
                             self.writer.write_all(b"</span></")?;
-                            self.writer.write_all(self.tag_name_map.internal_link)?;
+                            self.writer.write_all(self.tag_name_map.wiki_link)?;
                             self.writer.write_all(b">")?;
                         }
                         _ => unreachable!(),
@@ -331,14 +331,14 @@ impl<'a, W: std::io::Write> HtmlRenderer<'a, W> {
                 Event::EnterStrong => self.push_simple_inline(&mut stack, b"strong")?,
                 Event::EnterStrikethrough => self.push_simple_inline(&mut stack, b"s")?,
 
-                Event::EnterInternalLink(address) => {
+                Event::EnterWikiLink(address) => {
                     self.write_opening_tag_with_single_attribute(
-                        self.tag_name_map.internal_link,
+                        self.tag_name_map.wiki_link,
                         b"address",
                         &self.input[address],
                     )?;
                     self.write_opening_tag_with_single_attribute(b"span", b"slot", b"content")?;
-                    stack.push(StackEntry::InternalLink);
+                    stack.push(StackEntry::WikiLink);
                 }
             }
         }

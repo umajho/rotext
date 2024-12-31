@@ -16,7 +16,7 @@ export function navigateToAddress(
     case "reference/numeric":
       window.alert(`演示：请当作前往了 ${reconstructAddressAsText(address)}。`);
       return;
-    case "internal": {
+    case "wiki": {
       const [_, fullName, anchor] = address;
       const addrWithH = fullName + (anchor ? `#${anchor}` : "");
       navigateToWiki(addrWithH);

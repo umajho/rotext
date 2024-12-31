@@ -13,7 +13,7 @@ export type Address =
     prefix: string,
     id: number,
   ]
-  | [type: "internal", fullName: string | null, anchor: string | null]
+  | [type: "wiki", fullName: string | null, anchor: string | null]
   | [type: "live"]
   | [type: "never"];
 
@@ -24,7 +24,7 @@ export function stringifyAddress(addr: Address): string {
 export function reconstructAddressAsText(
   address: Extract<
     Address,
-    { 0: "reference/textual" | "reference/numeric" | "internal" }
+    { 0: "reference/textual" | "reference/numeric" | "wiki" }
   >,
 ): string {
   switch (address[0]) {
@@ -37,7 +37,7 @@ export function reconstructAddressAsText(
       const [_, prefix, id] = address;
       return `>>${prefix}.${id}`;
     }
-    case "internal":
+    case "wiki":
       const [_, fullName, anchor] = address;
       return `[[${fullName}${anchor !== null ? `#${anchor}` : ""}]]`;
     default:

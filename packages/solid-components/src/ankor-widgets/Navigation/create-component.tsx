@@ -29,7 +29,7 @@ export type InnerRenderer = (
     /**
      * 更新导航文本（位于悬浮框右上角）。
      *
-     * 比如，对于内部链接，第一个参数可能是：
+     * 比如，对于Wiki链接，第一个参数可能是：
      * - `[[页面#章节]]`，（加载中，或确定页面存在并且有对应章节时。）
      * - `[[页面]]`，（即使原本的地址包含章节，如果确定页面中没有对应章节，也
      *   会如此。）
@@ -76,8 +76,8 @@ export interface CreateNavigationComponentOptions {
   backgroundColor: ComputedColor;
 
   label:
-    | ["text", (address: string) => string]
-    | ["slot"];
+  | ["text", (address: string) => string]
+  | ["slot"];
   innerPreviewRenderer: InnerRenderer;
 }
 

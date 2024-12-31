@@ -9,8 +9,8 @@ import { h } from "snabbdom";
 import toHTML from "snabbdom-to-html";
 import { HtmlValidate } from "html-validate";
 
-const extInternalLink: TokenizerAndRendererExtension = {
-  name: "internalLink",
+const extWikiLink: TokenizerAndRendererExtension = {
+  name: "wikiLink",
   level: "inline",
   start: (src) => src.match(/\[\[.+?(?:\|.+?)?\]\]/)?.index,
   tokenizer: (src, _tokens) => {
@@ -18,7 +18,7 @@ const extInternalLink: TokenizerAndRendererExtension = {
     const match = rule.exec(src);
     if (!match) return;
     return {
-      type: "internalLink",
+      type: "wikiLink",
       raw: match[0],
       tokens: [],
 
@@ -29,7 +29,7 @@ const extInternalLink: TokenizerAndRendererExtension = {
   renderer: (token) => {
     return toHTML(
       h(
-        "x-internal-link",
+        "x-wiki-link",
         { attrs: { "address": token.pageName ?? token.displayName } },
         h("span", { attrs: { slot: "content" } }, token.displayName),
       ),
@@ -181,7 +181,7 @@ function parseExampleContent(raw: string) {
 }
 
 const marked = new Marked({
-  extensions: [extInternalLink],
+  extensions: [extWikiLink],
   useNewRenderer: true,
   renderer,
 });

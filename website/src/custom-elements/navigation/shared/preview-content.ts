@@ -51,7 +51,7 @@ async function getPreviewContent(
     case "reference/textual":
     case "reference/numeric":
       return ["todo"];
-    case "internal": {
+    case "wiki": {
       const [_, fullName, anchor] = address;
 
       const page = await wikiResourceManager.getPage(fullName!);

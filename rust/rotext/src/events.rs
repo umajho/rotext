@@ -45,7 +45,7 @@ pub enum EventType {
     EnterCodeSpan = 111,
     EnterStrong = 112,
     EnterStrikethrough = 113,
-    EnterInternalLink = 121,
+    EnterWikiLink = 121,
     ExitInline = 199,
 }
 
@@ -185,9 +185,9 @@ pub enum Event {
     #[groups(Inline | Blend)]
     EnterStrikethrough = EventType::EnterStrikethrough as u8,
 
-    // 进入内部链接。
+    // 进入Wiki链接。
     #[groups(Inline | Blend)]
-    EnterInternalLink(Range<usize>) = EventType::EnterInternalLink as u8,
+    EnterWikiLink(Range<usize>) = EventType::EnterWikiLink as u8,
 
     /// 退出一层行内的 “进入…”。
     #[groups(Inline | Blend)]
@@ -243,7 +243,7 @@ impl Event {
             | Event::Text(content)
             | Event::RefLink(content)
             | Event::Dicexp(content)
-            | Event::EnterInternalLink(content) => unsafe {
+            | Event::EnterWikiLink(content) => unsafe {
                 std::str::from_utf8_unchecked(&input[content.clone()])
             },
             Event::NewLine(_)

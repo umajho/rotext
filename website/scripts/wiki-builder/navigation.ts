@@ -15,7 +15,7 @@ export function buildNavigation(
     ensuresHierarchy: true,
     allowedContent: {
       singleTextNode: true,
-      singleInternalLink: true,
+      singleWikiLink: true,
     },
   });
   if (headingsResult[0] === "error") return headingsResult;

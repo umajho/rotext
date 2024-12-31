@@ -9,7 +9,7 @@ export interface TagNameMap {
   "code-block": string;
   "ref-link": string;
   "dicexp": string;
-  "internal-link": string;
+  "wiki-link": string;
 }
 
 export interface RotextProcessor {

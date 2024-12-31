@@ -109,8 +109,8 @@ macro_rules! __event {
         $crate::events::Event::Dicexp($start..$end)
     };
 
-    (EnterInternalLink ($start:literal..$end:literal)) => {
-        $crate::events::Event::EnterInternalLink($start..$end)
+    (EnterWikiLink ($start:literal..$end:literal)) => {
+        $crate::events::Event::EnterWikiLink($start..$end)
     };
 
     (@inline $v:tt (..)) => {
