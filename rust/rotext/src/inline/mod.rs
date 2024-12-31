@@ -780,9 +780,9 @@ mod leaf {
                 start: usize,
                 end: usize,
             }
-            impl Into<Range<usize>> for MiniInclusiveRange {
-                fn into(self) -> Range<usize> {
-                    self.start..(self.end + 1)
+            impl From<MiniInclusiveRange> for Range<usize> {
+                fn from(range: MiniInclusiveRange) -> Self {
+                    range.start..(range.end + 1)
                 }
             }
 
