@@ -27,17 +27,16 @@ fn rendering(bencher: divan::Bencher) {
                 .map(Result::unwrap)
         })
         .bench_refs(|events| {
-            rotext::SimpleHtmlRenderer::render_as_string(
+            let renderer = rotext::HtmlRenderer::new(
                 file_content.as_bytes(),
-                events,
                 rotext::NewHtmlRendererOptions {
                     tag_name_map: Default::default(),
                     initial_output_string_capacity: file_content.len() * 3,
                     #[cfg(feature = "block-id")]
                     should_include_block_ids: true,
                 },
-            )
-            .unwrap();
+            );
+            renderer.render(events);
         })
 }
 
@@ -47,17 +46,16 @@ fn parsing_and_rendering(bencher: divan::Bencher) {
 
     bencher.bench(|| {
         let events = rotext::parse(file_content.as_bytes()).map(Result::unwrap);
-        rotext::SimpleHtmlRenderer::render_as_string(
+        let renderer = rotext::HtmlRenderer::new(
             file_content.as_bytes(),
-            events,
             rotext::NewHtmlRendererOptions {
                 tag_name_map: Default::default(),
                 initial_output_string_capacity: file_content.len() * 3,
                 #[cfg(feature = "block-id")]
                 should_include_block_ids: true,
             },
-        )
-        .unwrap();
+        );
+        renderer.render(events);
     })
 }
 

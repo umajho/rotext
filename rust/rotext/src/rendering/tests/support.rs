@@ -167,12 +167,8 @@ impl<'a> test_support::Case for Case<'a> {
             #[cfg(feature = "block-id")]
             should_include_block_ids: self.options.should_include_block_id,
         };
-        let actual = SimpleHtmlRenderer::render_as_string(
-            self.input.as_bytes(),
-            self.input_events.clone().into_iter(),
-            opts,
-        )
-        .unwrap();
+        let renderer = HtmlRenderer::new(self.input.as_bytes(), opts);
+        let actual = renderer.render(self.input_events.clone().into_iter());
 
         assert_eq!(self.expected, actual);
     }
