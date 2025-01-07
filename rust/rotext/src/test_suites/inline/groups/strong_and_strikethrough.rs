@@ -148,7 +148,7 @@ pub fn groups_strong_and_strikethrough() -> Vec<GroupedCases> {
                     vec![
                         (enter_ev, None),
                         (another_enter_ev, None),
-                        (EventType::Text, Some(format!("foo{s}]").leak())),
+                        (EventType::Text, Some("foo")),
                         (EventType::ExitInline, None),
                         (EventType::ExitInline, None),
                     ]

@@ -26,10 +26,3 @@ impl Cursor {
         self.0 += n;
     }
 }
-
-#[derive(Default)]
-pub struct EndCondition {
-    pub on_strong_closing: bool,
-    pub on_strikethrough_closing: bool,
-    pub on_wiki_link_closing: bool,
-}

@@ -67,6 +67,14 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                 break Some(Ok(ev));
             }
 
+            if let Some(end_entry) = &self.inner.to_exit_until_popped_entry_from_stack {
+                let entry = self.inner.stack.pop_entry().unwrap();
+                if &entry == end_entry {
+                    self.inner.to_exit_until_popped_entry_from_stack = None;
+                }
+                break Some(Ok(ev!(Inline, ExitInline)));
+            }
+
             let result = match &mut self.state {
                 State::ExitingUntilStackIsEmptyAndThenEnd => {
                     let (tym, state) =
@@ -257,18 +265,14 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                     }
                 },
                 &char => {
-                    if ((end_condition.on_strong_closing && char == m!('\''))
-                        || (end_condition.on_strikethrough_closing && char == m!('~'))
-                        || (end_condition.on_wiki_link_closing && char == m!(']')))
-                        && input.get(cursor.value() + 1) == Some(&m!(']'))
+                    if let Some(entry_to_be_popped_until) =
+                        end_condition.test(char, input.get(cursor.value() + 1).copied())
                     {
                         let text_end = cursor.value();
-
                         cursor.move_forward(2);
-                        inner.stack.pop_entry();
-                        let to_yield_after_text = ev!(Inline, ExitInline);
-
-                        break (text_end, Some(to_yield_after_text));
+                        inner.to_exit_until_popped_entry_from_stack =
+                            Some(entry_to_be_popped_until);
+                        break (text_end, None);
                     }
 
                     cursor.move_forward(1);

@@ -21,6 +21,8 @@ pub struct ParserInner<TStack: Stack<StackEntry>> {
 
     /// XXX: 要确保 `cursor` 到达 `input.len()`，以让 `state` 变为 [State::Idle]。
     pub to_skip_input: ToSkipInputEvents,
+
+    pub to_exit_until_popped_entry_from_stack: Option<StackEntry>,
 }
 
 impl<TStack: Stack<StackEntry>> ParserInner<TStack> {
@@ -29,6 +31,7 @@ impl<TStack: Stack<StackEntry>> ParserInner<TStack> {
             stack: StackWrapper::new(),
             to_yield: ArrayQueue::new(),
             to_skip_input: ToSkipInputEvents::default(),
+            to_exit_until_popped_entry_from_stack: None,
         }
     }
 
