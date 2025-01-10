@@ -23,11 +23,8 @@ use crate::{
     events::VerbatimEscaping,
     types::{Tym, TYM_UNIT},
     utils::{
-        internal::{
-            string::{
-                count_continuous_character, count_continuous_character_with_maximum, is_whitespace,
-            },
-            utf8::get_byte_length_by_first_char,
+        internal::string::{
+            count_continuous_character, count_continuous_character_with_maximum, is_whitespace,
         },
         stack::Stack,
     },
@@ -182,10 +179,7 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
             };
 
             match char {
-                m!('\\') if cursor.value() < input.len() - 1 => {
-                    break special::process_backslash_escaping(input, cursor);
-                }
-                m!('\\') => {
+                m!('\\') if cursor.value() == input.len() - 1 => {
                     let Some(ev!(InlineInput, NewLine(new_line))) = event_stream.peek(0) else {
                         cursor.move_forward(1);
                         continue;
@@ -330,22 +324,6 @@ fn yield_text_if_not_empty<TInlineStack: Stack<StackEntry>>(
 mod special {
 
     use super::*;
-
-    /// 返回的事件属于 `Inline` 分组。
-    pub fn process_backslash_escaping(input: &[u8], cursor: &mut Cursor) -> (usize, Option<Event>) {
-        let text_end = cursor.value();
-
-        let target_first_byte = unsafe { *input.get_unchecked(cursor.value() + 1) };
-        let target_utf8_length = get_byte_length_by_first_char(target_first_byte);
-
-        let to_yield_after_text = ev!(
-            Inline,
-            Text((cursor.value() + 1)..(cursor.value() + 1 + target_utf8_length))
-        );
-        cursor.move_forward(1 + target_utf8_length);
-
-        (text_end, Some(to_yield_after_text))
-    }
 
     /// 返回的事件属于 `Inline` 分组。
     pub fn process_hard_break_mark<TInlineStack: Stack<StackEntry>>(

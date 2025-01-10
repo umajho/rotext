@@ -62,38 +62,11 @@ pub fn groups_basic() -> Vec<GroupedCases> {
             ],
         },
         GroupedCases {
-            group: "基础>反斜杠转义",
+            group: "基础>不支持反斜杠转义",
             cases: vec![
-                case!(
-                    vec![r#"\"#, r#"\\"#],
-                    vec![(EventType::Text, Some(r#"\"#)),]
-                ),
-                case!(
-                    vec![r#"\\\"#],
-                    vec![
-                        (EventType::Text, Some(r#"\"#)),
-                        (EventType::Text, Some(r#"\"#)),
-                    ]
-                ),
-                case!(vec![r#"\x"#], vec![(EventType::Text, Some(r#"x"#)),]),
-                case!(
-                    vec![r#"\\\x"#],
-                    vec![
-                        (EventType::Text, Some(r#"\"#)),
-                        (EventType::Text, Some(r#"x"#)),
-                    ]
-                ),
-                case!(
-                    vec![r#"\h\e\l\l\o"#],
-                    vec![
-                        (EventType::Text, Some(r#"h"#)),
-                        (EventType::Text, Some(r#"e"#)),
-                        (EventType::Text, Some(r#"l"#)),
-                        (EventType::Text, Some(r#"l"#)),
-                        (EventType::Text, Some(r#"o"#)),
-                    ]
-                ),
-                case!(vec![r#"\🌍"#], vec![(EventType::Text, Some(r#"🌍"#)),]),
+                case!(vec![r#"\"#], vec![(EventType::Text, Some(r#"\"#)),]),
+                case!(vec![r#"\\"#], vec![(EventType::Text, Some(r#"\\"#)),]),
+                case!(vec![r#"\x"#], vec![(EventType::Text, Some(r#"\x"#)),]),
             ],
         },
         GroupedCases {
@@ -117,6 +90,16 @@ pub fn groups_basic() -> Vec<GroupedCases> {
                     \
                     bar"#}],
                     vec![(EventType::NewLine, None), (EventType::Text, Some("bar")),]
+                ),
+                case!(
+                    vec![indoc! {r#"
+                    \a
+                    bar"#}],
+                    vec![
+                        (EventType::Text, Some(r#"\a"#)),
+                        (EventType::NewLine, None),
+                        (EventType::Text, Some("bar")),
+                    ]
                 ),
             ],
         },
