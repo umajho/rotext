@@ -449,9 +449,42 @@ mod leaf {
             cursor: &mut Cursor,
         ) -> Option<()> {
             let char = input.get(cursor.value())?;
-            if !char.is_ascii_alphabetic() {
-                return None;
+            if *char == b'#'
+                && input
+                    .get(cursor.value() + 1)
+                    .is_some_and(|c| c.is_ascii_digit())
+            {
+                advance_until_potential_floor_address_content_ends(input, cursor)
+            } else if char.is_ascii_alphabetic() {
+                advance_until_potential_absolute_address_content_ends(input, cursor)
+            } else {
+                None
             }
+        }
+
+        fn advance_until_potential_floor_address_content_ends(
+            input: &[u8],
+            cursor: &mut Cursor,
+        ) -> Option<()> {
+            cursor.move_forward(2);
+
+            loop {
+                let Some(char) = input.get(cursor.value()) else {
+                    return Some(());
+                };
+                if char.is_ascii_digit() {
+                    cursor.move_forward(1);
+                    continue;
+                } else {
+                    return Some(());
+                }
+            }
+        }
+
+        fn advance_until_potential_absolute_address_content_ends(
+            input: &[u8],
+            cursor: &mut Cursor,
+        ) -> Option<()> {
             cursor.move_forward(1);
 
             loop {

@@ -56,6 +56,10 @@ mod for_mod_leaf {
                 ] {
                     test(text, Some(()), Cursor::new(6));
                 }
+
+                for text in [&b"#123"[..], &b"#123 "[..], &b"#123"[..], &b"#123?"[..]] {
+                    test(text, Some(()), Cursor::new(4));
+                }
             }
         }
     }
