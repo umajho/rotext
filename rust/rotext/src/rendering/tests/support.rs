@@ -159,7 +159,7 @@ pub(super) struct Case<'a> {
     #[allow(dead_code)]
     pub options: CaseOptions<'a>,
 }
-impl<'a> test_support::Case for Case<'a> {
+impl test_support::Case for Case<'_> {
     fn assert_ok(&self) {
         let opts = NewHtmlRendererOptions {
             tag_name_map: self.options.tag_name_map.clone(),
