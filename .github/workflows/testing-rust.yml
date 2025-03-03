@@ -21,9 +21,9 @@ jobs:
 
       - name: Setup Rust
         run: |
-            rustup toolchain install nightly-2024-07-26 --profile minimal
-            rustup default nightly-2024-07-26
-            rustup component add clippy
+          rustup toolchain install nightly-2024-07-26 --profile minimal
+          rustup default nightly-2024-07-26
+          rustup component add clippy
 
       - name: Run tests without features
         if: matrix.features == 'none'
