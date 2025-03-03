@@ -40,6 +40,7 @@ mod for_fn_parse {
         let end_condition = EndCondition {
             on_atx_closing: None,
             on_table_related: None,
+            on_description_definition_opening: false,
         };
 
         test(
@@ -134,6 +135,7 @@ mod for_fn_parse {
         let end_condition = EndCondition {
             on_atx_closing: None,
             on_table_related: None,
+            on_description_definition_opening: false,
         };
 
         for input in [&b"<`VE`>"[..], &b"<`VE`>after"[..]] {
@@ -209,6 +211,7 @@ mod for_fn_parse {
         let end_condition = EndCondition {
             on_atx_closing: None,
             on_table_related: None,
+            on_description_definition_opening: false,
         };
 
         for input in [&b"<%C%>"[..], &b"<%C%>after"[..]] {
@@ -264,6 +267,7 @@ mod for_fn_parse {
         let end_condition = EndCondition {
             on_atx_closing: None,
             on_table_related: None,
+            on_description_definition_opening: false,
         };
 
         test(
@@ -287,6 +291,7 @@ mod for_fn_parse {
                 count: 2,
             }),
             on_table_related: None,
+            on_description_definition_opening: false,
         };
 
         test(
@@ -393,6 +398,7 @@ mod for_fn_parse {
                 count: 2,
             }),
             on_table_related: None,
+            on_description_definition_opening: false,
         };
 
         test(
@@ -418,6 +424,7 @@ mod for_fn_parse {
         let end_condition = EndCondition {
             on_atx_closing: None,
             on_table_related: None,
+            on_description_definition_opening: false,
         };
 
         test(
@@ -440,6 +447,7 @@ mod for_fn_parse {
             on_table_related: Some(TableRelated {
                 is_caption_applicable: false,
             }),
+            on_description_definition_opening: false,
         };
 
         test(
@@ -528,6 +536,7 @@ mod for_fn_parse {
             on_table_related: Some(TableRelated {
                 is_caption_applicable: true,
             }),
+            on_description_definition_opening: false,
         };
 
         test(
@@ -553,6 +562,7 @@ mod for_fn_parse {
             on_table_related: Some(TableRelated {
                 is_caption_applicable: true,
             }),
+            on_description_definition_opening: false,
         };
 
         test(

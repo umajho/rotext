@@ -73,7 +73,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                 break Some(Ok(ev));
             }
 
-            let result: crate::Result<Tym<3>> = match &mut self.state {
+            let result: crate::Result<Tym<6>> = match &mut self.state {
                 State::Exiting(exiting_branches) => match Self::exit(
                     &mut self.inner,
                     &mut self.item_likes_state,
@@ -103,6 +103,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                         } else {
                             ItemLikesState::ProcessingNew
                         };
+                        self.inner.is_in_item_like_continuation_line = false;
                     }
                     self.inner.reset_current_expecting();
 
@@ -124,7 +125,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
     }
 
     #[inline(always)]
-    fn parse(&mut self, mut expecting: Expecting) -> crate::Result<Tym<3>> {
+    fn parse(&mut self, mut expecting: Expecting) -> crate::Result<Tym<6>> {
         let spaces = count_continuous_character(self.input, b' ', self.inner.cursor());
         if spaces > 0 {
             self.inner.move_cursor_forward(spaces);
@@ -336,7 +337,7 @@ mod branch {
             inner: &mut ParserInner<TStack>,
             item_likes_state: &mut ItemLikesState,
             first_char: u8,
-        ) -> crate::Result<Tym<3>> {
+        ) -> crate::Result<Tym<6>> {
             use GeneralItemLike as I;
             use ItemLikeContainer as G;
 
@@ -393,6 +394,7 @@ mod branch {
                         );
                     if is_all_processed {
                         *item_likes_state = ItemLikesState::ProcessingNew;
+                        inner.is_in_item_like_continuation_line = true;
                     }
                     TYM_UNIT.into()
                 }
@@ -494,7 +496,7 @@ mod branch {
             true
         }
 
-        fn make_stack_entry_from_general_item_like<TStack: Stack<StackEntry>>(
+        pub fn make_stack_entry_from_general_item_like<TStack: Stack<StackEntry>>(
             item_like: GeneralItemLike,
             inner: &mut ParserInner<TStack>,
         ) -> StackEntryItemLike {
@@ -541,7 +543,7 @@ mod branch {
             state: &mut State,
             inner: &mut ParserInner<TStack>,
             first_char: u8,
-        ) -> crate::Result<Tym<3>> {
+        ) -> crate::Result<Tym<6>> {
             match first_char {
                 m!('{') => match input.get(inner.cursor() + 1) {
                     Some(m!('|')) => {
@@ -693,7 +695,7 @@ mod leaf {
         state: &mut State,
         inner: &mut ParserInner<TStack>,
         first_char: u8,
-    ) -> crate::Result<Tym<3>> {
+    ) -> crate::Result<Tym<6>> {
         match first_char {
             m!('-') => {
                 let count = 1 + count_continuous_character(input, m!('-'), inner.cursor() + 1);
@@ -734,7 +736,7 @@ mod leaf {
         state: &mut State,
         inner: &mut ParserInner<TStack>,
         top_leaf: TopLeaf,
-    ) -> crate::Result<Tym<3>> {
+    ) -> crate::Result<Tym<6>> {
         match top_leaf {
             TopLeaf::Paragraph(top_leaf) => {
                 leaf::paragraph::parse_content_and_process(input, state, inner, top_leaf)
@@ -809,6 +811,7 @@ mod leaf {
                     on_table_related: branch::braced::table::make_table_related_end_condition(
                         inner, false,
                     ),
+                    on_description_definition_opening: false,
                 },
                 if inner.current_expecting.spaces_before() > 0 {
                     line::normal::ContentBefore::Space
@@ -842,6 +845,9 @@ mod leaf {
                     let tym_b = table_related_end.process(state);
 
                     tym_a.add(tym_b)
+                }
+                line::normal::End::DescriptionDefinitionOpening => {
+                    unreachable!()
                 }
                 line::normal::End::None => TYM_UNIT.into(),
             };
@@ -1036,7 +1042,7 @@ mod leaf {
             state: &mut State,
             inner: &mut ParserInner<TStack>,
             content_before: usize,
-        ) -> crate::Result<Tym<3>> {
+        ) -> crate::Result<Tym<6>> {
             #[cfg(debug_assertions)]
             {
                 if content_before > 0 {
@@ -1061,6 +1067,8 @@ mod leaf {
                         inner,
                         has_just_entered_table,
                     ),
+                    on_description_definition_opening: inner.stack.top_is_description_term()
+                        && !inner.is_in_item_like_continuation_line,
                 },
                 line::normal::ContentBefore::NotSpace(content_before),
             );
@@ -1086,7 +1094,7 @@ mod leaf {
                 TYM_UNIT.into()
             };
 
-            let tym_c = process_normal_end(end, state, inner);
+            let tym_c = process_normal_end(end, state, inner)?;
 
             Ok(tym_ab.add(tym_c))
         }
@@ -1095,8 +1103,8 @@ mod leaf {
             end: line::normal::End,
             state: &mut State,
             inner: &mut ParserInner<TStack>,
-        ) -> Tym<1> {
-            match end {
+        ) -> crate::Result<Tym<4>> {
+            let ret = match end {
                 line::normal::End::Eof |
                 // 段落处理换行是在换行后的那一行，而非换行前的那一行（现在），因此这里跳过处
                 // 理。这么做是因为现在不知道下一行还有没有内容，没有内容的话就不应该产出换行
@@ -1110,8 +1118,51 @@ mod leaf {
                     let tym = table_related_end.process(state, );
                     cast_tym!(tym)
                 }
+                line::normal::End::DescriptionDefinitionOpening => {
+                    // 退出当前的段落。
+                    let tym_a = {
+                        let Some(TopLeaf::Paragraph(top_leaf)) = inner.stack.pop_top_leaf() else {
+                            unreachable!()
+                        };
+                        exit(inner, top_leaf)
+                    };
+
+                    // 退出当前的 DT。
+                    let tym_b = {
+                        let Some(StackEntry::ItemLike(dt)) = inner.stack.pop() else {
+                            unreachable!()
+                        };
+                        debug_assert!(matches!(dt.r#type, GeneralItemLike::DT));
+                        branch::item_like::exit(inner, dt)?
+                    };
+
+                    // 进入 DD
+                    let tym_c = {
+                        let stack_entry =
+                            branch::item_like::make_stack_entry_from_general_item_like(GeneralItemLike::DD, inner);
+                        let ev = stack_entry.make_enter_event();
+                        inner.stack.push_item_like(stack_entry)?;
+                        inner.r#yield(ev)
+                    };
+
+                    // 进入 DD 中的段落。
+                    let tym_d = {
+                        let id = inner.pop_block_id();
+                        let top_leaf = TopLeafParagraph {
+                            meta: Meta::new(id, inner.current_line()),
+                            new_line: None
+                        };
+                        let ev = top_leaf.make_enter_event();
+                        inner.stack.push_top_leaf(top_leaf.into());
+                        inner.r#yield(ev)
+                    };
+                    
+                    tym_a.add(tym_b).add(tym_c).add(tym_d)
+                }
                 line::normal::End::None => TYM_UNIT.into()
-            }
+            };
+
+            Ok(ret)
         }
 
         pub fn parse_content_and_process<TStack: Stack<StackEntry>>(
@@ -1119,7 +1170,7 @@ mod leaf {
             state: &mut State,
             inner: &mut ParserInner<TStack>,
             mut top_leaf: TopLeafParagraph,
-        ) -> crate::Result<Tym<3>> {
+        ) -> crate::Result<Tym<6>> {
             let (mut content, mut end) = line::normal::parse(
                 input,
                 inner,
@@ -1128,6 +1179,8 @@ mod leaf {
                     on_table_related: branch::braced::table::make_table_related_end_condition(
                         inner, false,
                     ),
+                    on_description_definition_opening: inner.stack.top_is_description_term()
+                        && !inner.is_in_item_like_continuation_line,
                 },
                 if inner.current_expecting.spaces_before() > 0 {
                     line::normal::ContentBefore::Space
@@ -1163,7 +1216,7 @@ mod leaf {
                 exit(inner, top_leaf).into()
             };
 
-            let tym_c = process_normal_end(end, state, inner);
+            let tym_c = process_normal_end(end, state, inner)?;
 
             Ok(tym_ab.add(tym_c))
         }

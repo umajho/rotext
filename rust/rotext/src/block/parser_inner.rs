@@ -12,7 +12,7 @@ use super::{
     types::{CursorContext, YieldContext},
 };
 
-const MAX_TO_YIELD: usize = 3;
+const MAX_TO_YIELD: usize = 6;
 
 pub struct ParserInner<TStack: Stack<StackEntry>> {
     cursor: usize,
@@ -27,10 +27,13 @@ pub struct ParserInner<TStack: Stack<StackEntry>> {
     #[cfg(feature = "block-id")]
     block_id_generator: BlockIdGenerator,
 
-    /// 记录仅在进入变体 `Expecting` 对应的分支时，在处理这个分支期间有效的数据。
+    /// 记录仅在 [Parser] 的 `state` 为 `Expecting` 时才有效的数据。
     pub current_expecting: CurrentExpecting,
 
     has_just_entered_table: bool,
+
+    /// 是否当前处于由 “>” 延续的、某种 item-like 的行之内。
+    pub is_in_item_like_continuation_line: bool,
 }
 
 impl<TStack: Stack<StackEntry>> ParserInner<TStack> {
@@ -44,6 +47,7 @@ impl<TStack: Stack<StackEntry>> ParserInner<TStack> {
             block_id_generator: BlockIdGenerator::new(),
             current_expecting: CurrentExpecting::new(),
             has_just_entered_table: false,
+            is_in_item_like_continuation_line: false,
         }
     }
 

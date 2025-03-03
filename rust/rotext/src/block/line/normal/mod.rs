@@ -5,6 +5,7 @@ use std::ops::Range;
 
 use crate::{
     block::{branch::braced::table, types::CursorContext},
+    common::m,
     events::{NewLine, VerbatimEscaping},
     utils::internal::string::count_continuous_character_with_maximum,
 };
@@ -15,6 +16,7 @@ use super::{global_phase, parse_common_end, CommonEnd, ParseCommonEndOutput};
 pub struct EndCondition {
     pub on_atx_closing: Option<AtxClosing>,
     pub on_table_related: Option<TableRelated>,
+    pub on_description_definition_opening: bool,
 }
 /// 类似于 CommonMark 中 ATX 风格的 Headings 中的闭合部分，位于空格之后，外部结构的结
 /// 尾之前（除了常规的换行和文档结束，“结尾” 还可能是 [braced] 的闭合部分），标记都
@@ -41,6 +43,7 @@ pub enum End {
     NewLine(Option<NewLine>),
     VerbatimEscaping(VerbatimEscaping),
     TableRelated(table::TableRelatedEnd),
+    DescriptionDefinitionOpening,
     None,
 }
 impl From<table::TableRelatedEnd> for End {
@@ -130,7 +133,7 @@ pub fn parse<TCtx: CursorContext>(
         let is_after_space =
             spaces > 0 || (range.is_empty() && matches!(content_before, ContentBefore::Space));
         if let Some(cond) = &end_condition.on_atx_closing {
-            if is_after_space && input.get(ctx.cursor()) == Some(&cond.character) {
+            if is_after_space && char == cond.character {
                 let count = 1 + count_continuous_character_with_maximum(
                     input,
                     cond.character,
@@ -163,14 +166,25 @@ pub fn parse<TCtx: CursorContext>(
             }
         }
 
-        {
-            let opts = ParseEndWhenConfirmedNoAtxClosingOptions {
-                is_range_empty: range.is_empty(),
-            };
-            let output =
-                parse_end_when_confirmed_no_atx_closing(input, ctx, &end_condition, char, opts);
-            if let Some(end) = output {
+        if let Some(cond) = &end_condition.on_table_related {
+            if let Some(end) = parse_table_related_end(
+                input,
+                ctx,
+                cond,
+                char,
+                ParseEndWhenConfirmedNoAtxClosingOptions {
+                    is_range_empty: range.is_empty(),
+                },
+            ) {
                 break (range, end);
+            }
+        }
+
+        if end_condition.on_description_definition_opening {
+            // FIXME!!!: 还要检查冒号后的空白后是否有内容。
+            if is_after_space && char == m!(':') && input.get(ctx.cursor() + 1) == Some(&b' ') {
+                ctx.move_cursor_forward(1 + " ".len());
+                break (range, End::DescriptionDefinitionOpening);
             }
         }
 
@@ -181,7 +195,7 @@ pub fn parse<TCtx: CursorContext>(
 
     match end {
         End::VerbatimEscaping(_) | End::None => range.end += spaces,
-        End::Eof | End::NewLine(_) | End::TableRelated(_) => {}
+        End::Eof | End::NewLine(_) | End::TableRelated(_) | End::DescriptionDefinitionOpening => {}
     }
 
     (range, end)
@@ -220,9 +234,8 @@ fn parse_following_end_that_can_close_heading<TCtx: CursorContext>(
             ParseCommonEndOutput::None(char) => char,
         };
 
-        {
-            let output =
-                parse_end_when_confirmed_no_atx_closing(input, ctx, end_condition, char, opts);
+        if let Some(end_condition) = &end_condition.on_table_related {
+            let output = parse_table_related_end(input, ctx, end_condition, char, opts);
             if let Some(end) = output {
                 return ParseFollwingEndThatCanCloseHeadingOutput {
                     spaces_before_end,
@@ -244,19 +257,13 @@ struct ParseEndWhenConfirmedNoAtxClosingOptions {
 /// 确定了没有 ATX Heading 闭合部分之后进行的接下来的解析。
 ///
 /// 目前只可能返回 [End::TableRelated]。
-fn parse_end_when_confirmed_no_atx_closing<TCtx: CursorContext>(
+fn parse_table_related_end<TCtx: CursorContext>(
     input: &[u8],
     ctx: &mut TCtx,
-    end_condition: &EndCondition,
+    end_condition: &TableRelated,
     first_char: u8,
     opts: ParseEndWhenConfirmedNoAtxClosingOptions,
 ) -> Option<End> {
-    if let Some(end_condition) = &end_condition.on_table_related {
-        let is_caption_applicable = opts.is_range_empty && end_condition.is_caption_applicable;
-        if let Some(end) = table::parse_end(input, ctx, first_char, is_caption_applicable) {
-            return Some(End::TableRelated(end));
-        }
-    }
-
-    None
+    let is_caption_applicable = opts.is_range_empty && end_condition.is_caption_applicable;
+    table::parse_end(input, ctx, first_char, is_caption_applicable).map(End::TableRelated)
 }

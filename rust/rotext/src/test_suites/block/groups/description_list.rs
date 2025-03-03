@@ -34,9 +34,12 @@ pub fn groups_description_list() -> Vec<GroupedCases> {
                 ]
             ),
             case!(
-                vec![indoc! {"
-                    ; term
-                    : details"},],
+                vec![
+                    indoc! {"
+                        ; term
+                        : details"},
+                    indoc! {"; term : details"},
+                ],
                 vec![
                     (EventType::EnterDescriptionList, None),
                     (EventType::EnterDescriptionTerm, None),
@@ -53,12 +56,18 @@ pub fn groups_description_list() -> Vec<GroupedCases> {
                 ]
             ),
             case!(
-                vec![indoc! {"
-                    ; term 1
-                    : details 1
-                    ; term 2
-                    : details 2.1
-                    : details 2.2"},],
+                vec![
+                    indoc! {"
+                        ; term 1
+                        : details 1
+                        ; term 2
+                        : details 2.1
+                        : details 2.2"},
+                    indoc! {"
+                        ; term 1 : details 1
+                        ; term 2 : details 2.1
+                        : details 2.2"},
+                ],
                 vec![
                     (EventType::EnterDescriptionList, None),
                     (EventType::EnterDescriptionTerm, None),

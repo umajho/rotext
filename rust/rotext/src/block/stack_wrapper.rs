@@ -63,6 +63,19 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
         )
     }
 
+    pub fn top_is_description_term(&self) -> bool {
+        if self.top_leaf.is_some() {
+            return false;
+        }
+        matches!(
+            self.stack.as_slice().last(),
+            Some(StackEntry::ItemLike(StackEntryItemLike {
+                r#type: GeneralItemLike::DT,
+                ..
+            }))
+        )
+    }
+
     pub fn top_is_table(&self) -> bool {
         if self.top_leaf.is_some() {
             return false;
