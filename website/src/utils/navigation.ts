@@ -12,7 +12,8 @@ export function navigateToAddress(
   _opts?: { shouldOpenNewTab: boolean },
 ) {
   switch (address[0]) {
-    case "reference/textual":
+    case "reference/textualAbsolute":
+    case "reference/textualFloorNumber":
     case "reference/numeric":
       window.alert(`演示：请当作前往了 ${reconstructAddressAsText(address)}。`);
       return;

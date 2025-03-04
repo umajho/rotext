@@ -48,7 +48,8 @@ async function getPreviewContent(
   address: Address,
 ): Promise<PreviewContent> {
   switch (address[0]) {
-    case "reference/textual":
+    case "reference/textualAbsolute":
+    case "reference/textualFloorNumber":
     case "reference/numeric":
       return ["todo"];
     case "wiki": {

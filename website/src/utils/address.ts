@@ -1,12 +1,16 @@
 export type Address =
   | [
-    type: "reference/textual",
+    type: "reference/textualAbsolute",
     prefix: string,
     /**
      * 可以是主串（如 “abc”）也可以是子串（如 “abc.def”）。
      */
     threadID: string,
     floorNumber: number | null,
+  ]
+  | [
+    type: "reference/textualFloorNumber",
+    floorNumber: number,
   ]
   | [
     type: "reference/numeric",
@@ -24,14 +28,24 @@ export function stringifyAddress(addr: Address): string {
 export function reconstructAddressAsText(
   address: Extract<
     Address,
-    { 0: "reference/textual" | "reference/numeric" | "wiki" }
+    {
+      0:
+        | "reference/textualAbsolute"
+        | "reference/textualFloorNumber"
+        | "reference/numeric"
+        | "wiki";
+    }
   >,
 ): string {
   switch (address[0]) {
-    case "reference/textual": {
+    case "reference/textualAbsolute": {
       const [_, prefix, threadID, floorNumber] = address;
       return `>>${prefix}.${threadID}` +
         (floorNumber !== null ? `#${floorNumber}` : "");
+    }
+    case "reference/textualFloorNumber": {
+      const [_, floorNumber] = address;
+      return `>>#${floorNumber}`;
     }
     case "reference/numeric": {
       const [_, prefix, id] = address;

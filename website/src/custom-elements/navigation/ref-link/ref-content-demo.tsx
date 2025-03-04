@@ -62,10 +62,9 @@ const AddressDescription: Component<{
 
       const bullets: string[] = [];
 
-      switch (props.address[0]) {
-        case "reference/textual": {
-          const [_, _prefix, threadID, floorNumber] = //
-            address as Extract<RefAddress, { 0: "reference/textual" }>;
+      switch (address[0]) {
+        case "reference/textualAbsolute": {
+          const [_, _prefix, threadID, floorNumber] = address;
           bullets.push(
             `串号是 “${threadID}” 的串` +
               (threadID.includes(".") ? "（子级串）" : "") +
@@ -79,9 +78,16 @@ const AddressDescription: Component<{
           }
           break;
         }
+        case "reference/textualFloorNumber":
+          const [_, floorNumber] = address;
+          bullets.push("本串的，");
+          bullets.push(
+            "位于" + (floorNumber ? `第${floorNumber}层` : "串首") +
+              "的帖子。",
+          );
+          break;
         case "reference/numeric": {
-          const [_, _prefix, id] = //
-            address as Extract<RefAddress, { 0: "reference/numeric" }>;
+          const [_, _prefix, id] = address;
           bullets.push(`帖号是“${id}”的帖子。`);
           break;
         }
@@ -89,7 +95,7 @@ const AddressDescription: Component<{
           bullets.push("未知地址。");
           break;
         default:
-          props.address satisfies never;
+          address satisfies never;
       }
 
       const src = "这里的内容会引用自：\n\n* " + bullets.join("\n* ");
@@ -115,10 +121,25 @@ const AddressDescription: Component<{
 
 type RefAddress = Extract<
   Address,
-  { 0: "reference/textual" | "reference/numeric" | "never" }
+  {
+    0:
+      | "reference/textualAbsolute"
+      | "reference/textualFloorNumber"
+      | "reference/numeric"
+      | "never";
+  }
 >;
 
 function parseAddress(address: string): RefAddress {
+  if (address.startsWith("#")) {
+    const floorNumberText = address.slice(1);
+    if (/^\d+$/.test(floorNumberText)) {
+      return ["reference/textualFloorNumber", parseInt(floorNumberText)];
+    } else {
+      return ["never"];
+    }
+  }
+
   const prefixAndContent = /^([A-Z]+)\.(.*)$/.exec(address);
   if (!prefixAndContent) return ["never"];
 
@@ -139,7 +160,7 @@ function parseAddress(address: string): RefAddress {
   const fullThreadID = threadID + (subThreadID ? ("." + subThreadID) : "");
 
   return [
-    "reference/textual",
+    "reference/textualAbsolute",
     prefix,
     fullThreadID,
     floorNumberText ? parseInt(floorNumberText) : null,
