@@ -55,59 +55,66 @@ const AddressDescription: Component<{
 }> = (props) => {
   let divEl!: HTMLDivElement;
 
+  const processors = useRotextProcessorsStore()!;
+
   onMount(() => {
-    createEffect(on([() => props.address], ([address]) => {
-      const processors = useRotextProcessorsStore()!;
-      const processor = processors.currentProvider!();
+    createEffect(
+      on(
+        [() => props.address, () => processors.currentProvider],
+        ([address, currentProcessorProvider]) => {
+          if (!currentProcessorProvider) return;
+          const processor = currentProcessorProvider();
 
-      const bullets: string[] = [];
+          const bullets: string[] = [];
 
-      switch (address[0]) {
-        case "reference/textualAbsolute": {
-          const [_, _prefix, threadID, floorNumber] = address;
-          bullets.push(
-            `串号是 “${threadID}” 的串` +
-              (threadID.includes(".") ? "（子级串）" : "") +
-              (floorNumber !== null ? "的，" : "。"),
-          );
-          if (floorNumber !== null) {
-            bullets.push(
-              "位于" + (floorNumber ? `第${floorNumber}层` : "串首") +
-                "的帖子。",
-            );
+          switch (address[0]) {
+            case "reference/textualAbsolute": {
+              const [_, _prefix, threadID, floorNumber] = address;
+              bullets.push(
+                `串号是 “${threadID}” 的串` +
+                  (threadID.includes(".") ? "（子级串）" : "") +
+                  (floorNumber !== null ? "的，" : "。"),
+              );
+              if (floorNumber !== null) {
+                bullets.push(
+                  "位于" + (floorNumber ? `第${floorNumber}层` : "串首") +
+                    "的帖子。",
+                );
+              }
+              break;
+            }
+            case "reference/textualFloorNumber":
+              const [_, floorNumber] = address;
+              bullets.push("本串的，");
+              bullets.push(
+                "位于" + (floorNumber ? `第${floorNumber}层` : "串首") +
+                  "的帖子。",
+              );
+              break;
+            case "reference/numeric": {
+              const [_, _prefix, id] = address;
+              bullets.push(`帖号是“${id}”的帖子。`);
+              break;
+            }
+            case "never":
+              bullets.push("未知地址。");
+              break;
+            default:
+              address satisfies never;
           }
-          break;
-        }
-        case "reference/textualFloorNumber":
-          const [_, floorNumber] = address;
-          bullets.push("本串的，");
-          bullets.push(
-            "位于" + (floorNumber ? `第${floorNumber}层` : "串首") +
-              "的帖子。",
-          );
-          break;
-        case "reference/numeric": {
-          const [_, _prefix, id] = address;
-          bullets.push(`帖号是“${id}”的帖子。`);
-          break;
-        }
-        case "never":
-          bullets.push("未知地址。");
-          break;
-        default:
-          address satisfies never;
-      }
 
-      const src = "这里的内容会引用自：\n\n* " + bullets.join("\n* ");
+          const src = "这里的内容会引用自：\n\n* " + bullets.join("\n* ");
 
-      const result = processor.process(src, {
-        requiresLookupListRaw: false,
-        tagNameMap: TAG_NAME_MAP,
-      });
-      if (result.error) throw new Error("TODO!!");
+          const result = processor.process(src, {
+            requiresLookupListRaw: false,
+            tagNameMap: TAG_NAME_MAP,
+          });
+          if (result.error) throw new Error("TODO!!");
 
-      divEl.innerHTML = result.html!;
-    }));
+          divEl.innerHTML = result.html!;
+        },
+      ),
+    );
   });
 
   return (
