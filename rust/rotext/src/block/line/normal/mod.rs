@@ -180,12 +180,13 @@ pub fn parse<TCtx: CursorContext>(
             }
         }
 
-        if end_condition.on_description_definition_opening {
-            // FIXME!!!: 还要检查冒号后的空白后是否有内容。
-            if is_after_space && char == m!(':') && input.get(ctx.cursor() + 1) == Some(&b' ') {
-                ctx.move_cursor_forward(1 + " ".len());
-                break (range, End::DescriptionDefinitionOpening);
-            }
+        if end_condition.on_description_definition_opening
+            && is_after_space
+            && char == m!(':')
+            && input.get(ctx.cursor() + 1) == Some(&b' ')
+        {
+            ctx.move_cursor_forward(1 + " ".len());
+            break (range, End::DescriptionDefinitionOpening);
         }
 
         ctx.move_cursor_forward(1);
