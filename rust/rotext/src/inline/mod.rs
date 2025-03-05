@@ -239,6 +239,18 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
 
                         break (text_end, Some(to_yield_after_text));
                     }
+                    Some(m!(';')) if !inner.stack.is_in_ruby() => {
+                        let text_end = cursor.value();
+
+                        cursor.move_forward("[;".len());
+                        while input.get(cursor.value()) == Some(&b' ') {
+                            cursor.move_forward(1);
+                        }
+                        inner.stack.enter_ruby()?;
+                        let to_yield_after_text = ev!(Inline, EnterRuby);
+
+                        break (text_end, Some(to_yield_after_text));
+                    }
                     Some(m!('[')) => {
                         match leaf::wiki_link::process_and_yield_potential(
                             input,
@@ -258,18 +270,46 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                         continue;
                     }
                 },
+                m!(':') if inner.stack.is_in_ruby_but_not_in_ruby_text() => {
+                    let text_end = {
+                        let mut text_end = cursor.value();
+                        while input.get(text_end - 1) == Some(&b' ') {
+                            text_end -= 1;
+                        }
+                        text_end
+                    };
+
+                    cursor.move_forward(":".len());
+                    while input.get(cursor.value()) == Some(&b' ') {
+                        cursor.move_forward(1);
+                    }
+                    inner.stack.enter_ruby_text()?;
+                    let to_yield_after_text = ev!(Inline, EnterRubyText);
+
+                    break (text_end, Some(to_yield_after_text));
+                }
                 &char => {
-                    if let Some(entry_to_be_popped_until) =
-                        end_condition.test(char, input.get(cursor.value() + 1).copied())
-                    {
+                    let test_result =
+                        #[allow(clippy::manual_map)]
+                        if let Some(entry_to_be_popped_until) = end_condition.test_1(char) {
+                            Some((entry_to_be_popped_until, 1))
+                        } else if let Some(entry_to_be_popped_until) =
+                            end_condition.test_2(char, input.get(cursor.value() + 1).copied())
+                        {
+                            Some((entry_to_be_popped_until, 2))
+                        } else {
+                            None
+                        };
+
+                    if let Some((entry_to_be_popped_until, to_move_forward)) = test_result {
                         let text_end = cursor.value();
-                        cursor.move_forward(2);
+                        cursor.move_forward(to_move_forward);
                         inner.to_exit_until_popped_entry_from_stack =
                             Some(entry_to_be_popped_until);
                         break (text_end, None);
+                    } else {
+                        cursor.move_forward(1);
                     }
-
-                    cursor.move_forward(1);
                 }
             }
         };
@@ -295,12 +335,8 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                 }
             };
             (tym, None)
-        } else if let Some(entry) = inner.stack.pop_entry() {
-            let tym = match entry {
-                StackEntry::Strong | StackEntry::Strikethrough | StackEntry::WikiLink => {
-                    inner.r#yield(ev!(Inline, ExitInline))
-                }
-            };
+        } else if let Some(_entry) = inner.stack.pop_entry() {
+            let tym = inner.r#yield(ev!(Inline, ExitInline));
 
             (tym, None)
         } else {

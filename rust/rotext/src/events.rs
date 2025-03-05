@@ -45,6 +45,8 @@ pub enum EventType {
     EnterCodeSpan = 111,
     EnterStrong = 112,
     EnterStrikethrough = 113,
+    EnterRuby = 114,
+    EnterRubyText = 115,
     EnterWikiLink = 121,
     ExitInline = 199,
 }
@@ -184,6 +186,12 @@ pub enum Event {
     /// 进入删除线。
     #[groups(Inline | Blend)]
     EnterStrikethrough = EventType::EnterStrikethrough as u8,
+    /// 进入注音。
+    #[groups(Inline | Blend)]
+    EnterRuby = EventType::EnterRuby as u8,
+    /// 进入注音文本。
+    #[groups(Inline | Blend)]
+    EnterRubyText = EventType::EnterRubyText as u8,
 
     // 进入Wiki链接。
     #[groups(Inline | Blend)]
@@ -273,6 +281,8 @@ impl Event {
             | Event::EnterCodeSpan
             | Event::EnterStrong
             | Event::EnterStrikethrough
+            | Event::EnterRuby
+            | Event::EnterRubyText
             | Event::ExitInline => return None,
         };
 

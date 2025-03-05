@@ -318,6 +318,8 @@ impl<'a> HtmlRenderer<'a> {
                 Event::EnterCodeSpan => self.push_simple_inline(&mut stack, b"code"),
                 Event::EnterStrong => self.push_simple_inline(&mut stack, b"strong"),
                 Event::EnterStrikethrough => self.push_simple_inline(&mut stack, b"s"),
+                Event::EnterRuby => self.push_simple_inline(&mut stack, b"ruby"),
+                Event::EnterRubyText => self.push_simple_inline(&mut stack, b"rt"),
 
                 Event::EnterWikiLink(address) => {
                     self.write_opening_tag_with_single_attribute(
