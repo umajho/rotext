@@ -183,9 +183,10 @@ pub fn parse<TCtx: CursorContext>(
         if end_condition.on_description_definition_opening
             && is_after_space
             && char == m!(':')
-            && input.get(ctx.cursor() + 1) == Some(&b' ')
+            && input.get(ctx.cursor() + 1) == Some(&m!(':'))
+            && input.get(ctx.cursor() + 2) == Some(&b' ')
         {
-            ctx.move_cursor_forward(1 + " ".len());
+            ctx.move_cursor_forward(":: ".len());
             break (range, End::DescriptionDefinitionOpening);
         }
 
