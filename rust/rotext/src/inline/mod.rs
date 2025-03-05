@@ -243,9 +243,6 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                         let text_end = cursor.value();
 
                         cursor.move_forward("[;".len());
-                        while input.get(cursor.value()) == Some(&b' ') {
-                            cursor.move_forward(1);
-                        }
                         inner.stack.enter_ruby()?;
                         let to_yield_after_text = ev!(Inline, EnterRuby);
 
