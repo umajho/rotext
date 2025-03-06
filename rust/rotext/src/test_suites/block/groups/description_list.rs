@@ -80,23 +80,25 @@ pub fn groups_description_list() -> Vec<GroupedCases> {
             case!(
                 vec![indoc! {"
                     ; term
-                    > term line 2 :: still term line 2
-                    : details"},],
+                    > term line 2 :: details 1
+                    : details 2"},],
                 vec![
                     (EventType::EnterDescriptionList, None),
                     (EventType::EnterDescriptionTerm, None),
                     (EventType::EnterParagraph, None),
                     (EventType::__Unparsed, Some("term")),
                     (EventType::NewLine, None),
-                    (
-                        EventType::__Unparsed,
-                        Some("term line 2 :: still term line 2")
-                    ),
+                    (EventType::__Unparsed, Some("term line 2")),
                     (EventType::ExitBlock, None),
                     (EventType::ExitBlock, None),
                     (EventType::EnterDescriptionDetails, None),
                     (EventType::EnterParagraph, None),
-                    (EventType::__Unparsed, Some("details")),
+                    (EventType::__Unparsed, Some("details 1")),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                    (EventType::EnterDescriptionDetails, None),
+                    (EventType::EnterParagraph, None),
+                    (EventType::__Unparsed, Some("details 2")),
                     (EventType::ExitBlock, None),
                     (EventType::ExitBlock, None),
                     (EventType::ExitBlock, None),

@@ -31,9 +31,6 @@ pub struct ParserInner<TStack: Stack<StackEntry>> {
     pub current_expecting: CurrentExpecting,
 
     has_just_entered_table: bool,
-
-    /// 是否当前处于由 “>” 延续的、位于最深层的某种 item-like 的行之内。
-    pub is_in_deepest_item_like_continuation_line: bool,
 }
 
 impl<TStack: Stack<StackEntry>> ParserInner<TStack> {
@@ -47,7 +44,6 @@ impl<TStack: Stack<StackEntry>> ParserInner<TStack> {
             block_id_generator: BlockIdGenerator::new(),
             current_expecting: CurrentExpecting::new(),
             has_just_entered_table: false,
-            is_in_deepest_item_like_continuation_line: false,
         }
     }
 
