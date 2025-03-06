@@ -233,6 +233,48 @@ pub fn groups_description_list() -> Vec<GroupedCases> {
                     (EventType::ExitBlock, None),
                 ]
             ),
+            case!(
+                vec![
+                    indoc! {"
+                        > ; term 1 :: details 1
+                        > ; term 2 :: details 2"},
+                    indoc! {"
+                        >
+                        > ; term 1 :: details 1
+                        > ; term 2 :: details 2"},
+                    indoc! {"
+                        > ; term 1
+                        > : details 1
+                        > ; term 2
+                        > : details 2"},
+                ],
+                vec![
+                    (EventType::EnterBlockQuote, None),
+                    (EventType::EnterDescriptionList, None),
+                    (EventType::EnterDescriptionTerm, None),
+                    (EventType::EnterParagraph, None),
+                    (EventType::__Unparsed, Some("term 1")),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                    (EventType::EnterDescriptionDetails, None),
+                    (EventType::EnterParagraph, None),
+                    (EventType::__Unparsed, Some("details 1")),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                    (EventType::EnterDescriptionTerm, None),
+                    (EventType::EnterParagraph, None),
+                    (EventType::__Unparsed, Some("term 2")),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                    (EventType::EnterDescriptionDetails, None),
+                    (EventType::EnterParagraph, None),
+                    (EventType::__Unparsed, Some("details 2")),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                ]
+            ),
         ],
     }]
 }

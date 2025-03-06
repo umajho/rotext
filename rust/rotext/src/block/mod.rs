@@ -103,7 +103,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                         } else {
                             ItemLikesState::ProcessingNew
                         };
-                        self.inner.is_in_item_like_continuation_line = false;
+                        self.inner.is_in_deepest_item_like_continuation_line = false;
                     }
                     self.inner.reset_current_expecting();
 
@@ -394,7 +394,7 @@ mod branch {
                         );
                     if is_all_processed {
                         *item_likes_state = ItemLikesState::ProcessingNew;
-                        inner.is_in_item_like_continuation_line = true;
+                        inner.is_in_deepest_item_like_continuation_line = true;
                     }
                     TYM_UNIT.into()
                 }
@@ -420,6 +420,8 @@ mod branch {
             container: ItemLikeContainer,
             item_like: GeneralItemLike,
         ) -> crate::Result<Tym<2>> {
+            inner.is_in_deepest_item_like_continuation_line = false;
+
             let tym = match item_likes_state {
                 ItemLikesState::MatchingLastLine(matching_last_line) => {
                     let stack_entry = matching_last_line.first_unprocessed_item_like(&inner.stack);
@@ -1068,7 +1070,7 @@ mod leaf {
                         has_just_entered_table,
                     ),
                     on_description_definition_opening: inner.stack.top_is_description_term()
-                        && !inner.is_in_item_like_continuation_line,
+                        && !inner.is_in_deepest_item_like_continuation_line,
                 },
                 line::normal::ContentBefore::NotSpace(content_before),
             );
@@ -1180,7 +1182,7 @@ mod leaf {
                         inner, false,
                     ),
                     on_description_definition_opening: inner.stack.top_is_description_term()
-                        && !inner.is_in_item_like_continuation_line,
+                        && !inner.is_in_deepest_item_like_continuation_line,
                 },
                 if inner.current_expecting.spaces_before() > 0 {
                     line::normal::ContentBefore::Space
