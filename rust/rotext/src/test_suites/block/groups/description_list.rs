@@ -175,6 +175,64 @@ pub fn groups_description_list() -> Vec<GroupedCases> {
                 ]
             ),
             case!(
+                vec![
+                    indoc! {"; term :: "},
+                    indoc! {"; term ::"},
+                    indoc! {"; term ::\n"},
+                ],
+                vec![
+                    (EventType::EnterDescriptionList, None),
+                    (EventType::EnterDescriptionTerm, None),
+                    (EventType::EnterParagraph, None),
+                    (EventType::__Unparsed, Some("term")),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                    (EventType::EnterDescriptionDetails, None),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                ]
+            ),
+            case!(
+                vec![indoc! {"
+                        ; term 1 ::
+                        > ; term 1.1 :: details 1.1a
+                        > : details 1.1b
+                        > ; term 1.2"},],
+                vec![
+                    (EventType::EnterDescriptionList, None),
+                    (EventType::EnterDescriptionTerm, None),
+                    (EventType::EnterParagraph, None),
+                    (EventType::__Unparsed, Some("term 1")),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                    (EventType::EnterDescriptionDetails, None),
+                    (EventType::EnterDescriptionList, None),
+                    (EventType::EnterDescriptionTerm, None),
+                    (EventType::EnterParagraph, None),
+                    (EventType::__Unparsed, Some("term 1.1")),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                    (EventType::EnterDescriptionDetails, None),
+                    (EventType::EnterParagraph, None),
+                    (EventType::__Unparsed, Some("details 1.1a")),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                    (EventType::EnterDescriptionDetails, None),
+                    (EventType::EnterParagraph, None),
+                    (EventType::__Unparsed, Some("details 1.1b")),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                    (EventType::EnterDescriptionTerm, None),
+                    (EventType::EnterParagraph, None),
+                    (EventType::__Unparsed, Some("term 1.2")),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                ]
+            ),
+            case!(
                 vec![indoc! {"
                     ; ; term 1
                     > : details 1

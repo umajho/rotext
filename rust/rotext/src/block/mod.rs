@@ -73,7 +73,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                 break Some(Ok(ev));
             }
 
-            let result: crate::Result<Tym<6>> = match &mut self.state {
+            let result: crate::Result<Tym<5>> = match &mut self.state {
                 State::Exiting(exiting_branches) => match Self::exit(
                     &mut self.inner,
                     &mut self.item_likes_state,
@@ -124,7 +124,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
     }
 
     #[inline(always)]
-    fn parse(&mut self, mut expecting: Expecting) -> crate::Result<Tym<6>> {
+    fn parse(&mut self, mut expecting: Expecting) -> crate::Result<Tym<5>> {
         let spaces = count_continuous_character(self.input, b' ', self.inner.cursor());
         if spaces > 0 {
             self.inner.move_cursor_forward(spaces);
@@ -336,7 +336,7 @@ mod branch {
             inner: &mut ParserInner<TStack>,
             item_likes_state: &mut ItemLikesState,
             first_char: u8,
-        ) -> crate::Result<Tym<6>> {
+        ) -> crate::Result<Tym<5>> {
             use GeneralItemLike as I;
             use ItemLikeContainer as G;
 
@@ -418,7 +418,6 @@ mod branch {
             container: ItemLikeContainer,
             item_like: GeneralItemLike,
         ) -> crate::Result<Tym<2>> {
-
             let tym = match item_likes_state {
                 ItemLikesState::MatchingLastLine(matching_last_line) => {
                     let stack_entry = matching_last_line.first_unprocessed_item_like(&inner.stack);
@@ -542,7 +541,7 @@ mod branch {
             state: &mut State,
             inner: &mut ParserInner<TStack>,
             first_char: u8,
-        ) -> crate::Result<Tym<6>> {
+        ) -> crate::Result<Tym<5>> {
             match first_char {
                 m!('{') => match input.get(inner.cursor() + 1) {
                     Some(m!('|')) => {
@@ -694,7 +693,7 @@ mod leaf {
         state: &mut State,
         inner: &mut ParserInner<TStack>,
         first_char: u8,
-    ) -> crate::Result<Tym<6>> {
+    ) -> crate::Result<Tym<5>> {
         match first_char {
             m!('-') => {
                 let count = 1 + count_continuous_character(input, m!('-'), inner.cursor() + 1);
@@ -735,7 +734,7 @@ mod leaf {
         state: &mut State,
         inner: &mut ParserInner<TStack>,
         top_leaf: TopLeaf,
-    ) -> crate::Result<Tym<6>> {
+    ) -> crate::Result<Tym<5>> {
         match top_leaf {
             TopLeaf::Paragraph(top_leaf) => {
                 leaf::paragraph::parse_content_and_process(input, state, inner, top_leaf)
@@ -1041,7 +1040,7 @@ mod leaf {
             state: &mut State,
             inner: &mut ParserInner<TStack>,
             content_before: usize,
-        ) -> crate::Result<Tym<6>> {
+        ) -> crate::Result<Tym<5>> {
             #[cfg(debug_assertions)]
             {
                 if content_before > 0 {
@@ -1101,7 +1100,7 @@ mod leaf {
             end: line::normal::End,
             state: &mut State,
             inner: &mut ParserInner<TStack>,
-        ) -> crate::Result<Tym<4>> {
+        ) -> crate::Result<Tym<3>> {
             let ret = match end {
                 line::normal::End::Eof |
                 // 段落处理换行是在换行后的那一行，而非换行前的那一行（现在），因此这里跳过处
@@ -1143,19 +1142,7 @@ mod leaf {
                         inner.r#yield(ev)
                     };
 
-                    // 进入 DD 中的段落。
-                    let tym_d = {
-                        let id = inner.pop_block_id();
-                        let top_leaf = TopLeafParagraph {
-                            meta: Meta::new(id, inner.current_line()),
-                            new_line: None
-                        };
-                        let ev = top_leaf.make_enter_event();
-                        inner.stack.push_top_leaf(top_leaf.into());
-                        inner.r#yield(ev)
-                    };
-                    
-                    tym_a.add(tym_b).add(tym_c).add(tym_d)
+                    tym_a.add(tym_b).add(tym_c)
                 }
                 line::normal::End::None => TYM_UNIT.into()
             };
@@ -1168,7 +1155,7 @@ mod leaf {
             state: &mut State,
             inner: &mut ParserInner<TStack>,
             mut top_leaf: TopLeafParagraph,
-        ) -> crate::Result<Tym<6>> {
+        ) -> crate::Result<Tym<5>> {
             let (mut content, mut end) = line::normal::parse(
                 input,
                 inner,

@@ -12,7 +12,7 @@ use super::{
     types::{CursorContext, YieldContext},
 };
 
-const MAX_TO_YIELD: usize = 6;
+const MAX_TO_YIELD: usize = 5;
 
 pub struct ParserInner<TStack: Stack<StackEntry>> {
     cursor: usize,

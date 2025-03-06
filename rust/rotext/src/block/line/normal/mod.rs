@@ -184,10 +184,12 @@ pub fn parse<TCtx: CursorContext>(
             && is_after_space
             && char == m!(':')
             && input.get(ctx.cursor() + 1) == Some(&m!(':'))
-            && input.get(ctx.cursor() + 2) == Some(&b' ')
         {
-            ctx.move_cursor_forward(":: ".len());
-            break (range, End::DescriptionDefinitionOpening);
+            let next_next_char = input.get(ctx.cursor() + 2);
+            if matches!(next_next_char, None | Some(&b' ' | &b'\n')) {
+                ctx.move_cursor_forward(if next_next_char == Some(&b' ') { 3 } else { 2 });
+                break (range, End::DescriptionDefinitionOpening);
+            }
         }
 
         ctx.move_cursor_forward(1);
