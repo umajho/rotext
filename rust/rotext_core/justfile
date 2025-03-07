@@ -1,0 +1,16 @@
+set fallback
+
+lint:
+    cargo clippy -- -D warnings
+lint-af:
+    cargo clippy --all-features -- -D warnings
+
+test: lint
+    cargo test -- --nocapture
+test-af: lint-af
+    cargo test --all-features -- --nocapture
+
+bench:
+    cargo bench
+bench-af:
+    cargo bench --all-features

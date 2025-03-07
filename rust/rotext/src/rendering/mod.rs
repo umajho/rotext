@@ -1,8 +1,9 @@
 mod tests;
 
-use crate::events::BlockWithId;
-use crate::events::VerbatimEscaping;
-use crate::Event;
+use rotext_core::{
+    events::{BlockWithId, VerbatimEscaping},
+    Event,
+};
 
 macro_rules! write_data_block_id_attribute_if_applicable {
     ($self:ident, $data:ident) => {

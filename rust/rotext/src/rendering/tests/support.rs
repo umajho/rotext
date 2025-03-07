@@ -28,103 +28,103 @@ macro_rules! case {
 
 macro_rules! __event {
     (VerbatimEscaping ($start:literal..$end:literal)) => {
-        $crate::events::Event::VerbatimEscaping($crate::events::VerbatimEscaping {
+        $crate::Event::VerbatimEscaping(rotext_core::events::VerbatimEscaping {
             content: $start..$end,
             is_closed_forcedly: false,
-            line_after: $crate::types::LineNumber::new_invalid(),
+            line_after: rotext_core::LineNumber::new_invalid(),
         })
     };
 
     (NewLine (..)) => {
-        $crate::events::Event::NewLine($crate::events::NewLine {
-            line_after: $crate::types::LineNumber::new_invalid(),
+        $crate::Event::NewLine(rotext_core::events::NewLine {
+            line_after: rotext_core::LineNumber::new_invalid(),
         })
     };
 
     (Text ($start:literal..$end:literal)) => {
-        $crate::events::Event::Text($start..$end)
+        $crate::Event::Text($start..$end)
     };
 
     (IndicateCodeBlockCode ()) => {
-        $crate::events::Event::IndicateCodeBlockCode
+        $crate::Event::IndicateCodeBlockCode
     };
     (IndicateTableCaption ()) => {
-        $crate::events::Event::IndicateTableCaption
+        $crate::Event::IndicateTableCaption
     };
     (IndicateTableRow ()) => {
-        $crate::events::Event::IndicateTableRow
+        $crate::Event::IndicateTableRow
     };
     (IndicateTableHeaderCell ()) => {
-        $crate::events::Event::IndicateTableHeaderCell
+        $crate::Event::IndicateTableHeaderCell
     };
     (IndicateTableDataCell ()) => {
-        $crate::events::Event::IndicateTableDataCell
+        $crate::Event::IndicateTableDataCell
     };
 
     (ExitBlock (..)) => {
-        $crate::events::Event::ExitBlock($crate::events::ExitBlock {
-            id: $crate::types::BlockId::new_invalid(),
-            start_line: $crate::types::LineNumber::new_invalid(),
-            end_line: $crate::types::LineNumber::new_invalid(),
+        $crate::Event::ExitBlock(rotext_core::events::ExitBlock {
+            id: rotext_core::BlockId::new_invalid(),
+            start_line: rotext_core::LineNumber::new_invalid(),
+            end_line: rotext_core::LineNumber::new_invalid(),
         })
     };
     (ExitBlock (.., id = $id:literal)) => {
-        $crate::events::Event::ExitBlock($crate::events::ExitBlock {
-            id: $crate::types::BlockId::new($id),
-            start_line: $crate::types::LineNumber::new_invalid(),
-            end_line: $crate::types::LineNumber::new_invalid(),
+        $crate::Event::ExitBlock(rotext_core::events::ExitBlock {
+            id: rotext_core::BlockId::new($id),
+            start_line: rotext_core::LineNumber::new_invalid(),
+            end_line: rotext_core::LineNumber::new_invalid(),
         })
     };
     (ExitBlock (.., id = $id:literal, lns = $ln_s:literal..=$ln_e:literal)) => {
-        $crate::events::Event::ExitBlock($crate::events::ExitBlock {
-            id: $crate::types::BlockId::new($id),
-            start_line: $crate::types::LineNumber::new($ln_s),
-            end_line: $crate::types::LineNumber::new($ln_e),
+        $crate::Event::ExitBlock(rotext_core::events::ExitBlock {
+            id: rotext_core::BlockId::new($id),
+            start_line: rotext_core::LineNumber::new($ln_s),
+            end_line: rotext_core::LineNumber::new($ln_e),
         })
     };
 
     (ThematicBreak (..)) => {
-        $crate::events::Event::ThematicBreak($crate::events::ThematicBreak {
-            id: $crate::types::BlockId::new_invalid(),
-            line: $crate::types::LineNumber::new_invalid(),
+        $crate::Event::ThematicBreak(rotext_core::events::ThematicBreak {
+            id: rotext_core::BlockId::new_invalid(),
+            line: rotext_core::LineNumber::new_invalid(),
         })
     };
     (ThematicBreak (.., id = $id:literal)) => {
-        $crate::events::Event::ThematicBreak($crate::events::ThematicBreak {
-            id: $crate::types::BlockId::new($id),
-            line: $crate::types::LineNumber::new_invalid(),
+        $crate::Event::ThematicBreak(rotext_core::events::ThematicBreak {
+            id: rotext_core::BlockId::new($id),
+            line: rotext_core::LineNumber::new_invalid(),
         })
     };
     (ThematicBreak (.., id = $id:literal, ln = $ln:literal)) => {
-        $crate::events::Event::ThematicBreak($crate::events::ThematicBreak {
-            id: $crate::types::BlockId::new($id),
-            line: $crate::types::LineNumber::new($ln),
+        $crate::Event::ThematicBreak(rotext_core::events::ThematicBreak {
+            id: rotext_core::BlockId::new($id),
+            line: rotext_core::LineNumber::new($ln),
         })
     };
 
     (RefLink ($start:literal..$end:literal)) => {
-        $crate::events::Event::RefLink($start..$end)
+        $crate::Event::RefLink($start..$end)
     };
     (Dicexp ($start:literal..$end:literal)) => {
-        $crate::events::Event::Dicexp($start..$end)
+        $crate::Event::Dicexp($start..$end)
     };
 
     (EnterWikiLink ($start:literal..$end:literal)) => {
-        $crate::events::Event::EnterWikiLink($start..$end)
+        $crate::Event::EnterWikiLink($start..$end)
     };
 
     (@inline $v:tt (..)) => {
-        $crate::events::Event::$v
+        $crate::Event::$v
     };
 
     ($v:tt (..)) => {
-        $crate::events::Event::$v($crate::events::BlockWithId {
-            id: $crate::types::BlockId::new_invalid(),
+        $crate::Event::$v(rotext_core::events::BlockWithId {
+            id: rotext_core::BlockId::new_invalid(),
         })
     };
     ($v:tt (.., id = $id:literal)) => {
-        $crate::events::Event::$v($crate::events::BlockWithId {
-            id: $crate::types::BlockId::new($id),
+        $crate::Event::$v(rotext_core::events::BlockWithId {
+            id: rotext_core::BlockId::new($id),
         })
     };
 }
@@ -159,7 +159,7 @@ pub(super) struct Case<'a> {
     #[allow(dead_code)]
     pub options: CaseOptions<'a>,
 }
-impl test_support::Case for Case<'_> {
+impl rotext_internal_test::support::Case for Case<'_> {
     fn assert_ok(&self) {
         let opts = NewHtmlRendererOptions {
             tag_name_map: self.options.tag_name_map.clone(),

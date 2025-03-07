@@ -1,0 +1,14 @@
+[package]
+name = "rotext_internal_test"
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "A crate that includes internal test related stuff for the official Rotext parser."
+
+[dependencies]
+rotext_core = { workspace = true, features = ["test"] }
+
+indoc = "2.0.5"

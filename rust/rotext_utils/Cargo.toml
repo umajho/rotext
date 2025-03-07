@@ -1,0 +1,15 @@
+[package]
+name = "rotext_utils"
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Utilities around the official Rotext parser."
+
+[dependencies]
+rotext_core = { workspace = true }
+
+[dev-dependencies]
+rotext_internal_test = { workspace = true }

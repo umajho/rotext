@@ -2,7 +2,14 @@
 
 resolver = "2"
 
-members = ["rotext", "rotext_internal_macros", "rotext_wasm_bindings"]
+members = [
+    "rotext_core",
+    "rotext_internal_test",
+    "rotext_utils",
+    "rotext",
+    "rotext_internal_macros",
+    "rotext_wasm_bindings",
+]
 
 [workspace.package]
 
@@ -15,6 +22,9 @@ repository = "https://github.com/umajho/rotext"
 
 [workspace.dependencies]
 
+rotext_core = { version = "0.1.0", path = "rotext_core" }
+rotext_internal_test = { version = "0.1.0", path = "rotext_internal_test" }
+rotext_utils = { version = "0.1.0", path = "rotext_utils" }
 rotext = { version = "0.1.0", path = "rotext" }
 rotext_wasm_bindings = { version = "0.1.0", path = "rotext_wasm_bindings" }
 rotext_internal_macros = { version = "0.1.0", path = "rotext_internal_macros" }

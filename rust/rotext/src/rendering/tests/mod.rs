@@ -5,7 +5,7 @@ mod support;
 use support::{case, run_cases};
 
 #[allow(unused_imports)]
-use crate::test_support::{self, report_panicked_cases, FailedCase, GroupedCases};
+use rotext_internal_test::support::{report_panicked_cases, FailedCase, GroupedCases};
 
 use super::*;
 

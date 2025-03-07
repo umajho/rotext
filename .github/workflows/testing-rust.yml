@@ -25,12 +25,12 @@ jobs:
           rustup default nightly-2024-12-23
           rustup component add clippy
 
-      - name: Run tests without features
+      - name: Run tests with default feature set for each crate
         if: matrix.features == 'none'
         run: |
-          cd rust/rotext && just test
+          cd rust && just test-default
 
-      - name: Run tests with all features
+      - name: Run tests with all features for crate `rotext`
         if: matrix.features == 'all'
         run: |
           cd rust/rotext && just test-af

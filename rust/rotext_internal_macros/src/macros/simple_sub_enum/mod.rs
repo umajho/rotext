@@ -119,11 +119,12 @@ pub fn simple_sub_enum_for_event(attr: TokenStream, item: TokenStream) -> TokenS
         pub(crate) use #enum_guard_macro_name;
 
         #[allow(unused)]
+        #[macro_export]
         macro_rules! #debug_group_tester_macro_name {
             #(#tester_macro_items)*
         }
         #[allow(unused)]
-        pub(crate) use #debug_group_tester_macro_name;
+        pub use #debug_group_tester_macro_name;
 
         #enum_item
     }

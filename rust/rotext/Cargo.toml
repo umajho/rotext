@@ -9,19 +9,21 @@ repository.workspace = true
 description = "The official and de facto Rotext parser."
 
 [features]
-line-number = []
-block-id = []
+line-number = ["rotext_core/line-number"]
+block-id = ["rotext_core/block-id"]
 
 [dependencies]
+rotext_core = { workspace = true }
+rotext_utils = { workspace = true }
 rotext_internal_macros = { workspace = true }
 
-derivative = "2.2.0"
 itoa = "1.0.11"
-log = "0.4.22"
 
 [dev-dependencies]
+rotext_core = { workspace = true, features = ["test"] }
+rotext_internal_test = { workspace = true }
+
 divan = "0.1.14"
-indoc = "2.0.5"
 
 [[bench]]
 name = "getting_started"

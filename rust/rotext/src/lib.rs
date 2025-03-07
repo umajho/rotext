@@ -3,45 +3,50 @@
 #![feature(proc_macro_hygiene)]
 #![feature(stmt_expr_attributes)]
 
-mod blend;
-mod block;
-mod common;
-mod events;
-mod inline;
-mod types;
-
 pub mod rendering;
-pub mod utils;
 
-#[cfg(test)]
-pub(crate) mod test_suites;
-#[cfg(test)]
-pub(crate) mod test_support;
+pub use rotext_core::{Error, Event, Result};
 
-pub use events::Event;
 pub use rendering::{HtmlRenderer, NewHtmlRendererOptions};
-pub use types::{Error, Result};
 
-use utils::stack::{Stack, VecStack};
+use rotext_core::{
+    BlockEventStreamInlineSegmentMapper, BlockParser, BlockStackEntry, InlineStackEntry,
+};
+
+use rotext_utils::stack::VecStack;
 
 pub fn parse(
     input: &[u8],
-) -> blend::BlockEventStreamInlineSegmentMapper<
-    block::Parser<VecStack<block::StackEntry>>,
-    VecStack<inline::StackEntry>,
+) -> BlockEventStreamInlineSegmentMapper<
+    BlockParser<VecStack<BlockStackEntry>>,
+    VecStack<InlineStackEntry>,
 > {
-    let block_parser = block::Parser::new(input);
+    let block_parser = BlockParser::new(input);
 
-    blend::BlockEventStreamInlineSegmentMapper::new(input, block_parser)
+    BlockEventStreamInlineSegmentMapper::new(input, block_parser)
 }
 
-pub fn parse_with_stack<
-    TBlockStack: Stack<block::StackEntry>,
-    TInlineStack: Stack<inline::StackEntry>,
->(
-    input: &[u8],
-) -> blend::BlockEventStreamInlineSegmentMapper<block::Parser<TBlockStack>, TInlineStack> {
-    let block_parser = block::Parser::new(input);
+#[cfg(test)]
+mod tests {
+    use rotext_internal_test::{BlendContext, BlockContext, InlineContext};
 
-    blend::BlockEventStreamInlineSegmentMapper::new(input, block_parser)
+    use rotext_utils::stack::VecStack;
+
+    #[test]
+    fn inline_test_suite_passes() {
+        let ctx: InlineContext<VecStack<_>, VecStack<_>> = InlineContext::new();
+        rotext_internal_test::suites::inline::run(&ctx);
+    }
+
+    #[test]
+    fn block_test_suite_passes() {
+        let ctx: BlockContext<VecStack<_>> = BlockContext::new();
+        rotext_internal_test::suites::block::run(&ctx);
+    }
+
+    #[test]
+    fn blend_test_suite_passes() {
+        let ctx: BlendContext<VecStack<_>, VecStack<_>> = BlendContext::new();
+        rotext_internal_test::suites::blend::run(&ctx);
+    }
 }
