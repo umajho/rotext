@@ -58,69 +58,6 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
         }
     }
 
-    /// 返回的事件属于 `Block` 分组。
-    pub fn next(&mut self) -> Option<crate::Result<Event>> {
-        #[cfg(debug_assertions)]
-        {
-            assert!(!self.is_errored);
-        }
-        debug_assert!(!matches!(self.state, State::Ended));
-
-        loop {
-            if let Some(ev) = self.inner.pop_to_be_yielded() {
-                break Some(Ok(ev));
-            }
-
-            let result: crate::Result<Tym<5>> = match &mut self.state {
-                State::Exiting(exiting_branches) => match Self::exit(
-                    &mut self.inner,
-                    &mut self.item_likes_state,
-                    exiting_branches,
-                ) {
-                    Ok((tym, state)) => {
-                        if let Some(state) = state {
-                            self.state = state;
-                        }
-                        Ok(tym)
-                    }
-                    Err(err) => Err(err),
-                }
-                .map(|tym| cast_tym!(tym)),
-                State::Ended => {
-                    break None;
-                }
-                State::Expecting(expecting) => {
-                    if self.inner.stack.should_reset_state() {
-                        self.inner.stack.reset_should_reset_state();
-                        let item_likes_in_stack_at_last_line =
-                            self.inner.stack.item_likes_in_stack();
-                        *expecting = Expecting::ItemLikeOpening;
-                        self.item_likes_state = if item_likes_in_stack_at_last_line > 0 {
-                            ItemLikesStateMatchingLastLine::new(item_likes_in_stack_at_last_line)
-                                .into()
-                        } else {
-                            ItemLikesState::ProcessingNew
-                        };
-                    }
-                    self.inner.reset_current_expecting();
-
-                    let expecting = *expecting;
-                    self.parse(expecting)
-                }
-            };
-            match result {
-                Ok(tym) => self.inner.enforce_to_yield_mark(tym),
-                Err(err) => {
-                    #[cfg(debug_assertions)]
-                    {
-                        self.is_errored = true;
-                    }
-                    break Some(Err(err));
-                }
-            }
-        }
-    }
-
     #[inline(always)]
     fn parse(&mut self, mut expecting: Expecting) -> crate::Result<Tym<5>> {
         let spaces = count_continuous_character(self.input, b' ', self.inner.cursor());
@@ -318,7 +255,65 @@ impl<TStack: Stack<StackEntry>> Iterator for Parser<'_, TStack> {
     type Item = crate::Result<Event>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.next()
+        #[cfg(debug_assertions)]
+        {
+            assert!(!self.is_errored);
+        }
+        debug_assert!(!matches!(self.state, State::Ended));
+
+        loop {
+            if let Some(ev) = self.inner.pop_to_be_yielded() {
+                break Some(Ok(ev));
+            }
+
+            let result: crate::Result<Tym<5>> = match &mut self.state {
+                State::Exiting(exiting_branches) => match Self::exit(
+                    &mut self.inner,
+                    &mut self.item_likes_state,
+                    exiting_branches,
+                ) {
+                    Ok((tym, state)) => {
+                        if let Some(state) = state {
+                            self.state = state;
+                        }
+                        Ok(tym)
+                    }
+                    Err(err) => Err(err),
+                }
+                .map(|tym| cast_tym!(tym)),
+                State::Ended => {
+                    break None;
+                }
+                State::Expecting(expecting) => {
+                    if self.inner.stack.should_reset_state() {
+                        self.inner.stack.reset_should_reset_state();
+                        let item_likes_in_stack_at_last_line =
+                            self.inner.stack.item_likes_in_stack();
+                        *expecting = Expecting::ItemLikeOpening;
+                        self.item_likes_state = if item_likes_in_stack_at_last_line > 0 {
+                            ItemLikesStateMatchingLastLine::new(item_likes_in_stack_at_last_line)
+                                .into()
+                        } else {
+                            ItemLikesState::ProcessingNew
+                        };
+                    }
+                    self.inner.reset_current_expecting();
+
+                    let expecting = *expecting;
+                    self.parse(expecting)
+                }
+            };
+            match result {
+                Ok(tym) => self.inner.enforce_to_yield_mark(tym),
+                Err(err) => {
+                    #[cfg(debug_assertions)]
+                    {
+                        self.is_errored = true;
+                    }
+                    break Some(Err(err));
+                }
+            }
+        }
     }
 }
 
