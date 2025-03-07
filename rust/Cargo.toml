@@ -14,7 +14,7 @@ members = [
 [workspace.package]
 
 rust-version = "1.80.0"
-version = "0.1.0"
+version = "0.2.0"
 license = "MIT"
 edition = "2021"
 authors = ["Umaĵo <umajho@proton.me>"]
@@ -22,9 +22,9 @@ repository = "https://github.com/umajho/rotext"
 
 [workspace.dependencies]
 
-rotext_core = { version = "0.1.0", path = "rotext_core" }
-rotext_internal_test = { version = "0.1.0", path = "rotext_internal_test" }
-rotext_utils = { version = "0.1.0", path = "rotext_utils" }
-rotext = { version = "0.1.0", path = "rotext" }
-rotext_wasm_bindings = { version = "0.1.0", path = "rotext_wasm_bindings" }
-rotext_internal_macros = { version = "0.1.0", path = "rotext_internal_macros" }
+rotext_core = { version = "0.2.0", path = "rotext_core" }
+rotext_internal_test = { version = "0.2.0", path = "rotext_internal_test" }
+rotext_utils = { version = "0.2.0", path = "rotext_utils" }
+rotext = { version = "0.2.0", path = "rotext" }
+rotext_wasm_bindings = { version = "0.2.0", path = "rotext_wasm_bindings" }
+rotext_internal_macros = { version = "0.2.0", path = "rotext_internal_macros" }
