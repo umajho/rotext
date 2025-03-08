@@ -220,7 +220,7 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                     Some(m!('/')) => {
                         let text_end = cursor.value();
 
-                        cursor.move_forward("['".len());
+                        cursor.move_forward("[/".len());
                         inner.stack.push_entry(StackEntry::Emphasis)?;
                         let to_yield_after_text = ev!(Inline, EnterEmphasis);
 
