@@ -13,7 +13,7 @@ const config: Config = {
   theme: {
     fontFamily: {
       sans: ["Arial", "Noto Sans Mono CJK SC"],
-      serif: ["Times New Roman", "LXGW WenKai"],
+      serif: ["Times New Roman", "ChillKai"],
       mono: ["Noto Sans Mono CJK SC"],
     },
     extend: {},
