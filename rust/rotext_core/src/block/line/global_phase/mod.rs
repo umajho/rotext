@@ -5,6 +5,7 @@ use crate::{
     block::{
         ev,
         types::{CursorContext, YieldContext},
+        utils::move_cursor_over_line_break,
     },
     common::m,
     events::VerbatimEscaping,
@@ -62,7 +63,10 @@ fn parse_verbatim_escaping<TCtx: CursorContext>(input: &[u8], ctx: &mut TCtx) ->
     let mut continuous_backticks = 0;
     while let Some(char) = input.get(ctx.cursor()).copied() {
         match char {
-            m!('`') => continuous_backticks += 1,
+            m!('`') => {
+                continuous_backticks += 1;
+                ctx.move_cursor_forward(1);
+            }
             m!('>') if continuous_backticks == backticks => {
                 let mut end = ctx.cursor() - continuous_backticks;
                 ctx.move_cursor_forward(">".len());
@@ -84,15 +88,14 @@ fn parse_verbatim_escaping<TCtx: CursorContext>(input: &[u8], ctx: &mut TCtx) ->
             }
             b'\r' | b'\n' => {
                 ctx.increase_current_line();
-                if char == b'\r' && matches!(input.get(ctx.cursor() + 1), Some(b'\n')) {
-                    ctx.move_cursor_forward(1);
-                }
-                continuous_backticks = 0
+                continuous_backticks = 0;
+                move_cursor_over_line_break(ctx, input);
             }
-            _ => continuous_backticks = 0,
+            _ => {
+                continuous_backticks = 0;
+                ctx.move_cursor_forward(1);
+            }
         }
-
-        ctx.move_cursor_forward(1);
     }
 
     if has_leading_space && start < input.len() {
@@ -131,10 +134,7 @@ fn parse_comment<TCtx: CursorContext>(input: &[u8], ctx: &mut TCtx) {
             }
             b'\r' | b'\n' => {
                 ctx.increase_current_line();
-                ctx.move_cursor_forward(1);
-                if char == b'\r' && matches!(input.get(ctx.cursor() + 1), Some(b'\n')) {
-                    ctx.move_cursor_forward(1);
-                }
+                move_cursor_over_line_break(ctx, input);
             }
             _ => ctx.move_cursor_forward(1),
         }

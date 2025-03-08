@@ -1,6 +1,6 @@
 use crate::events::NewLine;
 
-use super::types::CursorContext;
+use super::{types::CursorContext, utils::move_cursor_over_line_break};
 
 pub mod global_phase;
 pub mod normal;
@@ -33,10 +33,7 @@ fn parse_common_end<TCtx: CursorContext>(
     match char {
         b'\r' | b'\n' => {
             ctx.increase_current_line();
-            ctx.move_cursor_forward(1);
-            if char == b'\r' && input.get(ctx.cursor()) == Some(&b'\n') {
-                ctx.move_cursor_forward(1);
-            }
+            move_cursor_over_line_break(ctx, input);
             ParseCommonEndOutput::Some(
                 NewLine {
                     line_after: ctx.current_line(),

@@ -186,7 +186,7 @@ pub fn parse<TCtx: CursorContext>(
             && input.get(ctx.cursor() + 1) == Some(&m!(':'))
         {
             let next_next_char = input.get(ctx.cursor() + 2);
-            if matches!(next_next_char, None | Some(&b' ' | &b'\n')) {
+            if matches!(next_next_char, None | Some(&b' ' | &b'\r' | &b'\n')) {
                 ctx.move_cursor_forward(if next_next_char == Some(&b' ') { 3 } else { 2 });
                 break (range, End::DescriptionDefinitionOpening);
             }
