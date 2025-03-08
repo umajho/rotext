@@ -1,6 +1,7 @@
 set fallback
 
 test-default:
+	cd rotext_core && cargo test
 	cd rotext && just test
 	cd rotext_utils && cargo test
 
