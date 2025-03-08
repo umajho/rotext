@@ -12,12 +12,12 @@ pub fn groups_text_styles() -> Vec<GroupedCases> {
             "字体强调",
             '/',
             EventType::EnterEmphasis,
-            '\'',
+            '*',
             EventType::EnterStrong,
         ),
         (
             "加粗强调",
-            '\'',
+            '*',
             EventType::EnterStrong,
             '/',
             EventType::EnterEmphasis,
@@ -26,7 +26,7 @@ pub fn groups_text_styles() -> Vec<GroupedCases> {
             "删除线",
             '~',
             EventType::EnterStrikethrough,
-            '\'',
+            '*',
             EventType::EnterStrong,
         ),
     ] {

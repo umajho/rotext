@@ -173,7 +173,7 @@ pub fn groups_wiki_link() -> Vec<GroupedCases> {
                     ]
                 ),
                 case!(
-                    vec!["[[页面|['内容']]]",],
+                    vec!["[[页面|[*内容*]]]",],
                     vec![
                         (EventType::EnterWikiLink, Some("页面")),
                         (EventType::EnterStrong, None),
@@ -183,7 +183,7 @@ pub fn groups_wiki_link() -> Vec<GroupedCases> {
                     ]
                 ),
                 case!(
-                    vec!["[[页面|a['内容']b]]",],
+                    vec!["[[页面|a[*内容*]b]]",],
                     vec![
                         (EventType::EnterWikiLink, Some("页面")),
                         (EventType::Text, Some("a")),

@@ -14,7 +14,7 @@
 
 [[页面名|显示名]]
 
-[[页面名|['显示名']]]
+[[页面名|[*显示名*]]]
 ···
 <p><x-wiki-link address="页面名"><span slot="content">页面名</span></x-wiki-link></p>
 <p><x-wiki-link address="页面名"><span slot="content">显示名</span></x-wiki-link></p>

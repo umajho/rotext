@@ -191,7 +191,7 @@ impl EndCondition {
 
         if self.on_em_closing && char == m!('/') {
             Some(StackEntry::Emphasis)
-        } else if self.on_strong_closing && char == m!('\'') {
+        } else if self.on_strong_closing && char == m!('*') {
             Some(StackEntry::Strong)
         } else if self.on_strikethrough_closing && char == m!('~') {
             Some(StackEntry::Strikethrough)

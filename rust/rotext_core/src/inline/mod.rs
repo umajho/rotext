@@ -226,10 +226,10 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
 
                         break (text_end, Some(to_yield_after_text));
                     }
-                    Some(m!('\'')) => {
+                    Some(m!('*')) => {
                         let text_end = cursor.value();
 
-                        cursor.move_forward("['".len());
+                        cursor.move_forward("[*".len());
                         inner.stack.push_entry(StackEntry::Strong)?;
                         let to_yield_after_text = ev!(Inline, EnterStrong);
 
