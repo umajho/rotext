@@ -11,6 +11,11 @@ const config: Config = {
   ],
   darkMode: "class",
   theme: {
+    fontFamily: {
+      sans: ["Arial", "Noto Sans Mono CJK SC"],
+      serif: ["Times New Roman", "LXGW WenKai"],
+      mono: ["Noto Sans Mono CJK SC"],
+    },
     extend: {},
   },
   plugins: [typography, daisyui],

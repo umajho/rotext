@@ -6,6 +6,8 @@
 
   $futaba-green: #789922;
 
+  font-synthesis-style: none;
+
   @apply font-sans text-gray-300 font-light text-sm md:text-base;
 
   //======== BLOCK LEVEL ========
@@ -182,8 +184,15 @@
 
   //======== INLINE LEVEL ========
 
+  em {
+    @apply font-serif;
+    // font-size: 90%;
+    // vertical-align: bottom;
+  }
+
   strong {
     font-weight: bold;
+    -webkit-font-smoothing: antialiased; // 否则 Safari 上 `bold` 会过于粗。
   }
 
   strike {
@@ -211,7 +220,7 @@
     $tomorrow-night-yellow: #f0c674;
 
     @apply px-[0.2rem] py-[0.2rem] mx-[0.2rem] rounded-[3px];
-    @apply font-mono font-normal text-[smaller];
+    @apply font-mono text-[smaller];
     background-color: $tomorrow-night-eighties-background;
     color: $tomorrow-night-yellow;
   }
