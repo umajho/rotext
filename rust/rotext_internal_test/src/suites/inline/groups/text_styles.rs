@@ -4,16 +4,23 @@ use rotext_core::EventType;
 
 use crate::suites::inline::support::{case, GroupedCases};
 
-pub fn groups_strong_and_strikethrough() -> Vec<GroupedCases> {
+pub fn groups_text_styles() -> Vec<GroupedCases> {
     let mut result: Vec<GroupedCases> = vec![];
 
     for (name, s, enter_ev, another_s, another_enter_ev) in [
         (
+            "字体强调",
+            '/',
+            EventType::EnterEmphasis,
+            '\'',
+            EventType::EnterStrong,
+        ),
+        (
             "加粗强调",
             '\'',
             EventType::EnterStrong,
-            '~',
-            EventType::EnterStrikethrough,
+            '/',
+            EventType::EnterEmphasis,
         ),
         (
             "删除线",

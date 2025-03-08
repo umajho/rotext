@@ -217,6 +217,15 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                     Some(m!('`')) => {
                         break leaf::code_span::process(input, cursor, inner);
                     }
+                    Some(m!('/')) => {
+                        let text_end = cursor.value();
+
+                        cursor.move_forward("['".len());
+                        inner.stack.push_entry(StackEntry::Emphasis)?;
+                        let to_yield_after_text = ev!(Inline, EnterEmphasis);
+
+                        break (text_end, Some(to_yield_after_text));
+                    }
                     Some(m!('\'')) => {
                         let text_end = cursor.value();
 

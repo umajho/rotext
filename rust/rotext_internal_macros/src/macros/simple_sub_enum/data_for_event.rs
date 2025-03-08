@@ -43,6 +43,7 @@ static EVENT_TO_GROUP_RAW: &[(&str, &[&str])] = &[
     ("RefLink", &["Inline", "Blend"]),
     ("Dicexp", &["Inline", "Blend"]),
     ("EnterCodeSpan", &["Inline", "Blend"]),
+    ("EnterEmphasis", &["Inline", "Blend"]),
     ("EnterStrong", &["Inline", "Blend"]),
     ("EnterStrikethrough", &["Inline", "Blend"]),
     ("EnterRuby", &["Inline", "Blend"]),

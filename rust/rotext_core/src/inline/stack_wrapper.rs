@@ -25,6 +25,9 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
         debug_assert!(self.top_leaf.is_none());
 
         match entry {
+            StackEntry::Emphasis => {
+                self.stack_entry_counts.emphasis += 1;
+            }
             StackEntry::Strong => {
                 self.stack_entry_counts.strong += 1;
             }
@@ -72,6 +75,9 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
 
         let entry = self.stack.pop()?;
         match entry {
+            StackEntry::Emphasis => {
+                self.stack_entry_counts.emphasis -= 1;
+            }
             StackEntry::Strong => {
                 self.stack_entry_counts.strong -= 1;
             }
@@ -98,6 +104,7 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
         debug_assert!(self.top_leaf.is_none());
 
         EndCondition {
+            on_em_closing: self.stack_entry_counts.emphasis > 0,
             on_strong_closing: self.stack_entry_counts.strong > 0,
             on_strikethrough_closing: self.stack_entry_counts.strikethrough > 0,
             on_wiki_link_closing: self.stack_entry_counts.wiki_link > 0,
@@ -109,6 +116,7 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
 
 #[derive(PartialEq, Eq)]
 pub enum StackEntry {
+    Emphasis,
     Strong,
     Strikethrough,
     WikiLink,
@@ -120,6 +128,7 @@ pub enum StackEntry {
 
 #[derive(Default)]
 struct StackEntryCounts {
+    emphasis: usize,
     strong: usize,
     strikethrough: usize,
     wiki_link: usize,
@@ -156,6 +165,7 @@ impl TopLeafCodeSpan {
 }
 
 pub struct EndCondition {
+    pub on_em_closing: bool,
     pub on_strong_closing: bool,
     pub on_strikethrough_closing: bool,
     pub on_wiki_link_closing: bool,
@@ -175,11 +185,17 @@ impl EndCondition {
 
     /// 若返回的栈的 entry 不为 None，则应该退出直至有一个该 entry 被弹出。
     pub fn test_2(&self, char: u8, char_next: Option<u8>) -> Option<StackEntry> {
-        if self.on_strong_closing && char == m!('\'') && char_next == Some(m!(']')) {
+        if char_next != Some(m!(']')) {
+            return None;
+        }
+
+        if self.on_em_closing && char == m!('/') {
+            Some(StackEntry::Emphasis)
+        } else if self.on_strong_closing && char == m!('\'') {
             Some(StackEntry::Strong)
-        } else if self.on_strikethrough_closing && char == m!('~') && char_next == Some(m!(']')) {
+        } else if self.on_strikethrough_closing && char == m!('~') {
             Some(StackEntry::Strikethrough)
-        } else if self.on_wiki_link_closing && char == m!(']') && char_next == Some(m!(']')) {
+        } else if self.on_wiki_link_closing && char == m!(']') {
             Some(StackEntry::WikiLink)
         } else {
             None

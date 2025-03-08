@@ -317,6 +317,7 @@ impl<'a> HtmlRenderer<'a> {
                 }
 
                 Event::EnterCodeSpan => self.push_simple_inline(&mut stack, b"code"),
+                Event::EnterEmphasis => self.push_simple_inline(&mut stack, b"em"),
                 Event::EnterStrong => self.push_simple_inline(&mut stack, b"strong"),
                 Event::EnterStrikethrough => self.push_simple_inline(&mut stack, b"s"),
                 Event::EnterRuby => self.push_simple_inline(&mut stack, b"ruby"),

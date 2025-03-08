@@ -23,7 +23,7 @@ pub fn run<TContext: Context + RefUnwindSafe>(ctx: &TContext) {
         table.extend(groups::ref_link::groups_ref_link());
         table.extend(groups::wiki_link::groups_wiki_link());
         table.extend(groups::dicexp::groups_dicexp());
-        table.extend(groups::strong_and_strikethrough::groups_strong_and_strikethrough());
+        table.extend(groups::text_styles::groups_text_styles());
         table.extend(groups::ruby::groups_ruby());
         table.extend(groups::code_span::groups_code_span());
 

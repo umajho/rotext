@@ -43,6 +43,7 @@ pub enum EventType {
     RefLink = 101,
     Dicexp = 102,
     EnterCodeSpan = 111,
+    EnterEmphasis = 116,
     EnterStrong = 112,
     EnterStrikethrough = 113,
     EnterRuby = 114,
@@ -180,7 +181,10 @@ pub enum Event {
     /// 进入行内代码。
     #[groups(Inline | Blend)]
     EnterCodeSpan = EventType::EnterCodeSpan as u8,
-    /// 进入加粗强调。
+    /// 进入字体强调（`em`）。
+    #[groups(Inline | Blend)]
+    EnterEmphasis = EventType::EnterEmphasis as u8,
+    /// 进入加粗强调（`strong`）。
     #[groups(Inline | Blend)]
     EnterStrong = EventType::EnterStrong as u8,
     /// 进入删除线。
@@ -279,6 +283,7 @@ impl Event {
             | Event::IndicateTableDataCell
             | Event::ExitBlock(_)
             | Event::EnterCodeSpan
+            | Event::EnterEmphasis
             | Event::EnterStrong
             | Event::EnterStrikethrough
             | Event::EnterRuby
