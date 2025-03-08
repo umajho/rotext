@@ -1,9 +1,13 @@
 set fallback
 
 test-default:
-	cd rotext_core && cargo test
+	cd rotext_core && just test
 	cd rotext && just test
 	cd rotext_utils && cargo test
+
+test-af:
+	cd rotext_core && just test-af
+	cd rotext && just test-af
 
 build-rotext-wasm-bindings:
 	cd rotext_wasm_bindings && wasm-pack build --target web
