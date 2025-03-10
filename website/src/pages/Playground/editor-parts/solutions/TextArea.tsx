@@ -24,7 +24,7 @@ const Editor: EditorSolution = (props) => {
 
   return (
     <textarea
-      class={`one-dark one-dark-background px-4 ${props.class} resize-none focus:!outline-none`}
+      class={`one-dark one-dark-background px-4 ${props.class} resize-none focus:!outline-none font-mono`}
       value={props.store.text}
       onInput={handleChange}
     />

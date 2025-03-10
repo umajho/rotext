@@ -125,7 +125,7 @@ const Editor: EditorSolution = (props) => {
       <div
         ref={contentContainerEl}
         class={"editor-ce-content-container" +
-          " relative one-dark focus:!outline-none mx-4"}
+          " relative one-dark focus:!outline-none mx-4 font-mono"}
         contentEditable
         onInput={handleChange}
         onBeforeInput={beforeInputHandler}
