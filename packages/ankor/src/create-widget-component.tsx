@@ -32,6 +32,7 @@ import { mixColor } from "./utils";
 import CollapseMaskLayer from "./CollapseMaskLayer";
 import PopperContainer from "./PopperContainer";
 import { NO_AUTO_OPEN_CLASS } from "./consts";
+import { touchingDetector } from "./touching-detector";
 
 const LEAVING_DELAY_MS = 100;
 
@@ -52,7 +53,6 @@ export interface PopperContentProperties {
    */
   widgetOwnerAgentGetter: () => WidgetOwnerAgent | undefined;
 
-  handlerForTouchEndOnPinIcon: () => void;
   handlerForClickOnPinIcon: () => void;
 }
 
@@ -282,8 +282,6 @@ export function createWidgetComponent(parts: {
                   <PopperContent
                     displayMode={dmFSM.displayMode}
                     widgetOwnerAgentGetter={() => untrack(woAgent)}
-                    handlerForTouchEndOnPinIcon={dmFSM
-                      .handleTouchPinningTogglerEnd}
                     handlerForClickOnPinIcon={dmFSM.handleTogglePinning}
                   />
                 </div>
@@ -422,7 +420,7 @@ function createDisplayModeFSM(
     }
 
     leaving = false;
-    if (displayMode() === "closed") {
+    if (!touchingDetector.isTouching && displayMode() === "closed") {
       setDisplayMode("floating");
     }
   }
@@ -444,13 +442,6 @@ function createDisplayModeFSM(
     }
   }
 
-  let pinningTogglerTouched = false;
-  function handleTouchPinningTogglerEnd() {
-    pinningTogglerTouched = true;
-    // 为防止有的浏览器 onClick 发生在 onTouchEnd 之前，
-    // 这里也在一定时间后把 `pinIconTouched` 重置一下。
-    setTimeout(() => pinningTogglerTouched = false, 100);
-  }
   function handleTogglePinning() {
     if (!opts.openable()) {
       console.warn("should not reach here!");
@@ -459,13 +450,12 @@ function createDisplayModeFSM(
     setUserInteracted(true);
 
     setCollapsed(false);
-    if (pinningTogglerTouched) {
+    if (touchingDetector.isTouching) {
       setDisplayMode("closed");
     } else {
       const newMode = displayMode() === "pinned" ? "floating" : "pinned";
       setDisplayMode(newMode);
     }
-    pinningTogglerTouched = false;
   }
 
   function handleClickLabel() {
@@ -502,7 +492,6 @@ function createDisplayModeFSM(
     handleEnter,
     handleLeave,
 
-    handleTouchPinningTogglerEnd,
     handleTogglePinning,
 
     handleClickLabel,

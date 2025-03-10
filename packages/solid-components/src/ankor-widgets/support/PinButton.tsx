@@ -15,7 +15,6 @@ const styleProvider = createStyleProviderFromCSSText(styles);
 
 const PinButton: Component<{
   displayMode: () => Ankor.DisplayMode;
-  onTouchEnd: () => void;
   onClick: () => void;
 }> = (props) => {
   return (
@@ -28,7 +27,6 @@ const PinButton: Component<{
           "pin-button",
           props.displayMode() === "pinned" ? "pinned" : "",
         ].join(" ")}
-        onTouchEnd={props.onTouchEnd}
         onClick={props.onClick}
       />
     </ShadowRootAttacher>

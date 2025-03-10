@@ -76,8 +76,8 @@ export interface CreateNavigationComponentOptions {
   backgroundColor: ComputedColor;
 
   label:
-  | ["text", (address: string) => string]
-  | ["slot"];
+    | ["text", (address: string) => string]
+    | ["slot"];
   innerPreviewRenderer: InnerRenderer;
 }
 
@@ -165,7 +165,6 @@ export function createNavigationComponent(
               <PinButton
                 displayMode={props.displayMode}
                 onClick={props.handlerForClickOnPinIcon}
-                onTouchEnd={props.handlerForTouchEndOnPinIcon}
               />
               <div style={{ width: "3rem" }} />
               <Show when={navText()}>

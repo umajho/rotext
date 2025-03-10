@@ -33,7 +33,6 @@ export function createPopperContent(opts: {
             <PinButton
               displayMode={props.displayMode}
               onClick={props.handlerForClickOnPinIcon}
-              onTouchEnd={props.handlerForTouchEndOnPinIcon}
             />
             <span>掷骰</span>
           </div>
