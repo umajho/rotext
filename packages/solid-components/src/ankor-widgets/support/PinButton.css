@@ -1,3 +1,5 @@
+@reference "tailwindcss";
+
 .pin-button {
   @apply cursor-pointer select-none;
 

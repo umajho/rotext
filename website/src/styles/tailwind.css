@@ -1,2 +1,21 @@
-@tailwind components;
-@tailwind utilities;
+
+@layer theme, base, components, utilities;
+
+@import "tailwindcss/theme" layer(theme);
+@import "tailwindcss/utilities" layer(utilities);
+
+@source  "../../node_modules/@rotext/solid-components";
+
+@plugin "@tailwindcss/typography";
+
+@plugin "daisyui" {
+    themes: dark;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --font-sans: "Arial", "Noto Sans Mono CJK SC";
+    --font-serif: "Times New Roman", "ChillKai";
+    --font-mono: "Noto Sans Mono CJK SC";
+}

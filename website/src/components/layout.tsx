@@ -171,6 +171,7 @@ const NavMenu: Component<{
       <p class="menu-title">解析器 & 渲染器</p>
       <li>
         <select
+          class="select"
           ref={selectEl}
           disabled={rotextProcessors?.isBusy ?? true}
           onChange={(ev) =>
@@ -189,7 +190,7 @@ const NavMenu: Component<{
       <p class="menu-title">实验场</p>
       <li>
         <a
-          class={`${matchPlayground() ? "active" : ""}`}
+          class={`${matchPlayground() ? "menu-active" : ""}`}
           onClick={(ev) => {
             if (isActive(ev)) return;
             props.onClickMenuItem();
@@ -208,7 +209,7 @@ const NavMenu: Component<{
 };
 
 function isActive(ev: { currentTarget: HTMLElement }): boolean {
-  return ev.currentTarget.classList.contains("active");
+  return ev.currentTarget.classList.contains("menu-active");
 }
 
 const NavMenuList: Component<{
@@ -293,7 +294,7 @@ const NavMenuListItemInnerLeaf: Component<{
 
   return (
     <a
-      class={`${match() ? "active" : ""}`}
+      class={`${match() ? "menu-active" : ""}`}
       onClick={() => navigateToAddress(address())}
     >
       {props.navigation.name}

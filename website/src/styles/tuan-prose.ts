@@ -2,7 +2,7 @@ import { createStyleProviderFromCSSText } from "@rolludejo/internal-web-shared/s
 
 import { mountStyle } from "./utils/mod";
 
-import tuanProse from "./tuan-prose.scss?inline";
+import tuanProse from "./tuan-prose.css?inline";
 
 export const STYLE_TEXT = tuanProse;
 

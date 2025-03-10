@@ -61,7 +61,7 @@ export const Tab: Component<
 
   return (
     <div
-      class={`tab tab-bordered ${classes()}`}
+      class={`tab tab-border ${classes()}`}
       onClick={props.onClick}
     >
       {props.children}

@@ -9,7 +9,7 @@ import {
   ShadowRootAttacher,
 } from "@rolludejo/internal-web-shared/shadow-root";
 
-import styles from "./PinButton.scss?inline";
+import styles from "./PinButton.css?inline";
 
 const styleProvider = createStyleProviderFromCSSText(styles);
 

@@ -1,6 +1,7 @@
 import path from "node:path";
 
 import { defineConfig } from "vite";
+import tailwindcss from "@tailwindcss/vite";
 import solidPlugin from "vite-plugin-solid";
 import dts from "vite-plugin-dts";
 
@@ -12,6 +13,7 @@ const ENTRIES = {
 
 export default defineConfig({
     plugins: [
+        tailwindcss(),
         solidPlugin(),
         dts({
             include: "src/**/*",

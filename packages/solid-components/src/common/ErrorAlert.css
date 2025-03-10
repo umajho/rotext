@@ -1,3 +1,5 @@
+@reference "tailwindcss";
+
 .error-alert {
   @apply px-6 py-3 rounded-2xl max-h-32;
   @apply shadow-lg overflow-scroll;
@@ -9,6 +11,5 @@
 
   .message-area {
     @apply text-xs whitespace-pre;
-
   }
 }

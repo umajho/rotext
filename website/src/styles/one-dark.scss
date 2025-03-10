@@ -1,3 +1,5 @@
+@reference "tailwindcss";
+
 /*!
   MIT License
 
@@ -41,6 +43,6 @@
 
   &::selection,
   ::selection {
-    background-color: #3E4451;
+    background-color: #3e4451;
   }
 }

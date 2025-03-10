@@ -1,16 +1,18 @@
+@reference "tailwindcss";
+
 .tuan-background {
   @apply bg-[#1f1f1f];
 }
 
 .tuan-prose {
 
-  $futaba-green: #789922;
+  --futaba-green: #789922;
 
   font-synthesis-style: none;
 
   @apply font-sans text-gray-300 font-light text-sm md:text-base;
 
-  //======== BLOCK LEVEL ========
+  /*======== BLOCK LEVEL ========*/
 
   p {
     &:first-child {
@@ -101,10 +103,10 @@
   }
 
   blockquote {
-    @apply border-l-[6px] py-0.5 md:py-1 px-2 md:px-4 mb-2 md:mb-4 bg-black bg-opacity-25 font-normal;
-    border-left-color: $futaba-green;
-    // color: $futaba-green;
-    background-color: rgba($futaba-green, .05);
+    @apply border-l-[6px] py-0.5 md:py-1 px-2 md:px-4 mb-2 md:mb-4 bg-black bg-black/25 font-normal;
+    border-left-color: var(--futaba-green);
+    /* color: var(--futaba-green); */
+    background-color: rgba(var(--futaba-green), .05);
 
     &:not(:first-child) {
       @apply mt-2 md:mt-4;
@@ -182,17 +184,17 @@
     }
   }
 
-  //======== INLINE LEVEL ========
+  /*======== INLINE LEVEL ========*/
 
   em {
     @apply font-serif;
-    // font-size: 90%;
-    // vertical-align: bottom;
+    /* font-size: 90%; */
+    /* vertical-align: bottom; */
   }
 
   strong {
     font-weight: bold;
-    -webkit-font-smoothing: antialiased; // 否则 Safari 上 `bold` 会过于粗。
+    -webkit-font-smoothing: antialiased; /* 否则 Safari 上 `bold` 会过于粗。*/
   }
 
   strike {
@@ -202,7 +204,7 @@
   ruby {}
 
   :not(pre)>code {
-    // 下列颜色出自 https://github.com/chriskempson/tomorrow-theme
+    /* 下列颜色出自 https://github.com/chriskempson/tomorrow-theme */
     /*!
       LICENSE
 
@@ -216,17 +218,17 @@
 
       THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     */
-    $tomorrow-night-eighties-background: #2d2d2d;
-    $tomorrow-night-yellow: #f0c674;
+    --tomorrow-night-eighties-background: #2d2d2d;
+    --tomorrow-night-yellow: #f0c674;
 
     @apply px-[0.2rem] py-[0.2rem] mx-[0.2rem] rounded-[3px];
     @apply font-mono text-[smaller];
-    background-color: $tomorrow-night-eighties-background;
-    color: $tomorrow-night-yellow;
+    background-color: var(--tomorrow-night-eighties-background);
+    color: var(--tomorrow-night-yellow);
   }
 
   a {
-    // see: https://stackoverflow.com/a/63883723
+    /* see: https://stackoverflow.com/a/63883723 */
     @apply underline text-blue-600 hover:text-blue-800 visited:text-purple-600;
     @apply cursor-pointer;
   }
