@@ -1,4 +1,4 @@
-import { Component, createMemo, Index, on } from "solid-js";
+import { Component, createMemo, Index, on, Show } from "solid-js";
 
 import {
   Button,
@@ -74,25 +74,35 @@ const EditorTopBar: Component<{
           class="w-20 text-xs"
           value="label"
           onChange={(ev) => {
-            if (ev.currentTarget.value === "clear") {
-              props.editorStore.loadText("");
+            if (ev.currentTarget.value === "restore") {
+              props.editorStore.restoreUserEditedText();
+            } else if (ev.currentTarget.value === "clear") {
+              props.editorStore.loadText("", { isPreset: true });
             } else {
               props.editorStore.loadText(
                 examples.get(ev.currentTarget.value as any),
+                { isPreset: true },
               );
             }
             ev.currentTarget.value = "label";
           }}
         >
           <option value="label" disabled selected>
-            示例/清空
+            {props.editorStore.canRestoreUserEditedText()
+              ? "恢复/示例/清空"
+              : "示例/清空"}
           </option>
-          <option value="clear">
-            清空
-          </option>
+          <Show when={props.editorStore.canRestoreUserEditedText()}>
+            <option value="restore">
+              恢复
+            </option>
+          </Show>
           <Index each={examples.keys()}>
             {(name) => <option value={name()}>示例：{name()}</option>}
           </Index>
+          <option value="clear">
+            清空
+          </option>
         </select>
       </div>
     </div>

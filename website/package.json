@@ -44,6 +44,7 @@
     "@rotext/solid-components": "workspace:*",
     "@rotext/wasm-bindings-adapter": "workspace:*",
     "@solid-primitives/media": "^2.2.9",
+    "@solid-primitives/storage": "^4.3.1",
     "@solidjs/router": "^0.15.1",
     "ankor": "workspace:*",
     "codemirror": "^6.0.1",

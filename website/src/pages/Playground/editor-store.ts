@@ -1,4 +1,5 @@
 import { createSignal } from "solid-js";
+import { makePersisted } from "@solid-primitives/storage";
 
 /**
  * 用于表示位于编辑器顶部的那一行（浮点数）。
@@ -11,24 +12,46 @@ export interface TopLine {
 
 export type ActiveLines = [top: number, bottom: number];
 
+export interface SetTextOptions {
+  isInitial?: boolean;
+  isPreset?: boolean;
+}
+
 export function createEditorStore(initialText: string | Promise<string>) {
   const [isLoadingText, setIsLoadingText] = createSignal(false);
-  const [text, setText] = createSignal("");
-  const loadText = (text: string | Promise<string>) => {
+
+  const [text, setText_] = createSignal("");
+  const [hasUserMadeEdit, setHasUserMadeEdit] = createSignal(false);
+  const [userEditedText, setUserEditedText] = makePersisted(
+    createSignal<string | null>(null),
+    { name: "playground:user-edited-text" },
+  );
+  function setText(text: string, opts?: SetTextOptions) {
+    setText_(text);
+    if (opts?.isInitial) return;
+    setHasUserMadeEdit(true);
+    if (opts?.isPreset) {
+      setUserEditedText(null);
+    } else {
+      setUserEditedText(text);
+    }
+  }
+
+  const loadText = (text: string | Promise<string>, opts?: SetTextOptions) => {
     if (isLoadingText()) return;
 
     if (typeof text === "string") {
-      setText(text);
+      setText(text, opts);
       return;
     }
 
     setIsLoadingText(true);
     text.then((text) => {
-      setText(text);
+      setText(text, opts);
       setIsLoadingText(false);
     });
   };
-  loadText(initialText);
+  loadText(initialText, { isInitial: true });
 
   const [topLine, setTopLine] = createSignal<TopLine>({
     number: 1,
@@ -45,6 +68,13 @@ export function createEditorStore(initialText: string | Promise<string>) {
       setText(v);
     },
     loadText,
+    canRestoreUserEditedText() {
+      return !hasUserMadeEdit() && userEditedText() !== null;
+    },
+    restoreUserEditedText() {
+      if (!this.canRestoreUserEditedText()) return;
+      setText(userEditedText()!);
+    },
     get isLoadingText() {
       return isLoadingText();
     },
