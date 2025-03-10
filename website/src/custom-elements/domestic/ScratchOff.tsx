@@ -36,11 +36,11 @@ function createScratchOffComponent(): Component {
       <span
         ref={wrapperEl}
         class={[
-          "bg-white transition-[background-color] duration-[400ms]",
+          " transition-[background-color] duration-[400ms]",
           NO_AUTO_OPEN_CLASS,
           isRevealed()
-            ? "bg-opacity-10"
-            : "bg-opacity-100 text-transparent select-none cursor-pointer [&_*]:invisible",
+            ? "bg-white/10"
+            : "bg-white text-transparent select-none cursor-pointer [&_*]:invisible",
         ].join(" ")}
       >
         <slot name="content" />
