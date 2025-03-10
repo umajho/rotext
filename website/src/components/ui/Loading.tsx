@@ -5,7 +5,7 @@ import {
   ShadowRootAttacher,
 } from "@rolludejo/internal-web-shared/shadow-root";
 
-import styles from "./Loading.scss?inline";
+import styles from "./Loading.css?inline";
 
 const styleProvider = createStyleProviderFromCSSText(styles);
 
