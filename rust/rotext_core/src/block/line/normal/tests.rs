@@ -599,4 +599,46 @@ mod for_fn_parse {
             },
         );
     }
+
+    #[test]
+    fn it_cannot_process_description_definition_opening_ends_if_not_enabled() {
+        let end_condition = EndCondition {
+            on_atx_closing: None,
+            on_table_related: None,
+            on_description_definition_opening: false,
+        };
+
+        test(
+            b"foo ::",
+            end_condition.clone(),
+            0,
+            b"foo ::",
+            End::Eof,
+            MockCursorContext {
+                cursor: 6,
+                current_line: LineNumber::new_universal(1),
+            },
+        );
+    }
+
+    #[test]
+    fn it_can_process_description_definition_opening_ends() {
+        let end_condition = EndCondition {
+            on_atx_closing: None,
+            on_table_related: None,
+            on_description_definition_opening: true,
+        };
+
+        test(
+            b"foo ::",
+            end_condition.clone(),
+            0,
+            b"foo",
+            End::DescriptionDefinitionOpening,
+            MockCursorContext {
+                cursor: 6,
+                current_line: LineNumber::new_universal(1),
+            },
+        );
+    }
 }
