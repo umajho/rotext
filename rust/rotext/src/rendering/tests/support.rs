@@ -168,7 +168,8 @@ impl rotext_internal_test::support::Case for Case<'_> {
             should_include_block_ids: self.options.should_include_block_id,
         };
         let renderer = HtmlRenderer::new(self.input.as_bytes(), opts);
-        let actual = renderer.render(self.input_events.clone().into_iter());
+        let actual = renderer.render_u8_vec(self.input_events.clone().into_iter());
+        let actual = String::from_utf8(actual).unwrap();
 
         assert_eq!(self.expected, actual);
     }

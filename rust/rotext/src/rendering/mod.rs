@@ -86,7 +86,7 @@ impl<'a> HtmlRenderer<'a> {
     }
 
     /// `input_stream` 的迭代对象是属于 `Blend` 分组的事件。
-    pub fn render(mut self, mut input_stream: impl Iterator<Item = Event>) -> String {
+    pub fn render_u8_vec(mut self, mut input_stream: impl Iterator<Item = Event>) -> Vec<u8> {
         let mut stack: Vec<StackEntry> = vec![];
 
         loop {
@@ -337,7 +337,7 @@ impl<'a> HtmlRenderer<'a> {
 
         debug_assert!(stack.is_empty());
 
-        unsafe { String::from_utf8_unchecked(self.result) }
+        self.result
     }
 
     fn push_simple_block(

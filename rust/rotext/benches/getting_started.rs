@@ -36,7 +36,7 @@ fn rendering(bencher: divan::Bencher) {
                     should_include_block_ids: true,
                 },
             );
-            renderer.render(events);
+            renderer.render_u8_vec(events);
         })
 }
 
@@ -55,7 +55,7 @@ fn parsing_and_rendering(bencher: divan::Bencher) {
                 should_include_block_ids: true,
             },
         );
-        renderer.render(events);
+        renderer.render_u8_vec(events);
     })
 }
 

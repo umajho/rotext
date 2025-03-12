@@ -96,7 +96,16 @@ pub fn parse_and_render(
             should_include_block_ids,
         },
     );
-    let html: String = renderer.render(all_events.clone().into_iter());
+    let html = renderer.render_u8_vec(all_events.clone().into_iter());
+    let html = match String::from_utf8(html) {
+        Ok(html) => html,
+        Err(error) => {
+            return ParseAndRenderResult {
+                ok: None,
+                error: Some(error.to_string()),
+            }
+        }
+    };
 
     let block_id_to_lines_map = create_block_id_to_lines_map(&all_events);
 
