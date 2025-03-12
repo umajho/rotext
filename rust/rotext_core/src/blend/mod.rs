@@ -53,13 +53,13 @@ impl<
         let ret = loop {
             match self.state {
                 State::Normal(ref mut block_parser) => {
-                    let next = match unsafe { block_parser.as_mut().unwrap_unchecked() }.next() {
+                    let next = match block_parser.as_mut().unwrap().next() {
                         Some(Ok(x)) => x,
                         Some(Err(err)) => return Some(Err(err)),
                         None => return None,
                     };
                     if next.is_block_event_that_opens_inline_phase() {
-                        let block_parser = unsafe { block_parser.take().unwrap_unchecked() };
+                        let block_parser = block_parser.take().unwrap();
                         let segment_stream = WhileInlineSegment::new(block_parser);
                         let inline_parser = inline::Parser::new(self.input);
                         self.state = State::ParsingInline {
@@ -79,8 +79,7 @@ impl<
                     ref mut inline_parser,
                     ref mut segment_stream,
                 } => {
-                    match inline_parser.next(unsafe { segment_stream.as_mut().unwrap_unchecked() })
-                    {
+                    match inline_parser.next(segment_stream.as_mut().unwrap()) {
                         Some(Ok(next)) => {
                             #[cfg(debug_assertions)]
                             debug_assert!(is_event_of!(Blend, next));
@@ -90,8 +89,7 @@ impl<
                         }
                         Some(Err(err)) => break Err(err),
                         None => {
-                            let segment_stream =
-                                unsafe { segment_stream.take().unwrap_unchecked() };
+                            let segment_stream = segment_stream.take().unwrap();
                             let (block_parser, leftover, err) = segment_stream.take_inner().drop();
                             if let Some(err) = err {
                                 break Err(err);
