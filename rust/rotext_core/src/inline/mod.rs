@@ -843,7 +843,7 @@ mod leaf {
 
             for i in cursor.value()..input.len() {
                 // SAFETY: `cursor.value()` <= `i` < `input.len()`.
-                let char = unsafe { input.get_unchecked(i) };
+                let char = input[i];
                 match char {
                     char if is_whitespace!(char) => continue,
                     m!(']') if input.get(i + 1) == Some(&m!(']')) => {
@@ -868,7 +868,7 @@ mod leaf {
                             return (None, AfterSlot::Nothing);
                         }
                     }
-                    char if !is_valid_character_in_name(*char) => {
+                    char if !is_valid_character_in_name(char) => {
                         return (None, AfterSlot::Nothing);
                     }
                     _ => match slot_content {
@@ -923,7 +923,7 @@ mod leaf {
             debug_assert!(i < input.len());
 
             // SAFETY: `start_index` < `input.len()`.
-            let char = unsafe { input.get_unchecked(i) };
+            let char = input[i];
             match char {
                 m!(']') if input.get(i + 1) == Some(&m!(']')) => AfterSlot::Indicator {
                     indicator: Indicator::Closing,

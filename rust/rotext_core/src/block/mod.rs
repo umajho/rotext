@@ -193,7 +193,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
 
         let (tym_b, new_state) = if is_done {
             debug_assert!(exiting.and_then.is_some());
-            let and_then = unsafe { exiting.and_then.take().unwrap_unchecked() };
+            let and_then = exiting.and_then.take().unwrap();
             #[cfg(debug_assertions)]
             {
                 if !matches!(
@@ -234,7 +234,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                     debug_assert!(to_be_yielded_based_on_context.is_some());
                     (
                         inner
-                            .r#yield(unsafe { to_be_yielded_based_on_context.unwrap_unchecked() })
+                            .r#yield(to_be_yielded_based_on_context.unwrap())
                             .into(),
                         Some(Expecting::BracedOpening.into()),
                     )

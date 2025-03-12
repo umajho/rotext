@@ -75,7 +75,7 @@ fn parse_verbatim_escaping<TCtx: CursorContext>(input: &[u8], ctx: &mut TCtx) ->
                         start += 1;
                     }
                     // SAFETY: `end` < `ctx.cursor()` < `input.len()`.
-                    if unsafe { *input.get_unchecked(end - 1) } == b' ' {
+                    if input[end - 1] == b' ' {
                         end -= 1;
                     }
                 }
