@@ -1,3 +1,4 @@
+use core::panic;
 use std::{any::Any, panic::RefUnwindSafe};
 
 pub struct GroupedCases<TCase: Case> {
@@ -71,4 +72,41 @@ pub fn report_panicked_cases(cases: Vec<FailedCase>) {
         println!("-> panic:\n{}", panic_message);
         print!("\n\n");
     }
+}
+
+/// 生成与空白有关的字符串变体。
+///
+/// - 将所有的 `␣` 替换为 ` `。（用于 workaround `indoc` 吞掉一行首尾空白的行为。）
+/// - 对每个位置的 `␠`，生成替换为 ` ` 与 `\t` 的变体。（用于同时顾及两种空白的情况。）
+///
+/// NOTE: 生成的变体的数量会随着输入中的 `␠` 的数量呈指数增长。因此限制输入中最多存在 12 个
+/// `␠`。
+pub fn make_whitespace_variants(input: &str) -> Vec<String> {
+    if input.contains(" ") {
+        panic!(
+            "应该使用 `␣`（空格）或 `␠`（空格或制表符）代替 ` `：“{}”",
+            input
+        )
+    }
+
+    let input = input.replace('␣', " ");
+
+    fn replace_whitespace_characters(input: &str, remain: usize) -> Vec<String> {
+        let space_variant = input.replacen('␠', " ", 1);
+        let tab_variant = input.replacen('␠', "\t", 1);
+        if remain == 0 {
+            vec![space_variant, tab_variant]
+        } else {
+            let mut result = Vec::new();
+            result.extend(replace_whitespace_characters(&space_variant, remain - 1));
+            result.extend(replace_whitespace_characters(&tab_variant, remain - 1));
+            result
+        }
+    }
+
+    let remain = input.chars().filter(|c| *c == '␠').count();
+    if remain > 12 {
+        panic!("输入中的`␠`太多了：“{}”", input);
+    }
+    replace_whitespace_characters(&input, remain)
 }

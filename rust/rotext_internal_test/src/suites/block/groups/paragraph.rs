@@ -10,7 +10,7 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
             group: "段落",
             cases: vec![
                 case!(
-                    vec!["a", " a"],
+                    vec!["a", "␠a"],
                     vec![
                         (EventType::EnterParagraph, None),
                         (EventType::__Unparsed, Some("a")),
@@ -18,7 +18,7 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
                     ]
                 ),
                 case!(
-                    vec!["a "],
+                    vec!["a␠"],
                     vec![
                         (EventType::EnterParagraph, None),
                         (EventType::__Unparsed, Some("a")),
@@ -86,7 +86,7 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
                     ]
                 ),
                 case!(
-                    vec!["<`c`> b"],
+                    vec!["<`c`>␣b"],
                     vec![
                         (EventType::EnterParagraph, None),
                         (EventType::VerbatimEscaping, Some("c")),
@@ -148,7 +148,7 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
                     ]
                 ),
                 case!(
-                    vec!["<`c`> <`d`>"],
+                    vec!["<`c`>␣<`d`>"],
                     vec![
                         (EventType::EnterParagraph, None),
                         (EventType::VerbatimEscaping, Some("c")),
@@ -158,7 +158,7 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
                     ]
                 ),
                 case!(
-                    vec!["<`c`> b<`d`>"],
+                    vec!["<`c`>␣b<`d`>"],
                     vec![
                         (EventType::EnterParagraph, None),
                         (EventType::VerbatimEscaping, Some("c")),
@@ -168,7 +168,7 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
                     ]
                 ),
                 case!(
-                    vec!["<`c`>b <`d`>"],
+                    vec!["<`c`>b␣<`d`>"],
                     vec![
                         (EventType::EnterParagraph, None),
                         (EventType::VerbatimEscaping, Some("c")),
@@ -199,7 +199,7 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
                     ]
                 ),
                 case!(
-                    vec!["<%c%> b"],
+                    vec!["<%c%>␠b"],
                     vec![
                         (EventType::EnterParagraph, None),
                         (EventType::__Unparsed, Some("b")),
@@ -245,9 +245,9 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
                         (EventType::ExitBlock, None),
                     ]
                 ),
-                case!(vec!["<%c%><%d%>", "<%c%> <%d%>"], vec![]),
+                case!(vec!["<%c%><%d%>", "<%c%>␠<%d%>"], vec![]),
                 case!(
-                    vec!["<%c%> b<%d%>"],
+                    vec!["<%c%>␠b<%d%>"],
                     vec![
                         (EventType::EnterParagraph, None),
                         (EventType::__Unparsed, Some("b")),
@@ -255,7 +255,7 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
                     ]
                 ),
                 case!(
-                    vec!["<%c%>b <%d%>"],
+                    vec!["<%c%>b␣<%d%>"],
                     vec![
                         (EventType::EnterParagraph, None),
                         (EventType::__Unparsed, Some("b ")),
@@ -284,7 +284,7 @@ pub fn groups_paragraph() -> Vec<GroupedCases> {
                     // 块引用
                     vec![indoc! {"
                         a
-                        > b"},],
+                        >␣b"},],
                     vec![
                         (EventType::EnterParagraph, None),
                         (EventType::__Unparsed, Some("a")),

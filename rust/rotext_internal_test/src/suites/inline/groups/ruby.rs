@@ -15,7 +15,7 @@ pub fn groups_ruby() -> Vec<GroupedCases> {
                 ]
             ),
             case!(
-                vec!["[;foo:bar]", "[;foo : bar]",],
+                vec!["[;foo:bar]", "[;foo␠:␠bar]",],
                 vec![
                     (EventType::EnterRuby, None),
                     (EventType::Text, Some("foo")),
@@ -26,7 +26,7 @@ pub fn groups_ruby() -> Vec<GroupedCases> {
                 ]
             ),
             case!(
-                vec!["[; foo : bar ]",],
+                vec!["[;␣foo␠:␠bar␣]",],
                 vec![
                     (EventType::EnterRuby, None),
                     (EventType::Text, Some(" foo")),

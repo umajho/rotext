@@ -51,15 +51,15 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                     vec![
                         indoc! {"
                         ```
-                        ␠␠code␠␠
+                        ␣␣code␣␣
                         ```"},
                         indoc! {"
                         ```
-                        ␠␠code␠␠
+                        ␣␣code␣␣
                         ````"},
                         indoc! {"
                         ````
-                        ␠␠code␠␠
+                        ␣␣code␣␣
                         ````"},
                     ],
                     vec![
@@ -167,7 +167,7 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                     vec![indoc! {"
                         ```
                         code
-                        line 2
+                        line␣2
                         ```"},],
                     vec![
                         (EventType::EnterCodeBlock, None),
@@ -184,7 +184,7 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                         ```
                         code
 
-                        line 3
+                        line␣3
                         ```"},],
                     vec![
                         (EventType::EnterCodeBlock, None),
@@ -201,8 +201,8 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                     vec![indoc! {"
                         ```
                         code
-                        ␠␠␠␠
-                        line 3
+                        ␣␣␣␣
+                        line␣3
                         ```"},],
                     vec![
                         (EventType::EnterCodeBlock, None),
@@ -224,7 +224,7 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                 case!(
                     vec![indoc! {"
                         ```
-                        <` ``` `>
+                        <`␣```␣`>
                         ```"},],
                     vec![
                         (EventType::EnterCodeBlock, None),
@@ -237,7 +237,7 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                 case!(
                     vec![indoc! {"
                         ```info<`
-                        info line 2`>
+                        info␣line␣2`>
                         ```"},],
                     vec![
                         (EventType::EnterCodeBlock, None),
@@ -250,7 +250,7 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                 case!(
                     vec![indoc! {"
                         ```
-                        ␠␠foo<`bar`>    baz
+                        ␣␣foo<`bar`>␣␣␣␣baz
                         ```"},],
                     vec![
                         (EventType::EnterCodeBlock, None),
@@ -270,7 +270,7 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                 case!(
                     vec![indoc! {"
                         ```
-                        <% ``` %>
+                        <%␣```␣%>
                         ```"},],
                     vec![
                         (EventType::EnterCodeBlock, None),
@@ -282,7 +282,7 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                 case!(
                     vec![indoc! {"
                         ```info<%
-                        info line 2%>
+                        info␣line␣2%>
                         ```"},],
                     vec![
                         (EventType::EnterCodeBlock, None),
@@ -294,7 +294,7 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                 case!(
                     vec![indoc! {"
                         ```
-                        ␠␠foo<%bar%>    baz
+                        ␣␣foo<%bar%>␣␣␣␣baz
                         ```"},],
                     vec![
                         (EventType::EnterCodeBlock, None),
@@ -312,9 +312,9 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
             cases: vec![
                 case!(
                     vec![indoc! {"
-                        > ```info
-                        > code
-                        > ```"},],
+                        >␠```info
+                        >␠code
+                        >␠```"},],
                     vec![
                         (EventType::EnterBlockQuote, None),
                         (EventType::EnterCodeBlock, None),
@@ -328,8 +328,8 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                 ),
                 case!(
                     vec![indoc! {"
-                        > ```info
-                        > code"},],
+                        >␠```info
+                        >␠code"},],
                     vec![
                         (EventType::EnterBlockQuote, None),
                         (EventType::EnterCodeBlock, None),
@@ -342,9 +342,9 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                 ),
                 case!(
                     vec![indoc! {"
-                        > ```info
-                        > > code
-                        > ```"},],
+                        >␠```info
+                        >␠>␣code
+                        >␠```"},],
                     vec![
                         (EventType::EnterBlockQuote, None),
                         (EventType::EnterCodeBlock, None),
@@ -358,8 +358,8 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                 ),
                 case!(
                     vec![indoc! {"
-                        > ```info
-                        > > code"},],
+                        >␠```info
+                        >␠>␣code"},],
                     vec![
                         (EventType::EnterBlockQuote, None),
                         (EventType::EnterCodeBlock, None),
@@ -372,9 +372,9 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                 ),
                 case!(
                     vec![indoc! {"
-                        > ```info
-                        >  code
-                        > ```"},],
+                        >␠```info
+                        >␠␣code
+                        >␠```"},],
                     vec![
                         (EventType::EnterBlockQuote, None),
                         (EventType::EnterCodeBlock, None),
@@ -388,8 +388,8 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                 ),
                 case!(
                     vec![indoc! {"
-                        > ```info
-                        >  code
+                        >␠```info
+                        >␠␣code
                         ```"},],
                     vec![
                         (EventType::EnterBlockQuote, None),
@@ -439,7 +439,7 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                 case!(
                     vec![indoc! {"
                         ␠␠```
-                        ␠␠␠␠␠␠foo<`bar`>      baz
+                        ␠␠␣␣␣␣foo<`bar`>␣␣␣␣␣␣baz
                         ␠␠```"},],
                     vec![
                         (EventType::EnterCodeBlock, None),
@@ -454,21 +454,21 @@ pub fn groups_code_block() -> Vec<GroupedCases> {
                 case!(
                     vec![
                         indoc! {"
-                        >   ```
-                        >   code
-                        >   ```"},
+                        >␠␠␠```
+                        >␠␠␠code
+                        >␠␠␠```"},
                         indoc! {"
-                        >   ```
-                        >   code
-                        > ```"},
+                        >␠␠␠```
+                        >␠␠␠code
+                        >␠```"},
                         indoc! {"
-                        >     ```
-                        >   code
-                        >     ```"},
+                        >␠␠␠␠```
+                        >␠␠code
+                        >␠␠␠␠```"},
                         indoc! {"
-                        >     ```
-                        >   code
-                        > ```"},
+                        >␠␠␠␠```
+                        >␠␠code
+                        >␠```"},
                     ],
                     vec![
                         (EventType::EnterBlockQuote, None),

@@ -1,4 +1,4 @@
-use crate::events::NewLine;
+use crate::{events::NewLine, internal_utils::string::is_whitespace};
 
 use super::{types::CursorContext, utils::move_cursor_over_line_break};
 
@@ -41,7 +41,7 @@ fn parse_common_end<TCtx: CursorContext>(
                 .into(),
             )
         }
-        b' ' => ParseCommonEndOutput::NoneButMetSpace,
+        char if is_whitespace!(char) => ParseCommonEndOutput::NoneButMetSpace,
         _ => ParseCommonEndOutput::None(char),
     }
 }

@@ -2,7 +2,7 @@ use std::panic::{catch_unwind, RefUnwindSafe};
 
 use rotext_core::EventType;
 
-use crate::support::{FailedCase, FailureReason};
+use crate::support::{make_whitespace_variants, FailedCase, FailureReason};
 
 macro_rules! case {
     ($input_variants:expr, $expected:expr) => {
@@ -85,9 +85,14 @@ impl Case {
         self.input_variants
             .iter()
             .enumerate()
-            .filter_map(|(i, input)| -> Option<FailedCase> {
-                let input = input.replace('␠', " ");
-                self.assert_input_variant_ok(ctx, group, nth_case_in_group, i + 1, input)
+            .flat_map(|(i, input)| -> Vec<FailedCase> {
+                let inputs = make_whitespace_variants(input);
+                inputs
+                    .into_iter()
+                    .filter_map(|input| -> Option<FailedCase> {
+                        self.assert_input_variant_ok(ctx, group, nth_case_in_group, i + 1, input)
+                    })
+                    .collect()
             })
             .collect()
     }

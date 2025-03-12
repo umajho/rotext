@@ -17,7 +17,7 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
                     ]
                 ),
                 case!(
-                    vec!["> foo", " > foo", ">  foo"],
+                    vec![">␠foo", "␠>␠foo", ">␠␠foo"],
                     vec![
                         (EventType::EnterBlockQuote, None),
                         (EventType::EnterParagraph, None),
@@ -29,11 +29,11 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
                 case!(
                     vec![
                         indoc! {"
-                        > foo
-                        > bar"},
+                        >␠foo
+                        >␠bar"},
                         indoc! {"
-                        > foo
-                        >  bar"},
+                        >␠foo
+                        >␠␠bar"},
                     ],
                     vec![
                         (EventType::EnterBlockQuote, None),
@@ -48,11 +48,11 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
                 case!(
                     vec![
                         indoc! {"
-                        > foo
+                        >␠foo
                         bar"},
                         indoc! {"
-                        > foo
-                         bar"},
+                        >␠foo
+                        ␠bar"},
                     ],
                     vec![
                         (EventType::EnterBlockQuote, None),
@@ -68,13 +68,13 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
                 case!(
                     vec![
                         indoc! {"
-                        > foo
+                        >␠foo
 
-                        > bar"},
+                        >␠bar"},
                         indoc! {"
-                        > foo
+                        >␠foo
 
-                        >  bar"},
+                        >␠␠bar"},
                     ],
                     vec![
                         (EventType::EnterBlockQuote, None),
@@ -90,7 +90,7 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
                     ]
                 ),
                 case!(
-                    vec!["> > foo", " > > foo"],
+                    vec![">␠>␠foo", "␠>␠>␠foo"],
                     vec![
                         (EventType::EnterBlockQuote, None),
                         (EventType::EnterBlockQuote, None),
@@ -104,11 +104,11 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
                 case!(
                     vec![
                         indoc! {"
-                        > > foo
-                        > bar"},
+                        >␠>␠foo
+                        >␠bar"},
                         indoc! {"
-                        > > foo
-                        >  bar"},
+                        >␠>␠foo
+                        >␠␠bar"},
                     ],
                     vec![
                         (EventType::EnterBlockQuote, None),
@@ -125,8 +125,8 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
                 ),
                 case!(
                     vec![indoc! {"
-                        > foo
-                        > > bar"},],
+                        >␠foo
+                        >␠>␣bar"},],
                     vec![
                         (EventType::EnterBlockQuote, None),
                         (EventType::EnterParagraph, None),
@@ -141,10 +141,10 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
                     vec![
                         indoc! {"
                         >
-                        > foo"},
+                        >␠foo"},
                         indoc! {"
                         >␠
-                        > foo"}
+                        >␠foo"}
                     ],
                     vec![
                         (EventType::EnterBlockQuote, None),
@@ -160,7 +160,7 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
             group: "块引用>块引用中的分割线与标题",
             cases: vec![
                 case!(
-                    vec!["> ---"],
+                    vec![">␠---"],
                     vec![
                         (EventType::EnterBlockQuote, None),
                         (EventType::ThematicBreak, None),
@@ -169,7 +169,7 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
                 ),
                 case!(
                     vec![indoc! {"
-                        > ---
+                        >␠---
                         ---"},],
                     vec![
                         (EventType::EnterBlockQuote, None),
@@ -179,7 +179,7 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
                     ]
                 ),
                 case!(
-                    vec!["> == a =="],
+                    vec![">␠==␠a␠=="],
                     vec![
                         (EventType::EnterBlockQuote, None),
                         (EventType::EnterHeading2, None),
@@ -190,8 +190,8 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
                 ),
                 case!(
                     vec![indoc! {"
-                        > == a ==
-                        === b ==="},],
+                        >␠==␠a␠==
+                        ===␠b␠==="},],
                     vec![
                         (EventType::EnterBlockQuote, None),
                         (EventType::EnterHeading2, None),
@@ -209,7 +209,7 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
             group: "块引用>块引用的下一行的第一个字符有可能延续块引用，但因为缺少空格而未能如此",
             cases: vec![case!(
                 vec![indoc! {"
-                    > foo
+                    >␠foo
                     >bar"},],
                 vec![
                     (EventType::EnterBlockQuote, None),

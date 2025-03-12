@@ -8,7 +8,7 @@ pub fn groups_wiki_link() -> Vec<GroupedCases> {
             group: "Wiki链接",
             cases: vec![
                 case!(
-                    vec!["[[页面]]", "[[ 页面]]", "[[页面 ]]", "[[\t页面\t]]",],
+                    vec!["[[页面]]", "[[␠页面]]", "[[页面␠]]", "[[␠页面␠]]",],
                     vec![
                         (EventType::EnterWikiLink, Some("页面")),
                         (EventType::Text, Some("页面")),
@@ -18,9 +18,9 @@ pub fn groups_wiki_link() -> Vec<GroupedCases> {
                 case!(
                     vec![
                         "[[<`页面`>]]",
-                        "[[ <`页面`>]]",
-                        "[[<`页面`> ]]",
-                        "[[\t<`页面`>\t]]"
+                        "[[␠<`页面`>]]",
+                        "[[<`页面`>␠]]",
+                        "[[␠<`页面`>␠]]"
                     ],
                     vec![
                         (EventType::EnterWikiLink, Some("页面")),
@@ -38,7 +38,7 @@ pub fn groups_wiki_link() -> Vec<GroupedCases> {
                     ]
                 ),
                 case!(
-                    vec!["[[a <`页面`>]]",],
+                    vec!["[[a␣<`页面`>]]",],
                     vec![
                         (EventType::Text, Some("[[a ")),
                         (EventType::VerbatimEscaping, Some("页面")),
@@ -54,7 +54,7 @@ pub fn groups_wiki_link() -> Vec<GroupedCases> {
                     ]
                 ),
                 case!(
-                    vec!["[[<`页面`> a]]",],
+                    vec!["[[<`页面`>␣a]]",],
                     vec![
                         (EventType::Text, Some("[[")),
                         (EventType::VerbatimEscaping, Some("页面")),
@@ -75,7 +75,7 @@ pub fn groups_wiki_link() -> Vec<GroupedCases> {
                     ]
                 ),
                 case!(
-                    vec!["[[页面| 内容]]",],
+                    vec!["[[页面|␣内容]]",],
                     vec![
                         (EventType::EnterWikiLink, Some("页面")),
                         (EventType::Text, Some(" 内容")),
@@ -83,7 +83,7 @@ pub fn groups_wiki_link() -> Vec<GroupedCases> {
                     ]
                 ),
                 case!(
-                    vec!["[[页面|内容 ]]",],
+                    vec!["[[页面|内容␣]]",],
                     vec![
                         (EventType::EnterWikiLink, Some("页面")),
                         (EventType::Text, Some("内容 ")),

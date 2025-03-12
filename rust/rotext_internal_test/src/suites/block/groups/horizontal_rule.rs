@@ -10,7 +10,7 @@ pub fn groups_horizontal_rule() -> Vec<GroupedCases> {
             group: "分割线",
             cases: vec![
                 case!(
-                    vec!["---", "----", " ---"],
+                    vec!["---", "----", "␠---"],
                     vec![(EventType::ThematicBreak, None)]
                 ),
                 case!(
@@ -26,7 +26,7 @@ pub fn groups_horizontal_rule() -> Vec<GroupedCases> {
                         indoc! {"
                         ---
                         ---"},
-                        "--- ---",
+                        "---␠---",
                     ],
                     vec![
                         (EventType::ThematicBreak, None),
@@ -39,7 +39,7 @@ pub fn groups_horizontal_rule() -> Vec<GroupedCases> {
                         ---
                         a"},
                         "---a",
-                        "--- a",
+                        "---␠a",
                     ],
                     vec![
                         (EventType::ThematicBreak, None),
@@ -58,7 +58,7 @@ pub fn groups_horizontal_rule() -> Vec<GroupedCases> {
                         ---
                         <`a`>"},
                     "---<`a`>",
-                    "--- <`a`>",
+                    "---␠<`a`>",
                 ],
                 vec![
                     (EventType::ThematicBreak, None),
@@ -76,7 +76,7 @@ pub fn groups_horizontal_rule() -> Vec<GroupedCases> {
                         ---
                         <%a%>"},
                     "---<%a%>",
-                    "--- <%a%>",
+                    "---␠<%a%>",
                 ],
                 vec![(EventType::ThematicBreak, None),]
             )],

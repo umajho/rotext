@@ -6,7 +6,7 @@ pub fn groups_regression() -> Vec<GroupedCases> {
     vec![GroupedCases {
         group: "回归",
         cases: vec![case!(
-            vec!["{| !! foo_ !! |}"],
+            vec!["{|␠!!␠foo_␠!!␠|}"],
             vec![
                 (EventType::EnterTable, None),
                 (EventType::IndicateTableHeaderCell, None),

@@ -275,14 +275,14 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                 m!(':') if inner.stack.is_in_ruby_but_not_in_ruby_text() => {
                     let text_end = {
                         let mut text_end = cursor.value();
-                        while input.get(text_end - 1) == Some(&b' ') {
+                        while input.get(text_end - 1).is_some_and(|c| is_whitespace!(c)) {
                             text_end -= 1;
                         }
                         text_end
                     };
 
                     cursor.move_forward(":".len());
-                    while input.get(cursor.value()) == Some(&b' ') {
+                    while input.get(cursor.value()).is_some_and(|c| is_whitespace!(c)) {
                         cursor.move_forward(1);
                     }
                     inner.stack.enter_ruby_text()?;

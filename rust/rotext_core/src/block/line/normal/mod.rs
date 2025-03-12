@@ -7,7 +7,7 @@ use crate::{
     block::{branch::braced::table, types::CursorContext},
     common::m,
     events::{NewLine, VerbatimEscaping},
-    internal_utils::string::count_continuous_character_with_maximum,
+    internal_utils::string::{count_continuous_character_with_maximum, is_whitespace},
 };
 
 use super::{global_phase, parse_common_end, CommonEnd, ParseCommonEndOutput};
@@ -99,7 +99,7 @@ pub fn parse<TCtx: CursorContext>(
     end_condition: EndCondition,
     content_before: ContentBefore,
 ) -> (Range<usize>, End) {
-    debug_assert_ne!(input.get(ctx.cursor()), Some(&b' '));
+    debug_assert!(input.get(ctx.cursor()).is_none_or(|c| !is_whitespace!(c)));
 
     let mut range = ctx.cursor()..(ctx.cursor());
     if let ContentBefore::NotSpace(n) = content_before {
@@ -186,8 +186,13 @@ pub fn parse<TCtx: CursorContext>(
             && input.get(ctx.cursor() + 1) == Some(&m!(':'))
         {
             let next_next_char = input.get(ctx.cursor() + 2);
-            if matches!(next_next_char, None | Some(&b' ' | &b'\r' | &b'\n')) {
-                ctx.move_cursor_forward(if next_next_char == Some(&b' ') { 3 } else { 2 });
+            let result = match next_next_char {
+                None | Some(b'\r' | b'\n') => Some(2),
+                Some(char) if is_whitespace!(char) => Some(3),
+                _ => None,
+            };
+            if let Some(to_move) = result {
+                ctx.move_cursor_forward(to_move);
                 break (range, End::DescriptionDefinitionOpening);
             }
         }

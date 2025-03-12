@@ -42,7 +42,7 @@ pub fn groups_text_styles() -> Vec<GroupedCases> {
                     ]
                 ),
                 case!(
-                    vec![format!("[{s} foo {s}]").leak()],
+                    vec![format!("[{s}␣foo␣{s}]").leak()],
                     vec![
                         (enter_ev, None),
                         (EventType::Text, Some(" foo ")),
@@ -79,11 +79,11 @@ pub fn groups_text_styles() -> Vec<GroupedCases> {
                     vec![
                         formatdoc! {"
                         [{s}foo
-                        line 2{s}]"}
+                        line␣2{s}]"}
                         .leak(),
                         formatdoc! {"
                         [{s}foo
-                        line 2"}
+                        line␣2"}
                         .leak(),
                     ],
                     vec![
@@ -115,8 +115,8 @@ pub fn groups_text_styles() -> Vec<GroupedCases> {
             cases: vec![
                 case!(
                     vec![formatdoc! {"
-                        [{s}[{s}1{s}] [{another_s}
-                        2 [{s}3{s}]{another_s}] >>TP.4
+                        [{s}[{s}1{s}]␣[{another_s}
+                        2␣[{s}3{s}]{another_s}]␣>>TP.4
                         [=d5]{s}]"}
                     .leak()],
                     vec![

@@ -9,10 +9,18 @@ pub fn groups_code_span() -> Vec<GroupedCases> {
         group: "行内代码",
         cases: vec![
             case!(
-                vec!["[`foo`]", "[``foo``]", "[` foo `]", "[`` foo ``]", "[`foo"],
+                vec!["[`foo`]", "[``foo``]", "[`␣foo␣`]", "[``␣foo␣``]", "[`foo"],
                 vec![
                     (EventType::EnterCodeSpan, None),
                     (EventType::Text, Some("foo")),
+                    (EventType::ExitInline, None),
+                ]
+            ),
+            case!(
+                vec!["[`\tfoo\t`]"],
+                vec![
+                    (EventType::EnterCodeSpan, None),
+                    (EventType::Text, Some("\tfoo\t")),
                     (EventType::ExitInline, None),
                 ]
             ),
@@ -25,7 +33,7 @@ pub fn groups_code_span() -> Vec<GroupedCases> {
                 ]
             ),
             case!(
-                vec!["[`foo <%%>"],
+                vec!["[`foo␣<%%>"],
                 vec![
                     (EventType::EnterCodeSpan, None),
                     (EventType::Text, Some("foo ")),
@@ -62,10 +70,10 @@ pub fn groups_code_span() -> Vec<GroupedCases> {
                 vec![
                     indoc! {"
                     [`foo
-                    line 2`]"},
+                    line␣2`]"},
                     indoc! {"
                     [`foo
-                    line 2"}
+                    line␣2"}
                 ],
                 vec![
                     (EventType::EnterCodeSpan, None),

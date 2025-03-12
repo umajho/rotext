@@ -34,6 +34,51 @@ mod for_fn_parse {
                 current_line: LineNumber::new_universal(1),
             },
         );
+        test(
+            b"<` foo `>",
+            Some(
+                VerbatimEscaping {
+                    content: 3..6,
+                    is_closed_forcedly: false,
+                    line_after: LineNumber::new_universal(1),
+                }
+                .into(),
+            ),
+            MockCursorContext {
+                cursor: 9,
+                current_line: LineNumber::new_universal(1),
+            },
+        );
+        test(
+            b"<`  foo  `>",
+            Some(
+                VerbatimEscaping {
+                    content: 3..8,
+                    is_closed_forcedly: false,
+                    line_after: LineNumber::new_universal(1),
+                }
+                .into(),
+            ),
+            MockCursorContext {
+                cursor: 11,
+                current_line: LineNumber::new_universal(1),
+            },
+        );
+        test(
+            b"<`\tfoo\t`>",
+            Some(
+                VerbatimEscaping {
+                    content: 2..7,
+                    is_closed_forcedly: false,
+                    line_after: LineNumber::new_universal(1),
+                }
+                .into(),
+            ),
+            MockCursorContext {
+                cursor: 9,
+                current_line: LineNumber::new_universal(1),
+            },
+        );
     }
 
     #[test]

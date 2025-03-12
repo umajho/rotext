@@ -13,7 +13,7 @@ pub use stack_wrapper::StackEntry;
 use crate::{
     common::m,
     events::{ev, ThematicBreak},
-    internal_utils::string::count_continuous_character,
+    internal_utils::string::{count_continuous_character, count_continuous_whitespaces},
     types::{cast_tym, Stack, Tym, TYM_UNIT},
     Event,
 };
@@ -60,7 +60,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
 
     #[inline(always)]
     fn parse(&mut self, mut expecting: Expecting) -> crate::Result<Tym<5>> {
-        let spaces = count_continuous_character(self.input, b' ', self.inner.cursor());
+        let spaces = count_continuous_whitespaces(self.input, self.inner.cursor());
         if spaces > 0 {
             self.inner.move_cursor_forward(spaces);
             self.inner.current_expecting.set_spaces_before(spaces);
@@ -321,6 +321,8 @@ mod branch {
     use super::*;
 
     pub mod item_like {
+        use crate::internal_utils::string::is_whitespace;
+
         use super::*;
 
         pub fn parse_opening_and_process<TStack: Stack<StackEntry>>(
@@ -478,7 +480,7 @@ mod branch {
             inner: &mut ParserInner<TStack>,
         ) -> bool {
             match input.get(inner.cursor() + 1) {
-                Some(b' ') => inner.move_cursor_forward(1 + " ".len()),
+                Some(c) if is_whitespace!(c) => inner.move_cursor_forward(2),
                 None | Some(b'\r' | b'\n') => inner.move_cursor_forward(1),
                 // TODO: 也许可以一步到位调用 `leaf::paragraph::enter_if_not_blank(input, inner, 1)`。
                 _ => return false,
@@ -679,6 +681,8 @@ mod branch {
 }
 
 mod leaf {
+    use crate::internal_utils::string::is_whitespace;
+
     use super::*;
 
     pub fn parse_opening_and_process<TStack: Stack<StackEntry>>(
@@ -700,8 +704,12 @@ mod leaf {
             }
             m!('=') => {
                 let count = 1 + count_continuous_character(input, m!('='), inner.cursor() + 1);
-                if (1..=6).contains(&count) && input.get(inner.cursor() + count) == Some(&b' ') {
-                    inner.move_cursor_forward(count + " ".len());
+                if (1..=6).contains(&count)
+                    && input
+                        .get(inner.cursor() + count)
+                        .is_some_and(|c| is_whitespace!(c))
+                {
+                    inner.move_cursor_forward(count + 1);
                     heading::enter(inner, count).map(|tym| cast_tym!(tym))
                 } else {
                     paragraph::enter_if_not_blank(input, state, inner, count)
@@ -1037,10 +1045,8 @@ mod leaf {
             #[cfg(debug_assertions)]
             {
                 if content_before > 0 {
-                    assert!(!matches!(
-                        input.get(inner.cursor()),
-                        None | Some(b' ' | b'\r' | b'\n')
-                    ))
+                    let char = input.get(inner.cursor());
+                    assert!(char.is_some_and(|c| !matches!(c, b'\r' | b'\n') && !is_whitespace!(c)))
                 }
             }
 

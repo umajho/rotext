@@ -7,7 +7,7 @@ pub fn groups_ref_link() -> Vec<GroupedCases> {
         GroupedCases {
             group: "引用链接",
             cases: vec![
-                case!(vec![">>", ">> "], vec![(EventType::Text, Some(">>")),]),
+                case!(vec![">>", ">>␠"], vec![(EventType::Text, Some(">>")),]),
                 case!(vec![">>TP",], vec![(EventType::Text, Some(">>TP")),]),
                 case!(vec![">>TP.",], vec![(EventType::Text, Some(">>TP.")),]),
                 case!(vec![">>abc",], vec![(EventType::Text, Some(">>abc")),]),
@@ -41,7 +41,7 @@ pub fn groups_ref_link() -> Vec<GroupedCases> {
             group: "引用链接>绝对目标>串号",
             cases: vec![
                 case!(
-                    vec![">>TP.abc", ">>TP.abc "],
+                    vec![">>TP.abc", ">>TP.abc␠"],
                     vec![(EventType::RefLink, Some("TP.abc")),]
                 ),
                 case!(
@@ -85,7 +85,7 @@ pub fn groups_ref_link() -> Vec<GroupedCases> {
             group: "引用链接>绝对目标>串号与楼层号",
             cases: vec![
                 case!(
-                    vec![">>TP.abc#123", ">>TP.abc#123 "],
+                    vec![">>TP.abc#123", ">>TP.abc#123␠"],
                     vec![(EventType::RefLink, Some("TP.abc#123")),]
                 ),
                 case!(
@@ -108,7 +108,7 @@ pub fn groups_ref_link() -> Vec<GroupedCases> {
             group: "引用链接>绝对目标>贴号",
             cases: vec![
                 case!(
-                    vec![">>TP.456", ">>TP.456 "],
+                    vec![">>TP.456", ">>TP.456␠"],
                     vec![(EventType::RefLink, Some("TP.456")),]
                 ),
                 case!(
@@ -131,7 +131,7 @@ pub fn groups_ref_link() -> Vec<GroupedCases> {
             group: "引用链接>串内楼层目标",
             cases: vec![
                 case!(
-                    vec![">>#123", ">>#123 "],
+                    vec![">>#123", ">>#123␠"],
                     vec![(EventType::RefLink, Some("#123")),]
                 ),
                 case!(
