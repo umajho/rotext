@@ -3,8 +3,10 @@ pub fn render_events_in_debug_format(input: &[u8], all_events: &Vec<rotext::Even
     let mut output = "".to_string();
 
     for event in all_events {
-        // output.push_str(&format!("{:?}\n", event));
-        output.push_str(&format!("{:?} {:?}\n", event, event.clone().content(input)));
+        let content = event.clone().content_u8_slice(input);
+        let content = content.map(|content| std::str::from_utf8(content).unwrap());
+
+        output.push_str(&format!("{:?} {:?}\n", event, content));
     }
 
     output

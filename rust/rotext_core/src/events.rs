@@ -247,7 +247,13 @@ impl Event {
         unsafe { *<*const _>::from(self).cast::<u8>() }
     }
 
+    #[cfg(any(test, feature = "test"))]
     pub fn content<'a>(&self, input: &'a [u8]) -> Option<&'a str> {
+        self.content_u8_slice(input)
+            .map(|slice| core::str::from_utf8(slice).unwrap())
+    }
+
+    pub fn content_u8_slice<'a>(&self, input: &'a [u8]) -> Option<&'a [u8]> {
         let result = match self {
             Event::__Unparsed(content)
             | Event::Raw(content)
@@ -255,9 +261,7 @@ impl Event {
             | Event::Text(content)
             | Event::RefLink(content)
             | Event::Dicexp(content)
-            | Event::EnterWikiLink(content) => unsafe {
-                core::str::from_utf8_unchecked(&input[content.clone()])
-            },
+            | Event::EnterWikiLink(content) => &input[content.clone()],
             Event::NewLine(_)
             | Event::ThematicBreak(_)
             | Event::EnterParagraph(_)
