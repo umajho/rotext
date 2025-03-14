@@ -1101,17 +1101,19 @@ mod leaf {
             inner: &mut ParserInner<TStack>,
         ) -> crate::Result<Tym<3>> {
             let ret = match end {
-                line::normal::End::Eof |
-                // 段落处理换行是在换行后的那一行，而非换行前的那一行（现在），因此这里跳过处
-                // 理。这么做是因为现在不知道下一行还有没有内容，没有内容的话就不应该产出换行
-                // 符。此外，这么做也能防止空行产出换行符。
-                line::normal::End::NewLine(_) => TYM_UNIT.into(),
+                // 对于 `NewLine`：段落处理换行是在换行后的那一行，而非换行前的那一行（现
+                // 在），因此这里跳过处理。这么做是因为现在不知道下一行还有没有内容，没有内容
+                // 的话就不应该产出换行符。此外，这么做也能防止空行产出换行符。
+                //
+                // NOTE: 如果把注释挪到 `NewLine` 上方会导致整块 `match` 无法被格式化…
+                line::normal::End::Eof | line::normal::End::NewLine(_) => TYM_UNIT.into(),
                 line::normal::End::VerbatimEscaping(verbatim_escaping) => {
-                    let tym = line::global_phase::process_verbatim_escaping(inner, verbatim_escaping);
+                    let tym =
+                        line::global_phase::process_verbatim_escaping(inner, verbatim_escaping);
                     cast_tym!(tym)
                 }
                 line::normal::End::TableRelated(table_related_end) => {
-                    let tym = table_related_end.process(state, );
+                    let tym = table_related_end.process(state);
                     cast_tym!(tym)
                 }
                 line::normal::End::DescriptionDefinitionOpening => {
@@ -1135,7 +1137,10 @@ mod leaf {
                     // 进入 DD
                     let tym_c = {
                         let stack_entry =
-                            branch::item_like::make_stack_entry_from_general_item_like(GeneralItemLike::DD, inner);
+                            branch::item_like::make_stack_entry_from_general_item_like(
+                                GeneralItemLike::DD,
+                                inner,
+                            );
                         let ev = stack_entry.make_enter_event();
                         inner.stack.push_item_like(stack_entry)?;
                         inner.r#yield(ev)
@@ -1143,7 +1148,7 @@ mod leaf {
 
                     tym_a.add(tym_b).add(tym_c)
                 }
-                line::normal::End::None => TYM_UNIT.into()
+                line::normal::End::None => TYM_UNIT.into(),
             };
 
             Ok(ret)
