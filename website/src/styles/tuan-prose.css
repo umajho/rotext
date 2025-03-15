@@ -1,5 +1,7 @@
 @reference "tailwindcss";
 
+@import "./tailwind-common.css";
+
 .tuan-background {
   @apply bg-[#1f1f1f];
 }
