@@ -579,25 +579,24 @@ mod branch {
                 Ok(tym)
             }
 
-            #[allow(clippy::enum_variant_names)]
             #[derive(Debug, PartialEq, Eq)]
             pub enum TableRelatedEnd {
-                TableClosing,
-                TableCaptionIndicator,
-                TableRowIndicator,
-                TableHeaderCellIndicator,
+                Closing,
+                CaptionIndicator,
+                RowIndicator,
+                HeaderCellIndicator,
             }
             impl TableRelatedEnd {
                 pub fn process(self, state: &mut State) -> Tym<0> {
                     *state = match self {
-                        TableRelatedEnd::TableClosing => Exiting::new(
+                        TableRelatedEnd::Closing => Exiting::new(
                             ExitingUntil::TopIsTable {
                                 should_also_exit_table: true,
                             },
                             ExitingAndThen::ExpectBracedOpening,
                         )
                         .into(),
-                        TableRelatedEnd::TableCaptionIndicator => Exiting::new(
+                        TableRelatedEnd::CaptionIndicator => Exiting::new(
                             ExitingUntil::TopIsTable {
                                 should_also_exit_table: false,
                             },
@@ -607,7 +606,7 @@ mod branch {
                             )),
                         )
                         .into(),
-                        TableRelatedEnd::TableRowIndicator => Exiting::new(
+                        TableRelatedEnd::RowIndicator => Exiting::new(
                             ExitingUntil::TopIsTable {
                                 should_also_exit_table: false,
                             },
@@ -617,7 +616,7 @@ mod branch {
                             )),
                         )
                         .into(),
-                        TableRelatedEnd::TableHeaderCellIndicator => Exiting::new(
+                        TableRelatedEnd::HeaderCellIndicator => Exiting::new(
                             ExitingUntil::TopIsTable {
                                 should_also_exit_table: false,
                             },
@@ -642,13 +641,13 @@ mod branch {
                 let &second_char = input.get(ctx.cursor() + 1)?;
                 let end = match first_char {
                     m!('|') => match second_char {
-                        m!('}') => TableRelatedEnd::TableClosing,
-                        m!('+') if is_caption_applicable => TableRelatedEnd::TableCaptionIndicator,
-                        m!('-') => TableRelatedEnd::TableRowIndicator,
+                        m!('}') => TableRelatedEnd::Closing,
+                        m!('+') if is_caption_applicable => TableRelatedEnd::CaptionIndicator,
+                        m!('-') => TableRelatedEnd::RowIndicator,
                         _ => return None,
                     },
                     m!('!') => match second_char {
-                        m!('!') => TableRelatedEnd::TableHeaderCellIndicator,
+                        m!('!') => TableRelatedEnd::HeaderCellIndicator,
                         _ => return None,
                     },
                     _ => return None,

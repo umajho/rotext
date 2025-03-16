@@ -455,7 +455,7 @@ mod for_fn_parse {
             end_condition.clone(),
             0,
             b"",
-            table::TableRelatedEnd::TableClosing.into(),
+            table::TableRelatedEnd::Closing.into(),
             MockCursorContext {
                 cursor: 2,
                 current_line: LineNumber::new_universal(1),
@@ -466,7 +466,7 @@ mod for_fn_parse {
             end_condition.clone(),
             0,
             b"foo",
-            table::TableRelatedEnd::TableClosing.into(),
+            table::TableRelatedEnd::Closing.into(),
             MockCursorContext {
                 cursor: 5,
                 current_line: LineNumber::new_universal(1),
@@ -477,7 +477,7 @@ mod for_fn_parse {
             end_condition.clone(),
             0,
             b"foo",
-            table::TableRelatedEnd::TableClosing.into(),
+            table::TableRelatedEnd::Closing.into(),
             MockCursorContext {
                 cursor: 6,
                 current_line: LineNumber::new_universal(1),
@@ -488,7 +488,7 @@ mod for_fn_parse {
             end_condition.clone(),
             0,
             b"",
-            table::TableRelatedEnd::TableRowIndicator.into(),
+            table::TableRelatedEnd::RowIndicator.into(),
             MockCursorContext {
                 cursor: 2,
                 current_line: LineNumber::new_universal(1),
@@ -499,7 +499,7 @@ mod for_fn_parse {
             end_condition.clone(),
             0,
             b"",
-            table::TableRelatedEnd::TableHeaderCellIndicator.into(),
+            table::TableRelatedEnd::HeaderCellIndicator.into(),
             MockCursorContext {
                 cursor: 2,
                 current_line: LineNumber::new_universal(1),
@@ -544,7 +544,7 @@ mod for_fn_parse {
             end_condition.clone(),
             0,
             b"",
-            table::TableRelatedEnd::TableCaptionIndicator.into(),
+            table::TableRelatedEnd::CaptionIndicator.into(),
             MockCursorContext {
                 cursor: 2,
                 current_line: LineNumber::new_universal(1),
@@ -570,7 +570,7 @@ mod for_fn_parse {
             end_condition.clone(),
             0,
             b"foo",
-            table::TableRelatedEnd::TableClosing.into(),
+            table::TableRelatedEnd::Closing.into(),
             MockCursorContext {
                 cursor: 8,
                 current_line: LineNumber::new_universal(1),
@@ -581,7 +581,7 @@ mod for_fn_parse {
             end_condition.clone(),
             0,
             b"foo",
-            table::TableRelatedEnd::TableClosing.into(),
+            table::TableRelatedEnd::Closing.into(),
             MockCursorContext {
                 cursor: 9,
                 current_line: LineNumber::new_universal(1),
@@ -592,7 +592,7 @@ mod for_fn_parse {
             end_condition.clone(),
             0,
             b"foo",
-            table::TableRelatedEnd::TableRowIndicator.into(),
+            table::TableRelatedEnd::RowIndicator.into(),
             MockCursorContext {
                 cursor: 8,
                 current_line: LineNumber::new_universal(1),
