@@ -66,7 +66,7 @@ export const Root: Component<RouteSectionProps> = (props) => {
         />
       </Show>
       <div class={`flex flex-col ${height} bg-base-300`}>
-        <nav class="sticky top-0 z-30 w-full py-2 sm:p-2">
+        <nav class="sticky top-0 z-30 w-full p-1 !pb-2 xl:p-2">
           <NavBar
             shouldShowNavMenu={shouldShowNavMenu()}
             setShouldShowNavMenu={setShouldShowNavMenu}
