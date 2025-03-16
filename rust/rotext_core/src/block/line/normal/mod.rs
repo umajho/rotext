@@ -43,6 +43,7 @@ pub enum End {
     NewLine(Option<NewLine>),
     VerbatimEscaping(VerbatimEscaping),
     TableRelated(table::TableRelatedEnd),
+    DoublePipes,
     DescriptionDefinitionOpening,
     None,
 }
@@ -166,16 +167,13 @@ pub fn parse<TCtx: CursorContext>(
             }
         }
 
-        if let Some(cond) = &end_condition.on_table_related {
-            if let Some(end) = parse_table_related_end(
-                input,
-                ctx,
-                cond,
-                char,
-                ParseEndWhenConfirmedNoAtxClosingOptions {
-                    is_range_empty: range.is_empty(),
-                },
-            ) {
+        {
+            let opts = ParseEndWhenConfirmedNoAtxClosingOptions {
+                is_range_empty: range.is_empty(),
+            };
+            if let Some(end) =
+                parse_braced_element_related_end(input, ctx, &end_condition, char, opts)
+            {
                 break (range, end);
             }
         }
@@ -204,7 +202,11 @@ pub fn parse<TCtx: CursorContext>(
 
     match end {
         End::VerbatimEscaping(_) | End::None => range.end += spaces,
-        End::Eof | End::NewLine(_) | End::TableRelated(_) | End::DescriptionDefinitionOpening => {}
+        End::Eof
+        | End::NewLine(_)
+        | End::TableRelated(_)
+        | End::DoublePipes
+        | End::DescriptionDefinitionOpening => {}
     }
 
     (range, end)
@@ -243,14 +245,11 @@ fn parse_following_end_that_can_close_heading<TCtx: CursorContext>(
             ParseCommonEndOutput::None(char) => char,
         };
 
-        if let Some(end_condition) = &end_condition.on_table_related {
-            let output = parse_table_related_end(input, ctx, end_condition, char, opts);
-            if let Some(end) = output {
-                return ParseFollwingEndThatCanCloseHeadingOutput {
-                    spaces_before_end,
-                    end: Some(end),
-                };
-            }
+        if let Some(end) = parse_braced_element_related_end(input, ctx, end_condition, char, opts) {
+            return ParseFollwingEndThatCanCloseHeadingOutput {
+                spaces_before_end,
+                end: Some(end),
+            };
         }
 
         return ParseFollwingEndThatCanCloseHeadingOutput {
@@ -265,14 +264,30 @@ struct ParseEndWhenConfirmedNoAtxClosingOptions {
 }
 /// 确定了没有 ATX Heading 闭合部分之后进行的接下来的解析。
 ///
-/// 目前只可能返回 [End::TableRelated]。
-fn parse_table_related_end<TCtx: CursorContext>(
+/// 目前只可能返回 [End::TableRelated] 及 [End::DoublePipes]。
+fn parse_braced_element_related_end<TCtx: CursorContext>(
     input: &[u8],
     ctx: &mut TCtx,
-    end_condition: &TableRelated,
+    end_condition: &EndCondition,
     first_char: u8,
     opts: ParseEndWhenConfirmedNoAtxClosingOptions,
 ) -> Option<End> {
-    let is_caption_applicable = opts.is_range_empty && end_condition.is_caption_applicable;
-    table::parse_end(input, ctx, first_char, is_caption_applicable).map(End::TableRelated)
+    if let Some(end_condition) = &end_condition.on_table_related {
+        let is_caption_applicable = opts.is_range_empty && end_condition.is_caption_applicable;
+        let end =
+            table::parse_end(input, ctx, first_char, is_caption_applicable).map(End::TableRelated);
+        if end.is_some() {
+            return end;
+        }
+    }
+
+    if end_condition.on_table_related.is_some()
+        && first_char == m!('|')
+        && input.get(ctx.cursor() + 1) == Some(&m!('|'))
+    {
+        ctx.move_cursor_forward("||".len());
+        return Some(End::DoublePipes);
+    }
+
+    None
 }

@@ -510,7 +510,7 @@ mod for_fn_parse {
             end_condition.clone(),
             0,
             b"",
-            table::TableRelatedEnd::DoublePipes.into(),
+            End::DoublePipes,
             MockCursorContext {
                 cursor: 2,
                 current_line: LineNumber::new_universal(1),

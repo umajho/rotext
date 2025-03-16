@@ -549,6 +549,16 @@ mod branch {
             }
         }
 
+        pub fn process_double_pipes(state: &mut State) -> Tym<0> {
+            *state = Exiting::new(
+                ExitingUntil::TopIsAwareOfDoublePipes,
+                ExitingAndThen::YieldBasedOnContextAndExpectBracedOpening,
+            )
+            .into();
+
+            TYM_UNIT
+        }
+
         pub mod table {
             use super::*;
 
@@ -569,13 +579,13 @@ mod branch {
                 Ok(tym)
             }
 
+            #[allow(clippy::enum_variant_names)]
             #[derive(Debug, PartialEq, Eq)]
             pub enum TableRelatedEnd {
                 TableClosing,
                 TableCaptionIndicator,
                 TableRowIndicator,
                 TableHeaderCellIndicator,
-                DoublePipes,
             }
             impl TableRelatedEnd {
                 pub fn process(self, state: &mut State) -> Tym<0> {
@@ -617,11 +627,6 @@ mod branch {
                             )),
                         )
                         .into(),
-                        TableRelatedEnd::DoublePipes => Exiting::new(
-                            ExitingUntil::TopIsAwareOfDoublePipes,
-                            ExitingAndThen::YieldBasedOnContextAndExpectBracedOpening,
-                        )
-                        .into(),
                     };
 
                     cast_tym!(TYM_UNIT)
@@ -640,7 +645,6 @@ mod branch {
                         m!('}') => TableRelatedEnd::TableClosing,
                         m!('+') if is_caption_applicable => TableRelatedEnd::TableCaptionIndicator,
                         m!('-') => TableRelatedEnd::TableRowIndicator,
-                        m!('|') => TableRelatedEnd::DoublePipes,
                         _ => return None,
                     },
                     m!('!') => match second_char {
@@ -840,6 +844,12 @@ mod leaf {
                 line::normal::End::TableRelated(table_related_end) => {
                     let tym_a = exit(inner, top_leaf);
                     let tym_b = table_related_end.process(state);
+
+                    tym_a.add(tym_b)
+                }
+                line::normal::End::DoublePipes => {
+                    let tym_a = exit(inner, top_leaf);
+                    let tym_b = branch::braced::process_double_pipes(state);
 
                     tym_a.add(tym_b)
                 }
@@ -1113,6 +1123,9 @@ mod leaf {
                 line::normal::End::TableRelated(table_related_end) => {
                     let tym = table_related_end.process(state);
                     cast_tym!(tym)
+                }
+                line::normal::End::DoublePipes => {
+                    branch::braced::process_double_pipes(state).into()
                 }
                 line::normal::End::DescriptionDefinitionOpening => {
                     // 退出当前的段落。
