@@ -267,20 +267,18 @@ impl<TStack: Stack<StackEntry>> Iterator for Parser<'_, TStack> {
             }
 
             let result: crate::Result<Tym<5>> = match &mut self.state {
-                State::Exiting(exiting_branches) => match Self::exit(
-                    &mut self.inner,
-                    &mut self.item_likes_state,
-                    exiting_branches,
-                ) {
-                    Ok((tym, state)) => {
-                        if let Some(state) = state {
-                            self.state = state;
+                State::Exiting(exiting) => {
+                    match Self::exit(&mut self.inner, &mut self.item_likes_state, exiting) {
+                        Ok((tym, state)) => {
+                            if let Some(state) = state {
+                                self.state = state;
+                            }
+                            Ok(tym)
                         }
-                        Ok(tym)
+                        Err(err) => Err(err),
                     }
-                    Err(err) => Err(err),
+                    .map(|tym| cast_tym!(tym))
                 }
-                .map(|tym| cast_tym!(tym)),
                 State::Ended => {
                     break None;
                 }
