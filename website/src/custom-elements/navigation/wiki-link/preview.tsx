@@ -162,6 +162,8 @@ function navigate(address: { local: LocalAddress; authentic: Address }, opts: {
 }
 
 const HINT_CLASS = "flex justify-center h-full text-gray-400 font-black";
+const INLINE_HINT_CLASS =
+  "inline-flex align-top text-xs text-gray-400 font-black";
 
 const Preview: Component<{
   parentLevel: number;
@@ -183,14 +185,19 @@ const Preview: Component<{
       if (content[0] === "ok") {
         const cutResult = content[1];
 
-        if (cutResult.hasContentBefore) {
-          contentContainerEl.append(createHintElement("…"));
-        }
         // `content[1]` 是专门为了预览而克隆的，因此不用再克隆一遍。
         contentContainerEl.append(...cutResult.content);
-        if (cutResult.hasContentAfter) {
-          contentContainerEl.append(createHintElement("…"));
+
+        if (cutResult.hasContentBefore || cutResult.hasContentAfter) {
+          let hint = createInlineHintElement("（片段）");
+          let firstChild = contentContainerEl.firstElementChild;
+          if (firstChild) {
+            firstChild.prepend(hint);
+          } else {
+            contentContainerEl.append(hint);
+          }
         }
+
         return;
       }
 
@@ -251,7 +258,7 @@ const Preview: Component<{
         data-ankor-widget-owner={widgetOwnerData()}
         data-address={addressData()}
       >
-        <div class={`${Ankor.CONTENT_CLASS} p-2 md:p-4`}>
+        <div class={`${Ankor.CONTENT_CLASS} p-2 md:px-4`}>
           <div class={`${Ankor.ANCHOR_CLASS} relative z-10`} />
           <Show when={props.content?.[0] === "input_changed"}>
             <div class={HINT_CLASS}>
@@ -311,11 +318,21 @@ function closestWidgetOwnerElement(el: HTMLElement) {
 }
 
 function createHintElement(hint: string) {
-  return createDivElement({ textContent: hint!, class: HINT_CLASS });
+  return createElement("div", { textContent: hint!, class: HINT_CLASS });
 }
 
-function createDivElement(opts: { textContent: string; class: string }) {
-  const el = document.createElement("div");
+function createInlineHintElement(hint: string) {
+  return createElement("span", {
+    textContent: hint!,
+    class: INLINE_HINT_CLASS,
+  });
+}
+
+function createElement(
+  tag: string,
+  opts: { textContent: string; class: string },
+) {
+  const el = document.createElement(tag);
   el.textContent = opts.textContent;
   el.className = opts.class;
   return el;

@@ -36,7 +36,7 @@ import { touchingDetector } from "./touching-detector";
 
 const LEAVING_DELAY_MS = 100;
 
-const COLLAPSE_HEIGHT_PX = getSizeInPx("6rem");
+const COLLAPSE_HEIGHT_PX = getSizeInPx("9rem");
 
 export type DisplayMode = "closed" | "floating" | "pinned";
 
