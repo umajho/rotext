@@ -89,8 +89,8 @@ export function createWidgetComponent(parts: {
   // 在执行 handleMount 时必定存在
   let labelEl!: HTMLSpanElement;
   // 视情况存在
-  let popperContainerEl: HTMLDivElement,
-    popperEl: HTMLDivElement;
+  let popperContainerEl!: HTMLDivElement,
+    popperEl!: HTMLDivElement;
 
   const backgroundColorCSSValue = createMemo(() =>
     computedColorToCSSValue(opts.popperBackgroundColor())
