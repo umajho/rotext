@@ -56,8 +56,8 @@ pub enum ExitingAndThen {
     ExpectBracedOpening,
     /// 包含属于 `Block` 分组的事件。
     YieldAndExpectBracedOpening(Event),
-    YieldBasedOnContextAndExpectBracedOpening,
     End,
+    ToBeDetermined,
 }
 impl Exiting {
     pub fn new(until: ExitingUntil, and_then: ExitingAndThen) -> Self {

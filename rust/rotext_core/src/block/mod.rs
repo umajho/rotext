@@ -147,9 +147,6 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
             return Ok((cast_tym!(tym), None));
         }
 
-        // 是属于 `Block` 分组的事件。
-        let mut to_be_yielded_based_on_context: Option<Event> = None;
-
         let (is_done, should_exit_top) = match exiting.until {
             ExitingUntil::OnlyNItemLikesRemain {
                 n,
@@ -167,7 +164,10 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
             } => (inner.stack.top_is_table(), should_also_exit_table),
             ExitingUntil::TopIsAwareOfDoublePipes => {
                 if inner.stack.top_is_table() {
-                    to_be_yielded_based_on_context = Some(ev!(Block, IndicateTableDataCell));
+                    exiting.and_then = Some(ExitingAndThen::YieldAndExpectBracedOpening(ev!(
+                        Block,
+                        IndicateTableDataCell
+                    )));
                     (true, false)
                 } else {
                     (false, true)
@@ -193,17 +193,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
 
         let (tym_b, new_state) = if is_done {
             debug_assert!(exiting.and_then.is_some());
-            let and_then = exiting.and_then.take().unwrap();
-            #[cfg(debug_assertions)]
-            {
-                if !matches!(
-                    and_then,
-                    ExitingAndThen::YieldBasedOnContextAndExpectBracedOpening
-                ) {
-                    assert!(to_be_yielded_based_on_context.is_none());
-                }
-            }
-            match and_then {
+            match exiting.and_then.take().unwrap() {
                 ExitingAndThen::EnterItemLikeAndExpectItemLike {
                     container,
                     item_like,
@@ -230,19 +220,10 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                     inner.r#yield(ev).into(),
                     Some(Expecting::BracedOpening.into()),
                 ),
-                ExitingAndThen::YieldBasedOnContextAndExpectBracedOpening => {
-                    debug_assert!(to_be_yielded_based_on_context.is_some());
-                    (
-                        inner
-                            .r#yield(to_be_yielded_based_on_context.unwrap())
-                            .into(),
-                        Some(Expecting::BracedOpening.into()),
-                    )
-                }
                 ExitingAndThen::End => (TYM_UNIT.into(), Some(State::Ended)),
+                ExitingAndThen::ToBeDetermined => unreachable!(),
             }
         } else {
-            debug_assert!(to_be_yielded_based_on_context.is_none());
             (TYM_UNIT.into(), None)
         };
 
@@ -552,7 +533,7 @@ mod branch {
         pub fn process_double_pipes(state: &mut State) -> Tym<0> {
             *state = Exiting::new(
                 ExitingUntil::TopIsAwareOfDoublePipes,
-                ExitingAndThen::YieldBasedOnContextAndExpectBracedOpening,
+                ExitingAndThen::ToBeDetermined,
             )
             .into();
 
