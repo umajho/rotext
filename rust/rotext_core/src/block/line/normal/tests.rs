@@ -2,7 +2,10 @@ mod for_fn_parse {
     use crate::{
         block::{
             branch::braced::table,
-            line::normal::{parse, AtxClosing, ContentBefore, End, EndCondition, TableRelated},
+            line::normal::{
+                parse, AtxClosing, ContentBefore, End, EndCondition, MatchedCallArgumentIndicator,
+                MatchedCallNameExtraMatched, Matching, TableRelated,
+            },
             test_support::mocks::MockCursorContext,
         },
         common::m,
@@ -30,18 +33,14 @@ mod for_fn_parse {
             ContentBefore::NotSpace(content_before),
         );
         assert_eq!(
-            (expected_content, expected_end, ctx),
-            (&input[actual_range], actual_end, expected_ctx)
+            (expected_content, expected_end, expected_ctx),
+            (&input[actual_range], actual_end, ctx)
         );
     }
 
     #[test]
     fn it_can_process_common_ends() {
-        let end_condition = EndCondition {
-            on_atx_closing: None,
-            on_table_related: None,
-            on_description_definition_opening: false,
-        };
+        let end_condition = EndCondition::default();
 
         test(
             b"",
@@ -132,11 +131,7 @@ mod for_fn_parse {
 
     #[test]
     fn it_can_process_verbatim_escaping_ends() {
-        let end_condition = EndCondition {
-            on_atx_closing: None,
-            on_table_related: None,
-            on_description_definition_opening: false,
-        };
+        let end_condition = EndCondition::default();
 
         for input in [&b"<`VE`>"[..], &b"<`VE`>after"[..]] {
             test(
@@ -208,11 +203,7 @@ mod for_fn_parse {
 
     #[test]
     fn it_can_process_none_ends() {
-        let end_condition = EndCondition {
-            on_atx_closing: None,
-            on_table_related: None,
-            on_description_definition_opening: false,
-        };
+        let end_condition = EndCondition::default();
 
         for input in [&b"<%C%>"[..], &b"<%C%>after"[..]] {
             test(
@@ -264,11 +255,7 @@ mod for_fn_parse {
 
     #[test]
     fn it_cannot_process_atx_closing_ends_if_not_enabled() {
-        let end_condition = EndCondition {
-            on_atx_closing: None,
-            on_table_related: None,
-            on_description_definition_opening: false,
-        };
+        let end_condition = EndCondition::default();
 
         test(
             b"foo ==",
@@ -290,8 +277,7 @@ mod for_fn_parse {
                 character: m!('='),
                 count: 2,
             }),
-            on_table_related: None,
-            on_description_definition_opening: false,
+            ..Default::default()
         };
 
         test(
@@ -397,8 +383,7 @@ mod for_fn_parse {
                 character: m!('='),
                 count: 2,
             }),
-            on_table_related: None,
-            on_description_definition_opening: false,
+            ..Default::default()
         };
 
         test(
@@ -421,11 +406,7 @@ mod for_fn_parse {
 
     #[test]
     fn it_cannot_process_table_related_ends_if_not_enabled() {
-        let end_condition = EndCondition {
-            on_atx_closing: None,
-            on_table_related: None,
-            on_description_definition_opening: false,
-        };
+        let end_condition = EndCondition::default();
 
         test(
             b"|}",
@@ -443,11 +424,10 @@ mod for_fn_parse {
     #[test]
     fn it_can_process_table_related_ends_not_concerning_captions() {
         let end_condition = EndCondition {
-            on_atx_closing: None,
             on_table_related: Some(TableRelated {
                 is_caption_applicable: false,
             }),
-            on_description_definition_opening: false,
+            ..Default::default()
         };
 
         test(
@@ -532,11 +512,10 @@ mod for_fn_parse {
     #[test]
     fn it_can_process_table_caption_ends_if_applicable() {
         let end_condition = EndCondition {
-            on_atx_closing: None,
             on_table_related: Some(TableRelated {
                 is_caption_applicable: true,
             }),
-            on_description_definition_opening: false,
+            ..Default::default()
         };
 
         test(
@@ -562,7 +541,7 @@ mod for_fn_parse {
             on_table_related: Some(TableRelated {
                 is_caption_applicable: true,
             }),
-            on_description_definition_opening: false,
+            ..Default::default()
         };
 
         test(
@@ -602,11 +581,7 @@ mod for_fn_parse {
 
     #[test]
     fn it_cannot_process_description_definition_opening_ends_if_not_enabled() {
-        let end_condition = EndCondition {
-            on_atx_closing: None,
-            on_table_related: None,
-            on_description_definition_opening: false,
-        };
+        let end_condition = EndCondition::default();
 
         test(
             b"foo ::",
@@ -624,9 +599,8 @@ mod for_fn_parse {
     #[test]
     fn it_can_process_description_definition_opening_ends() {
         let end_condition = EndCondition {
-            on_atx_closing: None,
-            on_table_related: None,
             on_description_definition_opening: true,
+            ..Default::default()
         };
 
         test(
@@ -637,6 +611,357 @@ mod for_fn_parse {
             End::DescriptionDefinitionOpening,
             MockCursorContext {
                 cursor: 6,
+                current_line: LineNumber::new_universal(1),
+            },
+        );
+    }
+
+    #[test]
+    fn it_can_match_call_name_ends() {
+        let end_condition = EndCondition {
+            matching: Some(Matching::CallName),
+            ..Default::default()
+        };
+
+        for suffix in [" ", "\t", " ||", " |", "\r", "\n"] {
+            test(
+                format!("foo{}", suffix).as_bytes(),
+                end_condition.clone(),
+                0,
+                b"",
+                End::MatchedCallName {
+                    is_extension: false,
+                    range: 0..3,
+                    extra_matched: MatchedCallNameExtraMatched::None,
+                },
+                MockCursorContext {
+                    cursor: 3,
+                    current_line: LineNumber::new_universal(1),
+                },
+            );
+            test(
+                format!("#foo{}", suffix).as_bytes(),
+                end_condition.clone(),
+                0,
+                b"",
+                End::MatchedCallName {
+                    is_extension: true,
+                    range: 1..4,
+                    extra_matched: MatchedCallNameExtraMatched::None,
+                },
+                MockCursorContext {
+                    cursor: 4,
+                    current_line: LineNumber::new_universal(1),
+                },
+            );
+        }
+
+        test(
+            b"foo||",
+            end_condition.clone(),
+            0,
+            b"",
+            End::MatchedCallName {
+                is_extension: false,
+                range: 0..3,
+                extra_matched: (MatchedCallArgumentIndicator { is_verbatim: false }).into(),
+            },
+            MockCursorContext {
+                cursor: 5,
+                current_line: LineNumber::new_universal(1),
+            },
+        );
+        test(
+            b"foo??",
+            end_condition.clone(),
+            0,
+            b"",
+            End::MatchedCallName {
+                is_extension: false,
+                range: 0..3,
+                extra_matched: (MatchedCallArgumentIndicator { is_verbatim: true }).into(),
+            },
+            MockCursorContext {
+                cursor: 5,
+                current_line: LineNumber::new_universal(1),
+            },
+        );
+        test(
+            b"#foo||",
+            end_condition.clone(),
+            0,
+            b"",
+            End::MatchedCallName {
+                is_extension: true,
+                range: 1..4,
+                extra_matched: (MatchedCallArgumentIndicator { is_verbatim: false }).into(),
+            },
+            MockCursorContext {
+                cursor: 6,
+                current_line: LineNumber::new_universal(1),
+            },
+        );
+        test(
+            b"#foo??",
+            end_condition.clone(),
+            0,
+            b"",
+            End::MatchedCallName {
+                is_extension: true,
+                range: 1..4,
+                extra_matched: (MatchedCallArgumentIndicator { is_verbatim: true }).into(),
+            },
+            MockCursorContext {
+                cursor: 6,
+                current_line: LineNumber::new_universal(1),
+            },
+        );
+        test(
+            b"#foo}}",
+            end_condition.clone(),
+            0,
+            b"",
+            End::MatchedCallName {
+                is_extension: true,
+                range: 1..4,
+                extra_matched: MatchedCallNameExtraMatched::CallClosing,
+            },
+            MockCursorContext {
+                cursor: 6,
+                current_line: LineNumber::new_universal(1),
+            },
+        );
+
+        for input in ["foo#", "foo|", "foo}", "foo*"] {
+            test(
+                input.as_bytes(),
+                end_condition.clone(),
+                0,
+                b"foo",
+                End::Mismatched,
+                MockCursorContext {
+                    cursor: 3,
+                    current_line: LineNumber::new_universal(1),
+                },
+            );
+        }
+
+        for input in ["#", "*", "#foo|", "#foo}", "#foo#"] {
+            test(
+                input.as_bytes(),
+                end_condition.clone(),
+                0,
+                b"",
+                End::Mismatched,
+                MockCursorContext {
+                    cursor: 0,
+                    current_line: LineNumber::new_universal(1),
+                },
+            );
+        }
+
+        test(
+            b"|",
+            end_condition.clone(),
+            0,
+            b"",
+            End::Mismatched,
+            MockCursorContext {
+                cursor: 0,
+                current_line: LineNumber::new_universal(1),
+            },
+        );
+
+        test(
+            b"<`VE`>",
+            end_condition.clone(),
+            0,
+            b"",
+            VerbatimEscaping {
+                content: 2..4,
+                is_closed_forcedly: false,
+                line_after: LineNumber::new_universal(1),
+            }
+            .into(),
+            MockCursorContext {
+                cursor: 6,
+                current_line: LineNumber::new_universal(1),
+            },
+        );
+
+        test(
+            b"#<`VE`>",
+            end_condition.clone(),
+            0,
+            b"",
+            End::MatchedCallName {
+                is_extension: true,
+                range: 3..5,
+                extra_matched: MatchedCallNameExtraMatched::None,
+            },
+            MockCursorContext {
+                cursor: 7,
+                current_line: LineNumber::new_universal(1),
+            },
+        );
+
+        test(
+            b"#<%C%>",
+            end_condition.clone(),
+            0,
+            b"",
+            End::Mismatched,
+            MockCursorContext {
+                cursor: 0,
+                current_line: LineNumber::new_universal(1),
+            },
+        );
+    }
+
+    #[test]
+    fn it_can_match_argument_indicator_ends() {
+        let end_condition = EndCondition {
+            matching: Some(Matching::CallArgumentIndicator),
+            ..Default::default()
+        };
+
+        test(
+            b"||",
+            end_condition.clone(),
+            0,
+            b"",
+            MatchedCallArgumentIndicator { is_verbatim: false }.into(),
+            MockCursorContext {
+                cursor: 2,
+                current_line: LineNumber::new_universal(1),
+            },
+        );
+        test(
+            b"??",
+            end_condition.clone(),
+            0,
+            b"",
+            MatchedCallArgumentIndicator { is_verbatim: true }.into(),
+            MockCursorContext {
+                cursor: 2,
+                current_line: LineNumber::new_universal(1),
+            },
+        );
+        test(
+            b"}}",
+            end_condition.clone(),
+            0,
+            b"",
+            End::MatchedCallClosing,
+            MockCursorContext {
+                cursor: 2,
+                current_line: LineNumber::new_universal(1),
+            },
+        );
+
+        for input in ["foo||", "|", "?", "}"] {
+            test(
+                input.as_bytes(),
+                end_condition.clone(),
+                0,
+                b"",
+                End::Mismatched,
+                MockCursorContext {
+                    cursor: 0,
+                    current_line: LineNumber::new_universal(1),
+                },
+            );
+        }
+    }
+
+    #[test]
+    fn it_can_match_argument_name_ends() {
+        let end_condition = EndCondition {
+            matching: Some(Matching::CallArgumentName),
+            ..Default::default()
+        };
+
+        test(
+            b"foo",
+            end_condition.clone(),
+            0,
+            b"",
+            End::MatchedArgumentName {
+                range: 0..3,
+                has_matched_equal_sign: false,
+            },
+            MockCursorContext {
+                cursor: 3,
+                current_line: LineNumber::new_universal(1),
+            },
+        );
+
+        test(
+            b"foo=",
+            end_condition.clone(),
+            0,
+            b"",
+            End::MatchedArgumentName {
+                range: 0..3,
+                has_matched_equal_sign: true,
+            },
+            MockCursorContext {
+                cursor: 4,
+                current_line: LineNumber::new_universal(1),
+            },
+        );
+
+        test(
+            b"=",
+            end_condition.clone(),
+            0,
+            b"",
+            End::Mismatched,
+            MockCursorContext {
+                cursor: 0,
+                current_line: LineNumber::new_universal(1),
+            },
+        );
+        test(
+            b"foo*",
+            end_condition.clone(),
+            0,
+            b"foo",
+            End::Mismatched,
+            MockCursorContext {
+                cursor: 3,
+                current_line: LineNumber::new_universal(1),
+            },
+        );
+    }
+
+    #[test]
+    fn it_can_match_equal_sign_ends() {
+        let end_condition = EndCondition {
+            matching: Some(Matching::EqualSign),
+            ..Default::default()
+        };
+
+        test(
+            b"=",
+            end_condition.clone(),
+            0,
+            b"",
+            End::Matched,
+            MockCursorContext {
+                cursor: 1,
+                current_line: LineNumber::new_universal(1),
+            },
+        );
+
+        test(
+            b"foo",
+            end_condition.clone(),
+            0,
+            b"",
+            End::Mismatched,
+            MockCursorContext {
+                cursor: 0,
                 current_line: LineNumber::new_universal(1),
             },
         );

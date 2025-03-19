@@ -4,19 +4,24 @@ mod tests;
 use core::ops::Range;
 
 use crate::{
-    block::{branch::braced::table, types::CursorContext},
-    common::m,
+    block::{
+        branch::braced::{call, table},
+        types::CursorContext,
+    },
+    common::{is_markup, m},
     events::{NewLine, VerbatimEscaping},
     internal_utils::string::{count_continuous_character_with_maximum, is_whitespace},
 };
 
 use super::{global_phase, parse_common_end, CommonEnd, ParseCommonEndOutput};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct EndCondition {
     pub on_atx_closing: Option<AtxClosing>,
     pub on_table_related: Option<TableRelated>,
+    pub on_call_related: bool,
     pub on_description_definition_opening: bool,
+    pub matching: Option<Matching>,
 }
 /// 类似于 CommonMark 中 ATX 风格的 Headings 中的闭合部分，位于空格之后，外部结构的结
 /// 尾之前（除了常规的换行和文档结束，“结尾” 还可能是 [braced] 的闭合部分），标记都
@@ -32,6 +37,13 @@ pub struct AtxClosing {
 pub struct TableRelated {
     pub is_caption_applicable: bool,
 }
+#[derive(Debug, Clone)]
+pub enum Matching {
+    CallName,
+    CallArgumentIndicator,
+    CallArgumentName,
+    EqualSign,
+}
 
 /// [parse] 结束解析的原因。
 ///
@@ -43,9 +55,40 @@ pub enum End {
     NewLine(Option<NewLine>),
     VerbatimEscaping(VerbatimEscaping),
     TableRelated(table::TableRelatedEnd),
+    CallRelated(call::CallRelatedEnd),
     DoublePipes,
     DescriptionDefinitionOpening,
+    /// 对应 [EndCondition::matching] 的泛用匹配。
+    Matched,
+    MatchedCallName {
+        is_extension: bool,
+        range: Range<usize>,
+        extra_matched: MatchedCallNameExtraMatched,
+    },
+    /// [EndCondition::matching] 为 [Matching::CallName] 时可能返回。
+    MatchedCallClosing,
+    MatchedCallArgumentIndicator(MatchedCallArgumentIndicator),
+    MatchedArgumentName {
+        range: Range<usize>,
+        has_matched_equal_sign: bool,
+    },
+    Mismatched,
     None,
+}
+#[derive(Debug, PartialEq, Eq)]
+pub enum MatchedCallNameExtraMatched {
+    CallClosing,
+    ArgumentIndicator(MatchedCallArgumentIndicator),
+    None,
+}
+impl From<MatchedCallArgumentIndicator> for MatchedCallNameExtraMatched {
+    fn from(value: MatchedCallArgumentIndicator) -> Self {
+        Self::ArgumentIndicator(value)
+    }
+}
+#[derive(Debug, PartialEq, Eq)]
+pub struct MatchedCallArgumentIndicator {
+    pub is_verbatim: bool,
 }
 impl From<table::TableRelatedEnd> for End {
     fn from(value: table::TableRelatedEnd) -> Self {
@@ -68,6 +111,11 @@ impl From<NewLine> for End {
 impl From<VerbatimEscaping> for End {
     fn from(value: VerbatimEscaping) -> Self {
         Self::VerbatimEscaping(value)
+    }
+}
+impl From<MatchedCallArgumentIndicator> for End {
+    fn from(value: MatchedCallArgumentIndicator) -> Self {
+        Self::MatchedCallArgumentIndicator(value)
     }
 }
 impl End {
@@ -108,7 +156,7 @@ pub fn parse<TCtx: CursorContext>(
     }
     let mut spaces = 0;
 
-    let (mut range, end) = loop {
+    let (mut range, end) = 'OUT: loop {
         let char = input.get(ctx.cursor());
         let char = match parse_common_end(input, ctx, char) {
             ParseCommonEndOutput::Some(end) => {
@@ -195,18 +243,159 @@ pub fn parse<TCtx: CursorContext>(
             }
         }
 
+        match end_condition.matching {
+            Some(Matching::CallName) => {
+                let is_extension = char == m!('#');
+                if is_extension {
+                    ctx.move_cursor_forward("#".len());
+                    let char = input.get(ctx.cursor());
+                    if char.is_none_or(|c| is_whitespace!(c) || matches!(c, b'\r' | b'\n')) {
+                        ctx.set_cursor(range.end);
+                        break (range, End::Mismatched);
+                    }
+
+                    if let Some(output) = global_phase::parse(input, ctx, *char.unwrap()) {
+                        match output {
+                            global_phase::Output::VerbatimEscaping(verbatim_escaping) => {
+                                break (
+                                    range,
+                                    End::MatchedCallName {
+                                        is_extension: true,
+                                        range: verbatim_escaping.content,
+                                        extra_matched: MatchedCallNameExtraMatched::None,
+                                    },
+                                )
+                            }
+                            global_phase::Output::None => {
+                                ctx.set_cursor(range.end);
+                                break (range, End::Mismatched);
+                            }
+                        }
+                    }
+                } else if is_markup(char) {
+                    break (range, End::Mismatched);
+                };
+
+                let name_start = ctx.cursor();
+                loop {
+                    let char = input.get(ctx.cursor());
+
+                    match char {
+                        Some(m!('|') | m!('?') | m!('}'))
+                            if input.get(ctx.cursor() + 1) == char =>
+                        {
+                            let char = *char.unwrap();
+                            let extra_matched = if char == m!('}') {
+                                MatchedCallNameExtraMatched::CallClosing
+                            } else {
+                                MatchedCallArgumentIndicator {
+                                    is_verbatim: char == m!('?'),
+                                }
+                                .into()
+                            };
+
+                            let end = End::MatchedCallName {
+                                is_extension,
+                                range: trim_end(input, name_start..ctx.cursor()),
+                                extra_matched,
+                            };
+                            ctx.move_cursor_forward(2);
+                            break 'OUT (range, end);
+                        }
+                        Some(c) if is_markup(*c) => {
+                            if is_extension {
+                                ctx.set_cursor(range.end);
+                                break 'OUT (range, End::Mismatched);
+                            } else {
+                                break 'OUT (range.start..ctx.cursor(), End::Mismatched);
+                            }
+                        }
+                        c if c.is_none_or(|c| matches!(c, b'\r' | b'\n')) => {
+                            break 'OUT (
+                                range,
+                                End::MatchedCallName {
+                                    is_extension,
+                                    range: trim_end(input, name_start..ctx.cursor()),
+                                    extra_matched: MatchedCallNameExtraMatched::None,
+                                },
+                            );
+                        }
+                        _ => ctx.move_cursor_forward(1),
+                    }
+                }
+            }
+            Some(Matching::CallArgumentIndicator) => {
+                if matches!(char, m!('|') | m!('?') | m!('}'))
+                    && input.get(ctx.cursor() + 1) == Some(&char)
+                {
+                    ctx.move_cursor_forward(2);
+                    break (
+                        range,
+                        if char == m!('}') {
+                            End::MatchedCallClosing
+                        } else {
+                            MatchedCallArgumentIndicator {
+                                is_verbatim: char == m!('?'),
+                            }
+                            .into()
+                        },
+                    );
+                } else {
+                    break (range, End::Mismatched);
+                }
+            }
+            Some(Matching::CallArgumentName) => {
+                if char == m!('=') {
+                    break (range, End::Mismatched);
+                }
+
+                let name_start = ctx.cursor();
+                loop {
+                    let char = input.get(ctx.cursor());
+
+                    match char {
+                        Some(m!('=')) => {
+                            let end = End::MatchedArgumentName {
+                                range: trim_end(input, name_start..ctx.cursor()),
+                                has_matched_equal_sign: true,
+                            };
+                            ctx.move_cursor_forward("=".len());
+                            break 'OUT (range, end);
+                        }
+                        Some(c) if is_markup(*c) => {
+                            break 'OUT (range.start..ctx.cursor(), End::Mismatched);
+                        }
+                        c if c.is_none_or(|c| matches!(c, b'\r' | b'\n')) => {
+                            break 'OUT (
+                                range,
+                                End::MatchedArgumentName {
+                                    range: trim_end(input, name_start..ctx.cursor()),
+                                    has_matched_equal_sign: false,
+                                },
+                            );
+                        }
+                        _ => ctx.move_cursor_forward(1),
+                    }
+                }
+            }
+            Some(Matching::EqualSign) => {
+                if char == m!('=') {
+                    ctx.move_cursor_forward(1);
+                    break (range, End::Matched);
+                } else {
+                    break (range, End::Mismatched);
+                }
+            }
+            None => {}
+        }
+
         ctx.move_cursor_forward(1);
         range.end = ctx.cursor();
         spaces = 0;
     };
 
-    match end {
-        End::VerbatimEscaping(_) | End::None => range.end += spaces,
-        End::Eof
-        | End::NewLine(_)
-        | End::TableRelated(_)
-        | End::DoublePipes
-        | End::DescriptionDefinitionOpening => {}
+    if matches!(end, End::VerbatimEscaping(_) | End::None) {
+        range.end += spaces;
     }
 
     (range, end)
@@ -264,7 +453,7 @@ struct ParseEndWhenConfirmedNoAtxClosingOptions {
 }
 /// 确定了没有 ATX Heading 闭合部分之后进行的接下来的解析。
 ///
-/// 目前只可能返回 [End::TableRelated] 及 [End::DoublePipes]。
+/// 目前只可能返回 [End::TableRelated]、[End::CallRelated] 及 [End::DoublePipes]。
 fn parse_braced_element_related_end<TCtx: CursorContext>(
     input: &[u8],
     ctx: &mut TCtx,
@@ -281,7 +470,14 @@ fn parse_braced_element_related_end<TCtx: CursorContext>(
         }
     }
 
-    if end_condition.on_table_related.is_some()
+    if end_condition.on_call_related {
+        let end = call::parse_end(input, ctx, first_char).map(End::CallRelated);
+        if end.is_some() {
+            return end;
+        }
+    }
+
+    if (end_condition.on_table_related.is_some() || end_condition.on_call_related)
         && first_char == m!('|')
         && input.get(ctx.cursor() + 1) == Some(&m!('|'))
     {
@@ -290,4 +486,12 @@ fn parse_braced_element_related_end<TCtx: CursorContext>(
     }
 
     None
+}
+
+fn trim_end(input: &[u8], range: Range<usize>) -> Range<usize> {
+    let mut end: usize = range.end;
+    while end > range.start && is_whitespace!(input[end - 1]) {
+        end -= 1;
+    }
+    range.start..end
 }

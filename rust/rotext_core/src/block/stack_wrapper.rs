@@ -1,8 +1,12 @@
+use core::ops::Range;
+
 use crate::{
-    events::{ev, ExitBlock, NewLine},
+    events::{ev, Call, ExitBlock, NewLine},
     types::{BlockId, LineNumber, Stack},
     Event,
 };
+
+use super::parser_inner::ParserInnerShallowSnapshot;
 
 pub struct StackWrapper<TStack: Stack<StackEntry>> {
     stack: TStack,
@@ -10,6 +14,7 @@ pub struct StackWrapper<TStack: Stack<StackEntry>> {
 
     item_likes_in_stack: usize,
     tables_in_stack: usize,
+    calls_in_stack: usize,
 
     should_reset_state: bool,
 }
@@ -21,6 +26,7 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
             top_leaf: None,
             item_likes_in_stack: 0,
             tables_in_stack: 0,
+            calls_in_stack: 0,
             should_reset_state: false,
         }
     }
@@ -38,6 +44,9 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
     }
     pub fn tables_in_stack(&self) -> usize {
         self.tables_in_stack
+    }
+    pub fn calls_in_stack(&self) -> usize {
+        self.calls_in_stack
     }
 
     pub fn reset_current_line_for_new_line(&mut self) {
@@ -82,6 +91,13 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
         matches!(self.stack.as_slice().last(), Some(StackEntry::Table(_)))
     }
 
+    pub fn top_is_call(&self) -> bool {
+        if self.top_leaf.is_some() {
+            return false;
+        }
+        matches!(self.stack.as_slice().last(), Some(StackEntry::Call(_)))
+    }
+
     /// 向栈中推入一个 item-like entry。
     ///
     /// 调用者应保证 `self.top_leaf` 为 `None`。
@@ -108,6 +124,15 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
     pub fn push_table(&mut self, stack_entry: StackEntryTable) -> crate::Result<()> {
         self.try_push(stack_entry.into())?;
         self.tables_in_stack += 1;
+        Ok(())
+    }
+
+    /// 向栈中推入一个 call entry。
+    ///
+    /// 调用者应保证 `self.top_leaf` 为 `None`。
+    pub fn push_call(&mut self, stack_entry: StackEntryCall) -> crate::Result<()> {
+        self.try_push(stack_entry.into())?;
+        self.calls_in_stack += 1;
         Ok(())
     }
 
@@ -142,6 +167,7 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
             StackEntry::ItemLike(_) => {}
             StackEntry::ItemLikeContainer(_) => self.item_likes_in_stack -= 1,
             StackEntry::Table(_) => self.tables_in_stack -= 1,
+            StackEntry::Call(_) => self.calls_in_stack -= 1,
         }
 
         Some(popped)
@@ -156,6 +182,7 @@ pub enum StackEntry {
     ItemLike(StackEntryItemLike),
     ItemLikeContainer(StackEntryItemLikeContainer),
     Table(StackEntryTable),
+    Call(StackEntryCall),
 }
 impl From<StackEntryItemLike> for StackEntry {
     fn from(value: StackEntryItemLike) -> Self {
@@ -170,6 +197,11 @@ impl From<StackEntryItemLikeContainer> for StackEntry {
 impl From<StackEntryTable> for StackEntry {
     fn from(value: StackEntryTable) -> Self {
         Self::Table(value)
+    }
+}
+impl From<StackEntryCall> for StackEntry {
+    fn from(value: StackEntryCall) -> Self {
+        Self::Call(value)
     }
 }
 
@@ -231,6 +263,29 @@ impl StackEntryTable {
     }
 }
 
+pub struct StackEntryCall {
+    pub meta: Meta,
+}
+impl StackEntryCall {
+    /// 返回的事件属于 `Block` 分组。
+    pub fn make_enter_event(&self, is_extension: bool, name: Range<usize>) -> Event {
+        let call = Call {
+            id: self.meta.id,
+            name,
+        };
+        if is_extension {
+            ev!(Block, EnterCallOnExtension(call))
+        } else {
+            ev!(Block, EnterCallOnTemplate(call))
+        }
+    }
+
+    /// 返回的事件属于 `Block` 分组。
+    pub fn make_exit_event(self, line_end: LineNumber) -> Event {
+        self.meta.make_exit_event(line_end)
+    }
+}
+
 #[derive(Debug)]
 pub struct Meta {
     id: BlockId,
@@ -280,6 +335,12 @@ pub enum TopLeaf {
     Paragraph(TopLeafParagraph),
     Heading(TopLeafHeading),
     CodeBlock(TopLeafCodeBlock),
+    /// 正在匹配潜在的调用的名称。如果没有匹配到名称，或者名称之后并非 `||`、`??` 或 `}}`，
+    /// 则不将正在解析的内容视为调用。
+    PotentialCallBeginning(TopLeafPotentialCallBeginning),
+    /// 正在匹配调用的参数可能存在的名称部分。（包含名称及 `=`。）
+    CallArgumentBeginning(TopLeafCallArgumentBeginning),
+    CallVerbatimArgumentValue(TopLeafCallVerbatimArgumentValue),
 }
 impl From<TopLeafParagraph> for TopLeaf {
     fn from(value: TopLeafParagraph) -> Self {
@@ -294,6 +355,21 @@ impl From<TopLeafHeading> for TopLeaf {
 impl From<TopLeafCodeBlock> for TopLeaf {
     fn from(value: TopLeafCodeBlock) -> Self {
         Self::CodeBlock(value)
+    }
+}
+impl From<TopLeafPotentialCallBeginning> for TopLeaf {
+    fn from(value: TopLeafPotentialCallBeginning) -> Self {
+        Self::PotentialCallBeginning(value)
+    }
+}
+impl From<TopLeafCallArgumentBeginning> for TopLeaf {
+    fn from(value: TopLeafCallArgumentBeginning) -> Self {
+        Self::CallArgumentBeginning(value)
+    }
+}
+impl From<TopLeafCallVerbatimArgumentValue> for TopLeaf {
+    fn from(value: TopLeafCallVerbatimArgumentValue) -> Self {
+        Self::CallVerbatimArgumentValue(value)
     }
 }
 
@@ -355,13 +431,7 @@ pub struct TopLeafCodeBlock {
 #[derive(Debug)]
 pub enum TopLeafCodeBlockState {
     InInfoString,
-    InCode(TopLeafCodeBlockStateInCode),
-}
-#[derive(Debug)]
-pub enum TopLeafCodeBlockStateInCode {
-    AtFirstLineBeginning,
-    AtLineBeginning(NewLine),
-    Normal,
+    InCode(TopLeafVerbatimParseState),
 }
 impl TopLeafCodeBlock {
     /// 返回的事件属于 `Block` 分组。
@@ -373,4 +443,38 @@ impl TopLeafCodeBlock {
     pub fn make_exit_event(self, line_end: LineNumber) -> Event {
         self.meta.make_exit_event(line_end)
     }
+}
+
+#[derive(Debug)]
+pub struct TopLeafPotentialCallBeginning {
+    pub shallow_snapshot: ParserInnerShallowSnapshot,
+
+    pub name_part: Option<TopLeafPotentialCallBeginningNamePart>,
+}
+#[derive(Debug)]
+pub struct TopLeafPotentialCallBeginningNamePart {
+    pub is_extension: bool,
+    pub name: Range<usize>,
+}
+
+#[derive(Debug)]
+pub struct TopLeafCallArgumentBeginning {
+    pub shallow_snapshot: ParserInnerShallowSnapshot,
+
+    /// 如果为真，则代表参数的值是逐字内容；否则，参数的值是块级元素序列。
+    pub is_verbatim: bool,
+
+    pub name: Option<Range<usize>>,
+}
+
+#[derive(Debug)]
+pub struct TopLeafCallVerbatimArgumentValue {
+    pub parse_state: TopLeafVerbatimParseState,
+}
+
+#[derive(Debug)]
+pub enum TopLeafVerbatimParseState {
+    AtFirstLineBeginning,
+    AtLineBeginning(NewLine),
+    Normal,
 }

@@ -10,6 +10,10 @@ impl CursorContext for MockCursorContext {
         self.cursor
     }
 
+    fn set_cursor(&mut self, cursor: usize) {
+        self.cursor = cursor;
+    }
+
     fn move_cursor_forward(&mut self, n: usize) {
         self.cursor += n;
     }

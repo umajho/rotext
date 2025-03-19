@@ -195,7 +195,6 @@ impl<'a> HtmlRenderer<'a> {
                 | Event::VerbatimEscaping(VerbatimEscaping { content, .. }) => {
                     self.write_escaped_html_text(&self.input[content]);
                 }
-
                 Event::ExitBlock(_) | Event::ExitInline => {
                     let top = stack.pop().unwrap();
                     match top {
@@ -212,14 +211,12 @@ impl<'a> HtmlRenderer<'a> {
                         _ => unreachable!(),
                     }
                 }
-
                 #[allow(unused_variables)]
                 Event::ThematicBreak(data) => {
                     self.result.extend(b"<hr");
                     write_data_block_id_attribute_if_applicable!(self, data);
                     self.result.push(b'>');
                 }
-
                 Event::EnterParagraph(data) => self.push_simple_block(&mut stack, b"p", &data),
                 Event::EnterHeading1(data) => self.push_simple_block(&mut stack, b"h1", &data),
                 Event::EnterHeading2(data) => self.push_simple_block(&mut stack, b"h2", &data),
@@ -294,13 +291,11 @@ impl<'a> HtmlRenderer<'a> {
                     self.result.push(b'>');
                     stack.push(TableState::AtBeginning.into())
                 }
-
                 Event::IndicateCodeBlockCode
                 | Event::IndicateTableCaption
                 | Event::IndicateTableRow
                 | Event::IndicateTableHeaderCell
                 | Event::IndicateTableDataCell => unreachable!(),
-
                 Event::RefLink(content) => {
                     self.write_empty_element_with_single_attribute(
                         self.tag_name_map.ref_link,
@@ -315,14 +310,12 @@ impl<'a> HtmlRenderer<'a> {
                         &self.input[content],
                     );
                 }
-
                 Event::EnterCodeSpan => self.push_simple_inline(&mut stack, b"code"),
                 Event::EnterEmphasis => self.push_simple_inline(&mut stack, b"em"),
                 Event::EnterStrong => self.push_simple_inline(&mut stack, b"strong"),
                 Event::EnterStrikethrough => self.push_simple_inline(&mut stack, b"s"),
                 Event::EnterRuby => self.push_simple_inline(&mut stack, b"ruby"),
                 Event::EnterRubyText => self.push_simple_inline(&mut stack, b"rt"),
-
                 Event::EnterWikiLink(address) => {
                     self.write_opening_tag_with_single_attribute(
                         self.tag_name_map.wiki_link,
@@ -332,6 +325,10 @@ impl<'a> HtmlRenderer<'a> {
                     self.write_opening_tag_with_single_attribute(b"span", b"slot", b"content");
                     stack.push(StackEntry::WikiLink);
                 }
+                Event::EnterCallOnTemplate(_)
+                | Event::EnterCallOnExtension(_)
+                | Event::IndicateCallNormalArgument(_)
+                | Event::IndicateCallVerbatimArgument(_) => todo!(),
             }
         }
 

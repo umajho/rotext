@@ -1,4 +1,5 @@
 pub mod block_quote;
+pub mod call;
 pub mod code_block;
 pub mod description_list;
 pub mod heading;
