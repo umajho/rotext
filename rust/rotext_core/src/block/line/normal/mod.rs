@@ -143,7 +143,7 @@ pub fn parse<TCtx: CursorContext>(
     }
     let mut spaces = 0;
 
-    let (mut range, end) = 'OUT: loop {
+    let (mut range, end) = loop {
         let char = input.get(ctx.cursor());
         let char = match parse_common_end(input, ctx, char) {
             ParseCommonEndOutput::Some(end) => {
@@ -231,85 +231,7 @@ pub fn parse<TCtx: CursorContext>(
         }
 
         match end_condition.matching {
-            Some(Matching::CallName) => {
-                let is_extension = char == m!('#');
-                if is_extension {
-                    ctx.move_cursor_forward("#".len());
-                    let char = input.get(ctx.cursor());
-                    if char.is_none_or(|c| is_whitespace!(c) || matches!(c, b'\r' | b'\n')) {
-                        ctx.set_cursor(range.end);
-                        break (range, End::Mismatched);
-                    }
-
-                    if let Some(output) = global_phase::parse(input, ctx, *char.unwrap()) {
-                        match output {
-                            global_phase::Output::VerbatimEscaping(verbatim_escaping) => {
-                                break (
-                                    range,
-                                    End::MatchedCallName {
-                                        is_extension: true,
-                                        range: verbatim_escaping.content,
-                                        extra_matched: MatchedCallNameExtraMatched::None,
-                                    },
-                                )
-                            }
-                            global_phase::Output::None => {
-                                ctx.set_cursor(range.end);
-                                break (range, End::Mismatched);
-                            }
-                        }
-                    }
-                } else if is_markup(char) {
-                    break (range, End::Mismatched);
-                };
-
-                let name_start = ctx.cursor();
-                loop {
-                    let char = input.get(ctx.cursor());
-
-                    match char {
-                        Some(m!('|') | m!('}')) if input.get(ctx.cursor() + 1) == char => {
-                            let char = *char.unwrap();
-                            let extra_matched = if char == m!('}') {
-                                MatchedCallNameExtraMatched::CallClosing
-                            } else {
-                                MatchedCallNameExtraMatched::ArgumentIndicator
-                            };
-
-                            let end = End::MatchedCallName {
-                                is_extension,
-                                range: trim_end(input, name_start..ctx.cursor()),
-                                extra_matched,
-                            };
-                            ctx.move_cursor_forward(2);
-                            break 'OUT (range, end);
-                        }
-                        c if c.is_none_or(|c| {
-                            matches!(c, b'\r' | b'\n')
-                                || (c == &m!('<') && input.get(ctx.cursor() + 1) == Some(&m!('%')))
-                        }) =>
-                        {
-                            break 'OUT (
-                                range,
-                                End::MatchedCallName {
-                                    is_extension,
-                                    range: trim_end(input, name_start..ctx.cursor()),
-                                    extra_matched: MatchedCallNameExtraMatched::None,
-                                },
-                            );
-                        }
-                        Some(c) if is_markup(*c) => {
-                            if is_extension {
-                                ctx.set_cursor(range.end);
-                                break 'OUT (range, End::Mismatched);
-                            } else {
-                                break 'OUT (range.start..ctx.cursor(), End::Mismatched);
-                            }
-                        }
-                        _ => ctx.move_cursor_forward(1),
-                    }
-                }
-            }
+            Some(Matching::CallName) => break parse_call_name(input, ctx, range, char),
             Some(Matching::CallArgumentIndicator) => {
                 if matches!(char, m!('|') | m!('}')) && input.get(ctx.cursor() + 1) == Some(&char) {
                     ctx.move_cursor_forward(2);
@@ -326,71 +248,7 @@ pub fn parse<TCtx: CursorContext>(
                 }
             }
             Some(Matching::CallArgumentName) => {
-                let is_verbatim = char == m!('#');
-                if is_verbatim {
-                    ctx.move_cursor_forward("#".len());
-                    let char = input.get(ctx.cursor());
-                    if char.is_none_or(|c| is_whitespace!(c) || matches!(c, b'\r' | b'\n')) {
-                        ctx.set_cursor(range.end);
-                        break (range, End::Mismatched);
-                    }
-
-                    if let Some(output) = global_phase::parse(input, ctx, *char.unwrap()) {
-                        match output {
-                            global_phase::Output::VerbatimEscaping(verbatim_escaping) => {
-                                break (
-                                    range,
-                                    End::MatchedArgumentName {
-                                        is_verbatim: true,
-                                        range: verbatim_escaping.content,
-                                        has_matched_equal_sign: false,
-                                    },
-                                )
-                            }
-                            global_phase::Output::None => {
-                                ctx.set_cursor(range.end);
-                                break (range, End::Mismatched);
-                            }
-                        }
-                    }
-                } else if char == m!('=') {
-                    break (range, End::Mismatched);
-                }
-
-                let name_start = ctx.cursor();
-                loop {
-                    let char = input.get(ctx.cursor());
-
-                    match char {
-                        Some(m!('=')) => {
-                            let end = End::MatchedArgumentName {
-                                is_verbatim,
-                                range: trim_end(input, name_start..ctx.cursor()),
-                                has_matched_equal_sign: true,
-                            };
-                            ctx.move_cursor_forward("=".len());
-                            break 'OUT (range, end);
-                        }
-                        c if c.is_none_or(|c| {
-                            matches!(c, b'\r' | b'\n')
-                                || (c == &m!('<') && input.get(ctx.cursor() + 1) == Some(&m!('%')))
-                        }) =>
-                        {
-                            break 'OUT (
-                                range,
-                                End::MatchedArgumentName {
-                                    is_verbatim,
-                                    range: trim_end(input, name_start..ctx.cursor()),
-                                    has_matched_equal_sign: false,
-                                },
-                            );
-                        }
-                        Some(c) if is_markup(*c) => {
-                            break 'OUT (range.start..ctx.cursor(), End::Mismatched);
-                        }
-                        _ => ctx.move_cursor_forward(1),
-                    }
-                }
+                break parse_call_argument_name(input, ctx, range, char)
             }
             Some(Matching::EqualSign) => {
                 if char == m!('=') {
@@ -413,6 +271,166 @@ pub fn parse<TCtx: CursorContext>(
     }
 
     (range, end)
+}
+
+#[inline(always)]
+fn parse_call_name<TCtx: CursorContext>(
+    input: &[u8],
+    ctx: &mut TCtx,
+    range_before: Range<usize>,
+    first_char: u8,
+) -> (Range<usize>, End) {
+    let is_extension = first_char == m!('#');
+    if is_extension {
+        ctx.move_cursor_forward("#".len());
+        let char = input.get(ctx.cursor());
+        if char.is_none_or(|c| is_whitespace!(c) || matches!(c, b'\r' | b'\n')) {
+            ctx.set_cursor(range_before.end);
+            return (range_before, End::Mismatched);
+        }
+
+        if let Some(output) = global_phase::parse(input, ctx, *char.unwrap()) {
+            match output {
+                global_phase::Output::VerbatimEscaping(verbatim_escaping) => {
+                    return (
+                        range_before,
+                        End::MatchedCallName {
+                            is_extension: true,
+                            range: verbatim_escaping.content,
+                            extra_matched: MatchedCallNameExtraMatched::None,
+                        },
+                    )
+                }
+                global_phase::Output::None => {
+                    ctx.set_cursor(range_before.end);
+                    return (range_before, End::Mismatched);
+                }
+            }
+        }
+    } else if is_markup(first_char) {
+        return (range_before, End::Mismatched);
+    };
+
+    let name_start = ctx.cursor();
+    loop {
+        let char = input.get(ctx.cursor());
+
+        match char {
+            Some(m!('|') | m!('}')) if input.get(ctx.cursor() + 1) == char => {
+                let char = *char.unwrap();
+                let extra_matched = if char == m!('}') {
+                    MatchedCallNameExtraMatched::CallClosing
+                } else {
+                    MatchedCallNameExtraMatched::ArgumentIndicator
+                };
+
+                let end = End::MatchedCallName {
+                    is_extension,
+                    range: trim_end(input, name_start..ctx.cursor()),
+                    extra_matched,
+                };
+                ctx.move_cursor_forward(2);
+                return (range_before, end);
+            }
+            c if c.is_none_or(|c| {
+                matches!(c, b'\r' | b'\n')
+                    || (c == &m!('<') && input.get(ctx.cursor() + 1) == Some(&m!('%')))
+            }) =>
+            {
+                return (
+                    range_before,
+                    End::MatchedCallName {
+                        is_extension,
+                        range: trim_end(input, name_start..ctx.cursor()),
+                        extra_matched: MatchedCallNameExtraMatched::None,
+                    },
+                );
+            }
+            Some(c) if is_markup(*c) => {
+                if is_extension {
+                    ctx.set_cursor(range_before.end);
+                    return (range_before, End::Mismatched);
+                } else {
+                    return (range_before.start..ctx.cursor(), End::Mismatched);
+                }
+            }
+            _ => ctx.move_cursor_forward(1),
+        }
+    }
+}
+
+#[inline(always)]
+fn parse_call_argument_name<TCtx: CursorContext>(
+    input: &[u8],
+    ctx: &mut TCtx,
+    range_before: Range<usize>,
+    first_char: u8,
+) -> (Range<usize>, End) {
+    let is_verbatim = first_char == m!('#');
+    if is_verbatim {
+        ctx.move_cursor_forward("#".len());
+        let char = input.get(ctx.cursor());
+        if char.is_none_or(|c| is_whitespace!(c) || matches!(c, b'\r' | b'\n')) {
+            ctx.set_cursor(range_before.end);
+            return (range_before, End::Mismatched);
+        }
+
+        if let Some(output) = global_phase::parse(input, ctx, *char.unwrap()) {
+            match output {
+                global_phase::Output::VerbatimEscaping(verbatim_escaping) => {
+                    return (
+                        range_before,
+                        End::MatchedArgumentName {
+                            is_verbatim: true,
+                            range: verbatim_escaping.content,
+                            has_matched_equal_sign: false,
+                        },
+                    )
+                }
+                global_phase::Output::None => {
+                    ctx.set_cursor(range_before.end);
+                    return (range_before, End::Mismatched);
+                }
+            }
+        }
+    } else if first_char == m!('=') {
+        return (range_before, End::Mismatched);
+    }
+
+    let name_start = ctx.cursor();
+    loop {
+        let char = input.get(ctx.cursor());
+
+        match char {
+            Some(m!('=')) => {
+                let end = End::MatchedArgumentName {
+                    is_verbatim,
+                    range: trim_end(input, name_start..ctx.cursor()),
+                    has_matched_equal_sign: true,
+                };
+                ctx.move_cursor_forward("=".len());
+                return (range_before, end);
+            }
+            c if c.is_none_or(|c| {
+                matches!(c, b'\r' | b'\n')
+                    || (c == &m!('<') && input.get(ctx.cursor() + 1) == Some(&m!('%')))
+            }) =>
+            {
+                return (
+                    range_before,
+                    End::MatchedArgumentName {
+                        is_verbatim,
+                        range: trim_end(input, name_start..ctx.cursor()),
+                        has_matched_equal_sign: false,
+                    },
+                );
+            }
+            Some(c) if is_markup(*c) => {
+                return (range_before.start..ctx.cursor(), End::Mismatched);
+            }
+            _ => ctx.move_cursor_forward(1),
+        }
+    }
 }
 
 struct ParseFollwingEndThatCanCloseHeadingOutput {
