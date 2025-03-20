@@ -53,10 +53,23 @@ export function createCodeMirrorEditor(
       props.setDoc(update.state.doc.toString());
     });
 
+    const extFont = EditorView.theme({
+      "&": {
+        fontFamily: "var(--font-mono)",
+      },
+      ".cm-scroller": { fontFamily: "inherit" },
+    });
+
     setView(
       new EditorView({
         doc: props.doc(),
-        extensions: [basicSetup, oneDark, extSync, ...(props.extensions ?? [])],
+        extensions: [
+          basicSetup,
+          extFont,
+          oneDark,
+          extSync,
+          ...(props.extensions ?? []),
+        ],
         parent: parentEl,
       }),
     );
