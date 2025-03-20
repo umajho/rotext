@@ -124,6 +124,9 @@ pub fn groups_call() -> Vec<GroupedCases> {
                         "{{\nfoo\n}}",
                         "{{\n\nfoo\n\n}}",
                         "{{␠\n␠foo␠\n␠}}",
+                        "{{<%C%>foo<%C%>}}",
+                        "{{␠<%C%>␠foo␠<%C%>␠}}",
+                        "{{\n<%C%>\nfoo\n<%C%>\n}}",
                         "{{foo",
                         "{{\n\nfoo\n\n",
                     ],
@@ -147,7 +150,7 @@ pub fn groups_call() -> Vec<GroupedCases> {
                     ]
                 ),
                 case!(
-                    vec!["{{#foo}}",],
+                    vec!["{{#foo}}", "{{#foo}}",],
                     vec![
                         (EventType::EnterCallOnExtension, Some("foo")),
                         (EventType::ExitBlock, None)
@@ -279,6 +282,9 @@ pub fn groups_call() -> Vec<GroupedCases> {
                         "{{foo||bar=}}",
                         "{{foo||␠bar␠=␠}}",
                         "{{foo\n||\nbar\n=\n}}",
+                        "{{foo||<%C%>bar<%C%>=}}",
+                        "{{foo||␠<%C%>␠bar␠<%C%>␠=}}",
+                        "{{foo||\n<%C%>\nbar\n<%C%>\n=}}",
                         "{{foo||bar="
                     ],
                     vec![

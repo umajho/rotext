@@ -302,15 +302,11 @@ pub fn parse<TCtx: CursorContext>(
                             ctx.move_cursor_forward(2);
                             break 'OUT (range, end);
                         }
-                        Some(c) if is_markup(*c) => {
-                            if is_extension {
-                                ctx.set_cursor(range.end);
-                                break 'OUT (range, End::Mismatched);
-                            } else {
-                                break 'OUT (range.start..ctx.cursor(), End::Mismatched);
-                            }
-                        }
-                        c if c.is_none_or(|c| matches!(c, b'\r' | b'\n')) => {
+                        c if c.is_none_or(|c| {
+                            matches!(c, b'\r' | b'\n')
+                                || (c == &m!('<') && input.get(ctx.cursor() + 1) == Some(&m!('%')))
+                        }) =>
+                        {
                             break 'OUT (
                                 range,
                                 End::MatchedCallName {
@@ -319,6 +315,14 @@ pub fn parse<TCtx: CursorContext>(
                                     extra_matched: MatchedCallNameExtraMatched::None,
                                 },
                             );
+                        }
+                        Some(c) if is_markup(*c) => {
+                            if is_extension {
+                                ctx.set_cursor(range.end);
+                                break 'OUT (range, End::Mismatched);
+                            } else {
+                                break 'OUT (range.start..ctx.cursor(), End::Mismatched);
+                            }
                         }
                         _ => ctx.move_cursor_forward(1),
                     }
@@ -362,10 +366,11 @@ pub fn parse<TCtx: CursorContext>(
                             ctx.move_cursor_forward("=".len());
                             break 'OUT (range, end);
                         }
-                        Some(c) if is_markup(*c) => {
-                            break 'OUT (range.start..ctx.cursor(), End::Mismatched);
-                        }
-                        c if c.is_none_or(|c| matches!(c, b'\r' | b'\n')) => {
+                        c if c.is_none_or(|c| {
+                            matches!(c, b'\r' | b'\n')
+                                || (c == &m!('<') && input.get(ctx.cursor() + 1) == Some(&m!('%')))
+                        }) =>
+                        {
                             break 'OUT (
                                 range,
                                 End::MatchedArgumentName {
@@ -373,6 +378,9 @@ pub fn parse<TCtx: CursorContext>(
                                     has_matched_equal_sign: false,
                                 },
                             );
+                        }
+                        Some(c) if is_markup(*c) => {
+                            break 'OUT (range.start..ctx.cursor(), End::Mismatched);
                         }
                         _ => ctx.move_cursor_forward(1),
                     }
