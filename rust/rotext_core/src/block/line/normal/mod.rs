@@ -67,8 +67,9 @@ pub enum End {
     },
     /// [EndCondition::matching] 为 [Matching::CallName] 时可能返回。
     MatchedCallClosing,
-    MatchedCallArgumentIndicator(MatchedCallArgumentIndicator),
+    MatchedCallArgumentIndicator,
     MatchedArgumentName {
+        is_verbatim: bool,
         range: Range<usize>,
         has_matched_equal_sign: bool,
     },
@@ -78,17 +79,8 @@ pub enum End {
 #[derive(Debug, PartialEq, Eq)]
 pub enum MatchedCallNameExtraMatched {
     CallClosing,
-    ArgumentIndicator(MatchedCallArgumentIndicator),
+    ArgumentIndicator,
     None,
-}
-impl From<MatchedCallArgumentIndicator> for MatchedCallNameExtraMatched {
-    fn from(value: MatchedCallArgumentIndicator) -> Self {
-        Self::ArgumentIndicator(value)
-    }
-}
-#[derive(Debug, PartialEq, Eq)]
-pub struct MatchedCallArgumentIndicator {
-    pub is_verbatim: bool,
 }
 impl From<table::TableRelatedEnd> for End {
     fn from(value: table::TableRelatedEnd) -> Self {
@@ -111,11 +103,6 @@ impl From<NewLine> for End {
 impl From<VerbatimEscaping> for End {
     fn from(value: VerbatimEscaping) -> Self {
         Self::VerbatimEscaping(value)
-    }
-}
-impl From<MatchedCallArgumentIndicator> for End {
-    fn from(value: MatchedCallArgumentIndicator) -> Self {
-        Self::MatchedCallArgumentIndicator(value)
     }
 }
 impl End {
@@ -281,17 +268,12 @@ pub fn parse<TCtx: CursorContext>(
                     let char = input.get(ctx.cursor());
 
                     match char {
-                        Some(m!('|') | m!('?') | m!('}'))
-                            if input.get(ctx.cursor() + 1) == char =>
-                        {
+                        Some(m!('|') | m!('}')) if input.get(ctx.cursor() + 1) == char => {
                             let char = *char.unwrap();
                             let extra_matched = if char == m!('}') {
                                 MatchedCallNameExtraMatched::CallClosing
                             } else {
-                                MatchedCallArgumentIndicator {
-                                    is_verbatim: char == m!('?'),
-                                }
-                                .into()
+                                MatchedCallNameExtraMatched::ArgumentIndicator
                             };
 
                             let end = End::MatchedCallName {
@@ -329,19 +311,14 @@ pub fn parse<TCtx: CursorContext>(
                 }
             }
             Some(Matching::CallArgumentIndicator) => {
-                if matches!(char, m!('|') | m!('?') | m!('}'))
-                    && input.get(ctx.cursor() + 1) == Some(&char)
-                {
+                if matches!(char, m!('|') | m!('}')) && input.get(ctx.cursor() + 1) == Some(&char) {
                     ctx.move_cursor_forward(2);
                     break (
                         range,
                         if char == m!('}') {
                             End::MatchedCallClosing
                         } else {
-                            MatchedCallArgumentIndicator {
-                                is_verbatim: char == m!('?'),
-                            }
-                            .into()
+                            End::MatchedCallArgumentIndicator
                         },
                     );
                 } else {
@@ -349,7 +326,34 @@ pub fn parse<TCtx: CursorContext>(
                 }
             }
             Some(Matching::CallArgumentName) => {
-                if char == m!('=') {
+                let is_verbatim = char == m!('#');
+                if is_verbatim {
+                    ctx.move_cursor_forward("#".len());
+                    let char = input.get(ctx.cursor());
+                    if char.is_none_or(|c| is_whitespace!(c) || matches!(c, b'\r' | b'\n')) {
+                        ctx.set_cursor(range.end);
+                        break (range, End::Mismatched);
+                    }
+
+                    if let Some(output) = global_phase::parse(input, ctx, *char.unwrap()) {
+                        match output {
+                            global_phase::Output::VerbatimEscaping(verbatim_escaping) => {
+                                break (
+                                    range,
+                                    End::MatchedArgumentName {
+                                        is_verbatim: true,
+                                        range: verbatim_escaping.content,
+                                        has_matched_equal_sign: false,
+                                    },
+                                )
+                            }
+                            global_phase::Output::None => {
+                                ctx.set_cursor(range.end);
+                                break (range, End::Mismatched);
+                            }
+                        }
+                    }
+                } else if char == m!('=') {
                     break (range, End::Mismatched);
                 }
 
@@ -360,6 +364,7 @@ pub fn parse<TCtx: CursorContext>(
                     match char {
                         Some(m!('=')) => {
                             let end = End::MatchedArgumentName {
+                                is_verbatim,
                                 range: trim_end(input, name_start..ctx.cursor()),
                                 has_matched_equal_sign: true,
                             };
@@ -374,6 +379,7 @@ pub fn parse<TCtx: CursorContext>(
                             break 'OUT (
                                 range,
                                 End::MatchedArgumentName {
+                                    is_verbatim,
                                     range: trim_end(input, name_start..ctx.cursor()),
                                     has_matched_equal_sign: false,
                                 },

@@ -3,13 +3,14 @@ mod for_fn_parse {
         block::{
             branch::braced::table,
             line::normal::{
-                parse, AtxClosing, ContentBefore, End, EndCondition, MatchedCallArgumentIndicator,
-                MatchedCallNameExtraMatched, Matching, TableRelated,
+                parse, AtxClosing, ContentBefore, End, EndCondition, MatchedCallNameExtraMatched,
+                Matching, TableRelated,
             },
             test_support::mocks::MockCursorContext,
         },
         common::m,
         events::{NewLine, VerbatimEscaping},
+        internal_utils::string::is_whitespace,
         types::LineNumber,
     };
 
@@ -623,7 +624,12 @@ mod for_fn_parse {
             ..Default::default()
         };
 
-        for suffix in [" ", "\t", " ||", " |", "\r", "\n"] {
+        for suffix in [" ", "\t", "\r", "\n"] {
+            let mut delta = 0;
+            if suffix.as_bytes().first().is_some_and(|c| is_whitespace!(c)) {
+                delta += 1;
+            }
+
             test(
                 format!("foo{}", suffix).as_bytes(),
                 end_condition.clone(),
@@ -635,7 +641,7 @@ mod for_fn_parse {
                     extra_matched: MatchedCallNameExtraMatched::None,
                 },
                 MockCursorContext {
-                    cursor: 3,
+                    cursor: 3 + delta,
                     current_line: LineNumber::new_universal(1),
                 },
             );
@@ -650,7 +656,7 @@ mod for_fn_parse {
                     extra_matched: MatchedCallNameExtraMatched::None,
                 },
                 MockCursorContext {
-                    cursor: 4,
+                    cursor: 4 + delta,
                     current_line: LineNumber::new_universal(1),
                 },
             );
@@ -664,7 +670,7 @@ mod for_fn_parse {
             End::MatchedCallName {
                 is_extension: false,
                 range: 0..3,
-                extra_matched: (MatchedCallArgumentIndicator { is_verbatim: false }).into(),
+                extra_matched: MatchedCallNameExtraMatched::ArgumentIndicator,
             },
             MockCursorContext {
                 cursor: 5,
@@ -672,17 +678,17 @@ mod for_fn_parse {
             },
         );
         test(
-            b"foo??",
+            b"foo ||",
             end_condition.clone(),
             0,
             b"",
             End::MatchedCallName {
                 is_extension: false,
                 range: 0..3,
-                extra_matched: (MatchedCallArgumentIndicator { is_verbatim: true }).into(),
+                extra_matched: MatchedCallNameExtraMatched::ArgumentIndicator,
             },
             MockCursorContext {
-                cursor: 5,
+                cursor: 6,
                 current_line: LineNumber::new_universal(1),
             },
         );
@@ -694,22 +700,7 @@ mod for_fn_parse {
             End::MatchedCallName {
                 is_extension: true,
                 range: 1..4,
-                extra_matched: (MatchedCallArgumentIndicator { is_verbatim: false }).into(),
-            },
-            MockCursorContext {
-                cursor: 6,
-                current_line: LineNumber::new_universal(1),
-            },
-        );
-        test(
-            b"#foo??",
-            end_condition.clone(),
-            0,
-            b"",
-            End::MatchedCallName {
-                is_extension: true,
-                range: 1..4,
-                extra_matched: (MatchedCallArgumentIndicator { is_verbatim: true }).into(),
+                extra_matched: MatchedCallNameExtraMatched::ArgumentIndicator,
             },
             MockCursorContext {
                 cursor: 6,
@@ -745,6 +736,17 @@ mod for_fn_parse {
                 },
             );
         }
+        test(
+            b"foo |",
+            end_condition.clone(),
+            0,
+            b"foo ",
+            End::Mismatched,
+            MockCursorContext {
+                cursor: 4,
+                current_line: LineNumber::new_universal(1),
+            },
+        );
 
         for input in ["#", "*", "#foo|", "#foo}", "#foo#"] {
             test(
@@ -830,18 +832,7 @@ mod for_fn_parse {
             end_condition.clone(),
             0,
             b"",
-            MatchedCallArgumentIndicator { is_verbatim: false }.into(),
-            MockCursorContext {
-                cursor: 2,
-                current_line: LineNumber::new_universal(1),
-            },
-        );
-        test(
-            b"??",
-            end_condition.clone(),
-            0,
-            b"",
-            MatchedCallArgumentIndicator { is_verbatim: true }.into(),
+            End::MatchedCallArgumentIndicator,
             MockCursorContext {
                 cursor: 2,
                 current_line: LineNumber::new_universal(1),
@@ -887,6 +878,7 @@ mod for_fn_parse {
             0,
             b"",
             End::MatchedArgumentName {
+                is_verbatim: false,
                 range: 0..3,
                 has_matched_equal_sign: false,
             },
@@ -902,6 +894,7 @@ mod for_fn_parse {
             0,
             b"",
             End::MatchedArgumentName {
+                is_verbatim: false,
                 range: 0..3,
                 has_matched_equal_sign: true,
             },

@@ -27,11 +27,11 @@ use state::{
 
 use parser_inner::ParserInner;
 use stack_wrapper::{
-    GeneralItemLike, ItemLikeContainer, Meta, StackEntryCall, StackEntryItemLike,
-    StackEntryItemLikeContainer, StackEntryTable, TopLeaf, TopLeafCallArgumentBeginning,
-    TopLeafCallVerbatimArgumentValue, TopLeafCodeBlock, TopLeafHeading, TopLeafParagraph,
-    TopLeafPotentialCallBeginning, TopLeafPotentialCallBeginningNamePart,
-    TopLeafVerbatimParseState,
+    GeneralItemLike, ItemLikeContainer, Meta, ParserInnerShallowSnapshotNamePart, StackEntryCall,
+    StackEntryItemLike, StackEntryItemLikeContainer, StackEntryTable, TopLeaf,
+    TopLeafCallArgumentBeginning, TopLeafCallVerbatimArgumentValue, TopLeafCodeBlock,
+    TopLeafHeading, TopLeafParagraph, TopLeafPotentialCallBeginning,
+    TopLeafPotentialCallBeginningNamePart, TopLeafVerbatimParseState,
 };
 use types::{CursorContext, YieldContext};
 
@@ -191,9 +191,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                     (true, false)
                 } else if inner.stack.top_is_call() {
                     exiting.and_then = Some(
-                        ExitingAndThen::PushTopLeafCallArgumentBeginningAndExpectBracedOpening {
-                            is_verbatim: false,
-                        },
+                        ExitingAndThen::PushTopLeafCallArgumentBeginningAndExpectBracedOpening,
                     );
                     (true, false)
                 } else {
@@ -248,13 +246,10 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                     inner.r#yield(ev).into(),
                     Some(Expecting::BracedOpening.into()),
                 ),
-                ExitingAndThen::PushTopLeafCallArgumentBeginningAndExpectBracedOpening {
-                    is_verbatim,
-                } => {
+                ExitingAndThen::PushTopLeafCallArgumentBeginningAndExpectBracedOpening => {
                     let top_leaf = TopLeafCallArgumentBeginning {
                         shallow_snapshot: inner.take_shallow_snapshot(),
-                        is_verbatim,
-                        name: None,
+                        name_part: None,
                     };
                     inner.stack.push_top_leaf(top_leaf.into());
                     (TYM_UNIT.into(), Some(Expecting::BracedOpening.into()))
@@ -783,7 +778,6 @@ mod branch {
             #[derive(Debug, PartialEq, Eq)]
             pub enum CallRelatedEnd {
                 Closing,
-                VerbatimArgumentIndicator,
             }
             impl CallRelatedEnd {
                 pub fn process(self, state: &mut State) -> Tym<0> {
@@ -793,13 +787,6 @@ mod branch {
                                 should_also_exit_call: true,
                             },
                             ExitingAndThen::ExpectBracedOpening,
-                        )
-                        .into(),
-                        CallRelatedEnd::VerbatimArgumentIndicator => Exiting::new(
-                            ExitingUntil::TopIsTable {
-                                should_also_exit_table: false,
-                            },
-                            ExitingAndThen::PushTopLeafCallArgumentBeginningAndExpectBracedOpening { is_verbatim: true },
                         )
                         .into(),
                     };
@@ -814,9 +801,7 @@ mod branch {
                 first_char: u8,
             ) -> Option<CallRelatedEnd> {
                 let &second_char = input.get(ctx.cursor() + 1)?;
-                let end = if first_char == m!('?') && second_char == m!('?') {
-                    CallRelatedEnd::VerbatimArgumentIndicator
-                } else if first_char == m!('}') && second_char == m!('}') {
+                let end = if first_char == m!('}') && second_char == m!('}') {
                     CallRelatedEnd::Closing
                 } else {
                     return None;
@@ -1038,7 +1023,7 @@ mod leaf {
                 | line::normal::End::Matched
                 | line::normal::End::MatchedCallName { .. }
                 | line::normal::End::MatchedCallClosing
-                | line::normal::End::MatchedCallArgumentIndicator(_)
+                | line::normal::End::MatchedCallArgumentIndicator
                 | line::normal::End::MatchedArgumentName { .. }
                 | line::normal::End::Mismatched => {
                     unreachable!()
@@ -1354,7 +1339,7 @@ mod leaf {
                 line::normal::End::Matched
                 | line::normal::End::MatchedCallName { .. }
                 | line::normal::End::MatchedCallClosing
-                | line::normal::End::MatchedCallArgumentIndicator(_)
+                | line::normal::End::MatchedCallArgumentIndicator
                 | line::normal::End::MatchedArgumentName { .. }
                 | line::normal::End::Mismatched => {
                     unreachable!()
@@ -1464,13 +1449,12 @@ mod leaf {
                     line::normal::MatchedCallNameExtraMatched::CallClosing => {
                         branch::braced::call::enter_and_exit(inner, is_extension, range)
                     }
-                    line::normal::MatchedCallNameExtraMatched::ArgumentIndicator(m) => {
+                    line::normal::MatchedCallNameExtraMatched::ArgumentIndicator => {
                         let tym = branch::braced::call::enter(state, inner, is_extension, range)?;
                         inner.stack.push_top_leaf(
                             TopLeafCallArgumentBeginning {
                                 shallow_snapshot: inner.take_shallow_snapshot(),
-                                is_verbatim: m.is_verbatim,
-                                name: None,
+                                name_part: None,
                             }
                             .into(),
                         );
@@ -1498,7 +1482,7 @@ mod leaf {
                         name_part.name,
                     )
                 }
-                line::normal::End::MatchedCallArgumentIndicator(m) => {
+                line::normal::End::MatchedCallArgumentIndicator => {
                     let name_part = top_leaf.name_part.unwrap();
 
                     let tym = branch::braced::call::enter(
@@ -1510,8 +1494,7 @@ mod leaf {
                     inner.stack.push_top_leaf(
                         TopLeafCallArgumentBeginning {
                             shallow_snapshot: inner.take_shallow_snapshot(),
-                            is_verbatim: m.is_verbatim,
-                            name: None,
+                            name_part: None,
                         }
                         .into(),
                     );
@@ -1591,7 +1574,7 @@ mod leaf {
             inner: &mut ParserInner<TStack>,
             top_leaf: TopLeafCallArgumentBeginning,
         ) -> crate::Result<Tym<1>> {
-            let has_matched_name = top_leaf.name.is_some();
+            let has_matched_name = top_leaf.name_part.is_some();
 
             let (_content, end) = line::normal::parse(
                 input,
@@ -1613,17 +1596,20 @@ mod leaf {
 
             let tym = match end {
                 line::normal::End::MatchedArgumentName {
+                    is_verbatim,
                     range,
                     has_matched_equal_sign,
                 } => {
                     if has_matched_equal_sign {
-                        exit_for_match(state, inner, top_leaf.is_verbatim, range)
+                        exit_for_match(state, inner, is_verbatim, range)
                     } else {
                         inner.stack.push_top_leaf(
                             TopLeafCallArgumentBeginning {
                                 shallow_snapshot: top_leaf.shallow_snapshot,
-                                is_verbatim: top_leaf.is_verbatim,
-                                name: Some(range),
+                                name_part: Some(ParserInnerShallowSnapshotNamePart {
+                                    is_verbatim,
+                                    name: range,
+                                }),
                             }
                             .into(),
                         );
@@ -1632,18 +1618,21 @@ mod leaf {
                     }
                 }
                 line::normal::End::Matched => {
-                    exit_for_match(state, inner, top_leaf.is_verbatim, top_leaf.name.unwrap())
+                    let name_part = top_leaf.name_part.unwrap();
+                    exit_for_match(state, inner, name_part.is_verbatim, name_part.name)
                 }
                 line::normal::End::None | line::normal::End::NewLine(_) => {
                     inner.stack.push_top_leaf(top_leaf.into());
                     TYM_UNIT.into()
                 }
-                line::normal::End::VerbatimEscaping(ve) if top_leaf.name.is_none() => {
+                line::normal::End::VerbatimEscaping(ve) if top_leaf.name_part.is_none() => {
                     inner.stack.push_top_leaf(
                         TopLeafCallArgumentBeginning {
                             shallow_snapshot: top_leaf.shallow_snapshot,
-                            is_verbatim: top_leaf.is_verbatim,
-                            name: Some(ve.content),
+                            name_part: Some(ParserInnerShallowSnapshotNamePart {
+                                is_verbatim: false,
+                                name: ve.content,
+                            }),
                         }
                         .into(),
                     );
@@ -1661,7 +1650,7 @@ mod leaf {
                 | line::normal::End::DescriptionDefinitionOpening
                 | line::normal::End::MatchedCallName { .. }
                 | line::normal::End::MatchedCallClosing
-                | line::normal::End::MatchedCallArgumentIndicator(_) => unreachable!(),
+                | line::normal::End::MatchedCallArgumentIndicator => unreachable!(),
             };
 
             Ok(tym)
@@ -1684,7 +1673,7 @@ mod leaf {
         }
 
         pub fn exit_for_mismatch(top_leaf: TopLeafCallArgumentBeginning) -> State {
-            let and_then = if top_leaf.is_verbatim {
+            let and_then = if top_leaf.name_part.is_some_and(|n| n.is_verbatim) {
                 let ev = ev!(Block, IndicateCallVerbatimArgument(None));
                 ToApplyShallowSnapshotAndThen::YieldAndEnterCallVerbatimArgumentValue(ev)
             } else {

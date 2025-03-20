@@ -69,9 +69,7 @@ pub enum ExitingAndThen {
     ExpectBracedOpening,
     /// 包含属于 `Block` 分组的事件。
     YieldAndExpectBracedOpening(Event),
-    PushTopLeafCallArgumentBeginningAndExpectBracedOpening {
-        is_verbatim: bool,
-    },
+    PushTopLeafCallArgumentBeginningAndExpectBracedOpening,
     End,
     ToBeDetermined,
 }

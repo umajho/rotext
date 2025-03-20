@@ -461,10 +461,13 @@ pub struct TopLeafPotentialCallBeginningNamePart {
 pub struct TopLeafCallArgumentBeginning {
     pub shallow_snapshot: ParserInnerShallowSnapshot,
 
+    pub name_part: Option<ParserInnerShallowSnapshotNamePart>,
+}
+#[derive(Debug)]
+pub struct ParserInnerShallowSnapshotNamePart {
     /// 如果为真，则代表参数的值是逐字内容；否则，参数的值是块级元素序列。
     pub is_verbatim: bool,
-
-    pub name: Option<Range<usize>>,
+    pub name: Range<usize>,
 }
 
 #[derive(Debug)]
