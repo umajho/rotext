@@ -5,6 +5,7 @@ use core::ops::Range;
 
 use crate::{
     block::{
+        branch::braced::{self, call, table},
         line::{global_phase, parse_common_end, ParseCommonEndOutput},
         types::CursorContext,
     },
@@ -14,9 +15,11 @@ use crate::{
 
 use super::CommonEnd;
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct EndCondition {
     pub on_fence: Option<Fence>,
+    pub before_table_related: bool,
+    pub before_call_related: bool,
 }
 #[derive(Clone)]
 pub struct Fence {
@@ -31,6 +34,8 @@ pub enum End {
     VerbatimEscaping(VerbatimEscaping),
     Fence,
     None,
+    /// 在满足 [EndCondition] 中的 `before_*` 时返回。
+    BeforeStated,
 }
 impl From<CommonEnd> for End {
     fn from(value: CommonEnd) -> Self {
@@ -106,6 +111,17 @@ pub fn parse<TCtx: CursorContext>(
                 }
 
                 break (range, End::Fence);
+            }
+        }
+
+        if end_condition.before_table_related || end_condition.before_call_related {
+            if let Some(&second_char) = input.get(ctx.cursor() + 1) {
+                if braced::is_double_pipes(char, second_char)
+                    || (end_condition.before_table_related && table::is_end(char, second_char))
+                    || (end_condition.before_call_related && call::is_end(char, second_char))
+                {
+                    break (range, End::BeforeStated);
+                }
             }
         }
 

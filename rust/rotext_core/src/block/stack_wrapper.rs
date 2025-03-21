@@ -472,7 +472,7 @@ pub struct ParserInnerShallowSnapshotNamePart {
 
 #[derive(Debug)]
 pub struct TopLeafCallVerbatimArgumentValue {
-    pub parse_state: TopLeafVerbatimParseState,
+    pub state: TopLeafVerbatimParseState,
 }
 
 #[derive(Debug)]

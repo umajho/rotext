@@ -157,7 +157,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                     let state = leaf::call_argument_beginning::exit_for_mismatch(top_leaf);
                     return Ok((TYM_UNIT.into(), Some(state)));
                 }
-                TopLeaf::CallVerbatimArgumentValue(top_leaf) => {
+                TopLeaf::CallVerbatimArgumentValue(_top_leaf) => {
                     leaf::call_verbatim_argument_value::exit().into()
                 }
             };
@@ -617,6 +617,10 @@ mod branch {
             TYM_UNIT
         }
 
+        pub fn is_double_pipes(first_char: u8, second_char: u8) -> bool {
+            first_char == m!('|') && second_char == m!('|')
+        }
+
         pub mod table {
             use super::*;
 
@@ -712,6 +716,14 @@ mod branch {
                 };
                 ctx.move_cursor_forward(2);
                 Some(end)
+            }
+
+            pub fn is_end(first_char: u8, second_char: u8) -> bool {
+                match first_char {
+                    m!('|') => matches!(second_char, m!('}') | m!('+') | m!('-')),
+                    m!('!') => second_char == m!('!'),
+                    _ => false,
+                }
             }
 
             pub fn exit<TStack: Stack<StackEntry>>(
@@ -810,6 +822,10 @@ mod branch {
                 Some(end)
             }
 
+            pub fn is_end(first_char: u8, second_char: u8) -> bool {
+                first_char == m!('}') && second_char == m!('}')
+            }
+
             pub fn exit<TStack: Stack<StackEntry>>(
                 inner: &mut ParserInner<TStack>,
                 stack_entry: StackEntryCall,
@@ -905,7 +921,7 @@ mod leaf {
             }
             TopLeaf::CallVerbatimArgumentValue(top_leaf) => {
                 leaf::call_verbatim_argument_value::parse_content_and_process(
-                    input, state, inner, top_leaf,
+                    input, inner, top_leaf,
                 )
                 .map(|tym| cast_tym!(tym))
             }
@@ -1074,7 +1090,7 @@ mod leaf {
                     let (content, end) = line::verbatim::parse(
                         input,
                         inner,
-                        line::verbatim::EndCondition { on_fence: None },
+                        line::verbatim::EndCondition::default(),
                         inner.current_expecting.spaces_before(),
                         None,
                     );
@@ -1096,8 +1112,10 @@ mod leaf {
                         line::verbatim::End::VerbatimEscaping(verbatim_escaping) => {
                             line::global_phase::process_verbatim_escaping(inner, verbatim_escaping)
                         }
-                        line::verbatim::End::Fence => unreachable!(),
                         line::verbatim::End::None => TYM_UNIT.into(),
+                        line::verbatim::End::Fence | line::verbatim::End::BeforeStated => {
+                            unreachable!()
+                        }
                     };
 
                     inner.stack.push_top_leaf(top_leaf.into());
@@ -1129,6 +1147,7 @@ mod leaf {
                                 character: m!('`'),
                                 minimum_count: top_leaf.backticks,
                             }),
+                            ..Default::default()
                         },
                         inner.current_expecting.spaces_before(),
                         at_line_beginning,
@@ -1173,6 +1192,7 @@ mod leaf {
                             inner.stack.push_top_leaf(top_leaf.into());
                             TYM_UNIT.into()
                         }
+                        line::verbatim::End::BeforeStated => unreachable!(),
                     };
 
                     tym_a.add(tym_b).add(tym_c)
@@ -1697,7 +1717,7 @@ mod leaf {
 
             inner.stack.push_top_leaf(
                 TopLeafCallVerbatimArgumentValue {
-                    parse_state: TopLeafVerbatimParseState::AtFirstLineBeginning,
+                    state: TopLeafVerbatimParseState::AtFirstLineBeginning,
                 }
                 .into(),
             );
@@ -1707,11 +1727,63 @@ mod leaf {
 
         pub fn parse_content_and_process<TStack: Stack<StackEntry>>(
             input: &[u8],
-            state: &mut State,
             inner: &mut ParserInner<TStack>,
-            top_leaf: TopLeafCallVerbatimArgumentValue,
+            mut top_leaf: TopLeafCallVerbatimArgumentValue,
         ) -> crate::Result<Tym<3>> {
-            todo!()
+            let new_line = match &top_leaf.state {
+                TopLeafVerbatimParseState::AtLineBeginning(new_line) => Some(new_line.clone()),
+                _ => None,
+            };
+
+            let (content, end) = line::verbatim::parse(
+                input,
+                inner,
+                line::verbatim::EndCondition {
+                    before_table_related: inner.stack.tables_in_stack() > 0,
+                    before_call_related: true,
+                    ..Default::default()
+                },
+                inner.current_expecting.spaces_before(),
+                None,
+            );
+
+            let tym_a = if let Some(new_line) = new_line {
+                inner.r#yield(ev!(Block, NewLine(new_line)))
+            } else {
+                TYM_UNIT.into()
+            };
+
+            let tym_b = if !content.is_empty() {
+                inner.r#yield(ev!(Block, Text(content)))
+            } else {
+                TYM_UNIT.into()
+            };
+
+            let tym_c = match end {
+                line::verbatim::End::Eof => {
+                    inner.stack.push_top_leaf(top_leaf.into());
+                    TYM_UNIT.into()
+                }
+                line::verbatim::End::NewLine(new_line) => {
+                    top_leaf.state = TopLeafVerbatimParseState::AtLineBeginning(new_line);
+                    inner.stack.push_top_leaf(top_leaf.into());
+                    TYM_UNIT.into()
+                }
+                line::verbatim::End::VerbatimEscaping(verbatim_escaping) => {
+                    top_leaf.state = TopLeafVerbatimParseState::Normal;
+                    inner.stack.push_top_leaf(top_leaf.into());
+                    line::global_phase::process_verbatim_escaping(inner, verbatim_escaping)
+                }
+                line::verbatim::End::None => {
+                    top_leaf.state = TopLeafVerbatimParseState::Normal;
+                    inner.stack.push_top_leaf(top_leaf.into());
+                    TYM_UNIT.into()
+                }
+                line::verbatim::End::BeforeStated => TYM_UNIT.into(),
+                line::verbatim::End::Fence => unreachable!(),
+            };
+
+            Ok(tym_a.add(tym_b).add(tym_c))
         }
 
         pub fn exit() -> Tym<0> {

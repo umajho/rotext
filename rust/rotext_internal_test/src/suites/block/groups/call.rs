@@ -331,6 +331,149 @@ pub fn groups_call() -> Vec<GroupedCases> {
             ],
         },
         GroupedCases {
+            group: "调用>单个逐字命名参数",
+            cases: vec![
+                case!(
+                    vec![
+                        "{{foo||`bar=}}",
+                        "{{foo||␠`bar␠=}}",
+                        "{{foo\n||\n`bar\n=}}",
+                        "{{foo||<%C%>`bar<%C%>=}}",
+                        "{{foo||␠<%C%>␠`bar␠<%C%>␠=}}",
+                        "{{foo||\n<%C%>\n`bar\n<%C%>\n=}}",
+                        "{{foo||`bar=",
+                    ],
+                    vec![
+                        (EventType::EnterCallOnTemplate, Some("foo")),
+                        (EventType::IndicateCallVerbatimArgument, Some("bar")),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec!["{{foo||`bar␣baz=}}",],
+                    vec![
+                        (EventType::EnterCallOnTemplate, Some("foo")),
+                        (EventType::IndicateCallVerbatimArgument, Some("bar baz")),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec!["{{foo||`<`*`>=␣}}",],
+                    vec![
+                        (EventType::EnterCallOnTemplate, Some("foo")),
+                        (EventType::IndicateCallVerbatimArgument, Some("*")),
+                        (EventType::Text, Some(" ")),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec!["{{foo||`bar=\n}}",],
+                    vec![
+                        (EventType::EnterCallOnTemplate, Some("foo")),
+                        (EventType::IndicateCallVerbatimArgument, Some("bar")),
+                        (EventType::NewLine, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec![indoc! {"
+                            {{foo||`bar=1
+                            2
+                            
+                            3}}"},],
+                    vec![
+                        (EventType::EnterCallOnTemplate, Some("foo")),
+                        (EventType::IndicateCallVerbatimArgument, Some("bar")),
+                        (EventType::Text, Some("1")),
+                        (EventType::NewLine, None),
+                        (EventType::Text, Some("2")),
+                        (EventType::NewLine, None),
+                        (EventType::NewLine, None),
+                        (EventType::Text, Some("3")),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec!["*␠{{foo||`bar=1}}", "*␠{{foo||`bar=1",],
+                    vec![
+                        (EventType::EnterUnorderedList, None),
+                        (EventType::EnterListItem, None),
+                        (EventType::EnterCallOnTemplate, Some("foo")),
+                        (EventType::IndicateCallVerbatimArgument, Some("bar")),
+                        (EventType::Text, Some("1")),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec![indoc! {"
+                            *␠{{foo||`bar=1
+                            >␠␣2}}"},],
+                    vec![
+                        (EventType::EnterUnorderedList, None),
+                        (EventType::EnterListItem, None),
+                        (EventType::EnterCallOnTemplate, Some("foo")),
+                        (EventType::IndicateCallVerbatimArgument, Some("bar")),
+                        (EventType::Text, Some("1")),
+                        (EventType::NewLine, None),
+                        (EventType::Text, Some(" 2")),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec![
+                        indoc! {"
+                            *␠{{foo||`bar=1
+                            >␠2
+                            >
+                            >␠3}}"},
+                        indoc! {"
+                            *␠{{foo||`bar=1
+                            >␠2
+                            >
+                            >␠3"},
+                    ],
+                    vec![
+                        (EventType::EnterUnorderedList, None),
+                        (EventType::EnterListItem, None),
+                        (EventType::EnterCallOnTemplate, Some("foo")),
+                        (EventType::IndicateCallVerbatimArgument, Some("bar")),
+                        (EventType::Text, Some("1")),
+                        (EventType::NewLine, None),
+                        (EventType::Text, Some("2")),
+                        (EventType::NewLine, None),
+                        (EventType::NewLine, None),
+                        (EventType::Text, Some("3")),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec![indoc! {"
+                            *␠{{foo||`bar=␣
+                            >␠␣
+                            >␠}}"},],
+                    vec![
+                        (EventType::EnterUnorderedList, None),
+                        (EventType::EnterListItem, None),
+                        (EventType::EnterCallOnTemplate, Some("foo")),
+                        (EventType::IndicateCallVerbatimArgument, Some("bar")),
+                        (EventType::Text, Some(" ")),
+                        (EventType::NewLine, None),
+                        (EventType::Text, Some(" ")),
+                        (EventType::NewLine, None),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+            ],
+        },
+        GroupedCases {
             group: "调用>多个参数",
             cases: vec![
                 case!(
@@ -396,6 +539,70 @@ pub fn groups_call() -> Vec<GroupedCases> {
                         (EventType::ExitBlock, None),
                         (EventType::IndicateCallNormalArgument, None),
                         (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec!["{{foo||`bar=baz||qux}}",],
+                    vec![
+                        (EventType::EnterCallOnTemplate, Some("foo")),
+                        (EventType::IndicateCallVerbatimArgument, Some("bar")),
+                        (EventType::Text, Some("baz")),
+                        (EventType::IndicateCallNormalArgument, None),
+                        (EventType::EnterParagraph, None),
+                        (EventType::__Unparsed, Some("qux")),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec![indoc! {"
+                            {{foo||`bar=baz
+                            ||qux}}"},],
+                    vec![
+                        (EventType::EnterCallOnTemplate, Some("foo")),
+                        (EventType::IndicateCallVerbatimArgument, Some("bar")),
+                        (EventType::Text, Some("baz")),
+                        (EventType::NewLine, None),
+                        (EventType::IndicateCallNormalArgument, None),
+                        (EventType::EnterParagraph, None),
+                        (EventType::__Unparsed, Some("qux")),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec![indoc! {"
+                            {{foo||`bar=baz
+                            ␣||qux}}"},],
+                    vec![
+                        (EventType::EnterCallOnTemplate, Some("foo")),
+                        (EventType::IndicateCallVerbatimArgument, Some("bar")),
+                        (EventType::Text, Some("baz")),
+                        (EventType::NewLine, None),
+                        (EventType::Text, Some(" ")),
+                        (EventType::IndicateCallNormalArgument, None),
+                        (EventType::EnterParagraph, None),
+                        (EventType::__Unparsed, Some("qux")),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec![indoc! {"
+                            {{foo||`bar=baz
+
+                            ||qux}}"},],
+                    vec![
+                        (EventType::EnterCallOnTemplate, Some("foo")),
+                        (EventType::IndicateCallVerbatimArgument, Some("bar")),
+                        (EventType::Text, Some("baz")),
+                        (EventType::NewLine, None),
+                        (EventType::NewLine, None),
+                        (EventType::IndicateCallNormalArgument, None),
+                        (EventType::EnterParagraph, None),
+                        (EventType::__Unparsed, Some("qux")),
                         (EventType::ExitBlock, None),
                         (EventType::ExitBlock, None),
                     ]

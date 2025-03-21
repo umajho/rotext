@@ -366,9 +366,9 @@ fn parse_call_argument_name<TCtx: CursorContext>(
     range_before: Range<usize>,
     first_char: u8,
 ) -> (Range<usize>, End) {
-    let is_verbatim = first_char == m!('#');
+    let is_verbatim = first_char == m!('`');
     if is_verbatim {
-        ctx.move_cursor_forward("#".len());
+        ctx.move_cursor_forward("`".len());
         let char = input.get(ctx.cursor());
         if char.is_none_or(|c| is_whitespace!(c) || matches!(c, b'\r' | b'\n')) {
             ctx.set_cursor(range_before.end);
