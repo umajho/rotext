@@ -1135,11 +1135,7 @@ mod leaf {
                     );
 
                     let tym_a = if let Some(new_line) = new_line {
-                        if !matches!(end, line::verbatim::End::Eof) {
-                            inner.r#yield(ev!(Block, NewLine(new_line)))
-                        } else {
-                            TYM_UNIT.into()
-                        }
+                        inner.r#yield(ev!(Block, NewLine(new_line)))
                     } else {
                         TYM_UNIT.into()
                     };
