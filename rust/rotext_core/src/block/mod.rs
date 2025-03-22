@@ -334,17 +334,6 @@ impl<TStack: Stack<StackEntry>> Iterator for Parser<'_, TStack> {
                             self.state = Expecting::BracedOpening.into();
                             Ok(self.inner.r#yield(ev).into())
                         }
-                        ToApplyShallowSnapshotAndThen::YieldAndEnterCallVerbatimArgumentValue(
-                            ev,
-                        ) => {
-                            let tym_a = self.inner.r#yield(ev);
-                            let tym_b = leaf::call_verbatim_argument_value::enter(
-                                &mut self.state,
-                                &mut self.inner,
-                            );
-
-                            Ok(tym_a.add(tym_b).into())
-                        }
                     }
                 }
             };

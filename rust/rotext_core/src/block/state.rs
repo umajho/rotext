@@ -88,7 +88,6 @@ pub struct ToApplyShallowSnapshot {
 }
 pub enum ToApplyShallowSnapshotAndThen {
     TryParseAsParagraph,
-    YieldAndEnterCallVerbatimArgumentValue(Event),
     YieldAndExpectBracedOpening(Event),
 }
 
