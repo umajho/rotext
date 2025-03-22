@@ -6,6 +6,22 @@ fn main() {
 
 static CONTENT: LazyLock<String> = LazyLock::new(|| read_doc("rotext入门.rotext"));
 
+fn render(input: &[u8], events: &[rotext::Event]) {
+    let tag_name_map = rotext::TagNameMap::default();
+
+    let compile_opts = rotext::CompileOption {
+        restrictions: rotext::CompileRestrictions {
+            document_max_call_depth: 100,
+        },
+        tag_name_map: &tag_name_map,
+        #[cfg(feature = "block-id")]
+        should_include_block_ids: true,
+    };
+    let compiled = rotext::compile(input, events, &compile_opts).unwrap();
+
+    rotext::render(&compiled);
+}
+
 #[divan::bench(sample_size = 10)]
 fn parsing(bencher: divan::Bencher) {
     let file_content = CONTENT.clone();
@@ -18,44 +34,31 @@ fn parsing(bencher: divan::Bencher) {
 #[divan::bench(sample_size = 10)]
 fn rendering(bencher: divan::Bencher) {
     let file_content = CONTENT.clone();
+    let file_content = file_content.as_bytes();
 
     bencher
         .with_inputs(|| {
-            rotext::parse(file_content.as_bytes())
+            rotext::parse(file_content)
                 .collect::<Vec<_>>()
                 .into_iter()
                 .map(Result::unwrap)
+                .collect::<Vec<_>>()
         })
         .bench_refs(|events| {
-            let renderer = rotext::HtmlRenderer::new(
-                file_content.as_bytes(),
-                rotext::NewHtmlRendererOptions {
-                    tag_name_map: Default::default(),
-                    initial_output_string_capacity: file_content.len() * 3,
-                    #[cfg(feature = "block-id")]
-                    should_include_block_ids: true,
-                },
-            );
-            renderer.render_u8_vec(events);
+            render(file_content, events);
         })
 }
 
 #[divan::bench(sample_size = 10)]
 fn parsing_and_rendering(bencher: divan::Bencher) {
     let file_content = CONTENT.clone();
+    let file_content = file_content.as_bytes();
 
     bencher.bench(|| {
-        let events = rotext::parse(file_content.as_bytes()).map(Result::unwrap);
-        let renderer = rotext::HtmlRenderer::new(
-            file_content.as_bytes(),
-            rotext::NewHtmlRendererOptions {
-                tag_name_map: Default::default(),
-                initial_output_string_capacity: file_content.len() * 3,
-                #[cfg(feature = "block-id")]
-                should_include_block_ids: true,
-            },
-        );
-        renderer.render_u8_vec(events);
+        let events = rotext::parse(file_content)
+            .map(Result::unwrap)
+            .collect::<Vec<_>>();
+        render(file_content, &events);
     })
 }
 

@@ -9,6 +9,7 @@ use rotext_core::Event;
 use html_renderer::StackEntryBox;
 
 pub type Result<T> = std::result::Result<T, Error>;
+#[derive(Debug)]
 pub enum Error {
     RecursionDepthExceeded,
 }
