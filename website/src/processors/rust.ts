@@ -61,13 +61,15 @@ export class RustRotextProcessor implements RotextProcessor {
             let element = targetEl.querySelector(
               `[data-block-id="${id}"]`,
             )! as HTMLElement;
-            lookupListRaw.push({
-              element,
-              location: {
-                start: { line: start },
-                end: { line: end },
-              },
-            });
+            if (element) {
+              lookupListRaw.push({
+                element,
+                location: {
+                  start: { line: start },
+                  end: { line: end },
+                },
+              });
+            }
           }
           return lookupListRaw;
         },
