@@ -1679,7 +1679,7 @@ mod leaf {
             range: Range<usize>,
         ) -> Tym<1> {
             if is_verbatim {
-                let tym_a = inner.r#yield(ev!(Block, IndicateCallVerbatimArgument(Some(range))));
+                let tym_a = inner.r#yield(ev!(Block, IndicateCallVerbatimArgument(range)));
                 let tym_b = leaf::call_verbatim_argument_value::enter(state, inner);
                 tym_a.add(tym_b)
             } else {
@@ -1689,17 +1689,12 @@ mod leaf {
         }
 
         pub fn exit_for_mismatch(top_leaf: TopLeafCallArgumentBeginning) -> State {
-            let and_then = if top_leaf.name_part.is_some_and(|n| n.is_verbatim) {
-                let ev = ev!(Block, IndicateCallVerbatimArgument(None));
-                ToApplyShallowSnapshotAndThen::YieldAndEnterCallVerbatimArgumentValue(ev)
-            } else {
-                let ev = ev!(Block, IndicateCallNormalArgument(None));
-                ToApplyShallowSnapshotAndThen::YieldAndExpectBracedOpening(ev)
-            };
-
             ToApplyShallowSnapshot {
                 shallow_snapshot: top_leaf.shallow_snapshot,
-                and_then,
+                and_then: ToApplyShallowSnapshotAndThen::YieldAndExpectBracedOpening(ev!(
+                    Block,
+                    IndicateCallNormalArgument(None)
+                )),
             }
             .into()
         }

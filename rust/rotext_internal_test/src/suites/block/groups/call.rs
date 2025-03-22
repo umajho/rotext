@@ -272,6 +272,53 @@ pub fn groups_call() -> Vec<GroupedCases> {
                         (EventType::ExitBlock, None),
                     ]
                 ),
+                case!(
+                    vec!["{{foo||`}}"],
+                    vec![
+                        (EventType::EnterCallOnTemplate, Some("foo")),
+                        (EventType::IndicateCallNormalArgument, None),
+                        (EventType::EnterParagraph, None),
+                        (EventType::__Unparsed, Some("`")),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec!["{{foo||`bar}}"],
+                    vec![
+                        (EventType::EnterCallOnTemplate, Some("foo")),
+                        (EventType::IndicateCallNormalArgument, None),
+                        (EventType::EnterParagraph, None),
+                        (EventType::__Unparsed, Some("`bar")),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec!["{{foo||<`bar`><`baz`>}}"],
+                    vec![
+                        (EventType::EnterCallOnTemplate, Some("foo")),
+                        (EventType::IndicateCallNormalArgument, None),
+                        (EventType::EnterParagraph, None),
+                        (EventType::VerbatimEscaping, Some("bar")),
+                        (EventType::VerbatimEscaping, Some("baz")),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec!["{{foo||`<`bar`><`baz`>}}"],
+                    vec![
+                        (EventType::EnterCallOnTemplate, Some("foo")),
+                        (EventType::IndicateCallNormalArgument, None),
+                        (EventType::EnterParagraph, None),
+                        (EventType::__Unparsed, Some("`")),
+                        (EventType::VerbatimEscaping, Some("bar")),
+                        (EventType::VerbatimEscaping, Some("baz")),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
             ],
         },
         GroupedCases {

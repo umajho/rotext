@@ -3,11 +3,16 @@
 #![feature(proc_macro_hygiene)]
 #![feature(stmt_expr_attributes)]
 
-pub mod rendering;
+pub mod compiling;
 
-pub use rotext_core::{Error, Event, Result};
+pub(crate) mod utils;
 
-pub use rendering::{HtmlRenderer, NewHtmlRendererOptions};
+pub use rotext_core::{Error as ParseError, Event, Result};
+
+pub use compiling::{
+    CompiledItem, Error as CompilationError, NewCompileOptions as CompileOption,
+    Restrictions as CompileRestrictions, TagNameMap,
+};
 
 use rotext_core::{
     BlockEventStreamInlineSegmentMapper, BlockParser, BlockStackEntry, InlineStackEntry,
@@ -24,6 +29,41 @@ pub fn parse(
     let block_parser = BlockParser::new(input);
 
     BlockEventStreamInlineSegmentMapper::new(input, block_parser)
+}
+
+pub fn compile<'a>(
+    input: &'a [u8],
+    parsed: &[Event],
+    opts: &'a CompileOption,
+) -> compiling::Result<Vec<CompiledItem<'a>>> {
+    let compiler = compiling::HtmlCompiler::new(opts);
+    compiler.compile(input, parsed)
+}
+
+pub fn render(compiled: &[CompiledItem]) -> Vec<u8> {
+    let mut buf: Vec<u8> = Vec::new();
+
+    for item in compiled {
+        match item {
+            CompiledItem::Rendered(rendered) => buf.extend_from_slice(rendered),
+            CompiledItem::BlockTransclusion(block_call)
+            | CompiledItem::BlockExtension(block_call) => {
+                let what = if matches!(item, CompiledItem::BlockTransclusion(_)) {
+                    &b"transclusion"[..]
+                } else {
+                    &b"extension"[..]
+                };
+
+                buf.extend(b"<div style=\"padding: 1rem; border: 1px red dashed; color: red; font-weight: bold;\">TODO: render ");
+                buf.extend(what);
+                buf.extend(b" ");
+                utils::write_escaped_html_text(&mut buf, block_call.name);
+                buf.extend(b"</div>");
+            }
+        }
+    }
+
+    buf
 }
 
 #[cfg(test)]

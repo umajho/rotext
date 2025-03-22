@@ -83,20 +83,30 @@ pub fn parse_and_render(
         Err(error) => {
             return ParseAndRenderResult {
                 ok: None,
-                error: Some(error.name().to_string()),
+                error: Some(format!("ParseError/{}", error.name())),
             }
         }
     };
 
-    let renderer = rotext::HtmlRenderer::new(
-        input,
-        rotext::NewHtmlRendererOptions {
-            tag_name_map,
-            initial_output_string_capacity: input.len() * 3,
-            should_include_block_ids,
+    let compile_opts = rotext::CompileOption {
+        restrictions: rotext::CompileRestrictions {
+            document_max_call_depth: 100,
         },
-    );
-    let html = renderer.render_u8_vec(all_events.clone().into_iter());
+        tag_name_map: &tag_name_map,
+        should_include_block_ids,
+    };
+    let compiled = rotext::compile(input, &all_events, &compile_opts);
+    let compiled = match compiled {
+        Ok(compiled) => compiled,
+        Err(error) => {
+            return ParseAndRenderResult {
+                ok: None,
+                error: Some(format!("CompilationError/{}", error.name())),
+            }
+        }
+    };
+
+    let html = rotext::render(&compiled);
     let html = match String::from_utf8(html) {
         Ok(html) => html,
         Err(error) => {
