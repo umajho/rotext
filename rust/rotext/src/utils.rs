@@ -12,6 +12,11 @@ impl SequenceGenerator {
     }
 }
 
+pub fn write_usize(buf: &mut Vec<u8>, n: usize) {
+    let mut buffer = itoa::Buffer::new();
+    buf.extend(buffer.format(n).as_bytes());
+}
+
 pub fn write_escaped_html_text(buf: &mut Vec<u8>, input: &[u8]) {
     for char in input {
         match *char {

@@ -60,6 +60,12 @@ pub fn render(compiled: &[CompiledItem], opts: RenderOptions) -> Vec<u8> {
 
                 buf.push(b'<');
                 buf.extend(opts.tag_name_map.block_call_error);
+                #[cfg(feature = "block-id")]
+                {
+                    buf.extend(b" data-block-id=\"");
+                    crate::utils::write_usize(&mut buf, block_call.block_id.value());
+                    buf.push(b'"');
+                }
                 buf.extend(b" call-type=\"");
                 buf.extend(what);
                 buf.extend(b"\" call-name=\"");

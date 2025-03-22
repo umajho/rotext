@@ -4,7 +4,7 @@ pub use html_renderer::TagNameMap;
 
 use std::collections::HashMap;
 
-use rotext_core::Event;
+use rotext_core::{BlockId, Event};
 
 use html_renderer::StackEntryBox;
 
@@ -32,6 +32,8 @@ pub struct BlockCall<'a> {
     pub name: &'a [u8],
     pub arguments: HashMap<ArgumentKey<'a>, Vec<CompiledItem<'a>>>,
     pub verbatim_arguments: HashMap<&'a [u8], Vec<u8>>,
+
+    pub block_id: BlockId,
 }
 
 #[derive(Eq, Hash, PartialEq)]
@@ -127,6 +129,7 @@ impl<'a> HtmlCompiler<'a> {
                         name: &input[call.name.clone()],
                         arguments: HashMap::new(),
                         verbatim_arguments: HashMap::new(),
+                        block_id: call.id,
                     };
 
                     let mut anonymous_argument_name_generator =

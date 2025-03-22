@@ -368,9 +368,14 @@ function setUpHighlight(
         ? topLineItem
         : lookupList[bottomLineIndex]!;
 
+      // XXX: Safari (18.3) 下，自定义元素的 `offsetHeight` 不知为何是 0，
+      // 因此以 `getBoundingClientRect` 作为后备方案。
+      const bottomLineItemHeight = bottomLineItem.element.offsetHeight ||
+        bottomLineItem.element.getBoundingClientRect().height;
+
       setTopPx(topLineItem.offsetTop);
       setHeightPx(
-        bottomLineItem.offsetTop + bottomLineItem.element.offsetHeight -
+        bottomLineItem.offsetTop + bottomLineItemHeight -
           topLineItem.offsetTop,
       );
     }),

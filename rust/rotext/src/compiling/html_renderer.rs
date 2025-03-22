@@ -380,14 +380,8 @@ fn write_raw_html(buf: &mut Vec<u8>, input: &[u8]) {
 #[cfg(feature = "block-id")]
 fn write_data_block_id_attribute(buf: &mut Vec<u8>, id: usize) {
     buf.extend(br#" data-block-id=""#);
-    write_usize(buf, id);
+    crate::utils::write_usize(buf, id);
     buf.push(b'"');
-}
-
-#[cfg(feature = "block-id")]
-fn write_usize(buf: &mut Vec<u8>, n: usize) {
-    let mut buffer = itoa::Buffer::new();
-    buf.extend(buffer.format(n).as_bytes());
 }
 
 fn write_opening_tag_with_single_attribute(

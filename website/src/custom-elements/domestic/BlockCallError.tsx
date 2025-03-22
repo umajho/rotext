@@ -31,7 +31,13 @@ function createBlockCallErrorComponent(): Component<{
         case "TODO":
           return "TODO: 实现渲染";
         default:
-          return `${props["error-type"]} (${props["error-value"]})`;
+          let errorType = props["error-type"];
+          let errorValue = props["error-value"];
+          if (typeof errorValue === "string") {
+            return `${errorType} (${errorValue})`;
+          } else {
+            return errorType;
+          }
       }
     };
 
