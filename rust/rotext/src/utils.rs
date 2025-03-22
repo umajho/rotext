@@ -21,3 +21,13 @@ pub fn write_escaped_html_text(buf: &mut Vec<u8>, input: &[u8]) {
         }
     }
 }
+
+pub fn write_escaped_double_quoted_attribute_value(buf: &mut Vec<u8>, input: &[u8]) {
+    for char in input {
+        match *char {
+            b'"' => buf.extend(b"&quot;"),
+            b'&' => buf.extend(b"&amp;"),
+            char => buf.push(char),
+        }
+    }
+}

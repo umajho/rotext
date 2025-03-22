@@ -16,6 +16,7 @@ export interface ParseAndRenderOptions {
 }
 
 export interface TagNameMap {
+  "block-call-error": string;
   "code-block": string;
   "ref-link": string;
   "dicexp": string;
@@ -64,6 +65,7 @@ function serializeTagNameMap(tagNameMap: TagNameMap): string {
   }
 
   return [
+    tagNameMap["block-call-error"],
     tagNameMap["code-block"],
     tagNameMap["ref-link"],
     tagNameMap["dicexp"],

@@ -1,4 +1,5 @@
 export const TAG_NAME_MAP = {
+  "block-call-error": "x-block-call-error",
   "scratch-off": "x-scratch-off",
   "ref-link": "x-ref-link",
   "dicexp": "x-dicexp",

@@ -40,7 +40,11 @@ pub fn compile<'a>(
     compiler.compile(input, parsed)
 }
 
-pub fn render(compiled: &[CompiledItem]) -> Vec<u8> {
+pub struct RenderOptions<'a> {
+    pub tag_name_map: &'a TagNameMap<'a>,
+}
+
+pub fn render(compiled: &[CompiledItem], opts: RenderOptions) -> Vec<u8> {
     let mut buf: Vec<u8> = Vec::new();
 
     for item in compiled {
@@ -54,11 +58,15 @@ pub fn render(compiled: &[CompiledItem]) -> Vec<u8> {
                     &b"extension"[..]
                 };
 
-                buf.extend(b"<div style=\"padding: 1rem; border: 1px red dashed; color: red; font-weight: bold;\">TODO: render ");
+                buf.push(b'<');
+                buf.extend(opts.tag_name_map.block_call_error);
+                buf.extend(b" call-type=\"");
                 buf.extend(what);
-                buf.extend(b" ");
-                utils::write_escaped_html_text(&mut buf, block_call.name);
-                buf.extend(b"</div>");
+                buf.extend(b"\" call-name=\"");
+                utils::write_escaped_double_quoted_attribute_value(&mut buf, block_call.name);
+                buf.extend(b"\" error-type=\"TODO\"></");
+                buf.extend(opts.tag_name_map.block_call_error);
+                buf.push(b'>');
             }
         }
     }

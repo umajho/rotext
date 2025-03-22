@@ -106,7 +106,10 @@ pub fn parse_and_render(
         }
     };
 
-    let html = rotext::render(&compiled);
+    let render_opts = rotext::RenderOptions {
+        tag_name_map: &tag_name_map,
+    };
+    let html = rotext::render(&compiled, render_opts);
     let html = match String::from_utf8(html) {
         Ok(html) => html,
         Err(error) => {

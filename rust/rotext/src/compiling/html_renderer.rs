@@ -23,6 +23,8 @@ pub struct NewHtmlRendererOptions<'a> {
 
 #[derive(Clone)]
 pub struct TagNameMap<'a> {
+    pub block_call_error: &'a [u8],
+
     pub code_block: &'a [u8],
 
     pub ref_link: &'a [u8],
@@ -32,6 +34,8 @@ pub struct TagNameMap<'a> {
 impl Default for TagNameMap<'_> {
     fn default() -> Self {
         Self {
+            block_call_error: b"x-block-call-error",
+
             code_block: b"x-code-block",
 
             ref_link: b"x-ref-link",
@@ -151,7 +155,7 @@ impl<'a> HtmlRenderer<'a> {
                     match &evs[i] {
                         Event::Text(content)
                         | Event::VerbatimEscaping(VerbatimEscaping { content, .. }) => {
-                            write_escaped_double_quoted_attribute_value(
+                            crate::utils::write_escaped_double_quoted_attribute_value(
                                 buf,
                                 &input[content.clone()],
                             )
@@ -167,7 +171,7 @@ impl<'a> HtmlRenderer<'a> {
                     match &evs[i] {
                         Event::Text(content)
                         | Event::VerbatimEscaping(VerbatimEscaping { content, .. }) => {
-                            write_escaped_double_quoted_attribute_value(
+                            crate::utils::write_escaped_double_quoted_attribute_value(
                                 buf,
                                 &input[content.clone()],
                             )
@@ -373,16 +377,6 @@ fn write_raw_html(buf: &mut Vec<u8>, input: &[u8]) {
     buf.extend(input);
 }
 
-fn write_escaped_double_quoted_attribute_value(buf: &mut Vec<u8>, input: &[u8]) {
-    for char in input {
-        match *char {
-            b'"' => buf.extend(b"&quot;"),
-            b'&' => buf.extend(b"&amp;"),
-            char => buf.push(char),
-        }
-    }
-}
-
 #[cfg(feature = "block-id")]
 fn write_data_block_id_attribute(buf: &mut Vec<u8>, id: usize) {
     buf.extend(br#" data-block-id=""#);
@@ -407,7 +401,7 @@ fn write_opening_tag_with_single_attribute(
     buf.push(b' ');
     buf.extend(attr_name);
     buf.extend(br#"=""#);
-    write_escaped_double_quoted_attribute_value(buf, attr_value);
+    crate::utils::write_escaped_double_quoted_attribute_value(buf, attr_value);
     buf.extend(br#"">"#);
 }
 

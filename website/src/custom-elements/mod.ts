@@ -5,6 +5,7 @@ import { registerCustomElementForRefLink } from "./navigation/ref-link/mod";
 import { registerCustomElementForWikiLink } from "./navigation/wiki-link/mod";
 import { registerCustomElementsForDicexp } from "./dicexp/mod";
 
+import { registerCustomElement as registerCustomElementForBlockCallError } from "./domestic/BlockCallError";
 import { registerCustomElement as registerCustomElementForScratchOff } from "./domestic/ScratchOff";
 import { registerCustomElement as registerCustomElementForCollapse } from "./domestic/Collapse";
 import { registerCustomElement as registerCustomElementForCodeBlock } from "./domestic/CodeBlock";
@@ -15,6 +16,8 @@ let hasRegistered = false;
 
 export function registerCustomElementsOnce() {
   if (hasRegistered) return;
+
+  registerCustomElementForBlockCallError(TAG_NAME_MAP["block-call-error"]);
 
   registerCustomElementForRefLink();
   registerCustomElementForWikiLink();

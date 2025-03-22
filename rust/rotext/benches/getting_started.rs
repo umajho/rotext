@@ -19,7 +19,10 @@ fn render(input: &[u8], events: &[rotext::Event]) {
     };
     let compiled = rotext::compile(input, events, &compile_opts).unwrap();
 
-    rotext::render(&compiled);
+    let render_opts = rotext::RenderOptions {
+        tag_name_map: &tag_name_map,
+    };
+    rotext::render(&compiled, render_opts);
 }
 
 #[divan::bench(sample_size = 10)]
