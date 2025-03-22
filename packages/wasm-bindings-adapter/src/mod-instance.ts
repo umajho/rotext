@@ -57,6 +57,12 @@ export function parseAndRender(
 }
 
 function serializeTagNameMap(tagNameMap: TagNameMap): string {
+  for (const name of Object.values(tagNameMap)) {
+    if (!isValidTagName(name)) {
+      throw new Error(`invalid tag name: ${name}`);
+    }
+  }
+
   return [
     tagNameMap["code-block"],
     tagNameMap["ref-link"],
@@ -79,4 +85,8 @@ function deserializeBlockIDToLinesMap(input: string): BlockIDAndLinesPair[] {
         end: Number(range[1]),
       }];
     });
+}
+
+function isValidTagName(name: string) {
+  return /^[0-9a-z-]+$/i.test(name) && !/(^-)|(-$)|--/.test(name);
 }
