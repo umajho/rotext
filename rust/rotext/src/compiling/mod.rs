@@ -117,6 +117,8 @@ impl<'a> HtmlCompiler<'a> {
                     unreachable!()
                 }
                 Event::EnterCallOnTemplate(call) | Event::EnterCallOnExtension(call) => {
+                    let is_transclusion = matches!(evs[i], Event::EnterCallOnTemplate(_));
+
                     if let Some(last_rendered) = last_rendered.take() {
                         result.push(CompiledItem::Rendered(last_rendered));
                     }
@@ -134,7 +136,11 @@ impl<'a> HtmlCompiler<'a> {
                     loop {
                         match &evs[i] {
                             Event::ExitBlock(_) => {
-                                result.push(CompiledItem::BlockTransclusion(call_compiled));
+                                result.push(if is_transclusion {
+                                    CompiledItem::BlockTransclusion(call_compiled)
+                                } else {
+                                    CompiledItem::BlockExtension(call_compiled)
+                                });
                                 i += 1;
                                 break;
                             }
