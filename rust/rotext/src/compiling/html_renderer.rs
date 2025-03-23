@@ -75,7 +75,7 @@ impl From<TableState> for StackEntry<'_> {
 impl<'a> HtmlRenderer<'a> {
     pub fn new(opts: NewHtmlRendererOptions<'a>) -> Self {
         Self {
-            tag_name_map: &opts.tag_name_map,
+            tag_name_map: opts.tag_name_map,
             #[cfg(feature = "block-id")]
             with_block_id: opts.should_include_block_ids,
         }
