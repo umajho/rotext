@@ -48,16 +48,16 @@ export class RustRotextProcessor implements RotextProcessor {
         error: null,
         parsingTimeMs,
         extraInfos: [
-          ...(output.devEventsInDebugFormat
+          ...(output.dev_events_in_debug_format
             ? [{
               name: "事件",
-              content: output.devEventsInDebugFormat,
+              content: output.dev_events_in_debug_format,
             }]
             : []),
         ],
         lookupListRawCollector: (targetEl: HTMLElement) => {
           const lookupListRaw: LookupListRaw = [];
-          for (const [id, { start, end }] of output.blockIDAndLinesPairs) {
+          for (const [id, [start, end]] of output.block_id_to_lines_map) {
             let element = targetEl.querySelector(
               `[data-block-id="${id}"]`,
             )! as HTMLElement;
