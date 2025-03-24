@@ -40,7 +40,7 @@
     "@dicexp/naive-evaluator-builtins": "^0.5.0",
     "@dicexp/naive-evaluator-in-worker": "^0.5.3",
     "@dicexp/solid-components": "^0.3.0",
-    "@rolludejo/internal-web-shared": "^0.4.0",
+    "@rolludejo/internal-web-shared": "^0.4.1",
     "@rotext/solid-components": "workspace:*",
     "@rotext/wasm-bindings-adapter": "workspace:*",
     "@solid-primitives/media": "^2.2.9",
