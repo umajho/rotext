@@ -1,11 +1,11 @@
 export const TAG_NAME_MAP = {
-  "block-call-error": "x-block-call-error",
-  "scratch-off": "x-scratch-off",
-  "ref-link": "x-ref-link",
-  "dicexp": "x-dicexp",
-  "collapse": "x-collapse",
-  "code-block": "x-code-block",
-  "wiki-link": "x-wiki-link",
+  block_call_error: "x-block-call-error",
+  scratch_off: "x-scratch-off",
+  ref_link: "x-ref-link",
+  dicexp: "x-dicexp",
+  collapse: "x-collapse",
+  code_block: "x-code-block",
+  wiki_link: "x-wiki-link",
 };
 
 export const PROSE_CLASS = "tuan-prose";

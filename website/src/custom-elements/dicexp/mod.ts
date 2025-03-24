@@ -17,7 +17,7 @@ import { styleProvider as styleProviderForTailwind } from "../../styles/tailwind
 
 export function registerCustomElementsForDicexp() {
   registerCustomElementForStepsRepresentation("steps-representation");
-  registerCustomElementForAnkorWidgetDicexp(TAG_NAME_MAP["dicexp"], {
+  registerCustomElementForAnkorWidgetDicexp(TAG_NAME_MAP.dicexp, {
     baseStyleProviders: [styleProviderForPreflight, styleProviderForTailwind],
     backgroundColor: getBackgroundColor(),
     evaluatorProvider,

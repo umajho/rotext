@@ -17,7 +17,7 @@ import { styleProvider as styleProviderForPreflight } from "../../../styles/pref
 import { styleProvider as styleProviderForTailwind } from "../../../styles/tailwind";
 
 export function registerCustomElementForRefLink() {
-  registerCustomElementForAnkorWidgetNavigation(TAG_NAME_MAP["ref-link"], {
+  registerCustomElementForAnkorWidgetNavigation(TAG_NAME_MAP.ref_link, {
     baseStyleProviders: [styleProviderForPreflight, styleProviderForTailwind],
     classes: {
       forLabelWrapper: "font-mono underline text-[#789922]", // `#789922` is futaba-green.

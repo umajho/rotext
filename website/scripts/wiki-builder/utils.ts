@@ -7,9 +7,10 @@ import { rotextAdapter } from "./global";
 import { NamespaceMap } from "./namespaces";
 
 export function mustParseAndRenderRotext(input: string) {
-  const result = rotextAdapter.parseAndRender(input, {
-    tagNameMap: TAG_NAME_MAP,
-    shouldIncludeBlockIDs: false,
+  const result = rotextAdapter.parseAndRender({
+    input,
+    tag_name_map: TAG_NAME_MAP,
+    should_include_block_ids: false,
   });
   if (result[0] !== "ok") {
     throw new Error("failed to parse and render rotext: " + result[1]);

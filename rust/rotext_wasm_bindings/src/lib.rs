@@ -2,9 +2,7 @@ mod data_exchange;
 
 extern crate alloc;
 
-use data_exchange::{
-    block_id_to_lines_map::create_block_id_to_lines_map, tag_name_map::new_tag_name_map_from_str,
-};
+use data_exchange::block_id_to_lines_map::create_block_id_to_lines_map;
 
 #[cfg(debug_assertions)]
 use data_exchange::events_in_debug_format::render_events_in_debug_format;
@@ -24,6 +22,13 @@ use std::sync::Once;
 #[cfg(debug_assertions)]
 static INIT: Once = Once::new();
 
+#[derive(serde::Deserialize)]
+pub struct ParseAndRenderInput {
+    pub input: String,
+    pub tag_name_map: data_exchange::tag_name_map::TagNameMapInput,
+    pub should_include_block_ids: bool,
+}
+
 #[derive(Default, Clone, serde::Serialize)]
 pub struct ParseAndRenderOutput {
     pub html: String,
@@ -34,11 +39,12 @@ pub struct ParseAndRenderOutput {
 }
 
 #[wasm_bindgen]
-pub fn parse_and_render(
-    input: &[u8],
-    tag_name_map: String,
-    should_include_block_ids: bool,
-) -> Result<JsValue, String> {
+pub fn parse_and_render(input: JsValue) -> Result<JsValue, String> {
+    let input: ParseAndRenderInput = match serde_wasm_bindgen::from_value(input) {
+        Ok(input) => input,
+        Err(error) => return Err(format!("InputError/DeserializationError|{}", error)),
+    };
+
     #[cfg(debug_assertions)]
     {
         console_error_panic_hook::set_once();
@@ -47,9 +53,10 @@ pub fn parse_and_render(
         });
     }
 
-    let tag_name_map = new_tag_name_map_from_str(&tag_name_map);
+    let input_input = input.input.as_bytes();
+    let tag_name_map = input.tag_name_map.to_tag_name_map();
 
-    let all_events: Result<Vec<_>, _> = rotext::parse(input).collect();
+    let all_events: Result<Vec<_>, _> = rotext::parse(input_input).collect();
     let all_events = match all_events {
         Ok(all_events) => all_events,
         Err(error) => return Err(format!("ParseError/{}", error.name())),
@@ -60,9 +67,9 @@ pub fn parse_and_render(
             document_max_call_depth: 100,
         },
         tag_name_map: &tag_name_map,
-        should_include_block_ids,
+        should_include_block_ids: input.should_include_block_ids,
     };
-    let compiled = rotext::compile(input, &all_events, &compile_opts);
+    let compiled = rotext::compile(input_input, &all_events, &compile_opts);
     let compiled = match compiled {
         Ok(compiled) => compiled,
         Err(error) => return Err(format!("CompilationError/{}", error.name())),
@@ -88,10 +95,10 @@ pub fn parse_and_render(
 
     #[cfg(debug_assertions)]
     {
-        output.dev_events_in_debug_format = render_events_in_debug_format(input, &all_events);
+        output.dev_events_in_debug_format = render_events_in_debug_format(input_input, &all_events);
     }
 
     output
         .serialize(&serde_wasm_bindgen::Serializer::new())
-        .map_err(|err| format!("SerializationError|{}", err))
+        .map_err(|err| format!("OutputError/SerializationError|{}", err))
 }
