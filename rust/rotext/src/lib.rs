@@ -41,6 +41,7 @@ pub fn compile<'a>(
 }
 
 pub struct RenderOptions<'a> {
+    /// XXX: 调用者需自行确保各标签的名称不会导致 XSS。
     pub tag_name_map: &'a TagNameMap<'a>,
 }
 
