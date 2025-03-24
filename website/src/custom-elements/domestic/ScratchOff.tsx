@@ -43,7 +43,7 @@ function createScratchOffComponent(): Component {
             : "bg-white text-transparent select-none cursor-pointer [&_*]:invisible",
         ].join(" ")}
       >
-        <slot name="content" />
+        <slot />
       </span>
     );
   };
