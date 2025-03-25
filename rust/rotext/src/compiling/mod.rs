@@ -133,7 +133,7 @@ impl<'a> HtmlCompiler<'a> {
                     };
 
                     let mut anonymous_argument_name_generator =
-                        crate::utils::SequenceGenerator::new(0);
+                        crate::utils::SequenceGenerator::new(1);
 
                     i += 1;
                     loop {
