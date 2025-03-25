@@ -2,8 +2,7 @@ import { bindings } from "./bindings";
 
 const textEncoder = new TextEncoder();
 
-export interface ParseAndRenderInput {
-  input: string;
+export interface ParseAndRenderOptions {
   tag_name_map: TagNameMap;
   should_include_block_ids: boolean;
 }
@@ -23,9 +22,10 @@ export interface ParseAndRenderResult {
 }
 
 export function parseAndRender(
-  input: ParseAndRenderInput,
+  input: string,
+  opts: ParseAndRenderOptions,
 ): ["ok", ParseAndRenderResult] | ["error", string] {
-  for (const name of Object.values(input.tag_name_map)) {
+  for (const name of Object.values(opts.tag_name_map)) {
     if (!isValidTagName(name)) {
       throw new Error(`invalid tag name: ${name}`);
     }
@@ -34,7 +34,8 @@ export function parseAndRender(
   let output: Uint8Array;
   try {
     output = bindings.parse_and_render(
-      textEncoder.encode(JSON.stringify(input)),
+      textEncoder.encode(input),
+      textEncoder.encode(JSON.stringify(opts)),
     );
   } catch (error) {
     return ["error", error as string];

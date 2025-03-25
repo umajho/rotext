@@ -22,8 +22,7 @@ use std::sync::Once;
 static INIT: Once = Once::new();
 
 #[derive(serde::Deserialize)]
-pub struct ParseAndRenderInput {
-    pub input: String,
+pub struct ParseAndRenderOptions {
     pub tag_name_map: data_exchange::tag_name_map::TagNameMapInput,
     pub should_include_block_ids: bool,
 }
@@ -38,9 +37,9 @@ pub struct ParseAndRenderOutput {
 }
 
 #[wasm_bindgen]
-pub fn parse_and_render(input: &[u8]) -> Result<Vec<u8>, String> {
-    let input: ParseAndRenderInput = match serde_json_wasm::from_slice(input) {
-        Ok(input) => input,
+pub fn parse_and_render(input: &[u8], opts: &[u8]) -> Result<Vec<u8>, String> {
+    let opts: ParseAndRenderOptions = match serde_json_wasm::from_slice(opts) {
+        Ok(opts) => opts,
         Err(error) => return Err(format!("InputError/DeserializationError|{}", error)),
     };
 
@@ -52,10 +51,9 @@ pub fn parse_and_render(input: &[u8]) -> Result<Vec<u8>, String> {
         });
     }
 
-    let input_input = input.input.as_bytes();
-    let tag_name_map = input.tag_name_map.to_tag_name_map();
+    let tag_name_map = opts.tag_name_map.to_tag_name_map();
 
-    let all_events: Result<Vec<_>, _> = rotext::parse(input_input).collect();
+    let all_events: Result<Vec<_>, _> = rotext::parse(input).collect();
     let all_events = match all_events {
         Ok(all_events) => all_events,
         Err(error) => return Err(format!("ParseError/{}", error.name())),
@@ -66,9 +64,9 @@ pub fn parse_and_render(input: &[u8]) -> Result<Vec<u8>, String> {
             document_max_call_depth: 100,
         },
         tag_name_map: &tag_name_map,
-        should_include_block_ids: input.should_include_block_ids,
+        should_include_block_ids: opts.should_include_block_ids,
     };
-    let compiled = rotext::compile(input_input, &all_events, &compile_opts);
+    let compiled = rotext::compile(input, &all_events, &compile_opts);
     let compiled = match compiled {
         Ok(compiled) => compiled,
         Err(error) => return Err(format!("CompilationError/{}", error.name())),
@@ -94,7 +92,7 @@ pub fn parse_and_render(input: &[u8]) -> Result<Vec<u8>, String> {
 
     #[cfg(debug_assertions)]
     {
-        output.dev_events_in_debug_format = render_events_in_debug_format(input_input, &all_events);
+        output.dev_events_in_debug_format = render_events_in_debug_format(input, &all_events);
     }
 
     serde_json_wasm::to_vec(&output)
