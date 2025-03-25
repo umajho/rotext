@@ -7,7 +7,6 @@ use data_exchange::block_id_to_lines_map::create_block_id_to_lines_map;
 #[cfg(debug_assertions)]
 use data_exchange::events_in_debug_format::render_events_in_debug_format;
 
-use serde::Serialize;
 use wasm_bindgen::prelude::*;
 
 #[cfg(target_arch = "wasm32")]
@@ -39,8 +38,8 @@ pub struct ParseAndRenderOutput {
 }
 
 #[wasm_bindgen]
-pub fn parse_and_render(input: JsValue) -> Result<JsValue, String> {
-    let input: ParseAndRenderInput = match serde_wasm_bindgen::from_value(input) {
+pub fn parse_and_render(input: &[u8]) -> Result<Vec<u8>, String> {
+    let input: ParseAndRenderInput = match serde_json_wasm::from_slice(input) {
         Ok(input) => input,
         Err(error) => return Err(format!("InputError/DeserializationError|{}", error)),
     };
@@ -98,7 +97,6 @@ pub fn parse_and_render(input: JsValue) -> Result<JsValue, String> {
         output.dev_events_in_debug_format = render_events_in_debug_format(input_input, &all_events);
     }
 
-    output
-        .serialize(&serde_wasm_bindgen::Serializer::new())
+    serde_json_wasm::to_vec(&output)
         .map_err(|err| format!("OutputError/SerializationError|{}", err))
 }

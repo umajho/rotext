@@ -1,5 +1,7 @@
 import { bindings } from "./bindings";
 
+const textEncoder = new TextEncoder();
+
 export interface ParseAndRenderInput {
   input: string;
   tag_name_map: TagNameMap;
@@ -16,7 +18,7 @@ export interface TagNameMap {
 
 export interface ParseAndRenderResult {
   html: string;
-  block_id_to_lines_map: Map<number, [number, number]>;
+  block_id_to_lines_map: Record<number, [number, number]>;
   dev_events_in_debug_format?: string;
 }
 
@@ -29,16 +31,16 @@ export function parseAndRender(
     }
   }
 
-  let output: any;
+  let output: Uint8Array;
   try {
     output = bindings.parse_and_render(
-      input,
+      textEncoder.encode(JSON.stringify(input)),
     );
   } catch (error) {
     return ["error", error as string];
   }
 
-  return ["ok", output];
+  return ["ok", JSON.parse(new TextDecoder().decode(output))];
 }
 
 function isValidTagName(name: string) {

@@ -58,7 +58,11 @@ export class RustRotextProcessor implements RotextProcessor {
         ],
         lookupListRawCollector: (targetEl: HTMLElement) => {
           const lookupListRaw: LookupListRaw = [];
-          for (const [id, [start, end]] of output.block_id_to_lines_map) {
+          for (
+            const [id, [start, end]] of Object.entries(
+              output.block_id_to_lines_map,
+            )
+          ) {
             let element = targetEl.querySelector(
               `[data-block-id="${id}"]`,
             )! as HTMLElement;
