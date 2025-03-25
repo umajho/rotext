@@ -15,15 +15,20 @@ import { createRotextExampleStore } from "./create-store";
 
 import { MainCard } from "./MainCard";
 
-export function registerCustomElement(tag: string) {
+export function registerCustomElement(
+  tag: string,
+  opts: { fixtureTagName: string },
+) {
   customElement(
     tag,
     { input: "", expected: null, "use-fixtures": "" },
-    createRotextExampleComponent(),
+    createRotextExampleComponent(opts),
   );
 }
 
-function createRotextExampleComponent(): Component<
+function createRotextExampleComponent(
+  opts: { fixtureTagName: string },
+): Component<
   { input: string; expected: string | null; "use-fixtures": string }
 > {
   return (props) => {
@@ -37,6 +42,7 @@ function createRotextExampleComponent(): Component<
         findClosestElementEx(getCurrentElement(), (el) =>
           el.classList.contains(Ankor.CONTENT_CLASS))!,
         new Set(fixtureNames),
+        opts,
       )
       : null;
 
@@ -72,8 +78,9 @@ function createRotextExampleComponent(): Component<
 function getFixtures(
   contentContainerEl: HTMLElement,
   fixtureNames: Set<string>,
+  opts: { fixtureTagName: string },
 ): { [fixtureName: string]: string } {
-  const els = contentContainerEl.querySelectorAll("x-rotext-example-fixture");
+  const els = contentContainerEl.querySelectorAll(opts.fixtureTagName);
   const qualifiedEls = [...els]
     .filter((el) => fixtureNames.has(el.getAttribute("name")!));
 

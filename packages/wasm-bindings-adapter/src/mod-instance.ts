@@ -2,91 +2,46 @@ import { bindings } from "./bindings";
 
 const textEncoder = new TextEncoder();
 
-type BlockIDAndLinesPair = [id: string, range: { start: number; end: number }];
-
-export interface ParseAndRenderResult {
-  html: string;
-  blockIDAndLinesPairs: BlockIDAndLinesPair[];
-  devEventsInDebugFormat?: string;
-}
-
 export interface ParseAndRenderOptions {
-  tagNameMap: TagNameMap;
-  shouldIncludeBlockIDs: boolean;
+  tag_name_map: TagNameMap;
+  should_include_block_ids: boolean;
 }
 
 export interface TagNameMap {
-  "block-call-error": string;
-  "code-block": string;
-  "ref-link": string;
-  "dicexp": string;
-  "wiki-link": string;
+  block_call_error: string;
+  code_block: string;
+  ref_link: string;
+  dicexp: string;
+  wiki_link: string;
+}
+
+export interface ParseAndRenderResult {
+  html: string;
+  block_id_to_lines_map: Record<number, [number, number]>;
+  dev_events_in_debug_format?: string;
 }
 
 export function parseAndRender(
   input: string,
   opts: ParseAndRenderOptions,
 ): ["ok", ParseAndRenderResult] | ["error", string] {
-  const result = bindings.parse_and_render(
-    textEncoder.encode(input),
-    serializeTagNameMap(opts.tagNameMap),
-    opts.shouldIncludeBlockIDs,
-  );
-
-  const error = result.clone_error();
-  if (error) {
-    return ["error", error];
-  }
-
-  const output = result.clone_ok()!;
-
-  const blockIDToLinesMap = deserializeBlockIDToLinesMap(
-    output.clone_block_id_to_lines_map(),
-  );
-
-  const ret = {
-    html: output.clone_html(),
-    blockIDAndLinesPairs: blockIDToLinesMap,
-    ...("clone_dev_events_in_debug_format" in output
-      ? {
-        devEventsInDebugFormat:
-          (output.clone_dev_events_in_debug_format as () => string)(),
-      }
-      : {}),
-  };
-  return ["ok", ret];
-}
-
-function serializeTagNameMap(tagNameMap: TagNameMap): string {
-  for (const name of Object.values(tagNameMap)) {
+  for (const name of Object.values(opts.tag_name_map)) {
     if (!isValidTagName(name)) {
       throw new Error(`invalid tag name: ${name}`);
     }
   }
 
-  return [
-    tagNameMap["block-call-error"],
-    tagNameMap["code-block"],
-    tagNameMap["ref-link"],
-    tagNameMap["dicexp"],
-    tagNameMap["wiki-link"],
-  ].join("\0");
-}
+  let output: Uint8Array;
+  try {
+    output = bindings.parse_and_render(
+      textEncoder.encode(input),
+      textEncoder.encode(JSON.stringify(opts)),
+    );
+  } catch (error) {
+    return ["error", error as string];
+  }
 
-function deserializeBlockIDToLinesMap(input: string): BlockIDAndLinesPair[] {
-  if (!input) return [];
-
-  return input
-    .split(";")
-    .map((x): BlockIDAndLinesPair => {
-      const idAndRange = x.split(":");
-      const id = idAndRange[0]!;
-      const range = idAndRange[1]?.split("-")!;
-      return [id, {
-        start: Number(range[0]),
-        end: Number(range[1]),
-      }];
-    });
+  return ["ok", JSON.parse(new TextDecoder().decode(output))];
 }
 
 function isValidTagName(name: string) {

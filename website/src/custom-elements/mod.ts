@@ -17,15 +17,17 @@ let hasRegistered = false;
 export function registerCustomElementsOnce() {
   if (hasRegistered) return;
 
-  registerCustomElementForBlockCallError(TAG_NAME_MAP["block-call-error"]);
+  registerCustomElementForBlockCallError(TAG_NAME_MAP.block_call_error);
 
   registerCustomElementForRefLink();
   registerCustomElementForWikiLink();
   registerCustomElementsForDicexp();
 
-  registerCustomElementForScratchOff(TAG_NAME_MAP["scratch-off"]);
-  registerCustomElementForCollapse(TAG_NAME_MAP["collapse"]);
-  registerCustomElementForCodeBlock(TAG_NAME_MAP["code-block"]);
+  registerCustomElementForScratchOff(TAG_NAME_MAP.scratch_off);
+  registerCustomElementForCollapse(TAG_NAME_MAP.collapse);
+  registerCustomElementForCodeBlock(TAG_NAME_MAP.code_block);
 
-  registerCustomElementForRotextPreview("x-rotext-example");
+  registerCustomElementForRotextPreview("x-rotext-example", {
+    fixtureTagName: "x-rotext-example-fixture",
+  });
 }
