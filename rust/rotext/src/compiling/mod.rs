@@ -1,12 +1,10 @@
-mod html_renderer;
+mod renderer;
 
-pub use html_renderer::TagNameMap;
-
-use std::collections::HashMap;
+pub use renderer::TagNameMap;
 
 use rotext_core::{BlockId, Event};
 
-use html_renderer::StackEntryBox;
+use renderer::StackEntryBox;
 
 pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug)]
@@ -30,8 +28,8 @@ pub enum CompiledItem<'a> {
 
 pub struct BlockCall<'a> {
     pub name: &'a [u8],
-    pub arguments: HashMap<ArgumentKey<'a>, Vec<CompiledItem<'a>>>,
-    pub verbatim_arguments: HashMap<&'a [u8], Vec<u8>>,
+    pub arguments: Vec<(ArgumentKey<'a>, Vec<CompiledItem<'a>>)>,
+    pub verbatim_arguments: Vec<(&'a [u8], Vec<u8>)>,
 
     pub block_id: BlockId,
 }
@@ -40,6 +38,17 @@ pub struct BlockCall<'a> {
 pub enum ArgumentKey<'a> {
     Named(&'a [u8]),
     Anonymous(usize),
+}
+impl ArgumentKey<'_> {
+    pub fn to_vec(&self) -> Vec<u8> {
+        match self {
+            ArgumentKey::Named(name) => name.to_vec(),
+            ArgumentKey::Anonymous(index) => {
+                let mut buffer = itoa::Buffer::new();
+                buffer.format(*index).as_bytes().to_vec()
+            }
+        }
+    }
 }
 
 pub struct NewCompileOptions<'a> {
@@ -52,18 +61,19 @@ pub struct NewCompileOptions<'a> {
 }
 
 pub struct Restrictions {
-    pub document_max_call_depth: usize,
+    /// 单份文档中最多允许的调用（包括最外层的）的嵌套数量。
+    pub max_call_depth_in_document: usize,
 }
 
-pub struct HtmlCompiler<'a> {
+pub struct Compiler<'a> {
     restrictions: &'a Restrictions,
 
-    renderer: html_renderer::HtmlRenderer<'a>,
+    renderer: renderer::Renderer<'a>,
 }
 
-impl<'a> HtmlCompiler<'a> {
+impl<'a> Compiler<'a> {
     pub fn new(opts: &'a NewCompileOptions<'a>) -> Self {
-        let renderer_opts = html_renderer::NewHtmlRendererOptions {
+        let renderer_opts = renderer::NewRendererOptions {
             tag_name_map: opts.tag_name_map,
             #[cfg(feature = "block-id")]
             should_include_block_ids: opts.should_include_block_ids,
@@ -71,7 +81,7 @@ impl<'a> HtmlCompiler<'a> {
 
         Self {
             restrictions: &opts.restrictions,
-            renderer: html_renderer::HtmlRenderer::new(renderer_opts),
+            renderer: renderer::Renderer::new(renderer_opts),
         }
     }
 
@@ -87,7 +97,7 @@ impl<'a> HtmlCompiler<'a> {
         evs: &[Event],
         mut i: usize,
     ) -> Result<(usize, Vec<CompiledItem<'a>>)> {
-        if depth > self.restrictions.document_max_call_depth {
+        if depth > self.restrictions.max_call_depth_in_document {
             return Err(Error::RecursionDepthExceeded);
         }
 
@@ -127,8 +137,8 @@ impl<'a> HtmlCompiler<'a> {
 
                     let mut call_compiled: BlockCall = BlockCall {
                         name: &input[call.name.clone()],
-                        arguments: HashMap::new(),
-                        verbatim_arguments: HashMap::new(),
+                        arguments: Vec::new(),
+                        verbatim_arguments: Vec::new(),
                         block_id: call.id,
                     };
 
@@ -156,7 +166,7 @@ impl<'a> HtmlCompiler<'a> {
 
                                 let value: Vec<CompiledItem>;
                                 (i, value) = self.compile_internal(depth + 1, input, evs, i + 1)?;
-                                call_compiled.arguments.insert(arg_name, value);
+                                call_compiled.arguments.push((arg_name, value));
                             }
                             Event::IndicateCallVerbatimArgument(arg_name) => {
                                 let mut value: Vec<u8> = vec![];
@@ -173,7 +183,7 @@ impl<'a> HtmlCompiler<'a> {
                                 }
                                 call_compiled
                                     .verbatim_arguments
-                                    .insert(&input[arg_name.clone()], value);
+                                    .push((&input[arg_name.clone()], value));
                             }
                             _ => unreachable!(),
                         }
@@ -181,7 +191,7 @@ impl<'a> HtmlCompiler<'a> {
                 }
                 _ => {
                     let buf = last_rendered.get_or_insert_with(Vec::new);
-                    i = self.renderer.render_event(input, evs, i, &mut stack, buf);
+                    i = self.renderer.render_event(buf, input, evs, i, &mut stack);
                 }
             }
         }

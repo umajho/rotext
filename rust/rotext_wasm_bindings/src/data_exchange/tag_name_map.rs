@@ -1,6 +1,6 @@
 use rotext::TagNameMap;
 
-#[derive(serde::Deserialize)]
+#[derive(Debug, serde::Deserialize)]
 pub struct TagNameMapInput {
     pub block_call_error: String,
 
@@ -12,7 +12,7 @@ pub struct TagNameMapInput {
 }
 
 impl TagNameMapInput {
-    pub fn to_tag_name_map(&self) -> TagNameMap {
+    pub fn convert(&self) -> TagNameMap {
         TagNameMap {
             block_call_error: self.block_call_error.as_bytes(),
             code_block: self.code_block.as_bytes(),

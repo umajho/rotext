@@ -1,9 +1,10 @@
-import { TagNameMap } from "@rotext/wasm-bindings-adapter";
+import { Extension, TagNameMap } from "@rotext/wasm-bindings-adapter";
 
 import { LookupListRaw } from "../pages/Playground/preview-parts/Preview/internal-types";
 
 export interface RotextProcessorProcessOptions {
   requiresLookupListRaw: boolean;
+  blockExtensionList: Extension[];
   tagNameMap: TagNameMap;
 }
 

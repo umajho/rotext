@@ -1,6 +1,9 @@
 import { type HTMLElement, type Node } from "node-html-parser";
 
-import { TAG_NAME_MAP } from "../../src/custom-elements/consts";
+import {
+  BLOCK_EXTENSION_LIST,
+  TAG_NAME_MAP,
+} from "../../src/custom-elements/consts";
 import { Navigation } from "../../src/resource-managers/wiki";
 
 import { rotextAdapter } from "./global";
@@ -9,6 +12,7 @@ import { NamespaceMap } from "./namespaces";
 export function mustParseAndRenderRotext(input: string) {
   const result = rotextAdapter.parseAndRender(input, {
     tag_name_map: TAG_NAME_MAP,
+    block_extension_list: BLOCK_EXTENSION_LIST,
     should_include_block_ids: false,
   });
   if (result[0] !== "ok") {

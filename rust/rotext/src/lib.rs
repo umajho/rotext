@@ -4,6 +4,7 @@
 #![feature(stmt_expr_attributes)]
 
 pub mod compiling;
+pub mod executing;
 
 pub(crate) mod utils;
 
@@ -13,6 +14,7 @@ pub use compiling::{
     CompiledItem, Error as CompilationError, NewCompileOptions as CompileOption,
     Restrictions as CompileRestrictions, TagNameMap,
 };
+pub use executing::NewExecutorOptions as ExecuteOptions;
 
 use rotext_core::{
     BlockEventStreamInlineSegmentMapper, BlockParser, BlockStackEntry, InlineStackEntry,
@@ -36,48 +38,14 @@ pub fn compile<'a>(
     parsed: &[Event],
     opts: &'a CompileOption,
 ) -> compiling::Result<Vec<CompiledItem<'a>>> {
-    let compiler = compiling::HtmlCompiler::new(opts);
+    let compiler = compiling::Compiler::new(opts);
     compiler.compile(input, parsed)
 }
 
-pub struct RenderOptions<'a> {
-    /// XXX: 调用者需自行确保各标签的名称不会导致 XSS。
-    pub tag_name_map: &'a TagNameMap<'a>,
-}
-
-pub fn render(compiled: &[CompiledItem], opts: RenderOptions) -> Vec<u8> {
+pub fn execute(compiled: &[CompiledItem], opts: &ExecuteOptions) -> Vec<u8> {
     let mut buf: Vec<u8> = Vec::new();
-
-    for item in compiled {
-        match item {
-            CompiledItem::Rendered(rendered) => buf.extend_from_slice(rendered),
-            CompiledItem::BlockTransclusion(block_call)
-            | CompiledItem::BlockExtension(block_call) => {
-                let what = if matches!(item, CompiledItem::BlockTransclusion(_)) {
-                    &b"transclusion"[..]
-                } else {
-                    &b"extension"[..]
-                };
-
-                buf.push(b'<');
-                buf.extend(opts.tag_name_map.block_call_error);
-                #[cfg(feature = "block-id")]
-                {
-                    buf.extend(b" data-block-id=\"");
-                    crate::utils::write_usize(&mut buf, block_call.block_id.value());
-                    buf.push(b'"');
-                }
-                buf.extend(b" call-type=\"");
-                buf.extend(what);
-                buf.extend(b"\" call-name=\"");
-                utils::write_escaped_double_quoted_attribute_value(&mut buf, block_call.name);
-                buf.extend(b"\" error-type=\"TODO\"></");
-                buf.extend(opts.tag_name_map.block_call_error);
-                buf.push(b'>');
-            }
-        }
-    }
-
+    let executor = executing::Executor::new(opts);
+    executor.execute(&mut buf, compiled);
     buf
 }
 

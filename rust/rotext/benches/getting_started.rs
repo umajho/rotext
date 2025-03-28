@@ -11,7 +11,7 @@ fn render(input: &[u8], events: &[rotext::Event]) {
 
     let compile_opts = rotext::CompileOption {
         restrictions: rotext::CompileRestrictions {
-            document_max_call_depth: 100,
+            max_call_depth_in_document: 100,
         },
         tag_name_map: &tag_name_map,
         #[cfg(feature = "block-id")]

@@ -8,19 +8,20 @@ macro_rules! write_data_block_id_attribute_if_applicable {
         #[cfg(feature = "block-id")]
         {
             if $self.with_block_id {
-                write_data_block_id_attribute($buf, $data.id.value());
+                render_data_block_id_attribute($buf, $data.id.value());
             }
         }
     };
 }
 
-pub struct NewHtmlRendererOptions<'a> {
+pub struct NewRendererOptions<'a> {
     pub tag_name_map: &'a TagNameMap<'a>,
 
     #[cfg(feature = "block-id")]
     pub should_include_block_ids: bool,
 }
 
+/// XXX: 调用者需自行确保各标签的名称不会导致 XSS。
 #[derive(Clone)]
 pub struct TagNameMap<'a> {
     pub block_call_error: &'a [u8],
@@ -31,21 +32,8 @@ pub struct TagNameMap<'a> {
     pub dicexp: &'a [u8],
     pub wiki_link: &'a [u8],
 }
-impl Default for TagNameMap<'_> {
-    fn default() -> Self {
-        Self {
-            block_call_error: b"x-block-call-error",
 
-            code_block: b"x-code-block",
-
-            ref_link: b"x-ref-link",
-            dicexp: b"x-dicexp",
-            wiki_link: b"x-wiki-link",
-        }
-    }
-}
-
-pub struct HtmlRenderer<'a> {
+pub struct Renderer<'a> {
     tag_name_map: &'a TagNameMap<'a>,
 
     #[cfg(feature = "block-id")]
@@ -72,8 +60,8 @@ impl From<TableState> for StackEntry<'_> {
     }
 }
 
-impl<'a> HtmlRenderer<'a> {
-    pub fn new(opts: NewHtmlRendererOptions<'a>) -> Self {
+impl<'a> Renderer<'a> {
+    pub fn new(opts: NewRendererOptions<'a>) -> Self {
         Self {
             tag_name_map: opts.tag_name_map,
             #[cfg(feature = "block-id")]
@@ -84,15 +72,15 @@ impl<'a> HtmlRenderer<'a> {
     /// `input_stream` 的迭代对象是属于 `Blend` 分组的事件。
     pub fn render_event(
         &self,
+        buf: &mut Vec<u8>,
         input: &'a [u8],
         evs: &[Event],
         mut i: usize,
         stack: &mut Vec<StackEntryBox>,
-        buf: &mut Vec<u8>,
     ) -> usize {
         let ev = &evs[i];
 
-        if let Some(()) = self.render_table_related_event(ev, stack, buf) {
+        if let Some(()) = self.render_table_related_event(buf, ev, stack) {
             return i + 1;
         }
 
@@ -103,10 +91,10 @@ impl<'a> HtmlRenderer<'a> {
         // NOTE: rust-analyzer 会错误地认为这里的 `match` 没有覆盖到全部分支，
         // 实际上并不存在问题。
         match ev {
-            Event::Raw(content) => write_raw_html(buf, &input[content.clone()]),
+            Event::Raw(content) => render_raw_html(buf, &input[content.clone()]),
             Event::NewLine(_) => buf.extend(b"<br>"),
             Event::Text(content) | Event::VerbatimEscaping(VerbatimEscaping { content, .. }) => {
-                crate::utils::write_escaped_html_text(buf, &input[content.clone()]);
+                crate::utils::render_escaped_html_text(buf, &input[content.clone()]);
             }
             Event::ExitBlock(_) | Event::ExitInline => {
                 let top = stack.pop().unwrap();
@@ -130,20 +118,20 @@ impl<'a> HtmlRenderer<'a> {
                 write_data_block_id_attribute_if_applicable!(self, buf, data);
                 buf.push(b'>');
             }
-            Event::EnterParagraph(data) => self.push_simple_block(stack, buf, b"p", data),
-            Event::EnterHeading1(data) => self.push_simple_block(stack, buf, b"h1", data),
-            Event::EnterHeading2(data) => self.push_simple_block(stack, buf, b"h2", data),
-            Event::EnterHeading3(data) => self.push_simple_block(stack, buf, b"h3", data),
-            Event::EnterHeading4(data) => self.push_simple_block(stack, buf, b"h4", data),
-            Event::EnterHeading5(data) => self.push_simple_block(stack, buf, b"h5", data),
-            Event::EnterHeading6(data) => self.push_simple_block(stack, buf, b"h6", data),
-            Event::EnterBlockQuote(data) => self.push_simple_block(stack, buf, b"blockquote", data),
-            Event::EnterOrderedList(data) => self.push_simple_block(stack, buf, b"ol", data),
-            Event::EnterUnorderedList(data) => self.push_simple_block(stack, buf, b"ul", data),
-            Event::EnterListItem(data) => self.push_simple_block(stack, buf, b"li", data),
-            Event::EnterDescriptionList(data) => self.push_simple_block(stack, buf, b"dl", data),
-            Event::EnterDescriptionTerm(data) => self.push_simple_block(stack, buf, b"dt", data),
-            Event::EnterDescriptionDetails(data) => self.push_simple_block(stack, buf, b"dd", data),
+            Event::EnterParagraph(data) => self.push_simple_block(buf, stack, b"p", data),
+            Event::EnterHeading1(data) => self.push_simple_block(buf, stack, b"h1", data),
+            Event::EnterHeading2(data) => self.push_simple_block(buf, stack, b"h2", data),
+            Event::EnterHeading3(data) => self.push_simple_block(buf, stack, b"h3", data),
+            Event::EnterHeading4(data) => self.push_simple_block(buf, stack, b"h4", data),
+            Event::EnterHeading5(data) => self.push_simple_block(buf, stack, b"h5", data),
+            Event::EnterHeading6(data) => self.push_simple_block(buf, stack, b"h6", data),
+            Event::EnterBlockQuote(data) => self.push_simple_block(buf, stack, b"blockquote", data),
+            Event::EnterOrderedList(data) => self.push_simple_block(buf, stack, b"ol", data),
+            Event::EnterUnorderedList(data) => self.push_simple_block(buf, stack, b"ul", data),
+            Event::EnterListItem(data) => self.push_simple_block(buf, stack, b"li", data),
+            Event::EnterDescriptionList(data) => self.push_simple_block(buf, stack, b"dl", data),
+            Event::EnterDescriptionTerm(data) => self.push_simple_block(buf, stack, b"dt", data),
+            Event::EnterDescriptionDetails(data) => self.push_simple_block(buf, stack, b"dd", data),
             #[allow(unused_variables)]
             Event::EnterCodeBlock(data) => {
                 buf.push(b'<');
@@ -155,7 +143,7 @@ impl<'a> HtmlRenderer<'a> {
                     match &evs[i] {
                         Event::Text(content)
                         | Event::VerbatimEscaping(VerbatimEscaping { content, .. }) => {
-                            crate::utils::write_escaped_double_quoted_attribute_value(
+                            crate::utils::render_escaped_double_quoted_attribute_value(
                                 buf,
                                 &input[content.clone()],
                             )
@@ -171,7 +159,7 @@ impl<'a> HtmlRenderer<'a> {
                     match &evs[i] {
                         Event::Text(content)
                         | Event::VerbatimEscaping(VerbatimEscaping { content, .. }) => {
-                            crate::utils::write_escaped_double_quoted_attribute_value(
+                            crate::utils::render_escaped_double_quoted_attribute_value(
                                 buf,
                                 &input[content.clone()],
                             )
@@ -216,35 +204,32 @@ impl<'a> HtmlRenderer<'a> {
             | Event::IndicateCallNormalArgument(_)
             | Event::IndicateCallVerbatimArgument(_) => unreachable!(),
             Event::RefLink(content) => {
-                write_empty_element_with_single_attribute(
+                crate::utils::render_empty_element(
                     buf,
                     self.tag_name_map.ref_link,
-                    b"address",
-                    &input[content.clone()],
+                    &[(b"address", &input[content.clone()])],
                 );
             }
             Event::Dicexp(content) => {
-                write_empty_element_with_single_attribute(
+                crate::utils::render_empty_element(
                     buf,
                     self.tag_name_map.dicexp,
-                    b"code",
-                    &input[content.clone()],
+                    &[(b"code", &input[content.clone()])],
                 );
             }
-            Event::EnterCodeSpan => self.push_simple_inline(stack, buf, b"code"),
-            Event::EnterEmphasis => self.push_simple_inline(stack, buf, b"em"),
-            Event::EnterStrong => self.push_simple_inline(stack, buf, b"strong"),
-            Event::EnterStrikethrough => self.push_simple_inline(stack, buf, b"s"),
-            Event::EnterRuby => self.push_simple_inline(stack, buf, b"ruby"),
-            Event::EnterRubyText => self.push_simple_inline(stack, buf, b"rt"),
+            Event::EnterCodeSpan => self.push_simple_inline(buf, stack, b"code"),
+            Event::EnterEmphasis => self.push_simple_inline(buf, stack, b"em"),
+            Event::EnterStrong => self.push_simple_inline(buf, stack, b"strong"),
+            Event::EnterStrikethrough => self.push_simple_inline(buf, stack, b"s"),
+            Event::EnterRuby => self.push_simple_inline(buf, stack, b"ruby"),
+            Event::EnterRubyText => self.push_simple_inline(buf, stack, b"rt"),
             Event::EnterWikiLink(address) => {
-                write_opening_tag_with_single_attribute(
+                crate::utils::render_eopening_tag(
                     buf,
                     self.tag_name_map.wiki_link,
-                    b"address",
-                    &input[address.clone()],
+                    &[(b"address", &input[address.clone()])],
                 );
-                write_opening_tag_with_single_attribute(buf, b"span", b"slot", b"content");
+                crate::utils::render_eopening_tag(buf, b"span", &[(b"slot", b"content")]);
                 stack.push(StackEntryBox(StackEntry::WikiLink));
             }
         }
@@ -254,9 +239,9 @@ impl<'a> HtmlRenderer<'a> {
 
     fn render_table_related_event(
         &self,
+        buf: &mut Vec<u8>,
         ev: &Event,
         stack: &mut Vec<StackEntryBox>,
-        buf: &mut Vec<u8>,
     ) -> Option<()> {
         if let Some(StackEntryBox(StackEntry::Table(table_state))) = stack.last_mut() {
             #[rotext_internal_macros::ensure_cases_for_event(
@@ -346,8 +331,8 @@ impl<'a> HtmlRenderer<'a> {
 
     fn push_simple_block(
         &self,
-        stack: &mut Vec<StackEntryBox>,
         buf: &mut Vec<u8>,
+        stack: &mut Vec<StackEntryBox>,
         tag_name: &'static [u8],
         #[allow(unused_variables)] data: &BlockWithId,
     ) {
@@ -361,8 +346,8 @@ impl<'a> HtmlRenderer<'a> {
 
     fn push_simple_inline(
         &self,
-        stack: &mut Vec<StackEntryBox>,
         buf: &mut Vec<u8>,
+        stack: &mut Vec<StackEntryBox>,
         tag_name: &'static [u8],
     ) {
         buf.push(b'<');
@@ -373,40 +358,13 @@ impl<'a> HtmlRenderer<'a> {
     }
 }
 
-fn write_raw_html(buf: &mut Vec<u8>, input: &[u8]) {
+fn render_raw_html(buf: &mut Vec<u8>, input: &[u8]) {
     buf.extend(input);
 }
 
 #[cfg(feature = "block-id")]
-fn write_data_block_id_attribute(buf: &mut Vec<u8>, id: usize) {
+fn render_data_block_id_attribute(buf: &mut Vec<u8>, id: usize) {
     buf.extend(br#" data-block-id=""#);
     crate::utils::write_usize(buf, id);
     buf.push(b'"');
-}
-
-fn write_opening_tag_with_single_attribute(
-    buf: &mut Vec<u8>,
-    tag_name: &[u8],
-    attr_name: &[u8],
-    attr_value: &[u8],
-) {
-    buf.push(b'<');
-    buf.extend(tag_name);
-    buf.push(b' ');
-    buf.extend(attr_name);
-    buf.extend(br#"=""#);
-    crate::utils::write_escaped_double_quoted_attribute_value(buf, attr_value);
-    buf.extend(br#"">"#);
-}
-
-fn write_empty_element_with_single_attribute(
-    buf: &mut Vec<u8>,
-    tag_name: &[u8],
-    attr_name: &[u8],
-    attr_value: &[u8],
-) {
-    write_opening_tag_with_single_attribute(buf, tag_name, attr_name, attr_value);
-    buf.extend(br#"</"#);
-    buf.extend(tag_name);
-    buf.push(b'>');
 }

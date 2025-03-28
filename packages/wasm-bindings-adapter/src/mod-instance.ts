@@ -4,6 +4,7 @@ const textEncoder = new TextEncoder();
 
 export interface ParseAndRenderOptions {
   tag_name_map: TagNameMap;
+  block_extension_list: Extension[];
   should_include_block_ids: boolean;
 }
 
@@ -14,6 +15,32 @@ export interface TagNameMap {
   dicexp: string;
   wiki_link: string;
 }
+
+export type Extension =
+  | {
+    ElementMapper: {
+      name: string;
+      tag_name: string;
+      variant: string | null;
+      parameters: Record<
+        string,
+        ParameterWrapper<{
+          is_optional: boolean;
+          mapping_to: { NamedSlot: { name: string } } | "UnnamedSlot";
+        }>
+      >;
+      verbatim_parameters: Record<
+        string,
+        ParameterWrapper<{
+          is_optional: boolean;
+          mapping_to_attribute: string;
+        }>
+      >;
+    };
+  }
+  | { Alias: { name: string; to: string } };
+
+export type ParameterWrapper<T> = { Real: T } | { Alias: string };
 
 export interface ParseAndRenderResult {
   html: string;

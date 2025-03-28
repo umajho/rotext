@@ -12,7 +12,10 @@ import {
 
 import { Loading } from "../../../components/ui/mod";
 import { useRotextProcessorsStore } from "../../../contexts/rotext-processors-store";
-import { TAG_NAME_MAP } from "../../../custom-elements/mod";
+import {
+  BLOCK_EXTENSION_LIST,
+  TAG_NAME_MAP,
+} from "../../../custom-elements/mod";
 
 import { EditorStore } from "../editor-store";
 
@@ -47,6 +50,7 @@ const PreviewWrapper: Component<{
 
         props.store.processResult = processor.process(text, {
           requiresLookupListRaw: true,
+          blockExtensionList: BLOCK_EXTENSION_LIST,
           tagNameMap: TAG_NAME_MAP,
         });
       },
