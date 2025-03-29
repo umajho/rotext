@@ -34,6 +34,7 @@ pub struct TagNameMap<'a> {
 }
 
 impl TagNameMap<'_> {
+    #[cfg(any(test, feature = "test"))]
     pub fn new_demo_instance_for_test() -> Self {
         Self {
             block_call_error: b"x-block-call-error",

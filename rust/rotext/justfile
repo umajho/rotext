@@ -11,6 +11,6 @@ test-af: lint-af
     cargo test --all-features -- --nocapture
 
 bench:
-    cargo bench
+    cargo bench --features test
 bench-af:
     cargo bench --all-features

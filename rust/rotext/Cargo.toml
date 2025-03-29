@@ -9,6 +9,7 @@ repository.workspace = true
 description = "The official and de facto Rotext parser."
 
 [features]
+test = ["rotext_core/test"]
 line-number = ["rotext_core/line-number"]
 block-id = ["rotext_core/block-id"]
 
