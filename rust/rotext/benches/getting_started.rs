@@ -18,7 +18,7 @@ fn main() {
 static CONTENT: LazyLock<String> = LazyLock::new(|| read_doc("rotext入门.rotext"));
 
 fn compile_and_execute(input: &[u8], events: &[rotext::Event]) {
-    let tag_name_map = make_demo_tag_name_map();
+    let tag_name_map = rotext::TagNameMap::new_demo_instance_for_test();
 
     let compile_opts = rotext::CompileOption {
         restrictions: rotext::CompileRestrictions {
@@ -86,18 +86,6 @@ fn read_doc(name: &'static str) -> String {
     };
 
     fs::read_to_string(file_path).unwrap()
-}
-
-fn make_demo_tag_name_map() -> rotext::TagNameMap<'static> {
-    rotext::TagNameMap {
-        block_call_error: b"x-block-call-error",
-
-        code_block: b"x-code-block",
-
-        ref_link: b"x-ref-link",
-        dicexp: b"x-dicexp",
-        wiki_link: b"x-wiki-link",
-    }
 }
 
 fn make_demo_block_extension_map() -> HashMap<&'static [u8], Extension<'static>> {

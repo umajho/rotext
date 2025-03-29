@@ -1,5 +1,8 @@
 mod renderer;
 
+#[cfg(test)]
+mod tests;
+
 use std::collections::{HashMap, HashSet};
 
 #[cfg(feature = "block-id")]

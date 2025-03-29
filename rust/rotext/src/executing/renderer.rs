@@ -33,6 +33,20 @@ pub struct TagNameMap<'a> {
     pub wiki_link: &'a [u8],
 }
 
+impl TagNameMap<'_> {
+    pub fn new_demo_instance_for_test() -> Self {
+        Self {
+            block_call_error: b"x-block-call-error",
+
+            code_block: b"x-code-block",
+
+            ref_link: b"x-ref-link",
+            dicexp: b"x-dicexp",
+            wiki_link: b"x-wiki-link",
+        }
+    }
+}
+
 pub struct Renderer<'a> {
     tag_name_map: &'a TagNameMap<'a>,
 

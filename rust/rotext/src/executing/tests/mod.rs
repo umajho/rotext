@@ -1,5 +1,3 @@
-#![cfg(test)]
-
 mod support;
 
 use support::{case, run_cases};
