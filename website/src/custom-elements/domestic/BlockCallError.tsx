@@ -15,14 +15,14 @@ function createBlockCallErrorComponent(): Component<{
   return (props) => {
     const currentElement = getCurrentElement();
 
-    const what = createMemo(() => {
+    const title = createMemo(() => {
       switch (props["call-type"]) {
         case "transclusion":
-          return "嵌入包含";
+          return "嵌入包含页面";
         case "extension":
-          return "扩展";
+          return "调用扩展";
         default:
-          return "未知";
+          return "未知性质的调用";
       }
     });
 
@@ -31,7 +31,7 @@ function createBlockCallErrorComponent(): Component<{
         case "TODO":
           return <p>TODO: 实现渲染</p>;
         case "UnknownCallee":
-          return <p>{`没有找到这个名称的${what()}。`}</p>;
+          return <p>调用对象不存在。</p>;
         case "BadParameters":
           return <BadParametersErrorMessage valueRaw={props["error-value"]!} />;
         default:
@@ -54,7 +54,7 @@ function createBlockCallErrorComponent(): Component<{
     return (
       <div class="p-4 my-1 border border-red-500 border-dashed text-red-500">
         <p class="font-bold pb-4">
-          {`调用${what()}「`}
+          {`${title()}「`}
           <Name name={props["call-name"]} />
           {`」失败：`}
         </p>
