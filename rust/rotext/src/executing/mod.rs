@@ -1,6 +1,6 @@
-use std::collections::{HashMap, HashSet};
-
 mod renderer;
+
+use std::collections::{HashMap, HashSet};
 
 #[cfg(feature = "block-id")]
 use rotext_core::BlockId;
