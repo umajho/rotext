@@ -12,9 +12,9 @@ pub use rotext_core::{Error as ParseError, Event, Result};
 
 pub use compiling::{
     CompiledItem, Error as CompilationError, NewCompileOptions as CompileOption,
-    Restrictions as CompileRestrictions, TagNameMap,
+    Restrictions as CompileRestrictions,
 };
-pub use executing::NewExecutorOptions as ExecuteOptions;
+pub use executing::{NewExecutorOptions as ExecuteOptions, TagNameMap};
 
 use rotext_core::{
     BlockEventStreamInlineSegmentMapper, BlockParser, BlockStackEntry, InlineStackEntry,
@@ -42,10 +42,15 @@ pub fn compile<'a>(
     compiler.compile(input, parsed)
 }
 
-pub fn execute(compiled: &[CompiledItem], opts: &ExecuteOptions) -> Vec<u8> {
+pub fn execute(
+    input: &[u8],
+    parsed: &[Event],
+    compiled: &[CompiledItem],
+    opts: &ExecuteOptions,
+) -> Vec<u8> {
     let mut buf: Vec<u8> = Vec::new();
     let executor = executing::Executor::new(opts);
-    executor.execute(&mut buf, compiled);
+    executor.execute(&mut buf, input, parsed, compiled);
     buf
 }
 

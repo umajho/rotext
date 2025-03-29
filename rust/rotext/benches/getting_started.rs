@@ -24,9 +24,6 @@ fn compile_and_execute(input: &[u8], events: &[rotext::Event]) {
         restrictions: rotext::CompileRestrictions {
             max_call_depth_in_document: 100,
         },
-        tag_name_map: &tag_name_map,
-        #[cfg(feature = "block-id")]
-        should_include_block_ids: true,
     };
     let compiled = rotext::compile(input, events, &compile_opts).unwrap();
 
@@ -36,7 +33,7 @@ fn compile_and_execute(input: &[u8], events: &[rotext::Event]) {
         #[cfg(feature = "block-id")]
         should_include_block_ids: true,
     };
-    rotext::execute(&compiled, &exec_opts);
+    rotext::execute(input, events, &compiled, &exec_opts);
 }
 
 #[divan::bench(sample_size = 10)]

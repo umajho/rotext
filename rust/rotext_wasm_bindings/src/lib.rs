@@ -80,8 +80,6 @@ pub fn parse_and_render(input: &[u8], opts: &[u8]) -> Result<Vec<u8>, String> {
         restrictions: rotext::CompileRestrictions {
             max_call_depth_in_document: 100,
         },
-        tag_name_map: &tag_name_map,
-        should_include_block_ids: opts.should_include_block_ids,
     };
     let compiled = rotext::compile(input, &all_events, &compile_opts);
     let compiled = match compiled {
@@ -94,7 +92,7 @@ pub fn parse_and_render(input: &[u8], opts: &[u8]) -> Result<Vec<u8>, String> {
         block_extension_map: &block_extension_map,
         should_include_block_ids: opts.should_include_block_ids,
     };
-    let html = rotext::execute(&compiled, &execute_opts);
+    let html = rotext::execute(input, &all_events, &compiled, &execute_opts);
     let html = match String::from_utf8(html) {
         Ok(html) => html,
         Err(error) => return Err(error.to_string()),

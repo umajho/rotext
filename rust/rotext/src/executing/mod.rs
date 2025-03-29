@@ -1,9 +1,13 @@
 use std::collections::{HashMap, HashSet};
 
+mod renderer;
+
 #[cfg(feature = "block-id")]
 use rotext_core::BlockId;
+use rotext_core::Event;
 
-use crate::{compiling, CompiledItem, TagNameMap};
+use crate::{compiling, CompiledItem};
+pub use renderer::TagNameMap;
 
 pub mod extensions;
 
@@ -21,6 +25,8 @@ pub struct Executor<'a> {
 
     #[cfg(feature = "block-id")]
     with_block_id: bool,
+
+    renderer: renderer::Renderer<'a>,
 }
 
 enum CallType {
@@ -131,18 +137,36 @@ struct RenderCallErrorInput<'a> {
 
 impl<'a> Executor<'a> {
     pub fn new(opts: &NewExecutorOptions<'a>) -> Self {
+        let renderer_opts = renderer::NewRendererOptions {
+            tag_name_map: opts.tag_name_map,
+            #[cfg(feature = "block-id")]
+            should_include_block_ids: opts.should_include_block_ids,
+        };
+
         Self {
             tag_name_map: opts.tag_name_map,
             block_extension_map: opts.block_extension_map,
             #[cfg(feature = "block-id")]
             with_block_id: opts.should_include_block_ids,
+            renderer: renderer::Renderer::new(renderer_opts),
         }
     }
 
-    pub fn execute(&self, buf: &mut Vec<u8>, compiled: &[CompiledItem]) {
+    pub fn execute(
+        &self,
+        buf: &mut Vec<u8>,
+        input: &'a [u8],
+        parsed: &[Event],
+        compiled: &[CompiledItem],
+    ) {
+        let mut stack: Vec<renderer::StackEntryBox> = vec![];
+
         for item in compiled {
             match item {
-                CompiledItem::Rendered(rendered) => buf.extend_from_slice(rendered),
+                CompiledItem::SimpleEvents(range) => {
+                    let evs = &parsed[range.clone()];
+                    self.renderer.render_events(buf, input, evs, &mut stack);
+                }
                 CompiledItem::BlockTransclusion(block_call) => {
                     self.render_call_error(
                         buf,
@@ -156,7 +180,7 @@ impl<'a> Executor<'a> {
                     );
                 }
                 CompiledItem::BlockExtension(block_call) => {
-                    self.render_block_extension(buf, block_call);
+                    self.render_block_extension(buf, input, parsed, block_call);
                 }
             }
         }
@@ -165,6 +189,8 @@ impl<'a> Executor<'a> {
     fn render_block_extension(
         &self,
         buf: &mut Vec<u8>,
+        input: &'a [u8],
+        parsed: &[Event],
         block_call: &crate::compiling::BlockCall<'a>,
     ) {
         let Some(ext) = self.block_extension_map.get(block_call.name) else {
@@ -189,7 +215,7 @@ impl<'a> Executor<'a> {
 
         match ext {
             extensions::Extension::ElementMapper(ext) => {
-                self.render_block_element_mapper_extension(buf, block_call, ext);
+                self.render_block_element_mapper_extension(buf, input, parsed, block_call, ext);
             }
             extensions::Extension::Alias { .. } => unreachable!(),
         }
@@ -198,6 +224,8 @@ impl<'a> Executor<'a> {
     fn render_block_element_mapper_extension(
         &self,
         buf: &mut Vec<u8>,
+        input: &'a [u8],
+        parsed: &[Event],
         block_call: &compiling::BlockCall<'a>,
         ext: &extensions::ExtensionElementMapper<'a>,
     ) {
@@ -215,11 +243,15 @@ impl<'a> Executor<'a> {
         for (key, value) in &block_call.arguments {
             self.process_block_element_mapper_extension_argument(
                 &mut content,
-                ext,
-                key,
-                value,
-                &mut seen_params,
-                &mut bad,
+                input,
+                parsed,
+                ProcessBlockElementMapperExtensionArgumentParameters {
+                    ext,
+                    key,
+                    value,
+                    seen: &mut seen_params,
+                    bad: &mut bad,
+                },
             );
         }
 
@@ -298,38 +330,40 @@ impl<'a> Executor<'a> {
     fn process_block_element_mapper_extension_argument(
         &self,
         content_buf: &mut Vec<u8>,
-        ext: &extensions::ExtensionElementMapper<'a>,
-        key: &compiling::ArgumentKey<'a>,
-        value: &Vec<CompiledItem>,
-        seen: &mut HashSet<Vec<u8>>,
-        bad: &mut Option<CallErrorBadParameters>,
+        input: &'a [u8],
+        parsed: &[Event],
+        params: ProcessBlockElementMapperExtensionArgumentParameters<'a, '_>,
     ) {
-        let key_vec = key.to_vec();
-        let param = ext.get_real_parameter(&key_vec);
+        let key_vec = params.key.to_vec();
+        let param = params.ext.get_real_parameter(&key_vec);
         let Some(param) = param else {
-            let bad = bad.get_or_insert_with(CallErrorBadParameters::default);
+            let bad = params
+                .bad
+                .get_or_insert_with(CallErrorBadParameters::default);
             bad.unknown.insert(key_vec);
             return;
         };
-        if seen.contains(&key_vec) {
-            let bad = bad.get_or_insert_with(CallErrorBadParameters::default);
+        if params.seen.contains(&key_vec) {
+            let bad = params
+                .bad
+                .get_or_insert_with(CallErrorBadParameters::default);
             bad.duplicated.insert(key_vec);
             return;
         } else {
-            seen.insert(key_vec);
+            params.seen.insert(key_vec);
         }
-        if bad.is_some() {
+        if params.bad.is_some() {
             return;
         }
 
         match param.mapping_to {
             extensions::ExtensionElementMapperParameterMappingTo::NamedSlot(slot_name) => {
                 crate::utils::render_eopening_tag(content_buf, b"div", &[(b"slot", slot_name)]);
-                self.execute(content_buf, value);
+                self.execute(content_buf, input, parsed, params.value);
                 crate::utils::render_closing_tag(content_buf, b"div");
             }
             extensions::ExtensionElementMapperParameterMappingTo::UnnamedSlot => {
-                self.execute(content_buf, value);
+                self.execute(content_buf, input, parsed, params.value);
             }
         }
     }
@@ -392,4 +426,12 @@ impl<'a> Executor<'a> {
 
         crate::utils::render_empty_element(buf, self.tag_name_map.block_call_error, &attrs);
     }
+}
+
+struct ProcessBlockElementMapperExtensionArgumentParameters<'a, 'b> {
+    ext: &'b extensions::ExtensionElementMapper<'a>,
+    key: &'b compiling::ArgumentKey<'a>,
+    value: &'b Vec<CompiledItem<'b>>,
+    seen: &'b mut HashSet<Vec<u8>>,
+    bad: &'b mut Option<CallErrorBadParameters>,
 }

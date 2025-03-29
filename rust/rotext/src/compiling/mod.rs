@@ -1,10 +1,6 @@
-mod renderer;
-
-pub use renderer::TagNameMap;
+use std::ops::Range;
 
 use rotext_core::{BlockId, Event};
-
-use renderer::StackEntryBox;
 
 pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug)]
@@ -21,7 +17,7 @@ impl Error {
 }
 
 pub enum CompiledItem<'a> {
-    Rendered(Vec<u8>),
+    SimpleEvents(Range<usize>),
     BlockTransclusion(BlockCall<'a>),
     BlockExtension(BlockCall<'a>),
 }
@@ -51,13 +47,8 @@ impl ArgumentKey<'_> {
     }
 }
 
-pub struct NewCompileOptions<'a> {
+pub struct NewCompileOptions {
     pub restrictions: Restrictions,
-
-    pub tag_name_map: &'a TagNameMap<'a>,
-
-    #[cfg(feature = "block-id")]
-    pub should_include_block_ids: bool,
 }
 
 pub struct Restrictions {
@@ -67,21 +58,12 @@ pub struct Restrictions {
 
 pub struct Compiler<'a> {
     restrictions: &'a Restrictions,
-
-    renderer: renderer::Renderer<'a>,
 }
 
 impl<'a> Compiler<'a> {
-    pub fn new(opts: &'a NewCompileOptions<'a>) -> Self {
-        let renderer_opts = renderer::NewRendererOptions {
-            tag_name_map: opts.tag_name_map,
-            #[cfg(feature = "block-id")]
-            should_include_block_ids: opts.should_include_block_ids,
-        };
-
+    pub fn new(opts: &'a NewCompileOptions) -> Self {
         Self {
             restrictions: &opts.restrictions,
-            renderer: renderer::Renderer::new(renderer_opts),
         }
     }
 
@@ -102,27 +84,42 @@ impl<'a> Compiler<'a> {
         }
 
         let mut result: Vec<CompiledItem> = vec![];
-        let mut last_rendered: Option<Vec<u8>> = None;
+        let mut last_simple_evs: Option<Range<usize>> = None;
 
-        let mut stack: Vec<StackEntryBox> = vec![];
+        let mut stack_depth: usize = 0;
+
+        fn push_simple_events(result: &mut Vec<CompiledItem>, range: &mut Option<Range<usize>>) {
+            if let Some(range) = range.take() {
+                if !range.is_empty() {
+                    result.push(CompiledItem::SimpleEvents(range));
+                }
+            }
+        }
+        fn advance_simple_events(range: &mut Option<Range<usize>>, i: &mut usize) {
+            let range = range.get_or_insert_with(|| *i..*i);
+            *i += 1;
+            range.end = *i;
+        }
 
         loop {
             if i >= evs.len() {
-                if let Some(last_rendered) = last_rendered.take() {
-                    result.push(CompiledItem::Rendered(last_rendered));
-                }
+                push_simple_events(&mut result, &mut last_simple_evs);
                 return Ok((i, result));
             }
 
+            #[rotext_internal_macros::ensure_cases_for_event(
+                prefix = Event,
+                group = Blend,
+            )]
+            // NOTE: rust-analyzer 会错误地认为这里的 `match` 没有覆盖到全部分支，
+            // 实际上并不存在问题。
             match &evs[i] {
                 Event::ExitBlock(_)
                 | Event::IndicateCallNormalArgument(_)
                 | Event::IndicateCallVerbatimArgument(_)
-                    if stack.is_empty() =>
+                    if stack_depth == 0 =>
                 {
-                    if let Some(last_rendered) = last_rendered.take() {
-                        result.push(CompiledItem::Rendered(last_rendered));
-                    }
+                    push_simple_events(&mut result, &mut last_simple_evs);
                     return Ok((i, result));
                 }
                 Event::IndicateCallNormalArgument(_) | Event::IndicateCallVerbatimArgument(_) => {
@@ -131,9 +128,7 @@ impl<'a> Compiler<'a> {
                 Event::EnterCallOnTemplate(call) | Event::EnterCallOnExtension(call) => {
                     let is_transclusion = matches!(evs[i], Event::EnterCallOnTemplate(_));
 
-                    if let Some(last_rendered) = last_rendered.take() {
-                        result.push(CompiledItem::Rendered(last_rendered));
-                    }
+                    push_simple_events(&mut result, &mut last_simple_evs);
 
                     let mut call_compiled: BlockCall = BlockCall {
                         name: &input[call.name.clone()],
@@ -189,9 +184,49 @@ impl<'a> Compiler<'a> {
                         }
                     }
                 }
-                _ => {
-                    let buf = last_rendered.get_or_insert_with(Vec::new);
-                    i = self.renderer.render_event(buf, input, evs, i, &mut stack);
+                Event::ExitBlock(_) | Event::ExitInline => {
+                    stack_depth -= 1;
+                    advance_simple_events(&mut last_simple_evs, &mut i);
+                }
+                Event::EnterParagraph(_)
+                | Event::EnterHeading1(_)
+                | Event::EnterHeading2(_)
+                | Event::EnterHeading3(_)
+                | Event::EnterHeading4(_)
+                | Event::EnterHeading5(_)
+                | Event::EnterHeading6(_)
+                | Event::EnterBlockQuote(_)
+                | Event::EnterOrderedList(_)
+                | Event::EnterUnorderedList(_)
+                | Event::EnterListItem(_)
+                | Event::EnterDescriptionList(_)
+                | Event::EnterDescriptionTerm(_)
+                | Event::EnterDescriptionDetails(_)
+                | Event::EnterCodeBlock(_)
+                | Event::EnterTable(_)
+                | Event::EnterCodeSpan
+                | Event::EnterEmphasis
+                | Event::EnterStrong
+                | Event::EnterStrikethrough
+                | Event::EnterRuby
+                | Event::EnterRubyText
+                | Event::EnterWikiLink(_) => {
+                    stack_depth += 1;
+                    advance_simple_events(&mut last_simple_evs, &mut i);
+                }
+                Event::Raw(_)
+                | Event::NewLine(_)
+                | Event::Text(_)
+                | Event::VerbatimEscaping(_)
+                | Event::ThematicBreak(_)
+                | Event::RefLink(_)
+                | Event::Dicexp(_)
+                | Event::IndicateTableRow
+                | Event::IndicateTableCaption
+                | Event::IndicateTableHeaderCell
+                | Event::IndicateTableDataCell
+                | Event::IndicateCodeBlockCode => {
+                    advance_simple_events(&mut last_simple_evs, &mut i);
                 }
             }
         }

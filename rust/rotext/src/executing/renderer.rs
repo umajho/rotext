@@ -70,7 +70,22 @@ impl<'a> Renderer<'a> {
     }
 
     /// `input_stream` 的迭代对象是属于 `Blend` 分组的事件。
-    pub fn render_event(
+    pub fn render_events(
+        &self,
+        buf: &mut Vec<u8>,
+        input: &'a [u8],
+        evs: &[Event],
+        stack: &mut Vec<StackEntryBox>,
+    ) {
+        let mut i = 0;
+
+        while i < evs.len() {
+            i = self.render_event(buf, input, evs, i, stack);
+        }
+    }
+
+    /// `input_stream` 的迭代对象是属于 `Blend` 分组的事件。
+    fn render_event(
         &self,
         buf: &mut Vec<u8>,
         input: &'a [u8],
