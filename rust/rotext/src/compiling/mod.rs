@@ -169,9 +169,12 @@ impl<'a> Compiler<'a> {
                                 loop {
                                     i += 1;
                                     match &evs[i] {
-                                        Event::Text(content) => {
-                                            value.extend(&input[content.clone()])
-                                        }
+                                        Event::Text(content)
+                                        | Event::VerbatimEscaping(
+                                            rotext_core::events::VerbatimEscaping {
+                                                content, ..
+                                            },
+                                        ) => value.extend(&input[content.clone()]),
                                         Event::NewLine(_) => value.push(b'\n'),
                                         _ => break,
                                     }
