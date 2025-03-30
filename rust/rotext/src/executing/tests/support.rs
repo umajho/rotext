@@ -113,6 +113,29 @@ macro_rules! __event {
         $crate::Event::EnterWikiLink($start..$end)
     };
 
+    (EnterCallOnExtension ($start:literal..$end:literal)) => {
+        $crate::Event::EnterCallOnExtension(rotext_core::events::Call {
+            id: rotext_core::BlockId::new_invalid(),
+            name: $start..$end,
+        })
+    };
+    (EnterCallOnExtension ($start:literal..$end:literal, id = $id:literal)) => {
+        $crate::Event::EnterCallOnExtension(rotext_core::events::Call {
+            id: rotext_core::BlockId::new($id),
+            name: $start..$end,
+        })
+    };
+
+    (IndicateCallNormalArgument ()) => {
+        $crate::Event::IndicateCallNormalArgument(None)
+    };
+    (IndicateCallNormalArgument ($start:literal..$end:literal)) => {
+        $crate::Event::IndicateCallNormalArgument(Some($start..$end))
+    };
+    (IndicateCallVerbatimArgument ($start:literal..$end:literal)) => {
+        $crate::Event::IndicateCallVerbatimArgument($start..$end)
+    };
+
     (@inline $v:tt (..)) => {
         $crate::Event::$v
     };
@@ -173,7 +196,7 @@ impl rotext_internal_test::support::Case for Case<'_> {
 
         let exec_opts = crate::ExecuteOptions {
             tag_name_map: &tag_name_map,
-            block_extension_map: &HashMap::default(),
+            block_extension_map: &fixtures::new_block_extension_map(),
             #[cfg(feature = "block-id")]
             should_include_block_ids: self.options.should_include_block_id,
         };
