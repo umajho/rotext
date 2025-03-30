@@ -17,7 +17,7 @@ import { styleProvider as styleProviderForPreflight } from "../../../styles/pref
 import { styleProvider as styleProviderForTailwind } from "../../../styles/tailwind";
 
 export function registerCustomElementForWikiLink() {
-  registerCustomElementForAnkorWidgetNavigation(TAG_NAME_MAP["wiki-link"], {
+  registerCustomElementForAnkorWidgetNavigation(TAG_NAME_MAP.wiki_link, {
     baseStyleProviders: [styleProviderForPreflight, styleProviderForTailwind],
     classes: {
       forLabelWrapper: "underline text-blue-600",

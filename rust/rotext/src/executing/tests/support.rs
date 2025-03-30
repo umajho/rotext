@@ -12,13 +12,13 @@ macro_rules! case {
     (@__inner, $input:literal, [$($ev_tts:tt)*], $expected:expr, {
         should_include_block_id: $should_include_block_id:literal,
     }) => {
-        $crate::rendering::tests::support::Case {
-            input_events: $crate::rendering::tests::support::events!($($ev_tts)*),
+        $crate::executing::tests::support::Case {
+            input_events: $crate::executing::tests::support::events!($($ev_tts)*),
             input: $input,
             expected: $expected,
 
-            options: $crate::rendering::tests::support::CaseOptions {
-                tag_name_map: Default::default(),
+            options: $crate::executing::tests::support::CaseOptions {
+                tag_name_map: crate::executing::TagNameMap::new_demo_instance_for_test(),
                 #[cfg(feature = "block-id")]
                 should_include_block_id: $should_include_block_id,
             },
@@ -113,6 +113,29 @@ macro_rules! __event {
         $crate::Event::EnterWikiLink($start..$end)
     };
 
+    (EnterCallOnExtension ($start:literal..$end:literal)) => {
+        $crate::Event::EnterCallOnExtension(rotext_core::events::Call {
+            id: rotext_core::BlockId::new_invalid(),
+            name: $start..$end,
+        })
+    };
+    (EnterCallOnExtension ($start:literal..$end:literal, id = $id:literal)) => {
+        $crate::Event::EnterCallOnExtension(rotext_core::events::Call {
+            id: rotext_core::BlockId::new($id),
+            name: $start..$end,
+        })
+    };
+
+    (IndicateCallNormalArgument ()) => {
+        $crate::Event::IndicateCallNormalArgument(None)
+    };
+    (IndicateCallNormalArgument ($start:literal..$end:literal)) => {
+        $crate::Event::IndicateCallNormalArgument(Some($start..$end))
+    };
+    (IndicateCallVerbatimArgument ($start:literal..$end:literal)) => {
+        $crate::Event::IndicateCallVerbatimArgument($start..$end)
+    };
+
     (@inline $v:tt (..)) => {
         $crate::Event::$v
     };
@@ -132,7 +155,7 @@ macro_rules! __event {
 /// 用于在编写测试用例时快速列举一系列属于 `Blend` 分组的事件。
 macro_rules! events {
     ($(($($ev:tt)*)),*,) => {
-        vec![$($crate::rendering::tests::support::__event!($($ev)*)),*]
+        vec![$($crate::executing::tests::support::__event!($($ev)*)),*]
     };
 }
 
@@ -161,17 +184,25 @@ pub(super) struct Case<'a> {
 }
 impl rotext_internal_test::support::Case for Case<'_> {
     fn assert_ok(&self) {
-        let opts = NewHtmlRendererOptions {
-            tag_name_map: self.options.tag_name_map.clone(),
-            initial_output_string_capacity: 0,
+        let input = self.input.as_bytes();
+
+        let tag_name_map = crate::TagNameMap::new_demo_instance_for_test();
+        let compile_opts = crate::CompileOption {
+            restrictions: crate::CompileRestrictions {
+                max_call_depth_in_document: 100,
+            },
+        };
+        let compiled = crate::compile(input, &self.input_events, &compile_opts).unwrap();
+
+        let exec_opts = crate::ExecuteOptions {
+            tag_name_map: &tag_name_map,
+            block_extension_map: &fixtures::new_block_extension_map(),
             #[cfg(feature = "block-id")]
             should_include_block_ids: self.options.should_include_block_id,
         };
-        let renderer = HtmlRenderer::new(self.input.as_bytes(), opts);
-        let actual = renderer.render_u8_vec(self.input_events.clone().into_iter());
-        let actual = String::from_utf8(actual).unwrap();
+        let actual = crate::execute(input, &self.input_events, &compiled, &exec_opts);
 
-        assert_eq!(self.expected, actual);
+        assert_eq!(self.expected, String::from_utf8(actual).unwrap());
     }
 
     fn input(&self) -> String {

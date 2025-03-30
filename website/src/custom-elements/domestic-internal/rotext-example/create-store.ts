@@ -3,6 +3,7 @@ import { createEffect, createMemo, createSignal, on } from "solid-js";
 import { useRotextProcessorsStore } from "../../../contexts/rotext-processors-store";
 import { TAG_NAME_MAP } from "../../mod";
 import { formatHTML } from "../../../utils/html-formatting";
+import { BLOCK_EXTENSION_LIST } from "../../consts";
 
 export type CurrentOutput =
   | [type: "for-unmodified", html: string]
@@ -74,6 +75,7 @@ export function createRotextExampleStore(opts: {
           ) {
             const result = processor.process(opts.originalInput, {
               requiresLookupListRaw: false,
+              blockExtensionList: BLOCK_EXTENSION_LIST,
               tagNameMap: TAG_NAME_MAP,
             });
             if (result.error) {
@@ -88,6 +90,7 @@ export function createRotextExampleStore(opts: {
         } else {
           const result = processor.process(input, {
             requiresLookupListRaw: false,
+            blockExtensionList: BLOCK_EXTENSION_LIST,
             tagNameMap: TAG_NAME_MAP,
           });
           if (result.error) {

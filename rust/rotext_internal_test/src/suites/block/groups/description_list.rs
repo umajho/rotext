@@ -334,6 +334,20 @@ pub fn groups_description_list() -> Vec<GroupedCases> {
                     (EventType::ExitBlock, None),
                 ]
             ),
+            case!(
+                vec![";␠{|␠foo␣::␣bar␠|}"],
+                vec![
+                    (EventType::EnterDescriptionList, None),
+                    (EventType::EnterDescriptionTerm, None),
+                    (EventType::EnterTable, None),
+                    (EventType::EnterParagraph, None),
+                    (EventType::__Unparsed, Some("foo :: bar")),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                ]
+            ),
         ],
     }]
 }

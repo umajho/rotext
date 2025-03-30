@@ -25,8 +25,9 @@ export class RustRotextProcessor implements RotextProcessor {
       const parsingStart = performance.now();
       console.time("rotext RS");
       const result = rotextAdapter.parseAndRender(input, {
-        tagNameMap: opts.tagNameMap,
-        shouldIncludeBlockIDs: opts.requiresLookupListRaw,
+        tag_name_map: opts.tagNameMap,
+        block_extension_list: opts.blockExtensionList,
+        should_include_block_ids: opts.requiresLookupListRaw,
       });
       console.timeEnd("rotext RS");
       const parsingTimeMs = performance.now() - parsingStart;
@@ -48,26 +49,32 @@ export class RustRotextProcessor implements RotextProcessor {
         error: null,
         parsingTimeMs,
         extraInfos: [
-          ...(output.devEventsInDebugFormat
+          ...(output.dev_events_in_debug_format
             ? [{
               name: "事件",
-              content: output.devEventsInDebugFormat,
+              content: output.dev_events_in_debug_format,
             }]
             : []),
         ],
         lookupListRawCollector: (targetEl: HTMLElement) => {
           const lookupListRaw: LookupListRaw = [];
-          for (const [id, { start, end }] of output.blockIDAndLinesPairs) {
+          for (
+            const [id, [start, end]] of Object.entries(
+              output.block_id_to_lines_map,
+            )
+          ) {
             let element = targetEl.querySelector(
               `[data-block-id="${id}"]`,
             )! as HTMLElement;
-            lookupListRaw.push({
-              element,
-              location: {
-                start: { line: start },
-                end: { line: end },
-              },
-            });
+            if (element) {
+              lookupListRaw.push({
+                element,
+                location: {
+                  start: { line: start },
+                  end: { line: end },
+                },
+              });
+            }
           }
           return lookupListRaw;
         },

@@ -1,5 +1,4 @@
-#![cfg(test)]
-
+mod fixtures;
 mod support;
 
 use support::{case, run_cases};
@@ -10,7 +9,7 @@ use rotext_internal_test::support::{report_panicked_cases, FailedCase, GroupedCa
 use super::*;
 
 #[test]
-fn it_works_in_block_phase() {
+fn it_works_in_block_phase_for_simple_events() {
     let table: Vec<GroupedCases<_>> = vec![
         GroupedCases {
             group: "基础",
@@ -461,7 +460,7 @@ fn it_works_in_block_phase() {
 
 #[cfg(feature = "block-id")]
 #[test]
-fn it_works_with_block_id() {
+fn it_works_in_block_phase_for_simple_events_with_block_id() {
     let table: Vec<GroupedCases<_>> = vec![GroupedCases {
         group: "基础",
         cases: vec![
@@ -504,6 +503,210 @@ fn it_works_with_block_id() {
                 ),
             ),
         ],
+    }];
+
+    run_cases(table);
+}
+
+#[test]
+fn it_works_in_block_phase_for_events_involving_calls() {
+    let table: Vec<GroupedCases<_>> = vec![
+        GroupedCases {
+            group: "调用>a扩展",
+            cases: vec![
+                case!(
+                    "AllOptional",
+                    [(EnterCallOnExtension(0..11)), (ExitBlock(..)),],
+                    r#"<all-optional></all-optional>"#,
+                ),
+                case!(
+                    "AllOptional:0/1_content:14",
+                    [
+                        (EnterCallOnExtension(0..11)),
+                        (IndicateCallNormalArgument()),
+                        (EnterParagraph(..)),
+                        (Text(14..23)),
+                        (ExitBlock(..)),
+                        (ExitBlock(..)),
+                    ],
+                    r#"<all-optional><p>1_content</p></all-optional>"#,
+                ),
+                case!(
+                    "AllOptional:0/1:14/1_content:19",
+                    [
+                        (EnterCallOnExtension(0..11)),
+                        (IndicateCallNormalArgument(14..15)),
+                        (EnterParagraph(..)),
+                        (Text(19..28)),
+                        (ExitBlock(..)),
+                        (ExitBlock(..)),
+                    ],
+                    r#"<all-optional><p>1_content</p></all-optional>"#,
+                ),
+                case!(
+                    "AllOptional:0/1_content:14/2_content:27",
+                    [
+                        (EnterCallOnExtension(0..11)),
+                        (IndicateCallNormalArgument()),
+                        (EnterParagraph(..)),
+                        (Text(14..23)),
+                        (ExitBlock(..)),
+                        (IndicateCallNormalArgument()),
+                        (EnterParagraph(..)),
+                        (Text(27..36)),
+                        (ExitBlock(..)),
+                        (ExitBlock(..)),
+                    ],
+                    r#"<all-optional><p>1_content</p><div slot="second"><p>2_content</p></div></all-optional>"#,
+                ),
+                case!(
+                    "AllOptional:0/1_content:14/foo:27/foo_content:34",
+                    [
+                        (EnterCallOnExtension(0..11)),
+                        (IndicateCallNormalArgument()),
+                        (EnterParagraph(..)),
+                        (Text(14..23)),
+                        (ExitBlock(..)),
+                        (IndicateCallNormalArgument(27..30)),
+                        (EnterParagraph(..)),
+                        (Text(34..45)),
+                        (ExitBlock(..)),
+                        (ExitBlock(..)),
+                    ],
+                    r#"<all-optional><p>1_content</p><div slot="foo"><p>foo_content</p></div></all-optional>"#,
+                ),
+                case!(
+                    "AllOptional:0/bar:14/bar_content:21",
+                    [
+                        (EnterCallOnExtension(0..11)),
+                        (IndicateCallVerbatimArgument(14..17)),
+                        (Text(21..32)),
+                        (ExitBlock(..)),
+                    ],
+                    r#"<all-optional bar="bar_content"></all-optional>"#,
+                ),
+                case!(
+                    "AllOptional:0/bar:14/bar_content:21/baz:36/baz_content:43",
+                    [
+                        (EnterCallOnExtension(0..11)),
+                        (IndicateCallVerbatimArgument(14..17)),
+                        (Text(21..32)),
+                        (IndicateCallVerbatimArgument(36..39)),
+                        (Text(43..54)),
+                        (ExitBlock(..)),
+                    ],
+                    r#"<all-optional bar="bar_content" baz="baz_content"></all-optional>"#,
+                ),
+                case!(
+                    "AllOptional:0/1_content:14/foo:27/foo_content:34/bar:49/bar_content:56/baz:71/baz_content:78",
+                    [
+                        (EnterCallOnExtension(0..11)),
+                        (IndicateCallNormalArgument()),
+                        (EnterParagraph(..)),
+                        (Text(14..23)),
+                        (ExitBlock(..)),
+                        (IndicateCallNormalArgument(27..30)),
+                        (EnterParagraph(..)),
+                        (Text(34..45)),
+                        (ExitBlock(..)),
+                        (IndicateCallVerbatimArgument(49..52)),
+                        (Text(56..67)),
+                        (IndicateCallVerbatimArgument(71..74)),
+                        (Text(78..89)),
+                        (ExitBlock(..)),
+                    ],
+                    r#"<all-optional bar="bar_content" baz="baz_content"><p>1_content</p><div slot="foo"><p>foo_content</p></div></all-optional>"#,
+                ),
+                case!(
+                    "AllOptional:0/bar:14/bar_content:21/1_content:36/baz:49/baz_content:56/foo:71/foo_content:78",
+                    [
+                        (EnterCallOnExtension(0..11)),
+                        (IndicateCallVerbatimArgument(14..17)),
+                        (Text(21..32)),
+                        (IndicateCallNormalArgument()),
+                        (EnterParagraph(..)),
+                        (Text(36..45)),
+                        (ExitBlock(..)),
+                        (IndicateCallVerbatimArgument(49..52)),
+                        (Text(56..67)),
+                        (IndicateCallNormalArgument(71..74)),
+                        (EnterParagraph(..)),
+                        (Text(78..89)),
+                        (ExitBlock(..)),
+                        (ExitBlock(..)),
+                    ],
+                    r#"<all-optional bar="bar_content" baz="baz_content"><p>1_content</p><div slot="foo"><p>foo_content</p></div></all-optional>"#,
+                ),
+            ],
+        },
+        GroupedCases {
+            group: "调用>扩展>必要参数",
+            cases: vec![
+                case!(
+                    "SomeNormalRequired",
+                    [(EnterCallOnExtension(0..18)), (ExitBlock(..)),],
+                    r#"<x-block-call-error call-type="extension" call-name="SomeNormalRequired" error-type="BadParameters" error-value="!1;"></x-block-call-error>"#,
+                ),
+                case!(
+                    "SomeNormalRequired:0/test:21",
+                    [
+                        (EnterCallOnExtension(0..18)),
+                        (IndicateCallNormalArgument()),
+                        (EnterParagraph(..)),
+                        (Text(21..25)),
+                        (ExitBlock(..)),
+                        (ExitBlock(..)),
+                    ],
+                    r#"<some-normal-required><p>test</p></some-normal-required>"#,
+                ),
+                case!(
+                    "SomeVerbatimRequired",
+                    [(EnterCallOnExtension(0..20)), (ExitBlock(..)),],
+                    r#"<x-block-call-error call-type="extension" call-name="SomeVerbatimRequired" error-type="BadParameters" error-value=";!bar"></x-block-call-error>"#,
+                ),
+                case!(
+                    "SomeVerbatimRequired:0/bar:23",
+                    [
+                        (EnterCallOnExtension(0..20)),
+                        (IndicateCallVerbatimArgument(23..26)),
+                        (ExitBlock(..)),
+                    ],
+                    r#"<some-verbatim-required bar=""></some-verbatim-required>"#,
+                ),
+            ],
+        },
+        GroupedCases {
+            group: "调用>扩展>变体",
+            cases: vec![case!(
+                "WithVariant",
+                [(EnterCallOnExtension(0..11)), (ExitBlock(..)),],
+                r#"<with-variant variant="var"></with-variant>"#,
+            )],
+        },
+        GroupedCases {
+            group: "调用>扩展>别名",
+            cases: vec![case!(
+                "Alias",
+                [(EnterCallOnExtension(0..5)), (ExitBlock(..)),],
+                r#"<all-optional></all-optional>"#,
+            )],
+        },
+    ];
+
+    run_cases(table);
+}
+
+#[cfg(feature = "block-id")]
+#[test]
+fn it_works_in_block_phase_for_events_involving_calls_with_block_id() {
+    let table: Vec<GroupedCases<_>> = vec![GroupedCases {
+        group: "调用>扩展",
+        cases: vec![case!(
+            @with_id,
+            "Alias",
+            [(EnterCallOnExtension(0..5, id = 1)), (ExitBlock(..)),],
+            r#"<all-optional data-block-id="1"></all-optional>"#,
+        )],
     }];
 
     run_cases(table);

@@ -2,81 +2,75 @@ import { bindings } from "./bindings";
 
 const textEncoder = new TextEncoder();
 
-type BlockIDAndLinesPair = [id: string, range: { start: number; end: number }];
-
-export interface ParseAndRenderResult {
-  html: string;
-  blockIDAndLinesPairs: BlockIDAndLinesPair[];
-  devEventsInDebugFormat?: string;
-}
-
 export interface ParseAndRenderOptions {
-  tagNameMap: TagNameMap;
-  shouldIncludeBlockIDs: boolean;
+  tag_name_map: TagNameMap;
+  block_extension_list: Extension[];
+  should_include_block_ids: boolean;
 }
 
 export interface TagNameMap {
-  "code-block": string;
-  "ref-link": string;
-  "dicexp": string;
-  "wiki-link": string;
+  block_call_error: string;
+  code_block: string;
+  ref_link: string;
+  dicexp: string;
+  wiki_link: string;
+}
+
+export type Extension =
+  | {
+    ElementMapper: {
+      name: string;
+      tag_name: string;
+      variant: string | null;
+      parameters: Record<
+        string,
+        ParameterWrapper<{
+          is_optional: boolean;
+          mapping_to: { NamedSlot: { name: string } } | "UnnamedSlot";
+        }>
+      >;
+      verbatim_parameters: Record<
+        string,
+        ParameterWrapper<{
+          is_optional: boolean;
+          mapping_to_attribute: string;
+        }>
+      >;
+    };
+  }
+  | { Alias: { name: string; to: string } };
+
+export type ParameterWrapper<T> = { Real: T } | { Alias: string };
+
+export interface ParseAndRenderResult {
+  html: string;
+  block_id_to_lines_map: Record<number, [number, number]>;
+  dev_events_in_debug_format?: string;
 }
 
 export function parseAndRender(
   input: string,
   opts: ParseAndRenderOptions,
 ): ["ok", ParseAndRenderResult] | ["error", string] {
-  const result = bindings.parse_and_render(
-    textEncoder.encode(input),
-    serializeTagNameMap(opts.tagNameMap),
-    opts.shouldIncludeBlockIDs,
-  );
-
-  const error = result.clone_error();
-  if (error) {
-    return ["error", error];
+  for (const name of Object.values(opts.tag_name_map)) {
+    if (!isValidTagName(name)) {
+      throw new Error(`invalid tag name: ${name}`);
+    }
   }
 
-  const output = result.clone_ok()!;
+  let output: Uint8Array;
+  try {
+    output = bindings.parse_and_render(
+      textEncoder.encode(input),
+      textEncoder.encode(JSON.stringify(opts)),
+    );
+  } catch (error) {
+    return ["error", error as string];
+  }
 
-  const blockIDToLinesMap = deserializeBlockIDToLinesMap(
-    output.clone_block_id_to_lines_map(),
-  );
-
-  const ret = {
-    html: output.clone_html(),
-    blockIDAndLinesPairs: blockIDToLinesMap,
-    ...("clone_dev_events_in_debug_format" in output
-      ? {
-        devEventsInDebugFormat:
-          (output.clone_dev_events_in_debug_format as () => string)(),
-      }
-      : {}),
-  };
-  return ["ok", ret];
+  return ["ok", JSON.parse(new TextDecoder().decode(output))];
 }
 
-function serializeTagNameMap(tagNameMap: TagNameMap): string {
-  return [
-    tagNameMap["code-block"],
-    tagNameMap["ref-link"],
-    tagNameMap["dicexp"],
-    tagNameMap["wiki-link"],
-  ].join("\0");
-}
-
-function deserializeBlockIDToLinesMap(input: string): BlockIDAndLinesPair[] {
-  if (!input) return [];
-
-  return input
-    .split(";")
-    .map((x): BlockIDAndLinesPair => {
-      const idAndRange = x.split(":");
-      const id = idAndRange[0]!;
-      const range = idAndRange[1]?.split("-")!;
-      return [id, {
-        start: Number(range[0]),
-        end: Number(range[1]),
-      }];
-    });
+function isValidTagName(name: string) {
+  return /^[0-9a-z-]+$/i.test(name) && !/(^-)|(-$)|--/.test(name);
 }

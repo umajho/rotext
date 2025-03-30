@@ -3,7 +3,7 @@ mod data_exchange;
 extern crate alloc;
 
 use data_exchange::{
-    block_id_to_lines_map::create_block_id_to_lines_map, tag_name_map::new_tag_name_map_from_str,
+    block_id_to_lines_map::create_block_id_to_lines_map, extension::convert_to_extension_map,
 };
 
 #[cfg(debug_assertions)]
@@ -23,50 +23,24 @@ use std::sync::Once;
 #[cfg(debug_assertions)]
 static INIT: Once = Once::new();
 
-#[wasm_bindgen]
-pub struct ParseAndRenderResult {
-    ok: Option<ParseAndRenderOutput>,
-    error: Option<String>,
-}
-#[wasm_bindgen]
-impl ParseAndRenderResult {
-    pub fn clone_ok(&self) -> Option<ParseAndRenderOutput> {
-        self.ok.clone()
-    }
-    pub fn clone_error(&self) -> Option<String> {
-        self.error.clone()
-    }
+#[derive(Debug, serde::Deserialize)]
+pub struct ParseAndRenderOptions {
+    pub tag_name_map: data_exchange::tag_name_map::TagNameMapInput,
+    pub block_extension_list: Vec<data_exchange::extension::ExtensionInput>,
+    pub should_include_block_ids: bool,
 }
 
-#[wasm_bindgen]
-#[derive(Default, Clone)]
+#[derive(Default, Clone, serde::Serialize)]
 pub struct ParseAndRenderOutput {
-    html: String,
-    block_id_to_lines_map: String,
+    pub html: String,
+    pub block_id_to_lines_map: data_exchange::block_id_to_lines_map::BlockIdToLInesMap,
 
     #[cfg(debug_assertions)]
-    dev_events_in_debug_format: String,
-}
-#[wasm_bindgen]
-impl ParseAndRenderOutput {
-    pub fn clone_html(&self) -> String {
-        self.html.clone()
-    }
-    pub fn clone_block_id_to_lines_map(&self) -> String {
-        self.block_id_to_lines_map.clone()
-    }
-    #[cfg(debug_assertions)]
-    pub fn clone_dev_events_in_debug_format(&self) -> String {
-        self.dev_events_in_debug_format.clone()
-    }
+    pub dev_events_in_debug_format: String,
 }
 
 #[wasm_bindgen]
-pub fn parse_and_render(
-    input: &[u8],
-    tag_name_map: String,
-    should_include_block_ids: bool,
-) -> ParseAndRenderResult {
+pub fn parse_and_render(input: &[u8], opts: &[u8]) -> Result<Vec<u8>, String> {
     #[cfg(debug_assertions)]
     {
         console_error_panic_hook::set_once();
@@ -75,36 +49,53 @@ pub fn parse_and_render(
         });
     }
 
-    let tag_name_map = new_tag_name_map_from_str(&tag_name_map);
+    let opts: ParseAndRenderOptions = match serde_json_wasm::from_slice(opts) {
+        Ok(opts) => opts,
+        Err(error) => return Err(format!("InputError/DeserializationError|{}", error)),
+    };
+
+    #[cfg(debug_assertions)]
+    {
+        log::info!("parse_and_render opts: {:?}", opts);
+    }
+
+    let tag_name_map = opts.tag_name_map.convert();
+    let block_extension_map = match convert_to_extension_map(&opts.block_extension_list) {
+        Ok(block_extension_map) => block_extension_map,
+        Err(error) => {
+            return Err(format!(
+                "InputError/BlockExtensionMapConversionError|{}",
+                error
+            ))
+        }
+    };
 
     let all_events: Result<Vec<_>, _> = rotext::parse(input).collect();
     let all_events = match all_events {
         Ok(all_events) => all_events,
-        Err(error) => {
-            return ParseAndRenderResult {
-                ok: None,
-                error: Some(error.name().to_string()),
-            }
-        }
+        Err(error) => return Err(format!("ParseError/{}", error.name())),
     };
 
-    let renderer = rotext::HtmlRenderer::new(
-        input,
-        rotext::NewHtmlRendererOptions {
-            tag_name_map,
-            initial_output_string_capacity: input.len() * 3,
-            should_include_block_ids,
+    let compile_opts = rotext::CompileOption {
+        restrictions: rotext::CompileRestrictions {
+            max_call_depth_in_document: 100,
         },
-    );
-    let html = renderer.render_u8_vec(all_events.clone().into_iter());
+    };
+    let compiled = rotext::compile(input, &all_events, &compile_opts);
+    let compiled = match compiled {
+        Ok(compiled) => compiled,
+        Err(error) => return Err(format!("CompilationError/{}", error.name())),
+    };
+
+    let execute_opts = rotext::ExecuteOptions {
+        tag_name_map: &tag_name_map,
+        block_extension_map: &block_extension_map,
+        should_include_block_ids: opts.should_include_block_ids,
+    };
+    let html = rotext::execute(input, &all_events, &compiled, &execute_opts);
     let html = match String::from_utf8(html) {
         Ok(html) => html,
-        Err(error) => {
-            return ParseAndRenderResult {
-                ok: None,
-                error: Some(error.to_string()),
-            }
-        }
+        Err(error) => return Err(error.to_string()),
     };
 
     let block_id_to_lines_map = create_block_id_to_lines_map(&all_events);
@@ -121,8 +112,6 @@ pub fn parse_and_render(
         output.dev_events_in_debug_format = render_events_in_debug_format(input, &all_events);
     }
 
-    ParseAndRenderResult {
-        ok: Some(output),
-        error: None,
-    }
+    serde_json_wasm::to_vec(&output)
+        .map_err(|err| format!("OutputError/SerializationError|{}", err))
 }

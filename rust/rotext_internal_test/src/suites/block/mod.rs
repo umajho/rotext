@@ -30,6 +30,7 @@ pub fn run<TContext: Context + RefUnwindSafe>(ctx: &TContext) {
         table.extend(groups::description_list::groups_description_list());
         table.extend(groups::code_block::groups_code_block());
         table.extend(groups::table::groups_table());
+        table.extend(groups::call::groups_call());
 
         table
     };

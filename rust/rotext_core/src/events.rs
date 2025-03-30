@@ -32,11 +32,15 @@ pub enum EventType {
     EnterDescriptionDetails = 17,
     EnterCodeBlock = 21,
     EnterTable = 31,
+    EnterCallOnTemplate = 41,
+    EnterCallOnExtension = 42,
     IndicateCodeBlockCode = 22,
     IndicateTableCaption = 35,
     IndicateTableRow = 32,
     IndicateTableHeaderCell = 33,
     IndicateTableDataCell = 34,
+    IndicateCallNormalArgument = 43,
+    IndicateCallVerbatimArgument = 44,
     ExitBlock = 99,
 
     // 在行内阶段产出。
@@ -150,6 +154,12 @@ pub enum Event {
     /// 进入表格。
     #[groups(Block | Blend)]
     EnterTable(BlockWithId) = EventType::EnterTable as u8,
+    /// 进入调用模板（嵌入包含）。
+    #[groups(Block | Blend)]
+    EnterCallOnTemplate(Call) = EventType::EnterCallOnTemplate as u8,
+    /// 进入调用扩展。
+    #[groups(Block | Blend)]
+    EnterCallOnExtension(Call) = EventType::EnterCallOnExtension as u8,
 
     /// 指示到达代码块的代码部分。
     #[groups(Block | Blend)]
@@ -166,6 +176,12 @@ pub enum Event {
     /// 指示到达（新）表格数据单元格。
     #[groups(Block | Blend)]
     IndicateTableDataCell = EventType::IndicateTableDataCell as u8,
+    /// 指示到达（新）调用的一般（非逐字）参数。
+    #[groups(Block | Blend)]
+    IndicateCallNormalArgument(Option<Range<usize>>) = EventType::IndicateCallNormalArgument as u8,
+    /// 指示到达（新）调用的逐字参数。
+    #[groups(Block | Blend)]
+    IndicateCallVerbatimArgument(Range<usize>) = EventType::IndicateCallVerbatimArgument as u8,
 
     /// 退出一层块级的 “进入…”。
     #[groups(Block | Blend)]
@@ -235,6 +251,12 @@ pub struct ThematicBreak {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Call {
+    pub id: BlockId,
+    pub name: Range<usize>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExitBlock {
     pub id: BlockId,
     pub start_line: LineNumber,
@@ -259,6 +281,10 @@ impl Event {
             | Event::Raw(content)
             | Event::VerbatimEscaping(VerbatimEscaping { content, .. })
             | Event::Text(content)
+            | Event::EnterCallOnTemplate(Call { name: content, .. })
+            | Event::EnterCallOnExtension(Call { name: content, .. })
+            | Event::IndicateCallNormalArgument(Some(content))
+            | Event::IndicateCallVerbatimArgument(content)
             | Event::RefLink(content)
             | Event::Dicexp(content)
             | Event::EnterWikiLink(content) => &input[content.clone()],
@@ -285,6 +311,7 @@ impl Event {
             | Event::IndicateTableRow
             | Event::IndicateTableHeaderCell
             | Event::IndicateTableDataCell
+            | Event::IndicateCallNormalArgument(None)
             | Event::ExitBlock(_)
             | Event::EnterCodeSpan
             | Event::EnterEmphasis

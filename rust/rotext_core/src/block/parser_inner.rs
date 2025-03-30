@@ -33,6 +33,13 @@ pub struct ParserInner<TStack: Stack<StackEntry>> {
     has_just_entered_table: bool,
 }
 
+#[derive(Debug, Clone)]
+pub struct ParserInnerShallowSnapshot {
+    cursor: usize,
+    current_line: LineNumber,
+    current_expecting: CurrentExpecting,
+}
+
 impl<TStack: Stack<StackEntry>> ParserInner<TStack> {
     pub fn new() -> Self {
         Self {
@@ -45,6 +52,23 @@ impl<TStack: Stack<StackEntry>> ParserInner<TStack> {
             current_expecting: CurrentExpecting::new(),
             has_just_entered_table: false,
         }
+    }
+
+    /// 创建一个解析器的浅快照。这个快照只能在进入某个 top leaf 前创建才有用，且只能在进入的
+    /// 那个 top leaf 退出时应用。用于名字中带 “potential” 的那些 top leaf 在发现其所期
+    /// 待的构建并不成立时回退到先前的状态。
+    pub fn take_shallow_snapshot(&self) -> ParserInnerShallowSnapshot {
+        ParserInnerShallowSnapshot {
+            cursor: self.cursor,
+            current_line: self.current_line,
+            current_expecting: self.current_expecting.clone(),
+        }
+    }
+
+    pub fn apply_shallow_snapshot(&mut self, snapshot: ParserInnerShallowSnapshot) {
+        self.cursor = snapshot.cursor;
+        self.current_line = snapshot.current_line;
+        self.current_expecting = snapshot.current_expecting;
     }
 
     pub fn enforce_to_yield_mark(&self, _: Tym<MAX_TO_YIELD>) {}
@@ -79,6 +103,10 @@ impl<TStack: Stack<StackEntry>> CursorContext for ParserInner<TStack> {
         self.cursor
     }
 
+    fn set_cursor(&mut self, cursor: usize) {
+        self.cursor = cursor;
+    }
+
     fn move_cursor_forward(&mut self, n: usize) {
         self.cursor += n;
     }
@@ -104,6 +132,7 @@ impl<TStack: Stack<StackEntry>> YieldContext for ParserInner<TStack> {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct CurrentExpecting {
     spaces_before: usize,
 }

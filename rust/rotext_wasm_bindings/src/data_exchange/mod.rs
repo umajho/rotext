@@ -1,4 +1,5 @@
 pub mod block_id_to_lines_map;
+pub mod extension;
 pub mod tag_name_map;
 
 #[cfg(debug_assertions)]

@@ -6,6 +6,28 @@ fn main() {
 
 static CONTENT: LazyLock<String> = LazyLock::new(|| read_doc("rotext入门.rotext"));
 
+fn compile_and_execute(input: &[u8], events: &[rotext::Event]) {
+    // 由于 `new_demo_instance_for_test` 位于 `test` 特性旗帜之后，这里会误报错误。
+    let tag_name_map = rotext::TagNameMap::new_demo_instance_for_test();
+
+    let compile_opts = rotext::CompileOption {
+        restrictions: rotext::CompileRestrictions {
+            max_call_depth_in_document: 100,
+        },
+    };
+    let compiled = rotext::compile(input, events, &compile_opts).unwrap();
+
+    let exec_opts = rotext::ExecuteOptions {
+        tag_name_map: &tag_name_map,
+        // 由于 `new_demo_block_extension_map_for_test` 位于 `test` 特性旗帜之后，这里会误报错误。
+        block_extension_map: &rotext::executing::extensions::new_demo_block_extension_map_for_test(
+        ),
+        #[cfg(feature = "block-id")]
+        should_include_block_ids: true,
+    };
+    rotext::execute(input, events, &compiled, &exec_opts);
+}
+
 #[divan::bench(sample_size = 10)]
 fn parsing(bencher: divan::Bencher) {
     let file_content = CONTENT.clone();
@@ -16,46 +38,33 @@ fn parsing(bencher: divan::Bencher) {
 }
 
 #[divan::bench(sample_size = 10)]
-fn rendering(bencher: divan::Bencher) {
+fn compiling_and_executing(bencher: divan::Bencher) {
     let file_content = CONTENT.clone();
+    let file_content = file_content.as_bytes();
 
     bencher
         .with_inputs(|| {
-            rotext::parse(file_content.as_bytes())
+            rotext::parse(file_content)
                 .collect::<Vec<_>>()
                 .into_iter()
                 .map(Result::unwrap)
+                .collect::<Vec<_>>()
         })
         .bench_refs(|events| {
-            let renderer = rotext::HtmlRenderer::new(
-                file_content.as_bytes(),
-                rotext::NewHtmlRendererOptions {
-                    tag_name_map: Default::default(),
-                    initial_output_string_capacity: file_content.len() * 3,
-                    #[cfg(feature = "block-id")]
-                    should_include_block_ids: true,
-                },
-            );
-            renderer.render_u8_vec(events);
+            compile_and_execute(file_content, events);
         })
 }
 
 #[divan::bench(sample_size = 10)]
-fn parsing_and_rendering(bencher: divan::Bencher) {
+fn parsing_compiling_and_executing(bencher: divan::Bencher) {
     let file_content = CONTENT.clone();
+    let file_content = file_content.as_bytes();
 
     bencher.bench(|| {
-        let events = rotext::parse(file_content.as_bytes()).map(Result::unwrap);
-        let renderer = rotext::HtmlRenderer::new(
-            file_content.as_bytes(),
-            rotext::NewHtmlRendererOptions {
-                tag_name_map: Default::default(),
-                initial_output_string_capacity: file_content.len() * 3,
-                #[cfg(feature = "block-id")]
-                should_include_block_ids: true,
-            },
-        );
-        renderer.render_u8_vec(events);
+        let events = rotext::parse(file_content)
+            .map(Result::unwrap)
+            .collect::<Vec<_>>();
+        compile_and_execute(file_content, &events);
     })
 }
 

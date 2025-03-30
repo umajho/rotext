@@ -3,7 +3,11 @@ import type * as RotextWASMBindingsModule from "rotext_wasm_bindings";
 import { bindings, setBindings } from "./bindings";
 import * as modInstance from "./mod-instance";
 
-export type { ParseAndRenderResult } from "./mod-instance";
+export type {
+  Extension,
+  ParseAndRenderResult,
+  TagNameMap,
+} from "./mod-instance";
 
 export async function makeOnlyInstance(
   bindingsIn: typeof RotextWASMBindingsModule,

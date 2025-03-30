@@ -1,6 +1,7 @@
 use crate::{types::Stack, Event};
 
 use super::{
+    parser_inner::ParserInnerShallowSnapshot,
     stack_wrapper::{StackEntryItemLike, StackEntryItemLikeContainer, StackWrapper},
     StackEntry,
 };
@@ -10,6 +11,10 @@ pub enum State {
     /// 持续从栈中推出内容并产出对应的退出事件，直到满足特定条件，在那之后执行要做的事情。
     Exiting(Exiting),
     Ended,
+    ToApplyShallowSnapshot(
+        /// Option 仅用于处理所有权，`None` 为无效状态。
+        Option<ToApplyShallowSnapshot>,
+    ),
 }
 impl From<Expecting> for State {
     fn from(value: Expecting) -> Self {
@@ -19,6 +24,11 @@ impl From<Expecting> for State {
 impl From<Exiting> for State {
     fn from(value: Exiting) -> Self {
         Self::Exiting(value)
+    }
+}
+impl From<ToApplyShallowSnapshot> for State {
+    fn from(value: ToApplyShallowSnapshot) -> Self {
+        Self::ToApplyShallowSnapshot(Some(value))
     }
 }
 
@@ -45,6 +55,9 @@ pub enum ExitingUntil {
     TopIsTable {
         should_also_exit_table: bool,
     },
+    TopIsCall {
+        should_also_exit_call: bool,
+    },
     TopIsAwareOfDoublePipes,
     StackIsEmpty,
 }
@@ -56,6 +69,7 @@ pub enum ExitingAndThen {
     ExpectBracedOpening,
     /// 包含属于 `Block` 分组的事件。
     YieldAndExpectBracedOpening(Event),
+    PushTopLeafCallArgumentBeginningAndExpectBracedOpening,
     End,
     ToBeDetermined,
 }
@@ -66,6 +80,15 @@ impl Exiting {
             and_then: Some(and_then),
         }
     }
+}
+
+pub struct ToApplyShallowSnapshot {
+    pub shallow_snapshot: ParserInnerShallowSnapshot,
+    pub and_then: ToApplyShallowSnapshotAndThen,
+}
+pub enum ToApplyShallowSnapshotAndThen {
+    TryParseAsParagraph,
+    YieldAndExpectBracedOpening(Event),
 }
 
 #[derive(Clone)]

@@ -1,17 +1,25 @@
-use rotext::rendering::TagNameMap;
+use rotext::TagNameMap;
 
-pub fn new_tag_name_map_from_str(raw: &str) -> TagNameMap {
-    let mut items = raw.as_bytes().split(|x| *x == 0);
+#[derive(Debug, serde::Deserialize)]
+pub struct TagNameMapInput {
+    pub block_call_error: String,
 
-    let code_block = items.next().unwrap();
-    let ref_link = items.next().unwrap();
-    let dicexp = items.next().unwrap();
-    let wiki_link = items.next().unwrap();
+    pub code_block: String,
 
-    TagNameMap {
-        code_block,
-        ref_link,
-        dicexp,
-        wiki_link,
+    pub ref_link: String,
+    pub dicexp: String,
+    pub wiki_link: String,
+}
+
+impl TagNameMapInput {
+    pub fn convert(&self) -> TagNameMap {
+        TagNameMap {
+            block_call_error: self.block_call_error.as_bytes(),
+            code_block: self.code_block.as_bytes(),
+
+            ref_link: self.ref_link.as_bytes(),
+            dicexp: self.dicexp.as_bytes(),
+            wiki_link: self.wiki_link.as_bytes(),
+        }
     }
 }

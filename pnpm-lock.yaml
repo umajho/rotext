@@ -23,8 +23,8 @@ importers:
         specifier: ^0.3.0
         version: 0.3.0(solid-element@1.9.1(solid-js@1.9.3))(solid-icons@1.1.0(solid-js@1.9.3))(solid-js@1.9.3)
       '@rolludejo/internal-web-shared':
-        specifier: ^0.4.0
-        version: 0.4.0(solid-js@1.9.3)
+        specifier: ^0.4.1
+        version: 0.4.1(solid-js@1.9.3)
       '@rotext/solid-components':
         specifier: workspace:*
         version: link:../../packages/solid-components
@@ -54,8 +54,8 @@ importers:
   packages/ankor:
     dependencies:
       '@rolludejo/internal-web-shared':
-        specifier: ^0.4.0
-        version: 0.4.0(solid-js@1.9.3)
+        specifier: ^0.4.1
+        version: 0.4.1(solid-js@1.9.3)
       solid-element:
         specifier: ^1.9.1
         version: 1.9.1(solid-js@1.9.3)
@@ -73,8 +73,8 @@ importers:
   packages/solid-components:
     dependencies:
       '@rolludejo/internal-web-shared':
-        specifier: ^0.4.0
-        version: 0.4.0(solid-js@1.9.3)
+        specifier: ^0.4.1
+        version: 0.4.1(solid-js@1.9.3)
       ankor:
         specifier: workspace:*
         version: link:../ankor
@@ -176,8 +176,8 @@ importers:
         specifier: ^0.3.0
         version: 0.3.0(solid-element@1.9.1(solid-js@1.9.3))(solid-icons@1.1.0(solid-js@1.9.3))(solid-js@1.9.3)
       '@rolludejo/internal-web-shared':
-        specifier: ^0.4.0
-        version: 0.4.0(solid-js@1.9.3)
+        specifier: ^0.4.1
+        version: 0.4.1(solid-js@1.9.3)
       '@rotext/solid-components':
         specifier: workspace:*
         version: link:../packages/solid-components
@@ -922,8 +922,8 @@ packages:
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
 
-  '@rolludejo/internal-web-shared@0.4.0':
-    resolution: {integrity: sha512-br1RNjOJW7gOyBguXH2TPdooKxgtTs/e9HuspeaH5TtDLQA9F0aoDNKNEzSkps/K4h4jXp6gdFC7md8OXoGOHA==}
+  '@rolludejo/internal-web-shared@0.4.1':
+    resolution: {integrity: sha512-3N3DU63G6pPHJJjDMrG/IZhnSo6fsOBIRI87RHGH6XinbcnY7O5VB+PBj1LUFhOM7Me5CporPNECiqyjvyvvOg==}
     engines: {node: '>=18', pnpm: '>=8.6.0'}
     peerDependencies:
       solid-js: ^1.8.18
@@ -3720,7 +3720,7 @@ snapshots:
   '@pkgjs/parseargs@0.11.0':
     optional: true
 
-  '@rolludejo/internal-web-shared@0.4.0(solid-js@1.9.3)':
+  '@rolludejo/internal-web-shared@0.4.1(solid-js@1.9.3)':
     dependencies:
       solid-js: 1.9.3
 
