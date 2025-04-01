@@ -93,14 +93,11 @@
 
 {{ #Example
 || `input=<`
-{! .foo}{{#折叠||内容。}}
+{! .foo}{{#折叠||`title=对内容的总结||内容。}}
 `>
 || `expected=
-<x-collapse class="foo">
-  <span slot="title">对内容的总结</span>
-  <div slot="content">
-    <p>内容。</p>
-  </div>
+<x-collapse title="对内容的总结" class="foo">
+  <p>内容。</p>
 </x-collapse>
 }}
 
@@ -109,5 +106,5 @@
 {! .foo}{{#注||内容。}}
 `>
 || `expected=
-<x-callout-note class="foo">内容。</x-callout-note>
+<x-callout variant="note" class="foo">内容。</x-callout>
 }}
