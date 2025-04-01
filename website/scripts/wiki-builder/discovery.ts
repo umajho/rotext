@@ -26,9 +26,9 @@ export async function discoverPagesInNamespace(
   namespacePath: string,
 ): Promise<DiscoveredPage[]> {
   return (await fs.readdir(namespacePath, { recursive: true }))
-    .filter((p) => path.extname(p) === ".md")
+    .filter((p) => !p.startsWith("$") && path.extname(p) === ".rotext")
     .map((p) => ({
-      name: /(.*)\.md$/.exec(p)![1]!,
+      name: /(.*)\.rotext$/.exec(p)![1]!,
       path: path.join(namespacePath, p),
     }));
 }

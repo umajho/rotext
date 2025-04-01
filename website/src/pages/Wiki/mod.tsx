@@ -38,7 +38,7 @@ export default (() => {
 
   const sourceLink = createMemo(() => {
     const pagePath = pageName().replace(":", "/");
-    return `https://github.com/umajho/rotext/blob/main/docs/wiki/${pagePath}.md?plain=1`;
+    return `https://github.com/umajho/rotext/blob/main/docs/wiki/${pagePath}.rotext?plain=1`;
   });
 
   const [isIndexLoaded, setIsIndexLoaded] = createSignal(false);

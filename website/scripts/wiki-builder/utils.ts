@@ -1,5 +1,7 @@
 import { type HTMLElement, type Node } from "node-html-parser";
 
+import { Extension } from "@rotext/wasm-bindings-adapter";
+
 import {
   BLOCK_EXTENSION_LIST,
   TAG_NAME_MAP,
@@ -12,7 +14,10 @@ import { NamespaceMap } from "./namespaces";
 export function mustParseAndRenderRotext(input: string) {
   const result = rotextAdapter.parseAndRender(input, {
     tag_name_map: TAG_NAME_MAP,
-    block_extension_list: BLOCK_EXTENSION_LIST,
+    block_extension_list: [
+      ...BLOCK_EXTENSION_LIST,
+      ...EXTRA_BLOCK_EXTENSION_LIST,
+    ],
     should_include_block_ids: false,
   });
   if (result[0] !== "ok") {
@@ -170,3 +175,41 @@ export function extractTargetsInNavigation(
     }
   }
 }
+
+const EXTRA_BLOCK_EXTENSION_LIST: Extension[] = [
+  {
+    ElementMapper: {
+      name: "Example",
+      tag_name: "x-rotext-example",
+      variant: null,
+      parameters: {},
+      verbatim_parameters: {
+        "input": {
+          Real: { is_optional: false, mapping_to_attribute: "input" },
+        },
+        "expected": {
+          Real: { is_optional: false, mapping_to_attribute: "expected" },
+        },
+        "use fixtures": {
+          Real: { is_optional: true, mapping_to_attribute: "use-fixtures" },
+        },
+      },
+    },
+  },
+  {
+    ElementMapper: {
+      name: "ExampleFixture",
+      tag_name: "x-rotext-example-fixture",
+      variant: null,
+      parameters: {},
+      verbatim_parameters: {
+        "name": {
+          Real: { is_optional: false, mapping_to_attribute: "name" },
+        },
+        "input": {
+          Real: { is_optional: false, mapping_to_attribute: "input" },
+        },
+      },
+    },
+  },
+];
