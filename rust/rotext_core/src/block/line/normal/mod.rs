@@ -125,7 +125,7 @@ pub enum ContentBefore {
 
 /// 解析一般的一行中的一段内容，即并非逐字内容的一行。
 ///
-/// 有关参数 `content_before` 的说明见 [leaf::paragraph::enter_if_not_blank]。
+/// 有关参数 `content_before` 的说明见 [terminal::paragraph::enter_if_not_blank]。
 ///
 /// 调用者应确保调用时 cursor 所指的字符并非空格。拒绝开头有空格的情况是为了明确开头的这些空格
 /// 应该由外部决定是保留还是省略，本函数不对此做处理。

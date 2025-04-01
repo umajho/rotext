@@ -27,11 +27,11 @@ use state::{
 
 use parser_inner::ParserInner;
 use stack_wrapper::{
-    GeneralItemLike, ItemLikeContainer, Meta, ParserInnerShallowSnapshotNamePart, StackEntryCall,
-    StackEntryItemLike, StackEntryItemLikeContainer, StackEntryTable, TopLeaf,
-    TopLeafCallArgumentBeginning, TopLeafCallVerbatimArgumentValue, TopLeafCodeBlock,
-    TopLeafHeading, TopLeafParagraph, TopLeafPotentialCallBeginning,
-    TopLeafPotentialCallBeginningNamePart, TopLeafVerbatimParseState,
+    GeneralItemLike, ItemLikeContainer, Leaf, LeafCallArgumentBeginning,
+    LeafCallVerbatimArgumentValue, LeafCodeBlock, LeafHeading, LeafParagraph,
+    LeafPotentialCallBeginning, LeafVerbatimParseState, Meta, ParserInnerShallowSnapshotNamePart,
+    PotentialCallBeginningNamePart, StackEntryCall, StackEntryItemLike,
+    StackEntryItemLikeContainer, StackEntryTable,
 };
 use types::{CursorContext, YieldContext};
 
@@ -87,7 +87,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                     if !self
                         .item_likes_state
                         .has_unprocessed_item_likes_at_current_line()
-                        && self.inner.stack.is_top_leaf_some()
+                        && self.inner.stack.has_leaf()
                     {
                         expecting = Expecting::LeafContent;
                         self.state = expecting.into();
@@ -103,7 +103,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                     .map(|tym| cast_tym!(tym));
                 }
                 Expecting::BracedOpening => {
-                    if self.inner.stack.is_top_leaf_some() {
+                    if self.inner.stack.has_leaf() {
                         expecting = Expecting::LeafContent;
                         self.state = expecting.into();
                         continue;
@@ -117,16 +117,16 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                     .map(|tym| cast_tym!(tym));
                 }
                 Expecting::LeafContent => {
-                    if let Some(top_leaf) = self.inner.stack.pop_top_leaf() {
-                        break leaf::parse_content_and_process(
+                    if let Some(leaf) = self.inner.stack.pop_leaf() {
+                        break terminal::parse_content_and_process(
                             self.input,
                             &mut self.state,
                             &mut self.inner,
-                            top_leaf,
+                            leaf,
                         )
                         .map(|tym| cast_tym!(tym));
                     }
-                    break leaf::parse_opening_and_process(
+                    break terminal::parse_opening_and_process(
                         self.input,
                         &mut self.state,
                         &mut self.inner,
@@ -143,22 +143,22 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
         item_likes_state: &mut ItemLikesState,
         exiting: &mut Exiting,
     ) -> crate::Result<(Tym<3>, Option<State>)> {
-        if let Some(top_leaf) = inner.stack.pop_top_leaf() {
-            let tym: Tym<3> = match top_leaf {
-                TopLeaf::Paragraph(top_leaf) => leaf::paragraph::exit(inner, top_leaf).into(),
-                TopLeaf::Heading(top_leaf) => leaf::heading::exit(inner, top_leaf).into(),
-                TopLeaf::CodeBlock(top_leaf) => leaf::code_block::exit(inner, top_leaf).into(),
-                TopLeaf::PotentialCallBeginning(top_leaf) => {
+        if let Some(leaf) = inner.stack.pop_leaf() {
+            let tym: Tym<3> = match leaf {
+                Leaf::Paragraph(leaf) => terminal::paragraph::exit(inner, leaf).into(),
+                Leaf::Heading(leaf) => terminal::heading::exit(inner, leaf).into(),
+                Leaf::CodeBlock(leaf) => terminal::code_block::exit(inner, leaf).into(),
+                Leaf::PotentialCallBeginning(leaf) => {
                     let (tym, state) =
-                        leaf::potential_call_beginning::exit_for_mismatch_ex(inner, top_leaf, true);
+                        terminal::potential_call_beginning::exit_for_mismatch_ex(inner, leaf, true);
                     return Ok((tym.into(), state));
                 }
-                TopLeaf::CallArgumentBeginning(top_leaf) => {
-                    let state = leaf::call_argument_beginning::exit_for_mismatch(top_leaf);
+                Leaf::CallArgumentBeginning(leaf) => {
+                    let state = terminal::call_argument_beginning::exit_for_mismatch(leaf);
                     return Ok((TYM_UNIT.into(), Some(state)));
                 }
-                TopLeaf::CallVerbatimArgumentValue(_top_leaf) => {
-                    leaf::call_verbatim_argument_value::exit().into()
+                Leaf::CallVerbatimArgumentValue(_leaf) => {
+                    terminal::call_verbatim_argument_value::exit().into()
                 }
             };
             return Ok((cast_tym!(tym), None));
@@ -196,9 +196,8 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                     )));
                     (true, false)
                 } else if inner.stack.top_is_call() {
-                    exiting.and_then = Some(
-                        ExitingAndThen::PushTopLeafCallArgumentBeginningAndExpectBracedOpening,
-                    );
+                    exiting.and_then =
+                        Some(ExitingAndThen::PushLeafCallArgumentBeginningAndExpectBracedOpening);
                     (true, false)
                 } else {
                     (false, true)
@@ -252,12 +251,12 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                     inner.r#yield(ev).into(),
                     Some(Expecting::BracedOpening.into()),
                 ),
-                ExitingAndThen::PushTopLeafCallArgumentBeginningAndExpectBracedOpening => {
-                    let top_leaf = TopLeafCallArgumentBeginning {
+                ExitingAndThen::PushLeafCallArgumentBeginningAndExpectBracedOpening => {
+                    let leaf = LeafCallArgumentBeginning {
                         shallow_snapshot: inner.take_shallow_snapshot(),
                         name_part: None,
                     };
-                    inner.stack.push_top_leaf(top_leaf.into());
+                    inner.stack.push_leaf(leaf.into());
                     (TYM_UNIT.into(), Some(Expecting::BracedOpening.into()))
                 }
                 ExitingAndThen::End => (TYM_UNIT.into(), Some(State::Ended)),
@@ -329,7 +328,7 @@ impl<TStack: Stack<StackEntry>> Iterator for Parser<'_, TStack> {
                     match payload.and_then {
                         ToApplyShallowSnapshotAndThen::TryParseAsParagraph => {
                             self.state = Expecting::LeafContent.into();
-                            leaf::paragraph::enter_if_not_blank(
+                            terminal::paragraph::enter_if_not_blank(
                                 self.input,
                                 &mut self.state,
                                 &mut self.inner,
@@ -522,7 +521,7 @@ mod branch {
             match input.get(inner.cursor() + 1) {
                 Some(c) if is_whitespace!(c) => inner.move_cursor_forward(2),
                 None | Some(b'\r' | b'\n') => inner.move_cursor_forward(1),
-                // TODO: 也许可以一步到位调用 `leaf::paragraph::enter_if_not_blank(input, inner, 1)`。
+                // TODO: 也许可以一步到位调用 `terminal::paragraph::enter_if_not_blank(input, inner, 1)`。
                 _ => return false,
             }
 
@@ -584,8 +583,8 @@ mod branch {
                         table::enter(state, inner).map(|tym| cast_tym!(tym))
                     }
                     Some(m!('{')) => {
-                        inner.stack.push_top_leaf(
-                            TopLeafPotentialCallBeginning {
+                        inner.stack.push_leaf(
+                            LeafPotentialCallBeginning {
                                 shallow_snapshot: inner.take_shallow_snapshot(),
                                 name_part: None,
                             }
@@ -594,10 +593,10 @@ mod branch {
                         inner.move_cursor_forward("{{".len());
                         Ok(TYM_UNIT.into())
                     }
-                    _ => leaf::paragraph::enter_if_not_blank(input, state, inner, 1)
+                    _ => terminal::paragraph::enter_if_not_blank(input, state, inner, 1)
                         .map(|tym| cast_tym!(tym)),
                 },
-                _ => leaf::parse_opening_and_process(input, state, inner, first_char)
+                _ => terminal::parse_opening_and_process(input, state, inner, first_char)
                     .map(|tym| cast_tym!(tym)),
             }
         }
@@ -833,7 +832,7 @@ mod branch {
     }
 }
 
-mod leaf {
+mod terminal {
     use crate::internal_utils::string::is_whitespace;
 
     use super::*;
@@ -887,36 +886,36 @@ mod leaf {
         input: &[u8],
         state: &mut State,
         inner: &mut ParserInner<TStack>,
-        top_leaf: TopLeaf,
+        leaf: Leaf,
     ) -> crate::Result<Tym<5>> {
-        match top_leaf {
-            TopLeaf::Paragraph(top_leaf) => {
-                leaf::paragraph::parse_content_and_process(input, state, inner, top_leaf)
+        match leaf {
+            Leaf::Paragraph(leaf) => {
+                terminal::paragraph::parse_content_and_process(input, state, inner, leaf)
                     .map(|tym| cast_tym!(tym))
             }
-            TopLeaf::Heading(top_leaf) => {
-                leaf::heading::parse_content_and_process(input, state, inner, top_leaf)
+            Leaf::Heading(leaf) => {
+                terminal::heading::parse_content_and_process(input, state, inner, leaf)
                     .map(|tym| cast_tym!(tym))
             }
-            TopLeaf::CodeBlock(top_leaf) => {
-                leaf::code_block::parse_content_and_process(input, inner, top_leaf)
+            Leaf::CodeBlock(leaf) => {
+                terminal::code_block::parse_content_and_process(input, inner, leaf)
                     .map(|tym| cast_tym!(tym))
             }
-            TopLeaf::PotentialCallBeginning(top_leaf) => {
-                leaf::potential_call_beginning::parse_content_and_process(
-                    input, state, inner, top_leaf,
+            Leaf::PotentialCallBeginning(leaf) => {
+                terminal::potential_call_beginning::parse_content_and_process(
+                    input, state, inner, leaf,
                 )
                 .map(|tym| cast_tym!(tym))
             }
-            TopLeaf::CallArgumentBeginning(top_leaf) => {
-                leaf::call_argument_beginning::parse_content_and_process(
-                    input, state, inner, top_leaf,
+            Leaf::CallArgumentBeginning(leaf) => {
+                terminal::call_argument_beginning::parse_content_and_process(
+                    input, state, inner, leaf,
                 )
                 .map(|tym| cast_tym!(tym))
             }
-            TopLeaf::CallVerbatimArgumentValue(top_leaf) => {
-                leaf::call_verbatim_argument_value::parse_content_and_process(
-                    input, inner, top_leaf,
+            Leaf::CallVerbatimArgumentValue(leaf) => {
+                terminal::call_verbatim_argument_value::parse_content_and_process(
+                    input, inner, leaf,
                 )
                 .map(|tym| cast_tym!(tym))
             }
@@ -952,13 +951,13 @@ mod leaf {
             level: usize,
         ) -> crate::Result<Tym<1>> {
             let id = inner.pop_block_id();
-            let top_leaf = TopLeafHeading {
+            let leaf = LeafHeading {
                 meta: Meta::new(id, inner.current_line()),
                 level,
                 has_content_before: false,
             };
-            let ev = top_leaf.make_enter_event();
-            inner.stack.push_top_leaf(top_leaf.into());
+            let ev = leaf.make_enter_event();
+            inner.stack.push_leaf(leaf.into());
             let tym = inner.r#yield(ev);
 
             Ok(tym)
@@ -968,7 +967,7 @@ mod leaf {
             input: &[u8],
             state: &mut State,
             inner: &mut ParserInner<TStack>,
-            mut top_leaf: TopLeafHeading,
+            mut leaf: LeafHeading,
         ) -> crate::Result<Tym<2>> {
             let (mut content, end) = line::normal::parse(
                 input,
@@ -976,7 +975,7 @@ mod leaf {
                 line::normal::EndCondition {
                     on_atx_closing: Some(AtxClosing {
                         character: m!('='),
-                        count: top_leaf.level,
+                        count: leaf.level,
                     }),
                     on_table_related: branch::braced::table::make_table_related_end_condition(
                         inner, false,
@@ -991,7 +990,7 @@ mod leaf {
                 },
             );
 
-            if top_leaf.has_content_before
+            if leaf.has_content_before
                 && inner.current_expecting.spaces_before() > 0
                 && end.is_verbatim_escaping()
             {
@@ -1005,26 +1004,26 @@ mod leaf {
             };
 
             let tym_b = match end {
-                line::normal::End::Eof | line::normal::End::NewLine(_) => exit(inner, top_leaf),
+                line::normal::End::Eof | line::normal::End::NewLine(_) => exit(inner, leaf),
                 line::normal::End::VerbatimEscaping(verbatim_escaping) => {
-                    top_leaf.has_content_before = true;
-                    inner.stack.push_top_leaf(top_leaf.into());
+                    leaf.has_content_before = true;
+                    inner.stack.push_leaf(leaf.into());
                     line::global_phase::process_verbatim_escaping(inner, verbatim_escaping)
                 }
                 line::normal::End::TableRelated(table_related_end) => {
-                    let tym_a = exit(inner, top_leaf);
+                    let tym_a = exit(inner, leaf);
                     let tym_b = table_related_end.process(state);
 
                     tym_a.add(tym_b)
                 }
                 line::normal::End::CallRelated(call_related_end) => {
-                    let tym_a = exit(inner, top_leaf);
+                    let tym_a = exit(inner, leaf);
                     let tym_b = call_related_end.process(state);
 
                     tym_a.add(tym_b)
                 }
                 line::normal::End::DoublePipes => {
-                    let tym_a = exit(inner, top_leaf);
+                    let tym_a = exit(inner, leaf);
                     let tym_b = branch::braced::process_double_pipes(state);
 
                     tym_a.add(tym_b)
@@ -1046,14 +1045,14 @@ mod leaf {
 
         pub fn exit<TStack: Stack<StackEntry>>(
             inner: &mut ParserInner<TStack>,
-            top_leaf: TopLeafHeading,
+            leaf: LeafHeading,
         ) -> Tym<1> {
-            inner.r#yield(top_leaf.make_exit_event(inner.current_line()))
+            inner.r#yield(leaf.make_exit_event(inner.current_line()))
         }
     }
 
     pub mod code_block {
-        use stack_wrapper::{TopLeafCodeBlockState, TopLeafVerbatimParseState};
+        use stack_wrapper::{LeafCodeBlockState, LeafVerbatimParseState};
 
         use super::*;
 
@@ -1062,14 +1061,14 @@ mod leaf {
             backticks: usize,
         ) -> crate::Result<Tym<1>> {
             let id = inner.pop_block_id();
-            let top_leaf = TopLeafCodeBlock {
+            let leaf = LeafCodeBlock {
                 meta: Meta::new(id, inner.current_line()),
                 backticks,
                 indent: inner.current_expecting.spaces_before(),
-                state: TopLeafCodeBlockState::InInfoString,
+                state: LeafCodeBlockState::InInfoString,
             };
-            let ev = top_leaf.make_enter_event();
-            inner.stack.push_top_leaf(top_leaf.into());
+            let ev = leaf.make_enter_event();
+            inner.stack.push_leaf(leaf.into());
             let tym = inner.r#yield(ev);
 
             Ok(tym)
@@ -1078,10 +1077,10 @@ mod leaf {
         pub fn parse_content_and_process<TStack: Stack<StackEntry>>(
             input: &[u8],
             inner: &mut ParserInner<TStack>,
-            mut top_leaf: TopLeafCodeBlock,
+            mut leaf: LeafCodeBlock,
         ) -> crate::Result<Tym<3>> {
-            let tym = match top_leaf.state {
-                TopLeafCodeBlockState::InInfoString => {
+            let tym = match leaf.state {
+                LeafCodeBlockState::InInfoString => {
                     let (content, end) = line::verbatim::parse(
                         input,
                         inner,
@@ -1099,8 +1098,8 @@ mod leaf {
                     let tym_b = match end {
                         line::verbatim::End::Eof => TYM_UNIT.into(),
                         line::verbatim::End::NewLine(_new_line) => {
-                            top_leaf.state = TopLeafCodeBlockState::InCode(
-                                TopLeafVerbatimParseState::AtFirstLineBeginning,
+                            leaf.state = LeafCodeBlockState::InCode(
+                                LeafVerbatimParseState::AtFirstLineBeginning,
                             );
                             inner.r#yield(ev!(Block, IndicateCodeBlockCode))
                         }
@@ -1113,25 +1112,25 @@ mod leaf {
                         }
                     };
 
-                    inner.stack.push_top_leaf(top_leaf.into());
+                    inner.stack.push_leaf(leaf.into());
 
                     tym_a.add(tym_b).into()
                 }
-                TopLeafCodeBlockState::InCode(ref in_code) => {
+                LeafCodeBlockState::InCode(ref in_code) => {
                     let (at_line_beginning, new_line) = match in_code {
-                        TopLeafVerbatimParseState::AtFirstLineBeginning => (
+                        LeafVerbatimParseState::AtFirstLineBeginning => (
                             Some(line::verbatim::AtLineBeginning {
-                                indent: top_leaf.indent,
+                                indent: leaf.indent,
                             }),
                             None,
                         ),
-                        TopLeafVerbatimParseState::AtLineBeginning(new_line) => (
+                        LeafVerbatimParseState::AtLineBeginning(new_line) => (
                             Some(line::verbatim::AtLineBeginning {
-                                indent: top_leaf.indent,
+                                indent: leaf.indent,
                             }),
                             Some(new_line.clone()),
                         ),
-                        TopLeafVerbatimParseState::Normal => (None, None),
+                        LeafVerbatimParseState::Normal => (None, None),
                     };
 
                     let (content, end) = line::verbatim::parse(
@@ -1140,7 +1139,7 @@ mod leaf {
                         line::verbatim::EndCondition {
                             on_fence: Some(line::verbatim::Fence {
                                 character: m!('`'),
-                                minimum_count: top_leaf.backticks,
+                                minimum_count: leaf.backticks,
                             }),
                             ..Default::default()
                         },
@@ -1162,29 +1161,27 @@ mod leaf {
 
                     let tym_c = match end {
                         line::verbatim::End::Eof => {
-                            inner.stack.push_top_leaf(top_leaf.into());
+                            inner.stack.push_leaf(leaf.into());
                             TYM_UNIT.into()
                         }
                         line::verbatim::End::NewLine(new_line) => {
-                            top_leaf.state = TopLeafCodeBlockState::InCode(
-                                TopLeafVerbatimParseState::AtLineBeginning(new_line),
+                            leaf.state = LeafCodeBlockState::InCode(
+                                LeafVerbatimParseState::AtLineBeginning(new_line),
                             );
-                            inner.stack.push_top_leaf(top_leaf.into());
+                            inner.stack.push_leaf(leaf.into());
                             TYM_UNIT.into()
                         }
                         line::verbatim::End::VerbatimEscaping(verbatim_escaping) => {
-                            top_leaf.state =
-                                TopLeafCodeBlockState::InCode(TopLeafVerbatimParseState::Normal);
-                            inner.stack.push_top_leaf(top_leaf.into());
+                            leaf.state = LeafCodeBlockState::InCode(LeafVerbatimParseState::Normal);
+                            inner.stack.push_leaf(leaf.into());
                             line::global_phase::process_verbatim_escaping(inner, verbatim_escaping)
                         }
                         line::verbatim::End::Fence => {
-                            exit_when_indicator_already_yielded(inner, top_leaf)
+                            exit_when_indicator_already_yielded(inner, leaf)
                         }
                         line::verbatim::End::None => {
-                            top_leaf.state =
-                                TopLeafCodeBlockState::InCode(TopLeafVerbatimParseState::Normal);
-                            inner.stack.push_top_leaf(top_leaf.into());
+                            leaf.state = LeafCodeBlockState::InCode(LeafVerbatimParseState::Normal);
+                            inner.stack.push_leaf(leaf.into());
                             TYM_UNIT.into()
                         }
                         line::verbatim::End::BeforeStated => unreachable!(),
@@ -1199,22 +1196,22 @@ mod leaf {
 
         fn exit_when_indicator_already_yielded<TStack: Stack<StackEntry>>(
             inner: &mut ParserInner<TStack>,
-            top_leaf: TopLeafCodeBlock,
+            leaf: LeafCodeBlock,
         ) -> Tym<1> {
-            inner.r#yield(top_leaf.make_exit_event(inner.current_line()))
+            inner.r#yield(leaf.make_exit_event(inner.current_line()))
         }
 
         pub fn exit<TStack: Stack<StackEntry>>(
             inner: &mut ParserInner<TStack>,
-            top_leaf: TopLeafCodeBlock,
+            leaf: LeafCodeBlock,
         ) -> Tym<2> {
-            let tym_a = if matches!(top_leaf.state, TopLeafCodeBlockState::InInfoString) {
+            let tym_a = if matches!(leaf.state, LeafCodeBlockState::InInfoString) {
                 inner.r#yield(ev!(Block, IndicateCodeBlockCode))
             } else {
                 TYM_UNIT.into()
             };
 
-            let tym_b = exit_when_indicator_already_yielded(inner, top_leaf);
+            let tym_b = exit_when_indicator_already_yielded(inner, leaf);
 
             tym_a.add(tym_b)
         }
@@ -1262,12 +1259,12 @@ mod leaf {
 
             let tym_ab = if !content.is_empty() || end.is_verbatim_escaping() {
                 let id = inner.pop_block_id();
-                let top_leaf = TopLeafParagraph {
+                let leaf = LeafParagraph {
                     meta: Meta::new(id, line_start),
                     new_line: end.try_take_new_line(),
                 };
-                let ev = top_leaf.make_enter_event();
-                inner.stack.push_top_leaf(top_leaf.into());
+                let ev = leaf.make_enter_event();
+                inner.stack.push_leaf(leaf.into());
                 let tym_a = inner.r#yield(ev);
 
                 let tym_b = if !content.is_empty() {
@@ -1317,10 +1314,10 @@ mod leaf {
                 line::normal::End::DescriptionDefinitionOpening => {
                     // 退出当前的段落。
                     let tym_a = {
-                        let Some(TopLeaf::Paragraph(top_leaf)) = inner.stack.pop_top_leaf() else {
+                        let Some(Leaf::Paragraph(leaf)) = inner.stack.pop_leaf() else {
                             unreachable!()
                         };
-                        exit(inner, top_leaf)
+                        exit(inner, leaf)
                     };
 
                     // 退出当前的 DT。
@@ -1364,7 +1361,7 @@ mod leaf {
             input: &[u8],
             state: &mut State,
             inner: &mut ParserInner<TStack>,
-            mut top_leaf: TopLeafParagraph,
+            mut leaf: LeafParagraph,
         ) -> crate::Result<Tym<5>> {
             let (mut content, mut end) = line::normal::parse(
                 input,
@@ -1385,9 +1382,9 @@ mod leaf {
             );
 
             let is_still_in_paragraph =
-                !content.is_empty() || top_leaf.new_line.is_none() || end.is_verbatim_escaping();
+                !content.is_empty() || leaf.new_line.is_none() || end.is_verbatim_escaping();
             let tym_ab = if is_still_in_paragraph {
-                let tym_a = if let Some(new_line) = top_leaf.new_line {
+                let tym_a = if let Some(new_line) = leaf.new_line {
                     inner.r#yield(ev!(Block, NewLine(new_line)))
                 } else {
                     if inner.current_expecting.spaces_before() > 0 {
@@ -1397,8 +1394,8 @@ mod leaf {
                     TYM_UNIT.into()
                 };
 
-                top_leaf.new_line = end.try_take_new_line();
-                inner.stack.push_top_leaf(top_leaf.into());
+                leaf.new_line = end.try_take_new_line();
+                inner.stack.push_leaf(leaf.into());
 
                 let tym_b = if !content.is_empty() {
                     inner.r#yield(ev!(Block, __Unparsed(content)))
@@ -1408,7 +1405,7 @@ mod leaf {
 
                 tym_a.add(tym_b)
             } else {
-                exit(inner, top_leaf).into()
+                exit(inner, leaf).into()
             };
 
             let tym_c = process_normal_end(end, state, inner)?;
@@ -1418,9 +1415,9 @@ mod leaf {
 
         pub fn exit<TStack: Stack<StackEntry>>(
             inner: &mut ParserInner<TStack>,
-            top_leaf: TopLeafParagraph,
+            leaf: LeafParagraph,
         ) -> Tym<1> {
-            inner.r#yield(top_leaf.make_exit_event(inner.current_line()))
+            inner.r#yield(leaf.make_exit_event(inner.current_line()))
         }
     }
 
@@ -1431,13 +1428,13 @@ mod leaf {
             input: &[u8],
             state: &mut State,
             inner: &mut ParserInner<TStack>,
-            top_leaf: TopLeafPotentialCallBeginning,
+            leaf: LeafPotentialCallBeginning,
         ) -> crate::Result<Tym<2>> {
             let (_content, end) = line::normal::parse(
                 input,
                 inner,
                 line::normal::EndCondition {
-                    matching: Some(if top_leaf.name_part.is_none() {
+                    matching: Some(if leaf.name_part.is_none() {
                         line::normal::Matching::CallName
                     } else {
                         line::normal::Matching::CallArgumentIndicator
@@ -1462,8 +1459,8 @@ mod leaf {
                     }
                     line::normal::MatchedCallNameExtraMatched::ArgumentIndicator => {
                         let tym = branch::braced::call::enter(state, inner, is_extension, range)?;
-                        inner.stack.push_top_leaf(
-                            TopLeafCallArgumentBeginning {
+                        inner.stack.push_leaf(
+                            LeafCallArgumentBeginning {
                                 shallow_snapshot: inner.take_shallow_snapshot(),
                                 name_part: None,
                             }
@@ -1472,10 +1469,10 @@ mod leaf {
                         tym.into()
                     }
                     line::normal::MatchedCallNameExtraMatched::None => {
-                        inner.stack.push_top_leaf(
-                            TopLeafPotentialCallBeginning {
-                                shallow_snapshot: top_leaf.shallow_snapshot,
-                                name_part: Some(TopLeafPotentialCallBeginningNamePart {
+                        inner.stack.push_leaf(
+                            LeafPotentialCallBeginning {
+                                shallow_snapshot: leaf.shallow_snapshot,
+                                name_part: Some(PotentialCallBeginningNamePart {
                                     is_extension,
                                     name: range,
                                 }),
@@ -1486,7 +1483,7 @@ mod leaf {
                     }
                 },
                 line::normal::End::MatchedCallClosing => {
-                    let name_part = top_leaf.name_part.unwrap();
+                    let name_part = leaf.name_part.unwrap();
                     branch::braced::call::enter_and_exit(
                         inner,
                         name_part.is_extension,
@@ -1494,7 +1491,7 @@ mod leaf {
                     )
                 }
                 line::normal::End::MatchedCallArgumentIndicator => {
-                    let name_part = top_leaf.name_part.unwrap();
+                    let name_part = leaf.name_part.unwrap();
 
                     let tym = branch::braced::call::enter(
                         state,
@@ -1502,8 +1499,8 @@ mod leaf {
                         name_part.is_extension,
                         name_part.name,
                     )?;
-                    inner.stack.push_top_leaf(
-                        TopLeafCallArgumentBeginning {
+                    inner.stack.push_leaf(
+                        LeafCallArgumentBeginning {
                             shallow_snapshot: inner.take_shallow_snapshot(),
                             name_part: None,
                         }
@@ -1512,14 +1509,14 @@ mod leaf {
                     tym.into()
                 }
                 line::normal::End::None | line::normal::End::NewLine(_) => {
-                    inner.stack.push_top_leaf(top_leaf.into());
+                    inner.stack.push_leaf(leaf.into());
                     TYM_UNIT.into()
                 }
-                line::normal::End::VerbatimEscaping(ve) if top_leaf.name_part.is_none() => {
-                    inner.stack.push_top_leaf(
-                        TopLeafPotentialCallBeginning {
-                            shallow_snapshot: top_leaf.shallow_snapshot,
-                            name_part: Some(TopLeafPotentialCallBeginningNamePart {
+                line::normal::End::VerbatimEscaping(ve) if leaf.name_part.is_none() => {
+                    inner.stack.push_leaf(
+                        LeafPotentialCallBeginning {
+                            shallow_snapshot: leaf.shallow_snapshot,
+                            name_part: Some(PotentialCallBeginningNamePart {
                                 is_extension: false,
                                 name: ve.content,
                             }),
@@ -1531,7 +1528,7 @@ mod leaf {
                 line::normal::End::Eof
                 | line::normal::End::Mismatched
                 | line::normal::End::VerbatimEscaping(_) => {
-                    *state = exit_for_mismatch(top_leaf);
+                    *state = exit_for_mismatch(leaf);
                     TYM_UNIT.into()
                 }
                 line::normal::End::TableRelated(_)
@@ -1547,9 +1544,9 @@ mod leaf {
             Ok(tym)
         }
 
-        fn exit_for_mismatch(top_leaf: TopLeafPotentialCallBeginning) -> State {
+        fn exit_for_mismatch(leaf: LeafPotentialCallBeginning) -> State {
             ToApplyShallowSnapshot {
-                shallow_snapshot: top_leaf.shallow_snapshot,
+                shallow_snapshot: leaf.shallow_snapshot,
                 and_then: ToApplyShallowSnapshotAndThen::TryParseAsParagraph,
             }
             .into()
@@ -1557,11 +1554,11 @@ mod leaf {
 
         pub fn exit_for_mismatch_ex<TStack: Stack<StackEntry>>(
             inner: &mut ParserInner<TStack>,
-            top_leaf: TopLeafPotentialCallBeginning,
+            leaf: LeafPotentialCallBeginning,
             can_still_form_if_applicable: bool,
         ) -> (Tym<2>, Option<State>) {
-            if can_still_form_if_applicable && top_leaf.name_part.is_some() {
-                let name_part = top_leaf.name_part.unwrap();
+            if can_still_form_if_applicable && leaf.name_part.is_some() {
+                let name_part = leaf.name_part.unwrap();
                 (
                     branch::braced::call::enter_and_exit(
                         inner,
@@ -1571,7 +1568,7 @@ mod leaf {
                     None,
                 )
             } else {
-                (TYM_UNIT.into(), Some(exit_for_mismatch(top_leaf)))
+                (TYM_UNIT.into(), Some(exit_for_mismatch(leaf)))
             }
         }
     }
@@ -1583,9 +1580,9 @@ mod leaf {
             input: &[u8],
             state: &mut State,
             inner: &mut ParserInner<TStack>,
-            top_leaf: TopLeafCallArgumentBeginning,
+            leaf: LeafCallArgumentBeginning,
         ) -> crate::Result<Tym<1>> {
-            let has_matched_name = top_leaf.name_part.is_some();
+            let has_matched_name = leaf.name_part.is_some();
 
             let (_content, end) = line::normal::parse(
                 input,
@@ -1614,9 +1611,9 @@ mod leaf {
                     if has_matched_equal_sign {
                         exit_for_match(state, inner, is_verbatim, range)
                     } else {
-                        inner.stack.push_top_leaf(
-                            TopLeafCallArgumentBeginning {
-                                shallow_snapshot: top_leaf.shallow_snapshot,
+                        inner.stack.push_leaf(
+                            LeafCallArgumentBeginning {
+                                shallow_snapshot: leaf.shallow_snapshot,
                                 name_part: Some(ParserInnerShallowSnapshotNamePart {
                                     is_verbatim,
                                     name: range,
@@ -1629,17 +1626,17 @@ mod leaf {
                     }
                 }
                 line::normal::End::Matched => {
-                    let name_part = top_leaf.name_part.unwrap();
+                    let name_part = leaf.name_part.unwrap();
                     exit_for_match(state, inner, name_part.is_verbatim, name_part.name)
                 }
                 line::normal::End::None | line::normal::End::NewLine(_) => {
-                    inner.stack.push_top_leaf(top_leaf.into());
+                    inner.stack.push_leaf(leaf.into());
                     TYM_UNIT.into()
                 }
-                line::normal::End::VerbatimEscaping(ve) if top_leaf.name_part.is_none() => {
-                    inner.stack.push_top_leaf(
-                        TopLeafCallArgumentBeginning {
-                            shallow_snapshot: top_leaf.shallow_snapshot,
+                line::normal::End::VerbatimEscaping(ve) if leaf.name_part.is_none() => {
+                    inner.stack.push_leaf(
+                        LeafCallArgumentBeginning {
+                            shallow_snapshot: leaf.shallow_snapshot,
                             name_part: Some(ParserInnerShallowSnapshotNamePart {
                                 is_verbatim: false,
                                 name: ve.content,
@@ -1652,7 +1649,7 @@ mod leaf {
                 line::normal::End::Eof
                 | line::normal::End::Mismatched
                 | line::normal::End::VerbatimEscaping(_) => {
-                    *state = exit_for_mismatch(top_leaf);
+                    *state = exit_for_mismatch(leaf);
                     TYM_UNIT.into()
                 }
                 line::normal::End::TableRelated(_)
@@ -1675,7 +1672,7 @@ mod leaf {
         ) -> Tym<1> {
             if is_verbatim {
                 let tym_a = inner.r#yield(ev!(Block, IndicateCallVerbatimArgument(range)));
-                let tym_b = leaf::call_verbatim_argument_value::enter(state, inner);
+                let tym_b = terminal::call_verbatim_argument_value::enter(state, inner);
                 tym_a.add(tym_b)
             } else {
                 *state = Expecting::BracedOpening.into();
@@ -1683,9 +1680,9 @@ mod leaf {
             }
         }
 
-        pub fn exit_for_mismatch(top_leaf: TopLeafCallArgumentBeginning) -> State {
+        pub fn exit_for_mismatch(leaf: LeafCallArgumentBeginning) -> State {
             ToApplyShallowSnapshot {
-                shallow_snapshot: top_leaf.shallow_snapshot,
+                shallow_snapshot: leaf.shallow_snapshot,
                 and_then: ToApplyShallowSnapshotAndThen::YieldAndExpectBracedOpening(ev!(
                     Block,
                     IndicateCallNormalArgument(None)
@@ -1705,9 +1702,9 @@ mod leaf {
             // `Expecting::*` 中的任何一种应该都无所谓？
             *state = Expecting::LeafContent.into();
 
-            inner.stack.push_top_leaf(
-                TopLeafCallVerbatimArgumentValue {
-                    state: TopLeafVerbatimParseState::AtFirstLineBeginning,
+            inner.stack.push_leaf(
+                LeafCallVerbatimArgumentValue {
+                    state: LeafVerbatimParseState::AtFirstLineBeginning,
                 }
                 .into(),
             );
@@ -1718,10 +1715,10 @@ mod leaf {
         pub fn parse_content_and_process<TStack: Stack<StackEntry>>(
             input: &[u8],
             inner: &mut ParserInner<TStack>,
-            mut top_leaf: TopLeafCallVerbatimArgumentValue,
+            mut leaf: LeafCallVerbatimArgumentValue,
         ) -> crate::Result<Tym<3>> {
-            let new_line = match &top_leaf.state {
-                TopLeafVerbatimParseState::AtLineBeginning(new_line) => Some(new_line.clone()),
+            let new_line = match &leaf.state {
+                LeafVerbatimParseState::AtLineBeginning(new_line) => Some(new_line.clone()),
                 _ => None,
             };
 
@@ -1751,22 +1748,22 @@ mod leaf {
 
             let tym_c = match end {
                 line::verbatim::End::Eof => {
-                    inner.stack.push_top_leaf(top_leaf.into());
+                    inner.stack.push_leaf(leaf.into());
                     TYM_UNIT.into()
                 }
                 line::verbatim::End::NewLine(new_line) => {
-                    top_leaf.state = TopLeafVerbatimParseState::AtLineBeginning(new_line);
-                    inner.stack.push_top_leaf(top_leaf.into());
+                    leaf.state = LeafVerbatimParseState::AtLineBeginning(new_line);
+                    inner.stack.push_leaf(leaf.into());
                     TYM_UNIT.into()
                 }
                 line::verbatim::End::VerbatimEscaping(verbatim_escaping) => {
-                    top_leaf.state = TopLeafVerbatimParseState::Normal;
-                    inner.stack.push_top_leaf(top_leaf.into());
+                    leaf.state = LeafVerbatimParseState::Normal;
+                    inner.stack.push_leaf(leaf.into());
                     line::global_phase::process_verbatim_escaping(inner, verbatim_escaping)
                 }
                 line::verbatim::End::None => {
-                    top_leaf.state = TopLeafVerbatimParseState::Normal;
-                    inner.stack.push_top_leaf(top_leaf.into());
+                    leaf.state = LeafVerbatimParseState::Normal;
+                    inner.stack.push_leaf(leaf.into());
                     TYM_UNIT.into()
                 }
                 line::verbatim::End::BeforeStated => TYM_UNIT.into(),

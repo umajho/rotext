@@ -2,7 +2,7 @@ mod for_mod_leaf {
     mod for_mod_ref_link {
         mod for_fn_advance_until_potential_content_ends {
             use crate::inline::{
-                leaf::ref_link::advance_until_potential_content_ends, types::Cursor,
+                terminal::ref_link::advance_until_potential_content_ends, types::Cursor,
             };
 
             fn test(input: &[u8], expected: Option<()>, expected_cursor: Cursor) {
@@ -66,7 +66,7 @@ mod for_mod_leaf {
         mod for_fn_advance_until_ends {
             use std::ops::Range;
 
-            use crate::inline::{leaf::dicexp::advance_until_ends, types::Cursor};
+            use crate::inline::{terminal::dicexp::advance_until_ends, types::Cursor};
 
             fn test(input: &[u8], expected: Range<usize>, expected_cursor: Cursor) {
                 let mut cursor = Cursor::new(0);

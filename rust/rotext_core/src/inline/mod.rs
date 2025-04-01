@@ -23,7 +23,7 @@ use crate::{
 };
 
 use parser_inner::{ParserInner, ToSkipInputEvents};
-use stack_wrapper::{TopLeaf, TopLeafCodeSpan};
+use stack_wrapper::{Leaf, LeafCodeSpan};
 use types::{Cursor, YieldContext};
 
 pub struct Parser<'a, TInlineStack: Stack<StackEntry>> {
@@ -149,10 +149,10 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
         inner: &mut ParserInner<TInlineStack>,
         event_stream: &mut Peekable<2, impl Iterator<Item = Event>>,
     ) -> crate::Result<Tym<4>> {
-        match inner.stack.pop_top_leaf() {
+        match inner.stack.pop_leaf() {
             None => Self::parse_normal(input, cursor, inner, event_stream),
-            Some(TopLeaf::CodeSpan(top_leaf)) => {
-                leaf::code_span::parse_content_and_process(input, cursor, inner, top_leaf)
+            Some(Leaf::CodeSpan(leaf)) => {
+                terminal::code_span::parse_content_and_process(input, cursor, inner, leaf)
                     .map(|tym| tym.into())
             }
         }
@@ -199,7 +199,7 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                     }
                 }
                 m!('>') if input.get(cursor.value() + 1) == Some(&m!('>')) => {
-                    match leaf::ref_link::process_potential(input, cursor) {
+                    match terminal::ref_link::process_potential(input, cursor) {
                         Some(result) => {
                             break result;
                         }
@@ -212,10 +212,10 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                         break (cursor.value(), None);
                     }
                     Some(m!('=')) => {
-                        break leaf::dicexp::process(input, cursor);
+                        break terminal::dicexp::process(input, cursor);
                     }
                     Some(m!('`')) => {
-                        break leaf::code_span::process(input, cursor, inner);
+                        break terminal::code_span::process(input, cursor, inner);
                     }
                     Some(m!('/')) => {
                         let text_end = cursor.value();
@@ -254,7 +254,7 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                         break (text_end, Some(to_yield_after_text));
                     }
                     Some(m!('[')) => {
-                        match leaf::wiki_link::process_and_yield_potential(
+                        match terminal::wiki_link::process_and_yield_potential(
                             input,
                             text_start,
                             cursor,
@@ -330,11 +330,9 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
     fn exit_until_stack_is_empty_and_then_end(
         inner: &mut ParserInner<TInlineStack>,
     ) -> (Tym<1>, Option<State<'a>>) {
-        if let Some(top_leaf) = inner.stack.pop_top_leaf() {
-            let tym = match top_leaf {
-                stack_wrapper::TopLeaf::CodeSpan(top_leaf) => {
-                    inner.r#yield(top_leaf.make_exit_event())
-                }
+        if let Some(leaf) = inner.stack.pop_leaf() {
+            let tym = match leaf {
+                stack_wrapper::Leaf::CodeSpan(leaf) => inner.r#yield(leaf.make_exit_event()),
             };
             (tym, None)
         } else if let Some(_entry) = inner.stack.pop_entry() {
@@ -433,7 +431,7 @@ mod special {
     }
 }
 
-mod leaf {
+mod terminal {
     use super::*;
 
     pub mod ref_link {
@@ -583,7 +581,7 @@ mod leaf {
             let text_end = cursor.value();
 
             cursor.move_forward("[=".len());
-            let content = leaf::dicexp::advance_until_ends(input, cursor);
+            let content = terminal::dicexp::advance_until_ends(input, cursor);
             let to_yield_after_text = ev!(Inline, Dicexp(content));
 
             (text_end, Some(to_yield_after_text))
@@ -635,9 +633,9 @@ mod leaf {
                 cursor.move_forward(1);
             }
 
-            let top_leaf = TopLeafCodeSpan { backticks };
-            let ev = top_leaf.make_enter_event();
-            inner.stack.push_top_leaf(top_leaf.into());
+            let leaf = LeafCodeSpan { backticks };
+            let ev = leaf.make_enter_event();
+            inner.stack.push_leaf(leaf.into());
 
             (text_end, Some(ev))
         }
@@ -646,7 +644,7 @@ mod leaf {
             input: &[u8],
             cursor: &mut Cursor,
             inner: &mut ParserInner<TInlineStack>,
-            top_leaf: TopLeafCodeSpan,
+            leaf: LeafCodeSpan,
         ) -> crate::Result<Tym<3>> {
             let start = cursor.value();
             while let Some(&char) = input.get(cursor.value()) {
@@ -655,7 +653,7 @@ mod leaf {
                     continue;
                 }
 
-                match input.get(cursor.value() + top_leaf.backticks) {
+                match input.get(cursor.value() + leaf.backticks) {
                     None => {
                         cursor.set_value(input.len());
                         continue;
@@ -672,9 +670,9 @@ mod leaf {
                         input,
                         m!('`'),
                         cursor.value() + 1,
-                        top_leaf.backticks - 1,
+                        leaf.backticks - 1,
                     );
-                if actual_backticks != top_leaf.backticks {
+                if actual_backticks != leaf.backticks {
                     cursor.move_forward(actual_backticks + "]".len());
                     continue;
                 }
@@ -686,13 +684,13 @@ mod leaf {
 
                 let tym_a = yield_text_if_not_empty(start, content_end, inner);
 
-                cursor.move_forward(top_leaf.backticks + "]".len());
-                let tym_b = inner.r#yield(top_leaf.make_exit_event());
+                cursor.move_forward(leaf.backticks + "]".len());
+                let tym_b = inner.r#yield(leaf.make_exit_event());
 
                 return Ok(tym_a.add(tym_b).into());
             }
 
-            inner.stack.push_top_leaf(top_leaf.into());
+            inner.stack.push_leaf(leaf.into());
             let tym = inner.r#yield(ev!(Inline, Text(start..cursor.value())));
             Ok(tym.into())
         }

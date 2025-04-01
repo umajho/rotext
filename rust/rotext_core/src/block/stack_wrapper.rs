@@ -10,7 +10,7 @@ use super::parser_inner::ParserInnerShallowSnapshot;
 
 pub struct StackWrapper<TStack: Stack<StackEntry>> {
     stack: TStack,
-    top_leaf: Option<TopLeaf>,
+    leaf: Option<Leaf>,
 
     item_likes_in_stack: usize,
     tables_in_stack: usize,
@@ -23,7 +23,7 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
     pub fn new() -> Self {
         Self {
             stack: TStack::new(),
-            top_leaf: None,
+            leaf: None,
             item_likes_in_stack: 0,
             tables_in_stack: 0,
             calls_in_stack: 0,
@@ -36,7 +36,7 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.top_leaf.is_none() && self.stack.as_slice().is_empty()
+        self.leaf.is_none() && self.stack.as_slice().is_empty()
     }
 
     pub fn item_likes_in_stack(&self) -> usize {
@@ -62,7 +62,7 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
     }
 
     pub fn top_is_item_like_container(&self) -> bool {
-        if self.top_leaf.is_some() {
+        if self.leaf.is_some() {
             return false;
         }
         matches!(
@@ -72,7 +72,7 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
     }
 
     pub fn top_is_description_term(&self) -> bool {
-        if self.top_leaf.is_some() {
+        if self.leaf.is_some() {
             return false;
         }
         matches!(
@@ -85,14 +85,14 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
     }
 
     pub fn top_is_table(&self) -> bool {
-        if self.top_leaf.is_some() {
+        if self.leaf.is_some() {
             return false;
         }
         matches!(self.stack.as_slice().last(), Some(StackEntry::Table(_)))
     }
 
     pub fn top_is_call(&self) -> bool {
-        if self.top_leaf.is_some() {
+        if self.leaf.is_some() {
             return false;
         }
         matches!(self.stack.as_slice().last(), Some(StackEntry::Call(_)))
@@ -100,7 +100,7 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
 
     /// 向栈中推入一个 item-like entry。
     ///
-    /// 调用者应保证 `self.top_leaf` 为 `None`。
+    /// 调用者应保证 `self.leaf` 为 `None`。
     pub fn push_item_like(&mut self, stack_entry: StackEntryItemLike) -> crate::Result<()> {
         self.try_push(stack_entry.into())?;
         Ok(())
@@ -108,7 +108,7 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
 
     /// 向栈中推入一个 item-like 容器 entry。
     ///
-    /// 调用者应保证 `self.top_leaf` 为 `None`。
+    /// 调用者应保证 `self.leaf` 为 `None`。
     pub fn push_item_like_container(
         &mut self,
         stack_entry: StackEntryItemLikeContainer,
@@ -120,7 +120,7 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
 
     /// 向栈中推入一个 table entry。
     ///
-    /// 调用者应保证 `self.top_leaf` 为 `None`。
+    /// 调用者应保证 `self.leaf` 为 `None`。
     pub fn push_table(&mut self, stack_entry: StackEntryTable) -> crate::Result<()> {
         self.try_push(stack_entry.into())?;
         self.tables_in_stack += 1;
@@ -129,7 +129,7 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
 
     /// 向栈中推入一个 call entry。
     ///
-    /// 调用者应保证 `self.top_leaf` 为 `None`。
+    /// 调用者应保证 `self.leaf` 为 `None`。
     pub fn push_call(&mut self, stack_entry: StackEntryCall) -> crate::Result<()> {
         self.try_push(stack_entry.into())?;
         self.calls_in_stack += 1;
@@ -138,28 +138,28 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
 
     /// 尝试向栈中推入一个 entry。
     ///
-    /// 调用者应保证 `self.top_leaf` 为 `None`。
+    /// 调用者应保证 `self.leaf` 为 `None`。
     fn try_push(&mut self, entry: StackEntry) -> crate::Result<()> {
-        debug_assert!(self.top_leaf.is_none());
+        debug_assert!(self.leaf.is_none());
 
         self.stack.try_push(entry)
     }
 
-    pub fn push_top_leaf(&mut self, entry: TopLeaf) {
-        debug_assert!(self.top_leaf.is_none());
+    pub fn push_leaf(&mut self, entry: Leaf) {
+        debug_assert!(self.leaf.is_none());
 
-        self.top_leaf = Some(entry);
+        self.leaf = Some(entry);
     }
 
-    pub fn is_top_leaf_some(&self) -> bool {
-        self.top_leaf.is_some()
+    pub fn has_leaf(&self) -> bool {
+        self.leaf.is_some()
     }
 
     /// 从栈中推出一个 entry。
     ///
-    /// 调用者应保证 `self.top_leaf` 为 `None`。
+    /// 调用者应保证 `self.leaf` 为 `None`。
     pub fn pop(&mut self) -> Option<StackEntry> {
-        debug_assert!(self.top_leaf.is_none());
+        debug_assert!(self.leaf.is_none());
 
         let popped = self.stack.pop()?;
 
@@ -173,8 +173,8 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
         Some(popped)
     }
 
-    pub fn pop_top_leaf(&mut self) -> Option<TopLeaf> {
-        self.top_leaf.take()
+    pub fn pop_leaf(&mut self) -> Option<Leaf> {
+        self.leaf.take()
     }
 }
 
@@ -331,55 +331,55 @@ pub enum GeneralItemLike {
 }
 
 #[derive(Debug)]
-pub enum TopLeaf {
-    Paragraph(TopLeafParagraph),
-    Heading(TopLeafHeading),
-    CodeBlock(TopLeafCodeBlock),
+pub enum Leaf {
+    Paragraph(LeafParagraph),
+    Heading(LeafHeading),
+    CodeBlock(LeafCodeBlock),
     /// 正在匹配潜在的调用的名称。如果没有匹配到名称，或者名称之后并非 `||`、`??` 或 `}}`，
     /// 则不将正在解析的内容视为调用。
-    PotentialCallBeginning(TopLeafPotentialCallBeginning),
+    PotentialCallBeginning(LeafPotentialCallBeginning),
     /// 正在匹配调用的参数可能存在的名称部分。（包含名称及 `=`。）
-    CallArgumentBeginning(TopLeafCallArgumentBeginning),
-    CallVerbatimArgumentValue(TopLeafCallVerbatimArgumentValue),
+    CallArgumentBeginning(LeafCallArgumentBeginning),
+    CallVerbatimArgumentValue(LeafCallVerbatimArgumentValue),
 }
-impl From<TopLeafParagraph> for TopLeaf {
-    fn from(value: TopLeafParagraph) -> Self {
+impl From<LeafParagraph> for Leaf {
+    fn from(value: LeafParagraph) -> Self {
         Self::Paragraph(value)
     }
 }
-impl From<TopLeafHeading> for TopLeaf {
-    fn from(value: TopLeafHeading) -> Self {
+impl From<LeafHeading> for Leaf {
+    fn from(value: LeafHeading) -> Self {
         Self::Heading(value)
     }
 }
-impl From<TopLeafCodeBlock> for TopLeaf {
-    fn from(value: TopLeafCodeBlock) -> Self {
+impl From<LeafCodeBlock> for Leaf {
+    fn from(value: LeafCodeBlock) -> Self {
         Self::CodeBlock(value)
     }
 }
-impl From<TopLeafPotentialCallBeginning> for TopLeaf {
-    fn from(value: TopLeafPotentialCallBeginning) -> Self {
+impl From<LeafPotentialCallBeginning> for Leaf {
+    fn from(value: LeafPotentialCallBeginning) -> Self {
         Self::PotentialCallBeginning(value)
     }
 }
-impl From<TopLeafCallArgumentBeginning> for TopLeaf {
-    fn from(value: TopLeafCallArgumentBeginning) -> Self {
+impl From<LeafCallArgumentBeginning> for Leaf {
+    fn from(value: LeafCallArgumentBeginning) -> Self {
         Self::CallArgumentBeginning(value)
     }
 }
-impl From<TopLeafCallVerbatimArgumentValue> for TopLeaf {
-    fn from(value: TopLeafCallVerbatimArgumentValue) -> Self {
+impl From<LeafCallVerbatimArgumentValue> for Leaf {
+    fn from(value: LeafCallVerbatimArgumentValue) -> Self {
         Self::CallVerbatimArgumentValue(value)
     }
 }
 
 #[derive(Debug)]
-pub struct TopLeafParagraph {
+pub struct LeafParagraph {
     pub meta: Meta,
 
     pub new_line: Option<NewLine>,
 }
-impl TopLeafParagraph {
+impl LeafParagraph {
     /// 返回的事件属于 `Block` 分组。
     pub fn make_enter_event(&self) -> Event {
         ev!(Block, EnterParagraph(self.meta.id.into()))
@@ -392,14 +392,14 @@ impl TopLeafParagraph {
 }
 
 #[derive(Debug)]
-pub struct TopLeafHeading {
+pub struct LeafHeading {
     pub meta: Meta,
 
     pub level: usize,
 
     pub has_content_before: bool,
 }
-impl TopLeafHeading {
+impl LeafHeading {
     /// 返回的事件属于 `Block` 分组。
     pub fn make_enter_event(&self) -> Event {
         match self.level {
@@ -420,20 +420,20 @@ impl TopLeafHeading {
 }
 
 #[derive(Debug)]
-pub struct TopLeafCodeBlock {
+pub struct LeafCodeBlock {
     pub meta: Meta,
 
     pub backticks: usize,
     pub indent: usize,
 
-    pub state: TopLeafCodeBlockState,
+    pub state: LeafCodeBlockState,
 }
 #[derive(Debug)]
-pub enum TopLeafCodeBlockState {
+pub enum LeafCodeBlockState {
     InInfoString,
-    InCode(TopLeafVerbatimParseState),
+    InCode(LeafVerbatimParseState),
 }
-impl TopLeafCodeBlock {
+impl LeafCodeBlock {
     /// 返回的事件属于 `Block` 分组。
     pub fn make_enter_event(&self) -> Event {
         ev!(Block, EnterCodeBlock(self.meta.id.into()))
@@ -446,19 +446,19 @@ impl TopLeafCodeBlock {
 }
 
 #[derive(Debug)]
-pub struct TopLeafPotentialCallBeginning {
+pub struct LeafPotentialCallBeginning {
     pub shallow_snapshot: ParserInnerShallowSnapshot,
 
-    pub name_part: Option<TopLeafPotentialCallBeginningNamePart>,
+    pub name_part: Option<PotentialCallBeginningNamePart>,
 }
 #[derive(Debug)]
-pub struct TopLeafPotentialCallBeginningNamePart {
+pub struct PotentialCallBeginningNamePart {
     pub is_extension: bool,
     pub name: Range<usize>,
 }
 
 #[derive(Debug)]
-pub struct TopLeafCallArgumentBeginning {
+pub struct LeafCallArgumentBeginning {
     pub shallow_snapshot: ParserInnerShallowSnapshot,
 
     pub name_part: Option<ParserInnerShallowSnapshotNamePart>,
@@ -471,12 +471,12 @@ pub struct ParserInnerShallowSnapshotNamePart {
 }
 
 #[derive(Debug)]
-pub struct TopLeafCallVerbatimArgumentValue {
-    pub state: TopLeafVerbatimParseState,
+pub struct LeafCallVerbatimArgumentValue {
+    pub state: LeafVerbatimParseState,
 }
 
 #[derive(Debug)]
-pub enum TopLeafVerbatimParseState {
+pub enum LeafVerbatimParseState {
     AtFirstLineBeginning,
     AtLineBeginning(NewLine),
     Normal,

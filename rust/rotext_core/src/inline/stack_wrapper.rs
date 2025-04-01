@@ -4,7 +4,7 @@ pub struct StackWrapper<TStack: Stack<StackEntry>> {
     stack: TStack,
     stack_entry_counts: StackEntryCounts,
     ruby_state: RubyState,
-    top_leaf: Option<TopLeaf>,
+    leaf: Option<Leaf>,
 }
 
 impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
@@ -13,16 +13,16 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
             stack: TStack::new(),
             stack_entry_counts: StackEntryCounts::default(),
             ruby_state: RubyState::default(),
-            top_leaf: None,
+            leaf: None,
         }
     }
 
     pub fn is_empty(&self) -> bool {
-        self.top_leaf.is_none() && self.stack.as_slice().is_empty()
+        self.leaf.is_none() && self.stack.as_slice().is_empty()
     }
 
     pub fn push_entry(&mut self, entry: StackEntry) -> crate::Result<()> {
-        debug_assert!(self.top_leaf.is_none());
+        debug_assert!(self.leaf.is_none());
 
         match entry {
             StackEntry::Emphasis => {
@@ -64,14 +64,14 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
         self.ruby_state = RubyState::None;
     }
 
-    pub fn push_top_leaf(&mut self, entry: TopLeaf) {
-        debug_assert!(self.top_leaf.is_none());
+    pub fn push_leaf(&mut self, entry: Leaf) {
+        debug_assert!(self.leaf.is_none());
 
-        self.top_leaf = Some(entry);
+        self.leaf = Some(entry);
     }
 
     pub fn pop_entry(&mut self) -> Option<StackEntry> {
-        debug_assert!(self.top_leaf.is_none());
+        debug_assert!(self.leaf.is_none());
 
         let entry = self.stack.pop()?;
         match entry {
@@ -96,12 +96,12 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
         Some(entry)
     }
 
-    pub fn pop_top_leaf(&mut self) -> Option<TopLeaf> {
-        self.top_leaf.take()
+    pub fn pop_leaf(&mut self) -> Option<Leaf> {
+        self.leaf.take()
     }
 
     pub fn make_end_condition(&self) -> EndCondition {
-        debug_assert!(self.top_leaf.is_none());
+        debug_assert!(self.leaf.is_none());
 
         EndCondition {
             on_em_closing: self.stack_entry_counts.emphasis > 0,
@@ -142,19 +142,19 @@ enum RubyState {
     Text,
 }
 
-pub enum TopLeaf {
-    CodeSpan(TopLeafCodeSpan),
+pub enum Leaf {
+    CodeSpan(LeafCodeSpan),
 }
-impl From<TopLeafCodeSpan> for TopLeaf {
-    fn from(value: TopLeafCodeSpan) -> Self {
+impl From<LeafCodeSpan> for Leaf {
+    fn from(value: LeafCodeSpan) -> Self {
         Self::CodeSpan(value)
     }
 }
 
-pub struct TopLeafCodeSpan {
+pub struct LeafCodeSpan {
     pub backticks: usize,
 }
-impl TopLeafCodeSpan {
+impl LeafCodeSpan {
     pub fn make_enter_event(&self) -> Event {
         ev!(Inline, EnterCodeSpan)
     }
