@@ -59,7 +59,7 @@ export function buildPage(
     if (h1Content !== subPageName) {
       return [
         "error",
-        `sub page name ("${subPageName}") a \`h1\` content ("${h1Content}")`,
+        `sub page name ("${subPageName}") does not match \`h1\` content ("${h1Content}")`,
       ];
     }
   }
