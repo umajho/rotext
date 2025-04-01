@@ -2,7 +2,7 @@ import { createSignal } from "solid-js";
 import { Solution } from "./EditorWrapper";
 
 export function createEditorPartStore() {
-  const [solution, setSolution] = createSignal<Solution>("ce");
+  const [solution, setSolution] = createSignal<Solution>("CM6");
 
   return {
     get solution() {

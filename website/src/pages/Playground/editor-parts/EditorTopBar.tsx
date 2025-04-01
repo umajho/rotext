@@ -48,20 +48,14 @@ const EditorTopBar: Component<{
             isActive={true}
           >
             <DropDownItemForSolution
-              solutionID="ce"
-              solutionFullName="contenteditable"
+              solutionID="CM6"
+              solutionFullName="CodeMirror 6"
               currentSolution={() => props.store.solution}
               setCurrentSolution={(v) => props.store.solution = v}
             />
             <DropDownItemForSolution
               solutionID="ta"
               solutionFullName="textarea"
-              currentSolution={() => props.store.solution}
-              setCurrentSolution={(v) => props.store.solution = v}
-            />
-            <DropDownItemForSolution
-              solutionID="CM6"
-              solutionFullName="【遗留】CodeMirror 6"
               currentSolution={() => props.store.solution}
               setCurrentSolution={(v) => props.store.solution = v}
             />

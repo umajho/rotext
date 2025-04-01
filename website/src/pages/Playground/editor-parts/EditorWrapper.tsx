@@ -8,13 +8,10 @@ import { EditorPartStore } from "./store";
 
 import TextArea from "./solutions/TextArea";
 
-import ContentEditable from "./solutions/ContentEditable";
-
-export type Solution = "CM6" | "ce" | "ta";
+export type Solution = "CM6" | "ta";
 
 const EditorSolutions = {
   CodeMirror6: lazy(() => import("./solutions/CodeMirror6")),
-  ContentEditable,
   TextArea,
 };
 
@@ -31,8 +28,6 @@ const EditorWrapper: Component<{
       switch (props.store.solution) {
         case "CM6":
           return EditorSolutions.CodeMirror6;
-        case "ce":
-          return EditorSolutions.ContentEditable;
         case "ta":
           return EditorSolutions.TextArea;
         default:
