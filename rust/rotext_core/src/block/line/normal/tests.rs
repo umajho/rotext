@@ -1,7 +1,7 @@
 mod for_fn_parse {
     use crate::{
         block::{
-            branch::braced::table,
+            braced::table,
             line::normal::{
                 parse, AtxClosing, ContentBefore, End, EndCondition, MatchedCallNameExtraMatched,
                 Matching, TableRelated,

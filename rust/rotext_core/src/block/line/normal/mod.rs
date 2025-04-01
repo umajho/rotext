@@ -5,7 +5,7 @@ use core::ops::Range;
 
 use crate::{
     block::{
-        branch::braced::{call, table},
+        braced::{call, table},
         types::CursorContext,
     },
     common::{is_markup, m},

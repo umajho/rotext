@@ -15,7 +15,9 @@ pub use stack_wrapper::StackEntry;
 use crate::{
     common::m,
     events::{ev, ThematicBreak},
-    internal_utils::string::{count_continuous_character, count_continuous_whitespaces},
+    internal_utils::string::{
+        count_continuous_character, count_continuous_whitespaces, is_whitespace,
+    },
     types::{cast_tym, Stack, Tym, TYM_UNIT},
     Event,
 };
@@ -93,7 +95,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                         self.state = expecting.into();
                         continue;
                     }
-                    break branch::item_like::parse_opening_and_process(
+                    break item_like::parse_opening_and_process(
                         self.input,
                         &mut self.state,
                         &mut self.inner,
@@ -108,7 +110,7 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
                         self.state = expecting.into();
                         continue;
                     }
-                    break branch::braced::parse_opening_and_process(
+                    break braced::parse_opening_and_process(
                         self.input,
                         &mut self.state,
                         &mut self.inner,
@@ -211,12 +213,12 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
 
         let tym_a = if should_exit_top {
             match inner.stack.pop().unwrap() {
-                StackEntry::ItemLike(stack_entry) => branch::item_like::exit(inner, stack_entry)?,
+                StackEntry::ItemLike(stack_entry) => item_like::exit(inner, stack_entry)?,
                 StackEntry::ItemLikeContainer(stack_entry) => {
-                    branch::item_like::exit_container(inner, stack_entry)?
+                    item_like::exit_container(inner, stack_entry)?
                 }
-                StackEntry::Table(stack_entry) => branch::braced::table::exit(inner, stack_entry)?,
-                StackEntry::Call(stack_entry) => branch::braced::call::exit(inner, stack_entry)?,
+                StackEntry::Table(stack_entry) => braced::table::exit(inner, stack_entry)?,
+                StackEntry::Call(stack_entry) => braced::call::exit(inner, stack_entry)?,
             }
         } else {
             TYM_UNIT.into()
@@ -356,478 +358,462 @@ impl<TStack: Stack<StackEntry>> Iterator for Parser<'_, TStack> {
     }
 }
 
-mod branch {
+pub mod item_like {
     use super::*;
 
-    pub mod item_like {
-        use crate::internal_utils::string::is_whitespace;
+    pub fn parse_opening_and_process<TStack: Stack<StackEntry>>(
+        input: &[u8],
+        state: &mut State,
+        inner: &mut ParserInner<TStack>,
+        item_likes_state: &mut ItemLikesState,
+        first_char: u8,
+    ) -> crate::Result<Tym<5>> {
+        use GeneralItemLike as I;
+        use ItemLikeContainer as G;
 
-        use super::*;
-
-        pub fn parse_opening_and_process<TStack: Stack<StackEntry>>(
-            input: &[u8],
-            state: &mut State,
-            inner: &mut ParserInner<TStack>,
-            item_likes_state: &mut ItemLikesState,
-            first_char: u8,
-        ) -> crate::Result<Tym<5>> {
-            use GeneralItemLike as I;
-            use ItemLikeContainer as G;
-
-            match first_char {
-                m!('>') if is_indeed_opening_and_consume_if_true(input, inner) => {
-                    process_greater_than_opening(inner, item_likes_state).map(|tym| cast_tym!(tym))
-                }
-                m!('#') if is_indeed_opening_and_consume_if_true(input, inner) => {
-                    process_general_opening(state, inner, item_likes_state, G::OL, I::LI)
-                        .map(|tym| cast_tym!(tym))
-                }
-                m!('*') if is_indeed_opening_and_consume_if_true(input, inner) => {
-                    process_general_opening(state, inner, item_likes_state, G::UL, I::LI)
-                        .map(|tym| cast_tym!(tym))
-                }
-                m!(';') if is_indeed_opening_and_consume_if_true(input, inner) => {
-                    process_general_opening(state, inner, item_likes_state, G::DL, I::DT)
-                        .map(|tym| cast_tym!(tym))
-                }
-                m!(':') if is_indeed_opening_and_consume_if_true(input, inner) => {
-                    process_general_opening(state, inner, item_likes_state, G::DL, I::DD)
-                        .map(|tym| cast_tym!(tym))
-                }
-                _ => match item_likes_state {
-                    ItemLikesState::MatchingLastLine(matching_last_line) => {
-                        *state = Exiting::new(
-                            ExitingUntil::OnlyNItemLikesRemain {
-                                n: matching_last_line.processed_item_likes(),
-                                should_also_exit_containee_in_last_container: false,
-                            },
-                            ExitingAndThen::ExpectBracedOpening,
-                        )
-                        .into();
-                        Ok(TYM_UNIT.into())
-                    }
-                    ItemLikesState::ProcessingNew => {
-                        *state = State::Expecting(Expecting::BracedOpening);
-                        braced::parse_opening_and_process(input, state, inner, first_char)
-                            .map(|tym| cast_tym!(tym))
-                    }
-                },
+        match first_char {
+            m!('>') if is_indeed_opening_and_consume_if_true(input, inner) => {
+                process_greater_than_opening(inner, item_likes_state).map(|tym| cast_tym!(tym))
             }
-        }
-
-        fn process_greater_than_opening<TStack: Stack<StackEntry>>(
-            inner: &mut ParserInner<TStack>,
-            item_likes_state: &mut ItemLikesState,
-        ) -> crate::Result<Tym<1>> {
-            let tym = match item_likes_state {
+            m!('#') if is_indeed_opening_and_consume_if_true(input, inner) => {
+                process_general_opening(state, inner, item_likes_state, G::OL, I::LI)
+                    .map(|tym| cast_tym!(tym))
+            }
+            m!('*') if is_indeed_opening_and_consume_if_true(input, inner) => {
+                process_general_opening(state, inner, item_likes_state, G::UL, I::LI)
+                    .map(|tym| cast_tym!(tym))
+            }
+            m!(';') if is_indeed_opening_and_consume_if_true(input, inner) => {
+                process_general_opening(state, inner, item_likes_state, G::DL, I::DT)
+                    .map(|tym| cast_tym!(tym))
+            }
+            m!(':') if is_indeed_opening_and_consume_if_true(input, inner) => {
+                process_general_opening(state, inner, item_likes_state, G::DL, I::DD)
+                    .map(|tym| cast_tym!(tym))
+            }
+            _ => match item_likes_state {
                 ItemLikesState::MatchingLastLine(matching_last_line) => {
-                    let is_all_processed = matching_last_line
+                    *state = Exiting::new(
+                        ExitingUntil::OnlyNItemLikesRemain {
+                            n: matching_last_line.processed_item_likes(),
+                            should_also_exit_containee_in_last_container: false,
+                        },
+                        ExitingAndThen::ExpectBracedOpening,
+                    )
+                    .into();
+                    Ok(TYM_UNIT.into())
+                }
+                ItemLikesState::ProcessingNew => {
+                    *state = State::Expecting(Expecting::BracedOpening);
+                    braced::parse_opening_and_process(input, state, inner, first_char)
+                        .map(|tym| cast_tym!(tym))
+                }
+            },
+        }
+    }
+
+    fn process_greater_than_opening<TStack: Stack<StackEntry>>(
+        inner: &mut ParserInner<TStack>,
+        item_likes_state: &mut ItemLikesState,
+    ) -> crate::Result<Tym<1>> {
+        let tym = match item_likes_state {
+            ItemLikesState::MatchingLastLine(matching_last_line) => {
+                let is_all_processed = matching_last_line
+                    .mark_first_unprocessed_item_like_as_processed_at_current_line(&inner.stack);
+                if is_all_processed {
+                    *item_likes_state = ItemLikesState::ProcessingNew;
+                }
+                TYM_UNIT.into()
+            }
+            ItemLikesState::ProcessingNew => {
+                let id = inner.pop_block_id();
+                inner
+                    .stack
+                    .push_item_like_container(StackEntryItemLikeContainer {
+                        meta: Meta::new(id, inner.current_line()),
+                        r#type: ItemLikeContainer::BlockQuote,
+                    })?;
+                inner.r#yield(ev!(Block, EnterBlockQuote(id.into())))
+            }
+        };
+
+        Ok(tym)
+    }
+
+    fn process_general_opening<TStack: Stack<StackEntry>>(
+        state: &mut State,
+        inner: &mut ParserInner<TStack>,
+        item_likes_state: &mut ItemLikesState,
+        container: ItemLikeContainer,
+        item_like: GeneralItemLike,
+    ) -> crate::Result<Tym<2>> {
+        let tym = match item_likes_state {
+            ItemLikesState::MatchingLastLine(matching_last_line) => {
+                let stack_entry = matching_last_line.first_unprocessed_item_like(&inner.stack);
+                if stack_entry.r#type == container {
+                    matching_last_line
                         .mark_first_unprocessed_item_like_as_processed_at_current_line(
                             &inner.stack,
                         );
-                    if is_all_processed {
-                        *item_likes_state = ItemLikesState::ProcessingNew;
-                    }
-                    TYM_UNIT.into()
+                    *state = Exiting::new(
+                        ExitingUntil::OnlyNItemLikesRemain {
+                            n: matching_last_line.processed_item_likes(),
+                            should_also_exit_containee_in_last_container: true,
+                        },
+                        ExitingAndThen::EnterItemLikeAndExpectItemLike {
+                            container: None,
+                            item_like: make_stack_entry_from_general_item_like(item_like, inner),
+                        },
+                    )
+                    .into()
+                } else {
+                    *state = Exiting::new(
+                        ExitingUntil::OnlyNItemLikesRemain {
+                            n: matching_last_line.processed_item_likes(),
+                            should_also_exit_containee_in_last_container: false,
+                        },
+                        ExitingAndThen::EnterItemLikeAndExpectItemLike {
+                            container: Some(make_stack_entry_from_item_like_container(
+                                container, inner,
+                            )),
+                            item_like: make_stack_entry_from_general_item_like(item_like, inner),
+                        },
+                    )
+                    .into();
                 }
-                ItemLikesState::ProcessingNew => {
-                    let id = inner.pop_block_id();
-                    inner
-                        .stack
-                        .push_item_like_container(StackEntryItemLikeContainer {
-                            meta: Meta::new(id, inner.current_line()),
-                            r#type: ItemLikeContainer::BlockQuote,
-                        })?;
-                    inner.r#yield(ev!(Block, EnterBlockQuote(id.into())))
-                }
-            };
+                TYM_UNIT.into()
+            }
+            ItemLikesState::ProcessingNew => {
+                let tym_a = {
+                    let stack_entry = make_stack_entry_from_item_like_container(container, inner);
+                    let ev = stack_entry.make_enter_event();
+                    inner.stack.push_item_like_container(stack_entry)?;
+                    inner.r#yield(ev)
+                };
+                let tym_b = {
+                    let stack_entry = make_stack_entry_from_general_item_like(item_like, inner);
+                    let ev = stack_entry.make_enter_event();
+                    inner.stack.push_item_like(stack_entry)?;
+                    inner.r#yield(ev)
+                };
 
-            Ok(tym)
+                tym_a.add(tym_b)
+            }
+        };
+
+        Ok(tym)
+    }
+
+    fn is_indeed_opening_and_consume_if_true<TStack: Stack<StackEntry>>(
+        input: &[u8],
+        inner: &mut ParserInner<TStack>,
+    ) -> bool {
+        match input.get(inner.cursor() + 1) {
+            Some(c) if is_whitespace!(c) => inner.move_cursor_forward(2),
+            None | Some(b'\r' | b'\n') => inner.move_cursor_forward(1),
+            // TODO: 也许可以一步到位调用 `terminal::paragraph::enter_if_not_blank(input, inner, 1)`。
+            _ => return false,
         }
 
-        fn process_general_opening<TStack: Stack<StackEntry>>(
+        true
+    }
+
+    pub fn make_stack_entry_from_general_item_like<TStack: Stack<StackEntry>>(
+        item_like: GeneralItemLike,
+        inner: &mut ParserInner<TStack>,
+    ) -> StackEntryItemLike {
+        StackEntryItemLike {
+            meta: Meta::new(inner.pop_block_id(), inner.current_line()),
+            r#type: item_like,
+        }
+    }
+
+    fn make_stack_entry_from_item_like_container<TStack: Stack<StackEntry>>(
+        item_like: ItemLikeContainer,
+        inner: &mut ParserInner<TStack>,
+    ) -> StackEntryItemLikeContainer {
+        StackEntryItemLikeContainer {
+            meta: Meta::new(inner.pop_block_id(), inner.current_line()),
+            r#type: item_like,
+        }
+    }
+
+    pub fn exit_container<TStack: Stack<StackEntry>>(
+        inner: &mut ParserInner<TStack>,
+        stack_entry: StackEntryItemLikeContainer,
+    ) -> crate::Result<Tym<1>> {
+        let tym = inner.r#yield(stack_entry.make_exit_event(inner.current_line()));
+
+        Ok(tym)
+    }
+
+    pub fn exit<TStack: Stack<StackEntry>>(
+        inner: &mut ParserInner<TStack>,
+        stack_entry: StackEntryItemLike,
+    ) -> crate::Result<Tym<1>> {
+        let tym = inner.r#yield(stack_entry.make_exit_event(inner.current_line()));
+
+        Ok(tym)
+    }
+}
+
+pub mod braced {
+    use super::*;
+
+    pub fn parse_opening_and_process<TStack: Stack<StackEntry>>(
+        input: &[u8],
+        state: &mut State,
+        inner: &mut ParserInner<TStack>,
+        first_char: u8,
+    ) -> crate::Result<Tym<5>> {
+        match first_char {
+            m!('{') => match input.get(inner.cursor() + 1) {
+                Some(m!('|')) => {
+                    inner.move_cursor_forward("{|".len());
+                    table::enter(state, inner).map(|tym| cast_tym!(tym))
+                }
+                Some(m!('{')) => {
+                    inner.stack.push_leaf(
+                        LeafPotentialCallBeginning {
+                            shallow_snapshot: inner.take_shallow_snapshot(),
+                            name_part: None,
+                        }
+                        .into(),
+                    );
+                    inner.move_cursor_forward("{{".len());
+                    Ok(TYM_UNIT.into())
+                }
+                _ => terminal::paragraph::enter_if_not_blank(input, state, inner, 1)
+                    .map(|tym| cast_tym!(tym)),
+            },
+            _ => terminal::parse_opening_and_process(input, state, inner, first_char)
+                .map(|tym| cast_tym!(tym)),
+        }
+    }
+
+    pub fn process_double_pipes(state: &mut State) -> Tym<0> {
+        *state = Exiting::new(
+            ExitingUntil::TopIsAwareOfDoublePipes,
+            ExitingAndThen::ToBeDetermined,
+        )
+        .into();
+
+        TYM_UNIT
+    }
+
+    pub fn is_double_pipes(first_char: u8, second_char: u8) -> bool {
+        first_char == m!('|') && second_char == m!('|')
+    }
+
+    pub mod table {
+        use super::*;
+
+        pub(super) fn enter<TStack: Stack<StackEntry>>(
             state: &mut State,
             inner: &mut ParserInner<TStack>,
-            item_likes_state: &mut ItemLikesState,
-            container: ItemLikeContainer,
-            item_like: GeneralItemLike,
-        ) -> crate::Result<Tym<2>> {
-            let tym = match item_likes_state {
-                ItemLikesState::MatchingLastLine(matching_last_line) => {
-                    let stack_entry = matching_last_line.first_unprocessed_item_like(&inner.stack);
-                    if stack_entry.r#type == container {
-                        matching_last_line
-                            .mark_first_unprocessed_item_like_as_processed_at_current_line(
-                                &inner.stack,
-                            );
-                        *state = Exiting::new(
-                            ExitingUntil::OnlyNItemLikesRemain {
-                                n: matching_last_line.processed_item_likes(),
-                                should_also_exit_containee_in_last_container: true,
-                            },
-                            ExitingAndThen::EnterItemLikeAndExpectItemLike {
-                                container: None,
-                                item_like: make_stack_entry_from_general_item_like(
-                                    item_like, inner,
-                                ),
-                            },
-                        )
-                        .into()
-                    } else {
-                        *state = Exiting::new(
-                            ExitingUntil::OnlyNItemLikesRemain {
-                                n: matching_last_line.processed_item_likes(),
-                                should_also_exit_containee_in_last_container: false,
-                            },
-                            ExitingAndThen::EnterItemLikeAndExpectItemLike {
-                                container: Some(make_stack_entry_from_item_like_container(
-                                    container, inner,
-                                )),
-                                item_like: make_stack_entry_from_general_item_like(
-                                    item_like, inner,
-                                ),
-                            },
-                        )
-                        .into();
-                    }
-                    TYM_UNIT.into()
-                }
-                ItemLikesState::ProcessingNew => {
-                    let tym_a = {
-                        let stack_entry =
-                            make_stack_entry_from_item_like_container(container, inner);
-                        let ev = stack_entry.make_enter_event();
-                        inner.stack.push_item_like_container(stack_entry)?;
-                        inner.r#yield(ev)
-                    };
-                    let tym_b = {
-                        let stack_entry = make_stack_entry_from_general_item_like(item_like, inner);
-                        let ev = stack_entry.make_enter_event();
-                        inner.stack.push_item_like(stack_entry)?;
-                        inner.r#yield(ev)
-                    };
-
-                    tym_a.add(tym_b)
-                }
-            };
-
-            Ok(tym)
-        }
-
-        fn is_indeed_opening_and_consume_if_true<TStack: Stack<StackEntry>>(
-            input: &[u8],
-            inner: &mut ParserInner<TStack>,
-        ) -> bool {
-            match input.get(inner.cursor() + 1) {
-                Some(c) if is_whitespace!(c) => inner.move_cursor_forward(2),
-                None | Some(b'\r' | b'\n') => inner.move_cursor_forward(1),
-                // TODO: 也许可以一步到位调用 `terminal::paragraph::enter_if_not_blank(input, inner, 1)`。
-                _ => return false,
-            }
-
-            true
-        }
-
-        pub fn make_stack_entry_from_general_item_like<TStack: Stack<StackEntry>>(
-            item_like: GeneralItemLike,
-            inner: &mut ParserInner<TStack>,
-        ) -> StackEntryItemLike {
-            StackEntryItemLike {
-                meta: Meta::new(inner.pop_block_id(), inner.current_line()),
-                r#type: item_like,
-            }
-        }
-
-        fn make_stack_entry_from_item_like_container<TStack: Stack<StackEntry>>(
-            item_like: ItemLikeContainer,
-            inner: &mut ParserInner<TStack>,
-        ) -> StackEntryItemLikeContainer {
-            StackEntryItemLikeContainer {
-                meta: Meta::new(inner.pop_block_id(), inner.current_line()),
-                r#type: item_like,
-            }
-        }
-
-        pub fn exit_container<TStack: Stack<StackEntry>>(
-            inner: &mut ParserInner<TStack>,
-            stack_entry: StackEntryItemLikeContainer,
         ) -> crate::Result<Tym<1>> {
-            let tym = inner.r#yield(stack_entry.make_exit_event(inner.current_line()));
+            *state = Expecting::BracedOpening.into();
+
+            let id = inner.pop_block_id();
+            let stack_entry = StackEntryTable {
+                meta: Meta::new(id, inner.current_line()),
+            };
+            let ev = stack_entry.make_enter_event();
+            inner.stack.push_table(stack_entry)?;
+            let tym = inner.r#yield(ev);
 
             Ok(tym)
+        }
+
+        #[derive(Debug, PartialEq, Eq)]
+        pub enum TableRelatedEnd {
+            Closing,
+            CaptionIndicator,
+            RowIndicator,
+            HeaderCellIndicator,
+        }
+        impl TableRelatedEnd {
+            pub fn process(self, state: &mut State) -> Tym<0> {
+                *state = match self {
+                    TableRelatedEnd::Closing => Exiting::new(
+                        ExitingUntil::TopIsTable {
+                            should_also_exit_table: true,
+                        },
+                        ExitingAndThen::ExpectBracedOpening,
+                    )
+                    .into(),
+                    TableRelatedEnd::CaptionIndicator => Exiting::new(
+                        ExitingUntil::TopIsTable {
+                            should_also_exit_table: false,
+                        },
+                        ExitingAndThen::YieldAndExpectBracedOpening(ev!(
+                            Block,
+                            IndicateTableCaption
+                        )),
+                    )
+                    .into(),
+                    TableRelatedEnd::RowIndicator => Exiting::new(
+                        ExitingUntil::TopIsTable {
+                            should_also_exit_table: false,
+                        },
+                        ExitingAndThen::YieldAndExpectBracedOpening(ev!(Block, IndicateTableRow)),
+                    )
+                    .into(),
+                    TableRelatedEnd::HeaderCellIndicator => Exiting::new(
+                        ExitingUntil::TopIsTable {
+                            should_also_exit_table: false,
+                        },
+                        ExitingAndThen::YieldAndExpectBracedOpening(ev!(
+                            Block,
+                            IndicateTableHeaderCell
+                        )),
+                    )
+                    .into(),
+                };
+
+                cast_tym!(TYM_UNIT)
+            }
+        }
+
+        pub fn parse_end<TCtx: CursorContext>(
+            input: &[u8],
+            ctx: &mut TCtx,
+            first_char: u8,
+            is_caption_applicable: bool,
+        ) -> Option<TableRelatedEnd> {
+            let &second_char = input.get(ctx.cursor() + 1)?;
+            let end = match first_char {
+                m!('|') => match second_char {
+                    m!('}') => TableRelatedEnd::Closing,
+                    m!('+') if is_caption_applicable => TableRelatedEnd::CaptionIndicator,
+                    m!('-') => TableRelatedEnd::RowIndicator,
+                    _ => return None,
+                },
+                m!('!') => match second_char {
+                    m!('!') => TableRelatedEnd::HeaderCellIndicator,
+                    _ => return None,
+                },
+                _ => return None,
+            };
+            ctx.move_cursor_forward(2);
+            Some(end)
+        }
+
+        pub fn is_end(first_char: u8, second_char: u8) -> bool {
+            match first_char {
+                m!('|') => matches!(second_char, m!('}') | m!('+') | m!('-')),
+                m!('!') => second_char == m!('!'),
+                _ => false,
+            }
         }
 
         pub fn exit<TStack: Stack<StackEntry>>(
             inner: &mut ParserInner<TStack>,
-            stack_entry: StackEntryItemLike,
+            stack_entry: StackEntryTable,
         ) -> crate::Result<Tym<1>> {
             let tym = inner.r#yield(stack_entry.make_exit_event(inner.current_line()));
 
             Ok(tym)
         }
+
+        pub fn make_table_related_end_condition<TStack: Stack<StackEntry>>(
+            inner: &ParserInner<TStack>,
+            is_caption_applicable: bool,
+        ) -> Option<line::normal::TableRelated> {
+            if inner.stack.tables_in_stack() > 0 {
+                Some(line::normal::TableRelated {
+                    is_caption_applicable,
+                })
+            } else {
+                None
+            }
+        }
     }
 
-    pub mod braced {
+    pub mod call {
         use super::*;
 
-        pub fn parse_opening_and_process<TStack: Stack<StackEntry>>(
-            input: &[u8],
+        pub fn enter<TStack: Stack<StackEntry>>(
             state: &mut State,
             inner: &mut ParserInner<TStack>,
+            is_extension: bool,
+            name: Range<usize>,
+        ) -> crate::Result<Tym<1>> {
+            *state = Expecting::BracedOpening.into();
+
+            let id = inner.pop_block_id();
+            let stack_entry = StackEntryCall {
+                meta: Meta::new(id, inner.current_line()),
+            };
+            let ev = stack_entry.make_enter_event(is_extension, name);
+            inner.stack.push_call(stack_entry)?;
+            let tym = inner.r#yield(ev);
+
+            Ok(tym)
+        }
+
+        pub fn enter_and_exit<TStack: Stack<StackEntry>>(
+            inner: &mut ParserInner<TStack>,
+            is_extension: bool,
+            name: Range<usize>,
+        ) -> Tym<2> {
+            let id = inner.pop_block_id();
+            let line = inner.current_line();
+            let stack_entry = StackEntryCall {
+                meta: Meta::new(id, line),
+            };
+            let tym_a = inner.r#yield(stack_entry.make_enter_event(is_extension, name));
+            let tym_b = inner.r#yield(stack_entry.make_exit_event(line));
+
+            tym_a.add(tym_b)
+        }
+
+        #[derive(Debug, PartialEq, Eq)]
+        pub enum CallRelatedEnd {
+            Closing,
+        }
+        impl CallRelatedEnd {
+            pub fn process(self, state: &mut State) -> Tym<0> {
+                *state = match self {
+                    CallRelatedEnd::Closing => Exiting::new(
+                        ExitingUntil::TopIsCall {
+                            should_also_exit_call: true,
+                        },
+                        ExitingAndThen::ExpectBracedOpening,
+                    )
+                    .into(),
+                };
+
+                cast_tym!(TYM_UNIT)
+            }
+        }
+
+        pub fn parse_end<TCtx: CursorContext>(
+            input: &[u8],
+            ctx: &mut TCtx,
             first_char: u8,
-        ) -> crate::Result<Tym<5>> {
-            match first_char {
-                m!('{') => match input.get(inner.cursor() + 1) {
-                    Some(m!('|')) => {
-                        inner.move_cursor_forward("{|".len());
-                        table::enter(state, inner).map(|tym| cast_tym!(tym))
-                    }
-                    Some(m!('{')) => {
-                        inner.stack.push_leaf(
-                            LeafPotentialCallBeginning {
-                                shallow_snapshot: inner.take_shallow_snapshot(),
-                                name_part: None,
-                            }
-                            .into(),
-                        );
-                        inner.move_cursor_forward("{{".len());
-                        Ok(TYM_UNIT.into())
-                    }
-                    _ => terminal::paragraph::enter_if_not_blank(input, state, inner, 1)
-                        .map(|tym| cast_tym!(tym)),
-                },
-                _ => terminal::parse_opening_and_process(input, state, inner, first_char)
-                    .map(|tym| cast_tym!(tym)),
-            }
+        ) -> Option<CallRelatedEnd> {
+            let &second_char = input.get(ctx.cursor() + 1)?;
+            let end = if first_char == m!('}') && second_char == m!('}') {
+                CallRelatedEnd::Closing
+            } else {
+                return None;
+            };
+            ctx.move_cursor_forward(2);
+            Some(end)
         }
 
-        pub fn process_double_pipes(state: &mut State) -> Tym<0> {
-            *state = Exiting::new(
-                ExitingUntil::TopIsAwareOfDoublePipes,
-                ExitingAndThen::ToBeDetermined,
-            )
-            .into();
-
-            TYM_UNIT
+        pub fn is_end(first_char: u8, second_char: u8) -> bool {
+            first_char == m!('}') && second_char == m!('}')
         }
 
-        pub fn is_double_pipes(first_char: u8, second_char: u8) -> bool {
-            first_char == m!('|') && second_char == m!('|')
-        }
+        pub fn exit<TStack: Stack<StackEntry>>(
+            inner: &mut ParserInner<TStack>,
+            stack_entry: StackEntryCall,
+        ) -> crate::Result<Tym<1>> {
+            let tym = inner.r#yield(stack_entry.make_exit_event(inner.current_line()));
 
-        pub mod table {
-            use super::*;
-
-            pub(super) fn enter<TStack: Stack<StackEntry>>(
-                state: &mut State,
-                inner: &mut ParserInner<TStack>,
-            ) -> crate::Result<Tym<1>> {
-                *state = Expecting::BracedOpening.into();
-
-                let id = inner.pop_block_id();
-                let stack_entry = StackEntryTable {
-                    meta: Meta::new(id, inner.current_line()),
-                };
-                let ev = stack_entry.make_enter_event();
-                inner.stack.push_table(stack_entry)?;
-                let tym = inner.r#yield(ev);
-
-                Ok(tym)
-            }
-
-            #[derive(Debug, PartialEq, Eq)]
-            pub enum TableRelatedEnd {
-                Closing,
-                CaptionIndicator,
-                RowIndicator,
-                HeaderCellIndicator,
-            }
-            impl TableRelatedEnd {
-                pub fn process(self, state: &mut State) -> Tym<0> {
-                    *state = match self {
-                        TableRelatedEnd::Closing => Exiting::new(
-                            ExitingUntil::TopIsTable {
-                                should_also_exit_table: true,
-                            },
-                            ExitingAndThen::ExpectBracedOpening,
-                        )
-                        .into(),
-                        TableRelatedEnd::CaptionIndicator => Exiting::new(
-                            ExitingUntil::TopIsTable {
-                                should_also_exit_table: false,
-                            },
-                            ExitingAndThen::YieldAndExpectBracedOpening(ev!(
-                                Block,
-                                IndicateTableCaption
-                            )),
-                        )
-                        .into(),
-                        TableRelatedEnd::RowIndicator => Exiting::new(
-                            ExitingUntil::TopIsTable {
-                                should_also_exit_table: false,
-                            },
-                            ExitingAndThen::YieldAndExpectBracedOpening(ev!(
-                                Block,
-                                IndicateTableRow
-                            )),
-                        )
-                        .into(),
-                        TableRelatedEnd::HeaderCellIndicator => Exiting::new(
-                            ExitingUntil::TopIsTable {
-                                should_also_exit_table: false,
-                            },
-                            ExitingAndThen::YieldAndExpectBracedOpening(ev!(
-                                Block,
-                                IndicateTableHeaderCell
-                            )),
-                        )
-                        .into(),
-                    };
-
-                    cast_tym!(TYM_UNIT)
-                }
-            }
-
-            pub fn parse_end<TCtx: CursorContext>(
-                input: &[u8],
-                ctx: &mut TCtx,
-                first_char: u8,
-                is_caption_applicable: bool,
-            ) -> Option<TableRelatedEnd> {
-                let &second_char = input.get(ctx.cursor() + 1)?;
-                let end = match first_char {
-                    m!('|') => match second_char {
-                        m!('}') => TableRelatedEnd::Closing,
-                        m!('+') if is_caption_applicable => TableRelatedEnd::CaptionIndicator,
-                        m!('-') => TableRelatedEnd::RowIndicator,
-                        _ => return None,
-                    },
-                    m!('!') => match second_char {
-                        m!('!') => TableRelatedEnd::HeaderCellIndicator,
-                        _ => return None,
-                    },
-                    _ => return None,
-                };
-                ctx.move_cursor_forward(2);
-                Some(end)
-            }
-
-            pub fn is_end(first_char: u8, second_char: u8) -> bool {
-                match first_char {
-                    m!('|') => matches!(second_char, m!('}') | m!('+') | m!('-')),
-                    m!('!') => second_char == m!('!'),
-                    _ => false,
-                }
-            }
-
-            pub fn exit<TStack: Stack<StackEntry>>(
-                inner: &mut ParserInner<TStack>,
-                stack_entry: StackEntryTable,
-            ) -> crate::Result<Tym<1>> {
-                let tym = inner.r#yield(stack_entry.make_exit_event(inner.current_line()));
-
-                Ok(tym)
-            }
-
-            pub fn make_table_related_end_condition<TStack: Stack<StackEntry>>(
-                inner: &ParserInner<TStack>,
-                is_caption_applicable: bool,
-            ) -> Option<line::normal::TableRelated> {
-                if inner.stack.tables_in_stack() > 0 {
-                    Some(line::normal::TableRelated {
-                        is_caption_applicable,
-                    })
-                } else {
-                    None
-                }
-            }
-        }
-
-        pub mod call {
-            use super::*;
-
-            pub fn enter<TStack: Stack<StackEntry>>(
-                state: &mut State,
-                inner: &mut ParserInner<TStack>,
-                is_extension: bool,
-                name: Range<usize>,
-            ) -> crate::Result<Tym<1>> {
-                *state = Expecting::BracedOpening.into();
-
-                let id = inner.pop_block_id();
-                let stack_entry = StackEntryCall {
-                    meta: Meta::new(id, inner.current_line()),
-                };
-                let ev = stack_entry.make_enter_event(is_extension, name);
-                inner.stack.push_call(stack_entry)?;
-                let tym = inner.r#yield(ev);
-
-                Ok(tym)
-            }
-
-            pub fn enter_and_exit<TStack: Stack<StackEntry>>(
-                inner: &mut ParserInner<TStack>,
-                is_extension: bool,
-                name: Range<usize>,
-            ) -> Tym<2> {
-                let id = inner.pop_block_id();
-                let line = inner.current_line();
-                let stack_entry = StackEntryCall {
-                    meta: Meta::new(id, line),
-                };
-                let tym_a = inner.r#yield(stack_entry.make_enter_event(is_extension, name));
-                let tym_b = inner.r#yield(stack_entry.make_exit_event(line));
-
-                tym_a.add(tym_b)
-            }
-
-            #[derive(Debug, PartialEq, Eq)]
-            pub enum CallRelatedEnd {
-                Closing,
-            }
-            impl CallRelatedEnd {
-                pub fn process(self, state: &mut State) -> Tym<0> {
-                    *state = match self {
-                        CallRelatedEnd::Closing => Exiting::new(
-                            ExitingUntil::TopIsCall {
-                                should_also_exit_call: true,
-                            },
-                            ExitingAndThen::ExpectBracedOpening,
-                        )
-                        .into(),
-                    };
-
-                    cast_tym!(TYM_UNIT)
-                }
-            }
-
-            pub fn parse_end<TCtx: CursorContext>(
-                input: &[u8],
-                ctx: &mut TCtx,
-                first_char: u8,
-            ) -> Option<CallRelatedEnd> {
-                let &second_char = input.get(ctx.cursor() + 1)?;
-                let end = if first_char == m!('}') && second_char == m!('}') {
-                    CallRelatedEnd::Closing
-                } else {
-                    return None;
-                };
-                ctx.move_cursor_forward(2);
-                Some(end)
-            }
-
-            pub fn is_end(first_char: u8, second_char: u8) -> bool {
-                first_char == m!('}') && second_char == m!('}')
-            }
-
-            pub fn exit<TStack: Stack<StackEntry>>(
-                inner: &mut ParserInner<TStack>,
-                stack_entry: StackEntryCall,
-            ) -> crate::Result<Tym<1>> {
-                let tym = inner.r#yield(stack_entry.make_exit_event(inner.current_line()));
-
-                Ok(tym)
-            }
+            Ok(tym)
         }
     }
 }
@@ -977,9 +963,7 @@ mod terminal {
                         character: m!('='),
                         count: leaf.level,
                     }),
-                    on_table_related: branch::braced::table::make_table_related_end_condition(
-                        inner, false,
-                    ),
+                    on_table_related: braced::table::make_table_related_end_condition(inner, false),
                     on_call_related: inner.stack.calls_in_stack() > 0,
                     ..Default::default()
                 },
@@ -1024,7 +1008,7 @@ mod terminal {
                 }
                 line::normal::End::DoublePipes => {
                     let tym_a = exit(inner, leaf);
-                    let tym_b = branch::braced::process_double_pipes(state);
+                    let tym_b = braced::process_double_pipes(state);
 
                     tym_a.add(tym_b)
                 }
@@ -1246,7 +1230,7 @@ mod terminal {
                 input,
                 inner,
                 line::normal::EndCondition {
-                    on_table_related: branch::braced::table::make_table_related_end_condition(
+                    on_table_related: braced::table::make_table_related_end_condition(
                         inner,
                         has_just_entered_table,
                     ),
@@ -1308,9 +1292,7 @@ mod terminal {
                     let tym = call_related_end.process(state);
                     cast_tym!(tym)
                 }
-                line::normal::End::DoublePipes => {
-                    branch::braced::process_double_pipes(state).into()
-                }
+                line::normal::End::DoublePipes => braced::process_double_pipes(state).into(),
                 line::normal::End::DescriptionDefinitionOpening => {
                     // 退出当前的段落。
                     let tym_a = {
@@ -1326,16 +1308,15 @@ mod terminal {
                             unreachable!()
                         };
                         debug_assert!(matches!(dt.r#type, GeneralItemLike::DT));
-                        branch::item_like::exit(inner, dt)?
+                        item_like::exit(inner, dt)?
                     };
 
                     // 进入 DD
                     let tym_c = {
-                        let stack_entry =
-                            branch::item_like::make_stack_entry_from_general_item_like(
-                                GeneralItemLike::DD,
-                                inner,
-                            );
+                        let stack_entry = item_like::make_stack_entry_from_general_item_like(
+                            GeneralItemLike::DD,
+                            inner,
+                        );
                         let ev = stack_entry.make_enter_event();
                         inner.stack.push_item_like(stack_entry)?;
                         inner.r#yield(ev)
@@ -1367,9 +1348,7 @@ mod terminal {
                 input,
                 inner,
                 line::normal::EndCondition {
-                    on_table_related: branch::braced::table::make_table_related_end_condition(
-                        inner, false,
-                    ),
+                    on_table_related: braced::table::make_table_related_end_condition(inner, false),
                     on_call_related: inner.stack.calls_in_stack() > 0,
                     on_description_definition_opening: inner.stack.top_is_description_term(),
                     ..Default::default()
@@ -1455,10 +1434,10 @@ mod terminal {
                     extra_matched,
                 } => match extra_matched {
                     line::normal::MatchedCallNameExtraMatched::CallClosing => {
-                        branch::braced::call::enter_and_exit(inner, is_extension, range)
+                        braced::call::enter_and_exit(inner, is_extension, range)
                     }
                     line::normal::MatchedCallNameExtraMatched::ArgumentIndicator => {
-                        let tym = branch::braced::call::enter(state, inner, is_extension, range)?;
+                        let tym = braced::call::enter(state, inner, is_extension, range)?;
                         inner.stack.push_leaf(
                             LeafCallArgumentBeginning {
                                 shallow_snapshot: inner.take_shallow_snapshot(),
@@ -1484,21 +1463,13 @@ mod terminal {
                 },
                 line::normal::End::MatchedCallClosing => {
                     let name_part = leaf.name_part.unwrap();
-                    branch::braced::call::enter_and_exit(
-                        inner,
-                        name_part.is_extension,
-                        name_part.name,
-                    )
+                    braced::call::enter_and_exit(inner, name_part.is_extension, name_part.name)
                 }
                 line::normal::End::MatchedCallArgumentIndicator => {
                     let name_part = leaf.name_part.unwrap();
 
-                    let tym = branch::braced::call::enter(
-                        state,
-                        inner,
-                        name_part.is_extension,
-                        name_part.name,
-                    )?;
+                    let tym =
+                        braced::call::enter(state, inner, name_part.is_extension, name_part.name)?;
                     inner.stack.push_leaf(
                         LeafCallArgumentBeginning {
                             shallow_snapshot: inner.take_shallow_snapshot(),
@@ -1560,11 +1531,7 @@ mod terminal {
             if can_still_form_if_applicable && leaf.name_part.is_some() {
                 let name_part = leaf.name_part.unwrap();
                 (
-                    branch::braced::call::enter_and_exit(
-                        inner,
-                        name_part.is_extension,
-                        name_part.name,
-                    ),
+                    braced::call::enter_and_exit(inner, name_part.is_extension, name_part.name),
                     None,
                 )
             } else {
