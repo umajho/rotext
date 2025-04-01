@@ -500,5 +500,76 @@ pub fn groups_table() -> Vec<GroupedCases> {
                 ),
             ],
         },
+        GroupedCases {
+            group: "表格>表格中的 item-likes",
+            cases: vec![
+                case!(
+                    vec![indoc! {"
+                        {|
+                        *␠foo␠|-␠bar
+                        |}"
+                    },],
+                    vec![
+                        (EventType::EnterTable, None),
+                        (EventType::EnterUnorderedList, None),
+                        (EventType::EnterListItem, None),
+                        (EventType::EnterParagraph, None),
+                        (EventType::__Unparsed, Some("foo")),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                        (EventType::IndicateTableRow, None),
+                        (EventType::EnterParagraph, None),
+                        (EventType::__Unparsed, Some("bar")),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec![indoc! {"
+                        {|
+                        *␠foo␠||␠bar
+                        |}"
+                    },],
+                    vec![
+                        (EventType::EnterTable, None),
+                        (EventType::EnterUnorderedList, None),
+                        (EventType::EnterListItem, None),
+                        (EventType::EnterParagraph, None),
+                        (EventType::__Unparsed, Some("foo")),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                        (EventType::IndicateTableDataCell, None),
+                        (EventType::EnterParagraph, None),
+                        (EventType::__Unparsed, Some("bar")),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+                case!(
+                    vec![indoc! {"
+                        {|
+                        *␠foo␠!!␠bar
+                        |}"
+                    },],
+                    vec![
+                        (EventType::EnterTable, None),
+                        (EventType::EnterUnorderedList, None),
+                        (EventType::EnterListItem, None),
+                        (EventType::EnterParagraph, None),
+                        (EventType::__Unparsed, Some("foo")),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                        (EventType::IndicateTableHeaderCell, None),
+                        (EventType::EnterParagraph, None),
+                        (EventType::__Unparsed, Some("bar")),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
+            ],
+        },
     ]
 }

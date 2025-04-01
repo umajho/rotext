@@ -178,10 +178,16 @@ impl<'a, TStack: Stack<StackEntry>> Parser<'a, TStack> {
             }
             ExitingUntil::TopIsTable {
                 should_also_exit_table,
-            } => (inner.stack.top_is_table(), should_also_exit_table),
+            } => {
+                let is_done = inner.stack.top_is_table();
+                (is_done, !is_done || should_also_exit_table)
+            }
             ExitingUntil::TopIsCall {
                 should_also_exit_call,
-            } => (inner.stack.top_is_call(), should_also_exit_call),
+            } => {
+                let is_done = inner.stack.top_is_call();
+                (is_done, !is_done || should_also_exit_call)
+            }
             ExitingUntil::TopIsAwareOfDoublePipes => {
                 if inner.stack.top_is_table() {
                     exiting.and_then = Some(ExitingAndThen::YieldAndExpectBracedOpening(ev!(
