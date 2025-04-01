@@ -44,5 +44,5 @@
 || `input=
 剧透：[! .foo][{#刮开|内容}]！
 || `expected=
-<p>剧透：<x-scratch-off class="foo"><span slot="content">内容</span></x-scratch-off>！</p>
+<p>剧透：<x-scratch-off class="foo">内容</x-scratch-off>！</p>
 }}

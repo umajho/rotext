@@ -92,7 +92,7 @@ export function createNavigationComponent(
           return (props) => <>{labelTextRenderer(props.address)}</>;
         }
         case "slot":
-          return () => <slot name="content" />;
+          return () => <slot />;
         default:
           opts.label satisfies never;
           throw new Error("unreachable");

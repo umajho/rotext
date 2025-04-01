@@ -424,7 +424,7 @@ fn it_works_in_block_phase_for_simple_events() {
                         (@inline ExitInline(..)),
                         (ExitBlock(..)),
                     ],
-                    r#"<p><x-wiki-link address="ADDR"><span slot="content">title</span></x-wiki-link></p>"#,
+                    r#"<p><x-wiki-link address="ADDR">title</x-wiki-link></p>"#,
                 ),
             ]
         },

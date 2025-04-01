@@ -20,7 +20,7 @@
 
 [[页面名|[*显示名*]]]
 || `expected=
-<p><x-wiki-link address="页面名"><span slot="content">页面名</span></x-wiki-link></p>
-<p><x-wiki-link address="页面名"><span slot="content">显示名</span></x-wiki-link></p>
-<p><x-wiki-link address="页面名"><span slot="content"><strong>显示名</strong></span></x-wiki-link></p>
+<p><x-wiki-link address="页面名">页面名</x-wiki-link></p>
+<p><x-wiki-link address="页面名">显示名</x-wiki-link></p>
+<p><x-wiki-link address="页面名"><strong>显示名</strong></x-wiki-link></p>
 }}

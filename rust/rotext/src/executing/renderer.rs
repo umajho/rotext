@@ -135,7 +135,7 @@ impl<'a> Renderer<'a> {
                         buf.push(b'>');
                     }
                     StackEntry::WikiLink => {
-                        buf.extend(b"</span></");
+                        buf.extend(b"</");
                         buf.extend(self.tag_name_map.wiki_link);
                         buf.push(b'>');
                     }
@@ -259,7 +259,6 @@ impl<'a> Renderer<'a> {
                     self.tag_name_map.wiki_link,
                     &[(b"address", &input[address.clone()])],
                 );
-                crate::utils::render_eopening_tag(buf, b"span", &[(b"slot", b"content")]);
                 stack.push(StackEntryBox(StackEntry::WikiLink));
             }
         }
