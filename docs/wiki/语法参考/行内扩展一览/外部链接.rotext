@@ -1,0 +1,16 @@
+= 外部链接 =
+
+[*外部链接*]扩展用于手动定义外部链接。
+
+逐字参数：
+
+; [` `地址 `] :: 链接。限定为一个行内代码。
+
+== 示例 ==
+
+{{ #Example
+|| `input=
+[{#外部链接|`地址=https://example.com}]
+|| `expected=
+<p><x-external-link address="https://example.com"></x-external-link></p>
+}}

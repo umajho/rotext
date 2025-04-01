@@ -1,0 +1,48 @@
+= 行内附加信息 =
+
+任意多数量的[*行内[[s:杂项/画饼/设想中的通用概念#附加信息|附加信息]]*]可以附着在_
+[[s:行内阶段#行内元素|行内元素]]之前。
+
+; 开启 :: `[!`。
+; 闭合 :: `]`。
+; 开启部分与闭合部分之间
+: 由空白分隔的，以下两种形式之一的附加信息：
+>
+> * [`.<name>`]，[`<name>`] 对应为 “类”，与 HTML 之中的 “类” 保持一致。
+> * [`<key>="<value>"`]/[`<key>='<value>'`]，[`<key>`]、[`<value>`] 对应于 “属_
+> > 性” 中的键与值，解析与 HTML 之中标签的属性保持一致。目前没有作用。
+
+[[s:杂项/画饼/设想中的行内嵌入包含相关/行内参数填充|行内参数填充]]不能附着附加_
+信息；附着于[[s:行内元素一览/行内扩展|行内扩展]]的行内附加信息的作用视具体的扩_
+展而定；附着于上述之外的[[s:行内阶段#行内元素|行内元素]]的行内附加信息，其中的_
+类以及对应元素允许的附加属性会被添加到渲染得到的最外层的那个 HTML 元素当中。
+
+== 示例 ==
+
+{{ #Example
+|| `input=
+[! .foo][; 测试 : cè shì]
+|| `expected=
+<p><ruby class="foo">测试<rt>cè shì</rt></ruby></p>
+}}
+
+{{ #Example
+|| `input=
+[! .foo][{#span|这段文本在有着 foo 类的 span 里}]。
+|| `expected=
+<p><span class="foo">这段文本在有着 foo 类的 span 里</class>。</p>
+}}
+
+{{ #Example
+|| `input=
+[! .foo][{#外部链接|`地址=https://example.com}]
+|| `expected=
+<p><x-external-link class="foo" address="https://example.com"></x-external-link></p>
+}}
+
+{{ #Example
+|| `input=
+剧透：[! .foo][{#刮开|内容}]！
+|| `expected=
+<p>剧透：<x-scratch-off class="foo"><span slot="content">内容</span></x-scratch-off>！</p>
+}}
