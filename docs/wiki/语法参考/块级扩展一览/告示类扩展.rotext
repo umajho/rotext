@@ -1,0 +1,33 @@
+= 告示类扩展 =
+
+[*[;告示:Callout]*]扩展是一类相似的扩展，它们的共通点为：以显眼的方式呈现所含内_
+容。包括与 GitHub 一致[{#旁注|`名称=gh-callout}]：
+
+{{#旁注内容||`名称=gh-callout||[{#外部链接|`地址=https://github.com/orgs/community/discussions/16925}]}}
+
+* [*[;[`注`]:Note]*]、
+* [*[;[`提示`]:Tip]*]、
+* [*[;[`重要`]:Important]*]、
+* [*[;[`警告`]:Warning]*]以及
+* [*[;[`当心`]:Caution]*]。
+
+; 参数 ::
+> ; [`1`] :: ：告示内容。
+
+== 示例 ==
+
+{{ #Example
+|| `input=<`
+{{#注 || NOTE… }}
+{{#提示 || TIP… }}
+{{#重要 || IMPORTANT… }}
+{{#警告 || WARNING… }}
+{{#当心 || CAUTION… }}
+`>
+|| `expected=
+<x-callout variant="note"><p>NOTE…</p></x-callout>
+<x-callout variant="tip"><p>TIP…</p></x-callout>
+<x-callout variant="important"><p>IMPORTANT…</p></x-callout>
+<x-callout variant="warning"><p>WARNING…</p></x-callout>
+<x-callout variant="caution"><p>CAUTION…</p></x-callout>
+}}

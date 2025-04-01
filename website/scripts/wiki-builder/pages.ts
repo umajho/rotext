@@ -1,8 +1,13 @@
 import { parse as parseHTML } from "node-html-parser";
+import { HtmlValidate } from "html-validate";
 
-import { parseMarkdown } from "../internal/marked";
+import { extractHeadings, mustParseAndRenderRotext } from "./utils";
 
-import { extractHeadings } from "./utils";
+const htmlValidator = new HtmlValidate({
+  rules: {
+    "prefer-tbody": "off",
+  },
+});
 
 export interface Page {
   headings: Set<string>;
@@ -21,7 +26,7 @@ export function buildPage(
     fullName: string;
   },
 ): ["ok", Page] | ["error", string] {
-  const html = parseMarkdown(pageText);
+  const html = mustParseAndRenderRotext(pageText);
   const dom = parseHTML(html);
 
   const headingsResult = extractHeadings(dom, {
@@ -59,7 +64,19 @@ export function buildPage(
     if (h1Content !== subPageName) {
       return [
         "error",
-        `sub page name ("${subPageName}") a \`h1\` content ("${h1Content}")`,
+        `sub page name ("${subPageName}") does not match \`h1\` content ("${h1Content}")`,
+      ];
+    }
+  }
+
+  for (const node of dom.querySelectorAll("x-rotext-example")) {
+    const report = htmlValidator.validateStringSync(
+      node.getAttribute("expected")!,
+    );
+    if (report.results.length) {
+      return [
+        "error",
+        `invalid HTML in example: ${JSON.stringify(report.results)}`,
       ];
     }
   }

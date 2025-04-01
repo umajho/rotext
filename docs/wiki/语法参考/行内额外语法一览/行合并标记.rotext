@@ -1,0 +1,51 @@
+= 行合并标记 =
+
+如果不希望保留换行，而是想要换行前后的两行无缝衔接，可以在换行之前添加标记 _
+[`_`]。这个标记称为[*行合并标记*]。
+
+例如：
+
+{{ #Example
+|| `input=
+同_
+一_
+行
+|| `expected=
+<p>同一行</p>
+}}
+
+{{ #Example
+|| `input=
+A _
+Single _
+Line
+|| `expected=
+<p>A Single Line</p>
+}}
+
+紧挨着[[s:块级阶段#适用于块级元素的槽位|适用于块级元素的槽位]]结尾之前的 [`_`] _
+保持原样：
+
+{{ #Example
+|| `input=
+结束了_
+|| `expected=
+<p>结束了_</p>
+}}
+
+{{ #Example
+|| `input=
+{|
+|-
+!! 结束了_
+!!
+> 结束了_
+|}
+|| `expected=
+<table>
+  <tr>
+    <th><p>结束了_</p></th>
+    <th><blockquote><p>结束了_</p></blockquote></th>
+  </tr>
+</table>
+}}

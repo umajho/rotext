@@ -1,0 +1,61 @@
+= 代码块 =
+
+[*[;代码:Code][;块:Block]*]对应于 HTML 之中的 [`pre`] + [`code`] 元素。
+
+; 开启 :: 以 “三个及以上的 [` ` `]” 与 “剪除首尾空白后作为信息字符串的单行_
+  [[s:通用概念#逐字内容|逐字内容]]” 组成的行。
+; 闭合 :: 与开启部分相同或更多数量的 [` ` `]。
+; 槽位 :: 其开启部分与闭合部分之间，填充[[s:通用概念#逐字内容|逐字内容]]。
+
+若信息字符串不为空，渲染中对应的 [`code`] 标签会拥有一个以 [`language-`] 为前缀_
+的类，其后半部分是信息字符串中第一处空白字符或结尾前的内容。
+
+== 示例 ==
+
+{{ #Example
+|| `input=
+```
+代码内容…
+```
+|| `expected=
+<x-code-block info-string="" content="代码内容…&#10;"></x-code-block>
+}}
+
+{{ #Example
+|| `input=
+```
+代码内容…
+``````
+|| `expected=
+<x-code-block info-string="" content="代码内容…&#10;"></x-code-block>
+}}
+
+{{ #Example
+|| `input=
+`````javascript 第一个空格后这里的内容没意义。
+console.log("Hello, World!")
+`````
+|| `expected=
+<x-code-block info-string="javascript 第一个空格后这里的内容没意义。" content="console.log(&quot;Hello, World!&quot;)&#10;"></x-code-block>
+}}
+
+{{ #Example
+|| `input=
+````rotext
+```
+…
+```
+````
+|| `expected=
+<x-code-block info-string="rotext" content="```&#10;…&#10;```&#10;"></x-code-block>
+}}
+
+{{ #Example
+|| `input=
+```
+代码内容…
+```新段落！
+|| `expected=
+<x-code-block info-string="" content="代码内容…&#10;"></x-code-block>
+<p>新段落！</p>
+}}

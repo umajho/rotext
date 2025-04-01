@@ -35,7 +35,7 @@ function createRotextExampleComponent(
     noShadowDOM();
 
     const fixtureNames = props["use-fixtures"]
-      ? props["use-fixtures"].split(",")
+      ? removeFirstAndLastLineFeeds(props["use-fixtures"]).split(",")
       : null;
     const fixtures = fixtureNames
       ? getFixtures(
@@ -47,7 +47,7 @@ function createRotextExampleComponent(
       : null;
 
     const store = createRotextExampleStore({
-      originalInput: props.input,
+      originalInput: removeFirstAndLastLineFeeds(props.input),
       expectedOutputHTMLForOriginalInput: props.expected ?? "",
       fixtureNames,
       fixtures,
@@ -87,6 +87,10 @@ function getFixtures(
   return Object.fromEntries(
     qualifiedEls.map((
       el,
-    ) => [el.getAttribute("name")!, el.getAttribute("input")!]),
+    ) => [el.getAttribute("name")!, el.getAttribute("input")!.trim()]),
   );
+}
+
+function removeFirstAndLastLineFeeds(input: string) {
+  return input.replace(/(^\n|\n$)/g, "");
 }
