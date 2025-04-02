@@ -103,6 +103,12 @@ fn new_verbatim_parametr_map() -> HashMap<
     let mut map: HashMap<&'static [u8], ParameterWrapper<ExtensionElementMapperVerbatimParameter>> =
         HashMap::new();
     map.insert(
+        b"1",
+        ParameterWrapper::Real(ExtensionElementMapperVerbatimParameter {
+            mapping_to_attribute: b"first",
+        }),
+    );
+    map.insert(
         b"bar",
         ParameterWrapper::Real(ExtensionElementMapperVerbatimParameter {
             mapping_to_attribute: b"bar",

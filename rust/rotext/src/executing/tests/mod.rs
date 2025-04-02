@@ -532,6 +532,16 @@ fn it_works_in_block_phase_for_events_involving_calls() {
                     r#"<all-optional><p>1_content</p></all-optional>"#,
                 ),
                 case!(
+                    "AllOptional:0/first_content:14",
+                    [
+                        (EnterCallOnExtension(0..11)),
+                        (IndicateCallVerbatimArgument()),
+                        (Text(14..27)),
+                        (ExitBlock(..)),
+                    ],
+                    r#"<all-optional first="first_content"></all-optional>"#,
+                ),
+                case!(
                     "AllOptional:0/1:14/1_content:19",
                     [
                         (EnterCallOnExtension(0..11)),

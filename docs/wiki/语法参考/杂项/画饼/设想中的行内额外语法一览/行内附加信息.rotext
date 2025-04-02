@@ -41,7 +41,7 @@
 
 {{ #Example
 || `input=
-[&> .foo][{#外部链接|`地址=https://example.com}]
+[&> .foo][{#外部链接|`https://example.com}]
 || `expected=
 <p><x-external-link class="foo" address="https://example.com"></x-external-link></p>
 }}

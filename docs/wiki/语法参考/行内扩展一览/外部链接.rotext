@@ -4,13 +4,13 @@
 
 逐字参数：
 
-; [` `地址 `] :: 链接。限定为一个行内代码。
+; [` `1 `] :: 链接。限定为一个行内代码。
 
 == 示例 ==
 
 {{ #Example
 || `input=
-[{#外部链接|`地址=https://example.com}]
+[{#外部链接|`https://example.com}]
 || `expected=
 <p><x-external-link address="https://example.com"></x-external-link></p>
 }}

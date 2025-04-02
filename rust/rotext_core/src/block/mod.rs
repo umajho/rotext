@@ -337,9 +337,24 @@ impl<TStack: Stack<StackEntry>> Iterator for Parser<'_, TStack> {
                                 0,
                             )
                         }
-                        ToApplyShallowSnapshotAndThen::YieldAndExpectBracedOpening(ev) => {
-                            self.state = Expecting::BracedOpening.into();
-                            Ok(self.inner.r#yield(ev).into())
+                        ToApplyShallowSnapshotAndThen::ProcessCallUnnamedArgument => {
+                            if matches!(self.input.get(self.inner.cursor()), Some(m!('`'))) {
+                                self.inner.move_cursor_forward("`".len());
+                                let tym_a = self
+                                    .inner
+                                    .r#yield(ev!(Block, IndicateCallVerbatimArgument(None)));
+                                let tym_b = terminal::call_verbatim_argument_value::enter(
+                                    &mut self.state,
+                                    &mut self.inner,
+                                );
+                                Ok(tym_a.add(tym_b).into())
+                            } else {
+                                self.state = Expecting::BracedOpening.into();
+                                Ok(self
+                                    .inner
+                                    .r#yield(ev!(Block, IndicateCallNormalArgument(None)))
+                                    .into())
+                            }
                         }
                     }
                 }
@@ -1576,7 +1591,12 @@ mod terminal {
                     has_matched_equal_sign,
                 } => {
                     if has_matched_equal_sign {
-                        exit_for_match(state, inner, is_verbatim, range)
+                        if is_verbatim && range.is_empty() {
+                            *state = exit_for_mismatch(leaf);
+                            TYM_UNIT.into()
+                        } else {
+                            exit_for_match(state, inner, is_verbatim, range)
+                        }
                     } else {
                         inner.stack.push_leaf(
                             LeafCallArgumentBeginning {
@@ -1638,7 +1658,7 @@ mod terminal {
             range: Range<usize>,
         ) -> Tym<1> {
             if is_verbatim {
-                let tym_a = inner.r#yield(ev!(Block, IndicateCallVerbatimArgument(range)));
+                let tym_a = inner.r#yield(ev!(Block, IndicateCallVerbatimArgument(Some(range))));
                 let tym_b = terminal::call_verbatim_argument_value::enter(state, inner);
                 tym_a.add(tym_b)
             } else {
@@ -1650,10 +1670,7 @@ mod terminal {
         pub fn exit_for_mismatch(leaf: LeafCallArgumentBeginning) -> State {
             ToApplyShallowSnapshot {
                 shallow_snapshot: leaf.shallow_snapshot,
-                and_then: ToApplyShallowSnapshotAndThen::YieldAndExpectBracedOpening(ev!(
-                    Block,
-                    IndicateCallNormalArgument(None)
-                )),
+                and_then: ToApplyShallowSnapshotAndThen::ProcessCallUnnamedArgument,
             }
             .into()
         }

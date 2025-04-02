@@ -25,7 +25,7 @@ pub enum CompiledItem<'a> {
 pub struct BlockCall<'a> {
     pub name: &'a [u8],
     pub arguments: Vec<(ArgumentKey<'a>, Vec<CompiledItem<'a>>)>,
-    pub verbatim_arguments: Vec<(&'a [u8], Vec<u8>)>,
+    pub verbatim_arguments: Vec<(ArgumentKey<'a>, Vec<u8>)>,
 
     pub block_id: BlockId,
 }
@@ -33,13 +33,13 @@ pub struct BlockCall<'a> {
 #[derive(Eq, Hash, PartialEq)]
 pub enum ArgumentKey<'a> {
     Named(&'a [u8]),
-    Anonymous(usize),
+    Unnamed(usize),
 }
 impl ArgumentKey<'_> {
     pub fn to_vec(&self) -> Vec<u8> {
         match self {
             ArgumentKey::Named(name) => name.to_vec(),
-            ArgumentKey::Anonymous(index) => {
+            ArgumentKey::Unnamed(index) => {
                 let mut buffer = itoa::Buffer::new();
                 buffer.format(*index).as_bytes().to_vec()
             }
@@ -137,8 +137,8 @@ impl<'a> Compiler<'a> {
                         block_id: call.id,
                     };
 
-                    let mut anonymous_argument_name_generator =
-                        crate::utils::SequenceGenerator::new(1);
+                    let mut unnamed_arg_name_gen = crate::utils::SequenceGenerator::new(1);
+                    let mut unnamed_verbatim_arg_name_gen = crate::utils::SequenceGenerator::new(1);
 
                     i += 1;
                     loop {
@@ -156,16 +156,22 @@ impl<'a> Compiler<'a> {
                                 let arg_name = if let Some(arg_name) = arg_name {
                                     ArgumentKey::Named(&input[arg_name.clone()])
                                 } else {
-                                    ArgumentKey::Anonymous(anonymous_argument_name_generator.next())
+                                    ArgumentKey::Unnamed(unnamed_arg_name_gen.next())
                                 };
 
                                 let value: Vec<CompiledItem>;
                                 (i, value) = self.compile_internal(depth + 1, input, evs, i + 1)?;
+
                                 call_compiled.arguments.push((arg_name, value));
                             }
                             Event::IndicateCallVerbatimArgument(arg_name) => {
-                                let mut value: Vec<u8> = vec![];
+                                let arg_name = if let Some(arg_name) = arg_name {
+                                    ArgumentKey::Named(&input[arg_name.clone()])
+                                } else {
+                                    ArgumentKey::Unnamed(unnamed_verbatim_arg_name_gen.next())
+                                };
 
+                                let mut value: Vec<u8> = vec![];
                                 loop {
                                     i += 1;
                                     match &evs[i] {
@@ -179,9 +185,8 @@ impl<'a> Compiler<'a> {
                                         _ => break,
                                     }
                                 }
-                                call_compiled
-                                    .verbatim_arguments
-                                    .push((&input[arg_name.clone()], value));
+
+                                call_compiled.verbatim_arguments.push((arg_name, value));
                             }
                             _ => unreachable!(),
                         }

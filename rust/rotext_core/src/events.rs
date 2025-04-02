@@ -181,7 +181,8 @@ pub enum Event {
     IndicateCallNormalArgument(Option<Range<usize>>) = EventType::IndicateCallNormalArgument as u8,
     /// 指示到达（新）调用的逐字参数。
     #[groups(Block | Blend)]
-    IndicateCallVerbatimArgument(Range<usize>) = EventType::IndicateCallVerbatimArgument as u8,
+    IndicateCallVerbatimArgument(Option<Range<usize>>) =
+        EventType::IndicateCallVerbatimArgument as u8,
 
     /// 退出一层块级的 “进入…”。
     #[groups(Block | Blend)]
@@ -284,7 +285,7 @@ impl Event {
             | Event::EnterCallOnTemplate(Call { name: content, .. })
             | Event::EnterCallOnExtension(Call { name: content, .. })
             | Event::IndicateCallNormalArgument(Some(content))
-            | Event::IndicateCallVerbatimArgument(content)
+            | Event::IndicateCallVerbatimArgument(Some(content))
             | Event::RefLink(content)
             | Event::Dicexp(content)
             | Event::EnterWikiLink(content) => &input[content.clone()],
@@ -312,6 +313,7 @@ impl Event {
             | Event::IndicateTableHeaderCell
             | Event::IndicateTableDataCell
             | Event::IndicateCallNormalArgument(None)
+            | Event::IndicateCallVerbatimArgument(None)
             | Event::ExitBlock(_)
             | Event::EnterCodeSpan
             | Event::EnterEmphasis

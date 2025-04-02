@@ -88,7 +88,7 @@ pub struct ToApplyShallowSnapshot {
 }
 pub enum ToApplyShallowSnapshotAndThen {
     TryParseAsParagraph,
-    YieldAndExpectBracedOpening(Event),
+    ProcessCallUnnamedArgument,
 }
 
 #[derive(Clone)]

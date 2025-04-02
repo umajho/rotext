@@ -375,7 +375,7 @@ impl<'a> Executor<'a> {
         &self,
         attrs: &mut Vec<(&'a [u8], &'a [u8])>,
         ext: &'a extensions::ExtensionElementMapper<'a>,
-        key: &'a [u8],
+        key: &'a compiling::ArgumentKey<'a>,
         value: &'a [u8],
         seen: &mut HashSet<Vec<u8>>,
         bad: &mut Option<CallErrorBadParameters>,

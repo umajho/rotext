@@ -1,8 +1,8 @@
 = rotext入门 =
 
 rotext是一门轻量级标记语言，其设计主要参考自MediaWiki的维基文本（_
-[{#外部链接|`地址=https://www.mediawiki.org/wiki/Wikitext/zh}]）与Djot（_
-[{#外部链接|`地址=https://djot.net/}]）。
+[{#外部链接|`https://www.mediawiki.org/wiki/Wikitext/zh}]）与Djot（_
+[{#外部链接|`https://djot.net/}]）。
 
 == 转义 ==
 

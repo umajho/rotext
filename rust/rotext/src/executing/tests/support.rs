@@ -132,8 +132,11 @@ macro_rules! __event {
     (IndicateCallNormalArgument ($start:literal..$end:literal)) => {
         $crate::Event::IndicateCallNormalArgument(Some($start..$end))
     };
+    (IndicateCallVerbatimArgument ()) => {
+        $crate::Event::IndicateCallVerbatimArgument(None)
+    };
     (IndicateCallVerbatimArgument ($start:literal..$end:literal)) => {
-        $crate::Event::IndicateCallVerbatimArgument($start..$end)
+        $crate::Event::IndicateCallVerbatimArgument(Some($start..$end))
     };
 
     (@inline $v:tt (..)) => {
