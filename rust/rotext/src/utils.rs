@@ -23,6 +23,7 @@ pub fn render_escaped_html_text(buf: &mut Vec<u8>, input: &[u8]) {
         match *char {
             b'<' => buf.extend(b"&lt;"),
             b'&' => buf.extend(b"&amp;"),
+            b'\n' => buf.extend(b"<br>"),
             char => buf.push(char),
         }
     }

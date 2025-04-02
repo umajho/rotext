@@ -26,6 +26,15 @@ fn it_works_in_block_phase_for_simple_events() {
                     ],
                     "<p>a<br>b</p>",
                 ),
+                case!(
+                    "a\nb",
+                    [
+                        (EnterParagraph(..)),
+                        (VerbatimEscaping(0..3)),
+                        (ExitBlock(..)),
+                    ],
+                    "<p>a<br>b</p>",
+                ),
                 case!("", [(ThematicBreak(..)),], "<hr>",),
                 case!(
                     "x1:0/x2:5/x3:10/x4:16/x5:22/x6:28",
