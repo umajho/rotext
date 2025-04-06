@@ -32,7 +32,7 @@ fn parse_common_end<TCtx: CursorContext>(
 
     match char {
         b'\r' | b'\n' => {
-            ctx.increase_current_line();
+            ctx.increase_current_line(true);
             move_cursor_over_line_break(ctx, input);
             ParseCommonEndOutput::Some(
                 NewLine {

@@ -22,7 +22,7 @@ impl CursorContext for MockCursorContext {
         self.current_line
     }
 
-    fn increase_current_line(&mut self) {
+    fn increase_current_line(&mut self, _is_significant: bool) {
         self.current_line.increase()
     }
 }

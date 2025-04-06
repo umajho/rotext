@@ -157,7 +157,7 @@
 {|
 |-
 || {{#折叠||还没闭合文档就结束了！
-`>> || `expected=
+`>|| `expected=
 > <table>
 >   <tr>
 >     <td>
@@ -215,7 +215,7 @@
 |-
 !! 表格没有闭合部分。
 }}
-`>> || `expected=
+`>|| `expected=
 > <x-collapse>
 >   <table>
 >     <tr>
@@ -236,11 +236,11 @@
 ```
 }}
 ```
-`>> > || `expected=<`
+`>|| `expected=<`
 <x-collapse>
   <x-code-block info-string="" content="}}&#10;"></x-code-block>
 </x-collapse>
-`>> > }}
+`>}}
 >
 * 对于[[s:块级元素一览/代码块|代码块]]，若其祖先中存在_
 > [[s:块级元素一览/块引用|块引用]]、[[s:块级元素一览/列表|列表]]或_

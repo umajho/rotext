@@ -115,9 +115,11 @@ impl<TStack: Stack<StackEntry>> CursorContext for ParserInner<TStack> {
         self.current_line
     }
 
-    fn increase_current_line(&mut self) {
+    fn increase_current_line(&mut self, is_significant: bool) {
         self.current_line.increase();
-        self.stack.reset_current_line_for_new_line();
+        if is_significant {
+            self.stack.reset_current_line_for_new_line();
+        }
     }
 }
 impl<TStack: Stack<StackEntry>> YieldContext for ParserInner<TStack> {

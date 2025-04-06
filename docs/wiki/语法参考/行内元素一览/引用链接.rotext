@@ -25,7 +25,7 @@
 
 <% 数字帖号 “456” %>
 >>TP.456
-`>> || `expected=
+`>|| `expected=
 > <p><x-ref-link address="TP.abc"></x-ref-link></p>
 > <p><x-ref-link address="TP.abc#123"></x-ref-link></p>
 > <p><x-ref-link address="TP.456"></x-ref-link></p>
@@ -38,6 +38,6 @@
 > || `input=<`
 <% “#” + 楼层号 “123”。如果是在串 “abc” 中，就等价于 “>>TP.abc#123” %>
 >>#123
-`>> || `expected=
+`>|| `expected=
 > <p><x-ref-link address="#123"></x-ref-link></p>
 > }}

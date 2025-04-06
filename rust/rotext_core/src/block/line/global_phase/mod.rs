@@ -87,7 +87,7 @@ fn parse_verbatim_escaping<TCtx: CursorContext>(input: &[u8], ctx: &mut TCtx) ->
                 };
             }
             b'\r' | b'\n' => {
-                ctx.increase_current_line();
+                ctx.increase_current_line(false);
                 continuous_backticks = 0;
                 move_cursor_over_line_break(ctx, input);
             }
@@ -133,7 +133,7 @@ fn parse_comment<TCtx: CursorContext>(input: &[u8], ctx: &mut TCtx) {
                 depth -= 1;
             }
             b'\r' | b'\n' => {
-                ctx.increase_current_line();
+                ctx.increase_current_line(false);
                 move_cursor_over_line_break(ctx, input);
             }
             _ => ctx.move_cursor_forward(1),

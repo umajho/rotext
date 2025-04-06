@@ -10,7 +10,10 @@ pub trait CursorContext {
     fn move_cursor_forward(&mut self, n: usize);
 
     fn current_line(&self) -> LineNumber;
-    fn increase_current_line(&mut self);
+    /// 如果 `is_significant` 为真，代表该换行会影响到整体的解析状态。在注释和逐
+    /// 字转义中，换行不会有如此影响，因此应传入 `false`；而通常情况下的换行会有
+    /// 如此影响，因此应传入 `true`。
+    fn increase_current_line(&mut self, is_significant: bool);
 }
 pub trait YieldContext {
     /// `ev` 是属于 `Block` 分组的事件。
