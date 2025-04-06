@@ -1,20 +1,20 @@
-use std::panic::{catch_unwind, RefUnwindSafe};
+use std::panic::{RefUnwindSafe, catch_unwind};
 
 use rotext_core::{Error, Event, EventType};
 
-use crate::support::{make_whitespace_variants, FailedCase, FailureReason};
+use crate::support::{FailedCase, FailureReason, make_whitespace_variants};
 
 macro_rules! case {
-    ($input_variants:expr_2021, $expected:expr_2021) => {
+    ($input_variants:expr, $expected:expr) => {
         case!(@__inner, $input_variants, $expected, false, false)
     };
-    (@todo, $input_variants:expr_2021, $expected:expr_2021) => {
+    (@todo, $input_variants:expr, $expected:expr) => {
         case!(@__inner, $input_variants, $expected, true, false)
     };
-    (@only, $input_variants:expr_2021, $expected:expr_2021) => {
+    (@only, $input_variants:expr, $expected:expr) => {
         case!(@__inner, $input_variants, $expected, false, true)
     };
-    (@__inner, $input_variants:expr_2021, $expected:expr_2021, $flag_todo:literal, $flag_only:literal) => {
+    (@__inner, $input_variants:expr, $expected:expr, $flag_todo:literal, $flag_only:literal) => {
         $crate::suites::block::support::Case {
             input_variants: $input_variants,
             expected: $expected,
