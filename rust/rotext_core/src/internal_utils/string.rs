@@ -31,7 +31,7 @@ pub fn count_continuous_whitespaces(input: &[u8], since: usize) -> usize {
 }
 
 macro_rules! is_whitespace {
-    ($char:expr) => {
+    ($char:expr_2021) => {
         matches!($char, b' ' | b'\t')
     };
 }

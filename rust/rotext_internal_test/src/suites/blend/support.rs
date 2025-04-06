@@ -5,16 +5,16 @@ use rotext_core::{Event, EventType};
 use crate::support::{make_whitespace_variants, FailedCase, FailureReason};
 
 macro_rules! case {
-    ($input_variants:expr, $expected:expr) => {
+    ($input_variants:expr_2021, $expected:expr_2021) => {
         case!(@__inner, $input_variants, $expected, false, false)
     };
-    (@todo, $input_variants:expr, $expected:expr) => {
+    (@todo, $input_variants:expr_2021, $expected:expr_2021) => {
         case!(@__inner, $input_variants, $expected, true, false)
     };
-    (@only, $input_variants:expr, $expected:expr) => {
+    (@only, $input_variants:expr_2021, $expected:expr_2021) => {
         case!(@__inner, $input_variants, $expected, false, true)
     };
-    (@__inner, $input_variants:expr, $expected:expr, $flag_todo:literal, $flag_only:literal) => {
+    (@__inner, $input_variants:expr_2021, $expected:expr_2021, $flag_todo:literal, $flag_only:literal) => {
         $crate::suites::blend::support::Case {
             input_variants: $input_variants,
             expected: $expected,

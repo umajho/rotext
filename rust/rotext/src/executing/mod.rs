@@ -9,7 +9,7 @@ use std::collections::{HashMap, HashSet};
 use rotext_core::BlockId;
 use rotext_core::Event;
 
-use crate::{compiling, CompiledItem};
+use crate::{CompiledItem, compiling};
 pub use renderer::TagNameMap;
 
 pub mod extensions;
@@ -171,16 +171,13 @@ impl<'a> Executor<'a> {
                     self.renderer.render_events(buf, input, evs, &mut stack);
                 }
                 CompiledItem::BlockTransclusion(block_call) => {
-                    self.render_call_error(
-                        buf,
-                        RenderCallErrorInput {
-                            call_type: CallType::Transclusion,
-                            call_name: block_call.name,
-                            error: CallError::Todo,
-                            #[cfg(feature = "block-id")]
-                            block_id: block_call.block_id,
-                        },
-                    );
+                    self.render_call_error(buf, RenderCallErrorInput {
+                        call_type: CallType::Transclusion,
+                        call_name: block_call.name,
+                        error: CallError::Todo,
+                        #[cfg(feature = "block-id")]
+                        block_id: block_call.block_id,
+                    });
                 }
                 CompiledItem::BlockExtension(block_call) => {
                     self.render_block_extension(buf, input, parsed, block_call);
@@ -197,16 +194,13 @@ impl<'a> Executor<'a> {
         block_call: &crate::compiling::BlockCall<'a>,
     ) {
         let Some(ext) = self.block_extension_map.get(block_call.name) else {
-            self.render_call_error(
-                buf,
-                RenderCallErrorInput {
-                    call_type: CallType::Extension,
-                    call_name: block_call.name,
-                    error: CallError::UnknownCallee(block_call.name),
-                    #[cfg(feature = "block-id")]
-                    block_id: block_call.block_id,
-                },
-            );
+            self.render_call_error(buf, RenderCallErrorInput {
+                call_type: CallType::Extension,
+                call_name: block_call.name,
+                error: CallError::UnknownCallee(block_call.name),
+                #[cfg(feature = "block-id")]
+                block_id: block_call.block_id,
+            });
             return;
         };
 
@@ -293,19 +287,16 @@ impl<'a> Executor<'a> {
         }
 
         if bad.is_some() || bad_verbatim.is_some() {
-            self.render_call_error(
-                buf,
-                RenderCallErrorInput {
-                    call_type: CallType::Extension,
-                    call_name: block_call.name,
-                    error: CallError::BadParameters {
-                        normal: bad.map(Box::new),
-                        verbatim: bad_verbatim.map(Box::new),
-                    },
-                    #[cfg(feature = "block-id")]
-                    block_id: block_call.block_id,
+            self.render_call_error(buf, RenderCallErrorInput {
+                call_type: CallType::Extension,
+                call_name: block_call.name,
+                error: CallError::BadParameters {
+                    normal: bad.map(Box::new),
+                    verbatim: bad_verbatim.map(Box::new),
                 },
-            );
+                #[cfg(feature = "block-id")]
+                block_id: block_call.block_id,
+            });
             return;
         }
 

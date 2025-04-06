@@ -330,18 +330,18 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
     fn exit_until_stack_is_empty_and_then_end(
         inner: &mut ParserInner<TInlineStack>,
     ) -> (Tym<1>, Option<State<'a>>) {
-        if let Some(leaf) = inner.stack.pop_leaf() {
+        match inner.stack.pop_leaf() { Some(leaf) => {
             let tym = match leaf {
                 stack_wrapper::Leaf::CodeSpan(leaf) => inner.r#yield(leaf.make_exit_event()),
             };
             (tym, None)
-        } else if let Some(_entry) = inner.stack.pop_entry() {
+        } _ => { match inner.stack.pop_entry() { Some(_entry) => {
             let tym = inner.r#yield(ev!(Inline, ExitInline));
 
             (tym, None)
-        } else {
+        } _ => {
             (TYM_UNIT.into(), Some(State::Ended))
-        }
+        }}}}
     }
 }
 

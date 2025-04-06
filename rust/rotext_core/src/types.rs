@@ -109,7 +109,7 @@ impl<const N: usize> Tym<N> {
 
 /// 用于让 clippy 不去抱怨 useless conversion。
 macro_rules! cast_tym {
-    ($tym: expr) => {
+    ($tym: expr_2021) => {
         $tym.into()
     };
 }

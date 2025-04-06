@@ -1,6 +1,6 @@
 use rotext_core::{
-    events::{BlockWithId, VerbatimEscaping},
     Event,
+    events::{BlockWithId, VerbatimEscaping},
 };
 
 macro_rules! write_data_block_id_attribute_if_applicable {
@@ -234,18 +234,16 @@ impl<'a> Renderer<'a> {
             | Event::IndicateCallNormalArgument(_)
             | Event::IndicateCallVerbatimArgument(_) => unreachable!(),
             Event::RefLink(content) => {
-                crate::utils::render_empty_element(
-                    buf,
-                    self.tag_name_map.ref_link,
-                    &[(b"address", &input[content.clone()])],
-                );
+                crate::utils::render_empty_element(buf, self.tag_name_map.ref_link, &[(
+                    b"address",
+                    &input[content.clone()],
+                )]);
             }
             Event::Dicexp(content) => {
-                crate::utils::render_empty_element(
-                    buf,
-                    self.tag_name_map.dicexp,
-                    &[(b"code", &input[content.clone()])],
-                );
+                crate::utils::render_empty_element(buf, self.tag_name_map.dicexp, &[(
+                    b"code",
+                    &input[content.clone()],
+                )]);
             }
             Event::EnterCodeSpan => self.push_simple_inline(buf, stack, b"code"),
             Event::EnterEmphasis => self.push_simple_inline(buf, stack, b"em"),
@@ -254,11 +252,10 @@ impl<'a> Renderer<'a> {
             Event::EnterRuby => self.push_simple_inline(buf, stack, b"ruby"),
             Event::EnterRubyText => self.push_simple_inline(buf, stack, b"rt"),
             Event::EnterWikiLink(address) => {
-                crate::utils::render_eopening_tag(
-                    buf,
-                    self.tag_name_map.wiki_link,
-                    &[(b"address", &input[address.clone()])],
-                );
+                crate::utils::render_eopening_tag(buf, self.tag_name_map.wiki_link, &[(
+                    b"address",
+                    &input[address.clone()],
+                )]);
                 stack.push(StackEntryBox(StackEntry::WikiLink));
             }
         }

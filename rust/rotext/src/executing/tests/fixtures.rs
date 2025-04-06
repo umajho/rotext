@@ -70,8 +70,8 @@ pub fn new_block_extension_map() -> HashMap<&'static [u8], Extension<'static>> {
     map
 }
 
-fn new_parametr_map(
-) -> HashMap<&'static [u8], ParameterWrapper<'static, ExtensionElementMapperParameter<'static>>> {
+fn new_parametr_map()
+-> HashMap<&'static [u8], ParameterWrapper<'static, ExtensionElementMapperParameter<'static>>> {
     let mut map: HashMap<&'static [u8], ParameterWrapper<ExtensionElementMapperParameter>> =
         HashMap::new();
     map.insert(

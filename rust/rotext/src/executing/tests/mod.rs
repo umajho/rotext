@@ -4,7 +4,7 @@ mod support;
 use support::{case, run_cases};
 
 #[allow(unused_imports)]
-use rotext_internal_test::support::{report_panicked_cases, FailedCase, GroupedCases};
+use rotext_internal_test::support::{FailedCase, GroupedCases, report_panicked_cases};
 
 use super::*;
 
@@ -158,53 +158,36 @@ fn it_works_in_block_phase_for_simple_events() {
                     ],
                     "<dl><dt><p>A</p></dt><dd><p>Aa</p></dd><dd><p>Ab</p></dd><dt><p>B</p></dt></dl>",
                 ),
-            ]
+            ],
         },
         GroupedCases {
             group: "代码块",
-            cases: vec![
-                case!(
-                    "info:0/code:7/line 2:14",
-                    [
-                        (EnterCodeBlock(..)),
-                        (Text(0..4)),
-                        (IndicateCodeBlockCode()),
-                        (Text(7..11)),
-                        (NewLine(..)),
-                        (Text(14..20)),
-                        (ExitBlock(..)),
-                    ],
-                    r#"<x-code-block info-string="info" content="code&#10;line 2"></x-code-block>"#,
-                ),
-            ],
+            cases: vec![case!(
+                "info:0/code:7/line 2:14",
+                [
+                    (EnterCodeBlock(..)),
+                    (Text(0..4)),
+                    (IndicateCodeBlockCode()),
+                    (Text(7..11)),
+                    (NewLine(..)),
+                    (Text(14..20)),
+                    (ExitBlock(..)),
+                ],
+                r#"<x-code-block info-string="info" content="code&#10;line 2"></x-code-block>"#,
+            )],
         },
         GroupedCases {
             group: "表格",
             cases: vec![
+                case!("", [(EnterTable(..)), (ExitBlock(..)),], "<table></table>",),
                 case!(
                     "",
-                    [
-                        (EnterTable(..)),
-                        (ExitBlock(..)),
-                    ],
-                    "<table></table>",
-                ),
-                case!(
-                    "",
-                    [
-                        (EnterTable(..)),
-                        (IndicateTableRow()),
-                        (ExitBlock(..)),
-                    ],
+                    [(EnterTable(..)), (IndicateTableRow()), (ExitBlock(..)),],
                     "<table><tr></tr></table>",
                 ),
                 case!(
                     "",
-                    [
-                        (EnterTable(..)),
-                        (IndicateTableDataCell()),
-                        (ExitBlock(..)),
-                    ],
+                    [(EnterTable(..)), (IndicateTableDataCell()), (ExitBlock(..)),],
                     "<table><tr><td></td></tr></table>",
                 ),
                 case!(
@@ -244,9 +227,7 @@ fn it_works_in_block_phase_for_simple_events() {
                         (IndicateTableRow()),
                         (ExitBlock(..)),
                     ],
-                    concat!(
-                        "<table><tr></tr><tr></tr></table>",
-                    ),
+                    concat!("<table><tr></tr><tr></tr></table>",),
                 ),
                 case!(
                     "",
@@ -256,9 +237,7 @@ fn it_works_in_block_phase_for_simple_events() {
                         (IndicateTableDataCell()),
                         (ExitBlock(..)),
                     ],
-                    concat!(
-                        "<table><tr><td></td><td></td></tr></table>",
-                    ),
+                    concat!("<table><tr><td></td><td></td></tr></table>",),
                 ),
                 case!(
                     "data",
@@ -312,7 +291,7 @@ fn it_works_in_block_phase_for_simple_events() {
                         "</table>",
                     ),
                 ),
-            ]
+            ],
         },
         GroupedCases {
             group: "表格>captions",
@@ -386,67 +365,59 @@ fn it_works_in_block_phase_for_simple_events() {
         },
         GroupedCases {
             group: "表格>嵌套",
-            cases: vec![
-                case!(
-                    "CAPTION:0/DATA:10",
-                    [
-                        (EnterTable(..)),
-                        (IndicateTableCaption()),
-                        (EnterTable(..)),
-                        (IndicateTableCaption()),
-                        (EnterParagraph(..)),
-                        (Text(0..7)),
-                        (ExitBlock(..)),
-                        (IndicateTableDataCell()),
-                        (EnterParagraph(..)),
-                        (Text(10..14)),
-                        (ExitBlock(..)),
-                        (ExitBlock(..)),
-                        (IndicateTableDataCell()),
-                        (EnterTable(..)),
-                        (IndicateTableCaption()),
-                        (EnterParagraph(..)),
-                        (Text(0..7)),
-                        (ExitBlock(..)),
-                        (ExitBlock(..)),
-                        (ExitBlock(..)),
-                    ],
-                    concat!(
-                        "<table><caption>",
-                        "<table><caption><p>CAPTION</p></caption><tr><td><p>DATA</p></td></tr></table>",
-                        "</caption><tr><td>",
-                        "<table><caption><p>CAPTION</p></caption></table>",
-                        "</td></tr></table>",
-                    ),
+            cases: vec![case!(
+                "CAPTION:0/DATA:10",
+                [
+                    (EnterTable(..)),
+                    (IndicateTableCaption()),
+                    (EnterTable(..)),
+                    (IndicateTableCaption()),
+                    (EnterParagraph(..)),
+                    (Text(0..7)),
+                    (ExitBlock(..)),
+                    (IndicateTableDataCell()),
+                    (EnterParagraph(..)),
+                    (Text(10..14)),
+                    (ExitBlock(..)),
+                    (ExitBlock(..)),
+                    (IndicateTableDataCell()),
+                    (EnterTable(..)),
+                    (IndicateTableCaption()),
+                    (EnterParagraph(..)),
+                    (Text(0..7)),
+                    (ExitBlock(..)),
+                    (ExitBlock(..)),
+                    (ExitBlock(..)),
+                ],
+                concat!(
+                    "<table><caption>",
+                    "<table><caption><p>CAPTION</p></caption><tr><td><p>DATA</p></td></tr></table>",
+                    "</caption><tr><td>",
+                    "<table><caption><p>CAPTION</p></caption></table>",
+                    "</td></tr></table>",
                 ),
-            ],
+            )],
         },
         GroupedCases {
             group: "Wiki链接",
-            cases: vec![
-                case!(
-                    "ADDR:0/title:10",
-                    [
-                        (EnterParagraph(..)),
-                        (EnterWikiLink(0..4)),
-                        (Text(7..12)),
-                        (@inline ExitInline(..)),
-                        (ExitBlock(..)),
-                    ],
-                    r#"<p><x-wiki-link address="ADDR">title</x-wiki-link></p>"#,
-                ),
-            ]
+            cases: vec![case!(
+                "ADDR:0/title:10",
+                [
+                    (EnterParagraph(..)),
+                    (EnterWikiLink(0..4)),
+                    (Text(7..12)),
+                    (@inline ExitInline(..)),
+                    (ExitBlock(..)),
+                ],
+                r#"<p><x-wiki-link address="ADDR">title</x-wiki-link></p>"#,
+            )],
         },
         GroupedCases {
             group: "XSS",
             cases: vec![
                 case!(
                     r#"<script>"#,
-                    [
-                        (EnterParagraph(..)),
-                        (Text(0..8)),
-                        (ExitBlock(..)),
-                    ],
+                    [(EnterParagraph(..)), (Text(0..8)), (ExitBlock(..)),],
                     r#"<p>&lt;script></p>"#,
                 ),
                 case!(
