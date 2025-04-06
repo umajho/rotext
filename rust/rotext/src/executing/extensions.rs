@@ -17,43 +17,46 @@ pub struct ExtensionElementMapper<'a> {
     pub required_verbatim_parameters: HashSet<&'a [u8]>,
 }
 impl ExtensionElementMapper<'_> {
-    pub fn get_real_parameter(&self, name: &[u8]) -> Option<&ExtensionElementMapperParameter> {
+    pub fn get_real_parameter<'a>(
+        &'a self,
+        name: &'a [u8],
+    ) -> Option<(&'a [u8], &'a ExtensionElementMapperParameter<'a>)> {
         self._get_real_parameter(name, false)
     }
 
-    fn _get_real_parameter(
-        &self,
-        name: &[u8],
+    fn _get_real_parameter<'a>(
+        &'a self,
+        name: &'a [u8],
         is_in_recursion: bool,
-    ) -> Option<&ExtensionElementMapperParameter> {
+    ) -> Option<(&'a [u8], &'a ExtensionElementMapperParameter<'a>)> {
         let param = self.parameters.get(name)?;
         match param {
-            ParameterWrapper::Real(param) => Some(param),
-            ParameterWrapper::Alias(name) if !is_in_recursion => {
-                self._get_real_parameter(name, true)
+            ParameterWrapper::Real(param) => Some((name, param)),
+            ParameterWrapper::Alias(real_name) if !is_in_recursion => {
+                self._get_real_parameter(real_name, true)
             }
             // 别名只应有一层。
             _ => unreachable!(),
         }
     }
 
-    pub fn get_real_verbatim_parameter(
-        &self,
-        name: &[u8],
-    ) -> Option<&ExtensionElementMapperVerbatimParameter> {
+    pub fn get_real_verbatim_parameter<'a>(
+        &'a self,
+        name: &'a [u8],
+    ) -> Option<(&'a [u8], &'a ExtensionElementMapperVerbatimParameter<'a>)> {
         self._get_real_verbatim_parameter(name, false)
     }
 
-    fn _get_real_verbatim_parameter(
-        &self,
-        name: &[u8],
+    fn _get_real_verbatim_parameter<'a>(
+        &'a self,
+        name: &'a [u8],
         is_in_recursion: bool,
-    ) -> Option<&ExtensionElementMapperVerbatimParameter> {
+    ) -> Option<(&'a [u8], &'a ExtensionElementMapperVerbatimParameter<'a>)> {
         let param = self.verbatim_parameters.get(name)?;
         match param {
-            ParameterWrapper::Real(param) => Some(param),
-            ParameterWrapper::Alias(name) if !is_in_recursion => {
-                self._get_real_verbatim_parameter(name, true)
+            ParameterWrapper::Real(param) => Some((name, param)),
+            ParameterWrapper::Alias(real_name) if !is_in_recursion => {
+                self._get_real_verbatim_parameter(real_name, true)
             }
             // 别名只应有一层。
             _ => unreachable!(),
@@ -76,7 +79,10 @@ pub enum ExtensionElementMapperParameterMappingTo<'a> {
 }
 
 pub struct ExtensionElementMapperVerbatimParameter<'a> {
-    pub mapping_to_attribute: &'a [u8],
+    pub mapping_to: ExtensionElementMapperVerbatimParameterMappingTo<'a>,
+}
+pub enum ExtensionElementMapperVerbatimParameterMappingTo<'a> {
+    Attribute(&'a [u8]),
 }
 
 #[cfg(any(test, feature = "test"))]
@@ -126,14 +132,18 @@ pub fn new_demo_block_extension_map_for_test() -> HashMap<&'static [u8], Extensi
                 map.insert(
                     b"title",
                     ParameterWrapper::Real(ExtensionElementMapperVerbatimParameter {
-                        mapping_to_attribute: b"title",
+                        mapping_to: ExtensionElementMapperVerbatimParameterMappingTo::Attribute(
+                            b"title",
+                        ),
                     }),
                 );
                 map.insert("标题".as_bytes(), ParameterWrapper::Alias(b"title"));
                 map.insert(
                     b"open",
                     ParameterWrapper::Real(ExtensionElementMapperVerbatimParameter {
-                        mapping_to_attribute: b"open-by-default",
+                        mapping_to: ExtensionElementMapperVerbatimParameterMappingTo::Attribute(
+                            b"open-by-default",
+                        ),
                     }),
                 );
                 map.insert("展开".as_bytes(), ParameterWrapper::Alias(b"open"));

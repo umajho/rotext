@@ -237,7 +237,7 @@ impl<'a> Executor<'a> {
         // 不记别名。
         let mut seen_verbatim_params: HashSet<Vec<u8>> = HashSet::new();
 
-        let mut attrs: Vec<(&[u8], &[u8])> = vec![];
+        let mut attrs: Vec<(Vec<u8>, &[u8])> = vec![];
         let mut content: Vec<u8> = vec![];
 
         let mut bad: Option<CallErrorBadParameters> = None;
@@ -261,11 +261,13 @@ impl<'a> Executor<'a> {
         for (key, value) in &block_call.verbatim_arguments {
             self.process_block_element_mapper_extension_verbatim_argument(
                 &mut attrs,
-                ext,
-                key,
-                value,
-                &mut seen_verbatim_params,
-                &mut bad_verbatim,
+                ProcessBlockElementMapperExtensionVerbatimArgumentParameters {
+                    ext,
+                    key,
+                    value,
+                    seen: &mut seen_verbatim_params,
+                    bad: &mut bad_verbatim,
+                },
             );
         }
 
@@ -308,7 +310,7 @@ impl<'a> Executor<'a> {
         }
 
         if let Some(variant) = ext.variant {
-            attrs.push((b"variant", variant));
+            attrs.push((b"variant".to_vec(), variant));
         }
 
         #[cfg(feature = "block-id")]
@@ -320,12 +322,19 @@ impl<'a> Executor<'a> {
         #[cfg(feature = "block-id")]
         if let Some(buffer) = &mut buffer {
             attrs.push((
-                b"data-block-id",
+                b"data-block-id".to_vec(),
                 buffer.format(block_call.block_id.value()).as_bytes(),
             ));
         }
 
-        crate::utils::render_eopening_tag(buf, ext.tag_name, &attrs);
+        crate::utils::render_eopening_tag(
+            buf,
+            ext.tag_name,
+            &attrs
+                .iter()
+                .map(|(k, v)| (k.as_slice(), *v))
+                .collect::<Vec<_>>(),
+        );
         buf.extend(&content);
         crate::utils::render_closing_tag(buf, ext.tag_name);
     }
@@ -338,22 +347,21 @@ impl<'a> Executor<'a> {
         params: ProcessBlockElementMapperExtensionArgumentParameters<'a, '_>,
     ) {
         let key_vec = params.key.to_vec();
-        let param = params.ext.get_real_parameter(&key_vec);
-        let Some(param) = param else {
+        let Some((key_real, param)) = params.ext.get_real_parameter(&key_vec) else {
             let bad = params
                 .bad
                 .get_or_insert_with(CallErrorBadParameters::default);
             bad.unknown.insert(key_vec);
             return;
         };
-        if params.seen.contains(&key_vec) {
+        if params.seen.contains(key_real) {
             let bad = params
                 .bad
                 .get_or_insert_with(CallErrorBadParameters::default);
-            bad.duplicated.insert(key_vec);
+            bad.duplicated.insert(key_real.to_vec());
             return;
         } else {
-            params.seen.insert(key_vec);
+            params.seen.insert(key_real.to_vec());
         }
         if params.bad.is_some() {
             return;
@@ -373,32 +381,35 @@ impl<'a> Executor<'a> {
 
     fn process_block_element_mapper_extension_verbatim_argument(
         &self,
-        attrs: &mut Vec<(&'a [u8], &'a [u8])>,
-        ext: &'a extensions::ExtensionElementMapper<'a>,
-        key: &'a compiling::ArgumentKey<'a>,
-        value: &'a [u8],
-        seen: &mut HashSet<Vec<u8>>,
-        bad: &mut Option<CallErrorBadParameters>,
+        attrs: &mut Vec<(Vec<u8>, &'a [u8])>,
+        params: ProcessBlockElementMapperExtensionVerbatimArgumentParameters<'a, '_>,
     ) {
-        let key_vec = key.to_vec();
-        let param = ext.get_real_verbatim_parameter(&key_vec);
-        let Some(param) = param else {
-            let bad = bad.get_or_insert_with(CallErrorBadParameters::default);
+        let key_vec = params.key.to_vec();
+        let Some((key_real, param)) = params.ext.get_real_verbatim_parameter(&key_vec) else {
+            let bad = params
+                .bad
+                .get_or_insert_with(CallErrorBadParameters::default);
             bad.unknown.insert(key_vec);
             return;
         };
-        if seen.contains(&key_vec) {
-            let bad = bad.get_or_insert_with(CallErrorBadParameters::default);
-            bad.duplicated.insert(key_vec);
+        if params.seen.contains(key_real) {
+            let bad = params
+                .bad
+                .get_or_insert_with(CallErrorBadParameters::default);
+            bad.duplicated.insert(key_real.to_vec());
             return;
         } else {
-            seen.insert(key_vec);
+            params.seen.insert(key_real.to_vec());
         }
-        if bad.is_some() {
+        if params.bad.is_some() {
             return;
         }
 
-        attrs.push((param.mapping_to_attribute, value));
+        match param.mapping_to {
+            extensions::ExtensionElementMapperVerbatimParameterMappingTo::Attribute(attr) => {
+                attrs.push((attr.to_vec(), params.value));
+            }
+        }
     }
 
     fn render_call_error(&self, buf: &mut Vec<u8>, input: RenderCallErrorInput<'_>) {
@@ -435,6 +446,14 @@ struct ProcessBlockElementMapperExtensionArgumentParameters<'a, 'b> {
     ext: &'b extensions::ExtensionElementMapper<'a>,
     key: &'b compiling::ArgumentKey<'a>,
     value: &'b Vec<CompiledItem<'b>>,
+    seen: &'b mut HashSet<Vec<u8>>,
+    bad: &'b mut Option<CallErrorBadParameters>,
+}
+
+struct ProcessBlockElementMapperExtensionVerbatimArgumentParameters<'a, 'b> {
+    ext: &'b extensions::ExtensionElementMapper<'a>,
+    key: &'b compiling::ArgumentKey<'a>,
+    value: &'a [u8],
     seen: &'b mut HashSet<Vec<u8>>,
     bad: &'b mut Option<CallErrorBadParameters>,
 }

@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use rotext::executing::extensions::{
     Extension, ExtensionElementMapper, ExtensionElementMapperParameter,
     ExtensionElementMapperParameterMappingTo, ExtensionElementMapperVerbatimParameter,
-    ParameterWrapper,
+    ExtensionElementMapperVerbatimParameterMappingTo, ParameterWrapper,
 };
 
 #[derive(Debug, serde::Deserialize)]
@@ -130,7 +130,9 @@ pub struct ExtensionElementMapperVerbatimParameterInput {
 impl ExtensionElementMapperVerbatimParameterInput {
     fn convert(&self) -> ExtensionElementMapperVerbatimParameter {
         ExtensionElementMapperVerbatimParameter {
-            mapping_to_attribute: self.mapping_to_attribute.as_bytes(),
+            mapping_to: ExtensionElementMapperVerbatimParameterMappingTo::Attribute(
+                self.mapping_to_attribute.as_bytes(),
+            ),
         }
     }
 }

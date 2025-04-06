@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use crate::executing::extensions::{
     Extension, ExtensionElementMapper, ExtensionElementMapperParameter,
     ExtensionElementMapperParameterMappingTo, ExtensionElementMapperVerbatimParameter,
-    ParameterWrapper,
+    ExtensionElementMapperVerbatimParameterMappingTo, ParameterWrapper,
 };
 
 pub fn new_block_extension_map() -> HashMap<&'static [u8], Extension<'static>> {
@@ -105,19 +105,19 @@ fn new_verbatim_parametr_map() -> HashMap<
     map.insert(
         b"1",
         ParameterWrapper::Real(ExtensionElementMapperVerbatimParameter {
-            mapping_to_attribute: b"first",
+            mapping_to: ExtensionElementMapperVerbatimParameterMappingTo::Attribute(b"first"),
         }),
     );
     map.insert(
         b"bar",
         ParameterWrapper::Real(ExtensionElementMapperVerbatimParameter {
-            mapping_to_attribute: b"bar",
+            mapping_to: ExtensionElementMapperVerbatimParameterMappingTo::Attribute(b"bar"),
         }),
     );
     map.insert(
         b"baz",
         ParameterWrapper::Real(ExtensionElementMapperVerbatimParameter {
-            mapping_to_attribute: b"baz",
+            mapping_to: ExtensionElementMapperVerbatimParameterMappingTo::Attribute(b"baz"),
         }),
     );
     map.insert(b"bar_alias", ParameterWrapper::Alias(b"bar"));
