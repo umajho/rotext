@@ -8,7 +8,7 @@ use crate::{
         braced::{call, table},
         types::CursorContext,
     },
-    common::{is_markup, m},
+    common::{is_valid_character_in_argument_name, is_valid_character_in_name, m},
     events::{NewLine, VerbatimEscaping},
     internal_utils::string::{count_continuous_character_with_maximum, is_whitespace},
 };
@@ -304,7 +304,7 @@ fn parse_call_name<TCtx: CursorContext>(
                 }
             }
         }
-    } else if is_markup(first_char) {
+    } else if !is_valid_character_in_name(first_char) {
         return (range_before, End::Mismatched);
     };
 
@@ -340,7 +340,7 @@ fn parse_call_name<TCtx: CursorContext>(
                     extra_matched: MatchedCallNameExtraMatched::None,
                 });
             }
-            Some(c) if is_markup(*c) => {
+            Some(c) if !is_valid_character_in_name(*c) => {
                 if is_extension {
                     ctx.set_cursor(range_before.end);
                     return (range_before, End::Mismatched);
@@ -413,7 +413,7 @@ fn parse_call_argument_name<TCtx: CursorContext>(
                     has_matched_equal_sign: false,
                 });
             }
-            Some(c) if is_markup(*c) => {
+            Some(c) if !is_valid_character_in_argument_name(*c) => {
                 return (range_before.start..ctx.cursor(), End::Mismatched);
             }
             _ => ctx.move_cursor_forward(1),

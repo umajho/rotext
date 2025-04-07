@@ -35,7 +35,9 @@ mod for_fn_parse {
         );
         assert_eq!(
             (expected_content, expected_end, expected_ctx),
-            (&input[actual_range], actual_end, ctx)
+            (&input[actual_range], actual_end, ctx),
+            "input: {}",
+            String::from_utf8_lossy(input),
         );
     }
 
@@ -723,7 +725,7 @@ mod for_fn_parse {
             },
         );
 
-        for input in ["foo#", "foo|", "foo}", "foo*"] {
+        for input in ["foo#", "foo|", "foo}", "foo["] {
             test(
                 input.as_bytes(),
                 end_condition.clone(),
@@ -748,7 +750,7 @@ mod for_fn_parse {
             },
         );
 
-        for input in ["#", "*", "#foo|", "#foo}", "#foo#"] {
+        for input in ["#", "[", "#foo|", "#foo}", "#foo["] {
             test(
                 input.as_bytes(),
                 end_condition.clone(),

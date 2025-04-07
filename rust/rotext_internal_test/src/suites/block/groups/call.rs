@@ -34,9 +34,9 @@ pub fn groups_call() -> Vec<GroupedCases> {
                     (EventType::__Unparsed, Some("{{foo|")),
                     (EventType::ExitBlock, None),
                 ]),
-                case!(vec!["{{foo*"], vec![
+                case!(vec!["{{foo["], vec![
                     (EventType::EnterParagraph, None),
-                    (EventType::__Unparsed, Some("{{foo*")),
+                    (EventType::__Unparsed, Some("{{foo[")),
                     (EventType::ExitBlock, None),
                 ]),
                 case!(vec!["{{foo\n|"], vec![
