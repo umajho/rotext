@@ -3,8 +3,8 @@ mod for_fn_parse {
         block::{
             braced::table,
             line::normal::{
-                parse, AtxClosing, ContentBefore, End, EndCondition, MatchedCallNameExtraMatched,
-                Matching, TableRelated,
+                AtxClosing, ContentBefore, End, EndCondition, MatchedCallNameExtraMatched,
+                Matching, TableRelated, parse,
             },
             test_support::mocks::MockCursorContext,
         },

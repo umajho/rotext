@@ -13,13 +13,13 @@ use core::ops::Range;
 pub use stack_wrapper::StackEntry;
 
 use crate::{
+    Event,
     common::m,
-    events::{ev, ThematicBreak},
+    events::{ThematicBreak, ev},
     internal_utils::string::{
         count_continuous_character, count_continuous_whitespaces, is_whitespace,
     },
-    types::{cast_tym, Stack, Tym, TYM_UNIT},
-    Event,
+    types::{Stack, TYM_UNIT, Tym, cast_tym},
 };
 
 use state::{

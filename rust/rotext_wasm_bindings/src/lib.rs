@@ -66,7 +66,7 @@ pub fn parse_and_render(input: &[u8], opts: &[u8]) -> Result<Vec<u8>, String> {
             return Err(format!(
                 "InputError/BlockExtensionMapConversionError|{}",
                 error
-            ))
+            ));
         }
     };
 

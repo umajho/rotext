@@ -2,25 +2,22 @@ use indoc::indoc;
 
 use rotext_core::EventType;
 
-use crate::suites::block::support::{case, GroupedCases};
+use crate::suites::block::support::{GroupedCases, case};
 
 pub fn groups_horizontal_rule() -> Vec<GroupedCases> {
     vec![
         GroupedCases {
             group: "分割线",
             cases: vec![
-                case!(
-                    vec!["---", "----", "␠---"],
-                    vec![(EventType::ThematicBreak, None)]
-                ),
-                case!(
-                    vec!["--"],
-                    vec![
-                        (EventType::EnterParagraph, None),
-                        (EventType::__Unparsed, Some("--")),
-                        (EventType::ExitBlock, None),
-                    ]
-                ),
+                case!(vec!["---", "----", "␠---"], vec![(
+                    EventType::ThematicBreak,
+                    None
+                )]),
+                case!(vec!["--"], vec![
+                    (EventType::EnterParagraph, None),
+                    (EventType::__Unparsed, Some("--")),
+                    (EventType::ExitBlock, None),
+                ]),
                 case!(
                     vec![
                         indoc! {"

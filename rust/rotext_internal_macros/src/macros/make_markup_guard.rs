@@ -3,7 +3,7 @@ use std::ops::RangeInclusive;
 use proc_macro2::TokenStream;
 
 use quote::quote;
-use syn::{self, parse::Parse, Token};
+use syn::{self, Token, parse::Parse};
 
 use crate::utils::expect_key_value_ident_pair;
 

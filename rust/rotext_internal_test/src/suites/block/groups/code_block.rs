@@ -2,7 +2,7 @@ use indoc::indoc;
 
 use rotext_core::EventType;
 
-use crate::suites::block::support::{case, GroupedCases};
+use crate::suites::block::support::{GroupedCases, case};
 
 pub fn groups_code_block() -> Vec<GroupedCases> {
     vec![

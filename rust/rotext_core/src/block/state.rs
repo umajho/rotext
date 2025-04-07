@@ -1,9 +1,9 @@
-use crate::{types::Stack, Event};
+use crate::{Event, types::Stack};
 
 use super::{
+    StackEntry,
     parser_inner::ParserInnerShallowSnapshot,
     stack_wrapper::{StackEntryItemLike, StackEntryItemLikeContainer, StackWrapper},
-    StackEntry,
 };
 
 pub enum State {

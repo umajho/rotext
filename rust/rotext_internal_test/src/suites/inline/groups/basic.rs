@@ -2,7 +2,7 @@ use indoc::indoc;
 
 use rotext_core::EventType;
 
-use crate::suites::inline::support::{case, GroupedCases};
+use crate::suites::inline::support::{GroupedCases, case};
 
 pub fn groups_basic() -> Vec<GroupedCases> {
     vec![
@@ -21,43 +21,34 @@ pub fn groups_basic() -> Vec<GroupedCases> {
                         (EventType::Text, Some("bar")),
                     ]
                 ),
-                case!(
-                    vec!["<`foo`>"],
-                    vec![(EventType::VerbatimEscaping, Some("foo")),]
-                ),
-                case!(
-                    vec!["foo<`bar`>",],
-                    vec![
-                        (EventType::Text, Some("foo")),
-                        (EventType::VerbatimEscaping, Some("bar")),
-                    ]
-                ),
-                case!(
-                    vec!["<`foo`>bar",],
-                    vec![
-                        (EventType::VerbatimEscaping, Some("foo")),
-                        (EventType::Text, Some("bar")),
-                    ]
-                ),
-                case!(
-                    vec!["<`foo`><`bar`>"],
-                    vec![
-                        (EventType::VerbatimEscaping, Some("foo")),
-                        (EventType::VerbatimEscaping, Some("bar")),
-                    ]
-                ),
-                case!(
-                    vec![r#"<`\x`>"#],
-                    vec![(EventType::VerbatimEscaping, Some(r#"\x"#)),]
-                ),
-                case!(
-                    vec![r#"<`&#50;`>"#],
-                    vec![(EventType::VerbatimEscaping, Some(r#"&#50;"#)),]
-                ),
-                case!(
-                    vec![r#"<`&#x32;`>"#],
-                    vec![(EventType::VerbatimEscaping, Some(r#"&#x32;"#)),]
-                ),
+                case!(vec!["<`foo`>"], vec![(
+                    EventType::VerbatimEscaping,
+                    Some("foo")
+                ),]),
+                case!(vec!["foo<`bar`>",], vec![
+                    (EventType::Text, Some("foo")),
+                    (EventType::VerbatimEscaping, Some("bar")),
+                ]),
+                case!(vec!["<`foo`>bar",], vec![
+                    (EventType::VerbatimEscaping, Some("foo")),
+                    (EventType::Text, Some("bar")),
+                ]),
+                case!(vec!["<`foo`><`bar`>"], vec![
+                    (EventType::VerbatimEscaping, Some("foo")),
+                    (EventType::VerbatimEscaping, Some("bar")),
+                ]),
+                case!(vec![r#"<`\x`>"#], vec![(
+                    EventType::VerbatimEscaping,
+                    Some(r#"\x"#)
+                ),]),
+                case!(vec![r#"<`&#50;`>"#], vec![(
+                    EventType::VerbatimEscaping,
+                    Some(r#"&#50;"#)
+                ),]),
+                case!(vec![r#"<`&#x32;`>"#], vec![(
+                    EventType::VerbatimEscaping,
+                    Some(r#"&#x32;"#)
+                ),]),
             ],
         },
         GroupedCases {
@@ -128,30 +119,24 @@ pub fn groups_basic() -> Vec<GroupedCases> {
                 case!(vec!["&#50;"], vec![(EventType::Raw, Some("&#50;")),]),
                 case!(vec!["&#x32;"], vec![(EventType::Raw, Some("&#x32;")),]),
                 case!(vec!["&#X32;"], vec![(EventType::Raw, Some("&#X32;")),]),
-                case!(
-                    vec!["foo&#50;bar"],
-                    vec![
-                        (EventType::Text, Some("foo")),
-                        (EventType::Raw, Some("&#50;")),
-                        (EventType::Text, Some("bar")),
-                    ]
-                ),
-                case!(
-                    vec!["foo&#x32;bar"],
-                    vec![
-                        (EventType::Text, Some("foo")),
-                        (EventType::Raw, Some("&#x32;")),
-                        (EventType::Text, Some("bar")),
-                    ]
-                ),
-                case!(
-                    vec!["&#01234567890123456789;"],
-                    vec![(EventType::Raw, Some("&#01234567890123456789;")),]
-                ),
-                case!(
-                    vec!["&#x0123456789ABCDEF0123456789abcdef;"],
-                    vec![(EventType::Raw, Some("&#x0123456789ABCDEF0123456789abcdef;")),]
-                ),
+                case!(vec!["foo&#50;bar"], vec![
+                    (EventType::Text, Some("foo")),
+                    (EventType::Raw, Some("&#50;")),
+                    (EventType::Text, Some("bar")),
+                ]),
+                case!(vec!["foo&#x32;bar"], vec![
+                    (EventType::Text, Some("foo")),
+                    (EventType::Raw, Some("&#x32;")),
+                    (EventType::Text, Some("bar")),
+                ]),
+                case!(vec!["&#01234567890123456789;"], vec![(
+                    EventType::Raw,
+                    Some("&#01234567890123456789;")
+                ),]),
+                case!(vec!["&#x0123456789ABCDEF0123456789abcdef;"], vec![(
+                    EventType::Raw,
+                    Some("&#x0123456789ABCDEF0123456789abcdef;")
+                ),]),
                 case!(vec!["&#50"], vec![(EventType::Text, Some("&#50")),]),
                 case!(vec!["&#x32"], vec![(EventType::Text, Some("&#x32")),]),
                 case!(vec!["&#;"], vec![(EventType::Text, Some("&#;")),]),

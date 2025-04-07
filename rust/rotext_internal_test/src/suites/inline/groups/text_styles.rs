@@ -2,7 +2,7 @@ use indoc::formatdoc;
 
 use rotext_core::EventType;
 
-use crate::suites::inline::support::{case, GroupedCases};
+use crate::suites::inline::support::{GroupedCases, case};
 
 pub fn groups_text_styles() -> Vec<GroupedCases> {
     let mut result: Vec<GroupedCases> = vec![];
@@ -41,40 +41,28 @@ pub fn groups_text_styles() -> Vec<GroupedCases> {
                         (EventType::ExitInline, None),
                     ]
                 ),
-                case!(
-                    vec![format!("[{s}␣foo␣{s}]").leak()],
-                    vec![
-                        (enter_ev, None),
-                        (EventType::Text, Some(" foo ")),
-                        (EventType::ExitInline, None),
-                    ]
-                ),
-                case!(
-                    vec![format!("[{s}foo{s}").leak()],
-                    vec![
-                        (enter_ev, None),
-                        (EventType::Text, Some(format!("foo{s}").leak())),
-                        (EventType::ExitInline, None),
-                    ]
-                ),
-                case!(
-                    vec![format!("bar[{s}foo{s}]").leak()],
-                    vec![
-                        (EventType::Text, Some("bar")),
-                        (enter_ev, None),
-                        (EventType::Text, Some("foo")),
-                        (EventType::ExitInline, None),
-                    ]
-                ),
-                case!(
-                    vec![format!("[{s}foo{s}]bar").leak()],
-                    vec![
-                        (enter_ev, None),
-                        (EventType::Text, Some("foo")),
-                        (EventType::ExitInline, None),
-                        (EventType::Text, Some("bar")),
-                    ]
-                ),
+                case!(vec![format!("[{s}␣foo␣{s}]").leak()], vec![
+                    (enter_ev, None),
+                    (EventType::Text, Some(" foo ")),
+                    (EventType::ExitInline, None),
+                ]),
+                case!(vec![format!("[{s}foo{s}").leak()], vec![
+                    (enter_ev, None),
+                    (EventType::Text, Some(format!("foo{s}").leak())),
+                    (EventType::ExitInline, None),
+                ]),
+                case!(vec![format!("bar[{s}foo{s}]").leak()], vec![
+                    (EventType::Text, Some("bar")),
+                    (enter_ev, None),
+                    (EventType::Text, Some("foo")),
+                    (EventType::ExitInline, None),
+                ]),
+                case!(vec![format!("[{s}foo{s}]bar").leak()], vec![
+                    (enter_ev, None),
+                    (EventType::Text, Some("foo")),
+                    (EventType::ExitInline, None),
+                    (EventType::Text, Some("bar")),
+                ]),
                 case!(
                     vec![
                         formatdoc! {"
@@ -95,11 +83,13 @@ pub fn groups_text_styles() -> Vec<GroupedCases> {
                     ]
                 ),
                 case!(
-                    vec![formatdoc! {"
+                    vec![
+                        formatdoc! {"
                         [{s}
                         foo
                         {s}]"}
-                    .leak()],
+                        .leak()
+                    ],
                     vec![
                         (enter_ev, None),
                         (EventType::NewLine, None),
@@ -114,11 +104,13 @@ pub fn groups_text_styles() -> Vec<GroupedCases> {
             group: format!("{name}>嵌套").leak(),
             cases: vec![
                 case!(
-                    vec![formatdoc! {"
+                    vec![
+                        formatdoc! {"
                         [{s}[{s}1{s}]␣[{another_s}
                         2␣[{s}3{s}]{another_s}]␣>>TP.4
                         [=d5]{s}]"}
-                    .leak()],
+                        .leak()
+                    ],
                     vec![
                         (enter_ev, None),
                         (enter_ev, None),
@@ -139,26 +131,20 @@ pub fn groups_text_styles() -> Vec<GroupedCases> {
                         (EventType::ExitInline, None),
                     ]
                 ),
-                case!(
-                    vec![format!("[{s}[{another_s}foo").leak()],
-                    vec![
-                        (enter_ev, None),
-                        (another_enter_ev, None),
-                        (EventType::Text, Some("foo")),
-                        (EventType::ExitInline, None),
-                        (EventType::ExitInline, None),
-                    ]
-                ),
-                case!(
-                    vec![format!("[{s}[{another_s}foo{s}]").leak()],
-                    vec![
-                        (enter_ev, None),
-                        (another_enter_ev, None),
-                        (EventType::Text, Some("foo")),
-                        (EventType::ExitInline, None),
-                        (EventType::ExitInline, None),
-                    ]
-                ),
+                case!(vec![format!("[{s}[{another_s}foo").leak()], vec![
+                    (enter_ev, None),
+                    (another_enter_ev, None),
+                    (EventType::Text, Some("foo")),
+                    (EventType::ExitInline, None),
+                    (EventType::ExitInline, None),
+                ]),
+                case!(vec![format!("[{s}[{another_s}foo{s}]").leak()], vec![
+                    (enter_ev, None),
+                    (another_enter_ev, None),
+                    (EventType::Text, Some("foo")),
+                    (EventType::ExitInline, None),
+                    (EventType::ExitInline, None),
+                ]),
             ],
         });
     }

@@ -72,10 +72,10 @@ mod tests {
 
     use rotext_core::EventType;
     use rotext_internal_test::{
+        BlockContext,
         suites::block::support::{
             assert_parse_error_with_stack, assert_parse_ok_and_output_matches_with_stack,
         },
-        BlockContext,
     };
 
     #[test]
@@ -95,37 +95,25 @@ mod tests {
         let ctx: BlockContext<ArrayStack<_, 2>> = BlockContext::new();
 
         assert_parse_ok_and_output_matches_with_stack(&ctx, "", &vec![]);
-        assert_parse_ok_and_output_matches_with_stack(
-            &ctx,
-            ">",
-            &vec![
-                (EventType::EnterBlockQuote, None),
-                (EventType::ExitBlock, None),
-            ],
-        );
-        assert_parse_ok_and_output_matches_with_stack(
-            &ctx,
-            "> >",
-            &vec![
-                (EventType::EnterBlockQuote, None),
-                (EventType::EnterBlockQuote, None),
-                (EventType::ExitBlock, None),
-                (EventType::ExitBlock, None),
-            ],
-        );
-        assert_parse_ok_and_output_matches_with_stack(
-            &ctx,
-            "> > foo",
-            &vec![
-                (EventType::EnterBlockQuote, None),
-                (EventType::EnterBlockQuote, None),
-                (EventType::EnterParagraph, None),
-                (EventType::__Unparsed, Some("foo")),
-                (EventType::ExitBlock, None),
-                (EventType::ExitBlock, None),
-                (EventType::ExitBlock, None),
-            ],
-        );
+        assert_parse_ok_and_output_matches_with_stack(&ctx, ">", &vec![
+            (EventType::EnterBlockQuote, None),
+            (EventType::ExitBlock, None),
+        ]);
+        assert_parse_ok_and_output_matches_with_stack(&ctx, "> >", &vec![
+            (EventType::EnterBlockQuote, None),
+            (EventType::EnterBlockQuote, None),
+            (EventType::ExitBlock, None),
+            (EventType::ExitBlock, None),
+        ]);
+        assert_parse_ok_and_output_matches_with_stack(&ctx, "> > foo", &vec![
+            (EventType::EnterBlockQuote, None),
+            (EventType::EnterBlockQuote, None),
+            (EventType::EnterParagraph, None),
+            (EventType::__Unparsed, Some("foo")),
+            (EventType::ExitBlock, None),
+            (EventType::ExitBlock, None),
+            (EventType::ExitBlock, None),
+        ]);
         assert_parse_error_with_stack(&ctx, "> > >", Error::OutOfStackSpace)
     }
 }

@@ -2,7 +2,7 @@ use indoc::indoc;
 
 use rotext_core::EventType;
 
-use crate::suites::block::support::{case, GroupedCases};
+use crate::suites::block::support::{GroupedCases, case};
 
 pub fn groups_table() -> Vec<GroupedCases> {
     vec![
@@ -10,24 +10,16 @@ pub fn groups_table() -> Vec<GroupedCases> {
             group: "表格>无内容",
             cases: vec![
                 case!(
-                    vec![
-                        "{||}",
-                        "{|␠|}",
-                        indoc! {"
+                    vec!["{||}", "{|␠|}", indoc! {"
                         {|
-                        |}"},
-                    ],
+                        |}"},],
                     vec![(EventType::EnterTable, None), (EventType::ExitBlock, None)]
                 ),
                 case!(
-                    vec![
-                        "{||-|}",
-                        "{|␠|-␠|}",
-                        indoc! {"
+                    vec!["{||-|}", "{|␠|-␠|}", indoc! {"
                         {|
                         |-
-                        |}"},
-                    ],
+                        |}"},],
                     vec![
                         (EventType::EnterTable, None),
                         (EventType::IndicateTableRow, None),
@@ -35,14 +27,10 @@ pub fn groups_table() -> Vec<GroupedCases> {
                     ]
                 ),
                 case!(
-                    vec![
-                        "{||||}",
-                        "{|␠||␠|}",
-                        indoc! {"
+                    vec!["{||||}", "{|␠||␠|}", indoc! {"
                         {|
                         ||
-                        |}"},
-                    ],
+                        |}"},],
                     vec![
                         (EventType::EnterTable, None),
                         (EventType::IndicateTableDataCell, None),
@@ -362,14 +350,11 @@ pub fn groups_table() -> Vec<GroupedCases> {
         GroupedCases {
             group: "表格>表格中的先前测试过的 item-likes 以外的块级元素",
             cases: vec![
-                case!(
-                    vec!["{|---|}", "{|␠---␠|}",],
-                    vec![
-                        (EventType::EnterTable, None),
-                        (EventType::ThematicBreak, None),
-                        (EventType::ExitBlock, None),
-                    ]
-                ),
+                case!(vec!["{|---|}", "{|␠---␠|}",], vec![
+                    (EventType::EnterTable, None),
+                    (EventType::ThematicBreak, None),
+                    (EventType::ExitBlock, None),
+                ]),
                 case!(
                     vec![indoc! {"
                         {|
@@ -385,16 +370,13 @@ pub fn groups_table() -> Vec<GroupedCases> {
                         (EventType::ExitBlock, None),
                     ]
                 ),
-                case!(
-                    vec!["{|==␠foo␠==|}", "{|␠==␠foo␠==␠|}",],
-                    vec![
-                        (EventType::EnterTable, None),
-                        (EventType::EnterHeading2, None),
-                        (EventType::__Unparsed, Some("foo")),
-                        (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None),
-                    ]
-                ),
+                case!(vec!["{|==␠foo␠==|}", "{|␠==␠foo␠==␠|}",], vec![
+                    (EventType::EnterTable, None),
+                    (EventType::EnterHeading2, None),
+                    (EventType::__Unparsed, Some("foo")),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                ]),
                 case!(
                     vec![
                         indoc! {"

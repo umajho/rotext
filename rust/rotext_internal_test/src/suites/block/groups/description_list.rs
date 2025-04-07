@@ -2,36 +2,30 @@ use indoc::indoc;
 
 use rotext_core::EventType;
 
-use crate::suites::block::support::{case, GroupedCases};
+use crate::suites::block::support::{GroupedCases, case};
 
 pub fn groups_description_list() -> Vec<GroupedCases> {
     vec![GroupedCases {
         group: "描述列表",
         cases: vec![
-            case!(
-                vec![";␠term"],
-                vec![
-                    (EventType::EnterDescriptionList, None),
-                    (EventType::EnterDescriptionTerm, None),
-                    (EventType::EnterParagraph, None),
-                    (EventType::__Unparsed, Some("term")),
-                    (EventType::ExitBlock, None),
-                    (EventType::ExitBlock, None),
-                    (EventType::ExitBlock, None),
-                ]
-            ),
-            case!(
-                vec![":␠details"],
-                vec![
-                    (EventType::EnterDescriptionList, None),
-                    (EventType::EnterDescriptionDetails, None),
-                    (EventType::EnterParagraph, None),
-                    (EventType::__Unparsed, Some("details")),
-                    (EventType::ExitBlock, None),
-                    (EventType::ExitBlock, None),
-                    (EventType::ExitBlock, None),
-                ]
-            ),
+            case!(vec![";␠term"], vec![
+                (EventType::EnterDescriptionList, None),
+                (EventType::EnterDescriptionTerm, None),
+                (EventType::EnterParagraph, None),
+                (EventType::__Unparsed, Some("term")),
+                (EventType::ExitBlock, None),
+                (EventType::ExitBlock, None),
+                (EventType::ExitBlock, None),
+            ]),
+            case!(vec![":␠details"], vec![
+                (EventType::EnterDescriptionList, None),
+                (EventType::EnterDescriptionDetails, None),
+                (EventType::EnterParagraph, None),
+                (EventType::__Unparsed, Some("details")),
+                (EventType::ExitBlock, None),
+                (EventType::ExitBlock, None),
+                (EventType::ExitBlock, None),
+            ]),
             case!(
                 vec![
                     indoc! {"
@@ -334,20 +328,17 @@ pub fn groups_description_list() -> Vec<GroupedCases> {
                     (EventType::ExitBlock, None),
                 ]
             ),
-            case!(
-                vec![";␠{|␠foo␣::␣bar␠|}"],
-                vec![
-                    (EventType::EnterDescriptionList, None),
-                    (EventType::EnterDescriptionTerm, None),
-                    (EventType::EnterTable, None),
-                    (EventType::EnterParagraph, None),
-                    (EventType::__Unparsed, Some("foo :: bar")),
-                    (EventType::ExitBlock, None),
-                    (EventType::ExitBlock, None),
-                    (EventType::ExitBlock, None),
-                    (EventType::ExitBlock, None),
-                ]
-            ),
+            case!(vec![";␠{|␠foo␣::␣bar␠|}"], vec![
+                (EventType::EnterDescriptionList, None),
+                (EventType::EnterDescriptionTerm, None),
+                (EventType::EnterTable, None),
+                (EventType::EnterParagraph, None),
+                (EventType::__Unparsed, Some("foo :: bar")),
+                (EventType::ExitBlock, None),
+                (EventType::ExitBlock, None),
+                (EventType::ExitBlock, None),
+                (EventType::ExitBlock, None),
+            ]),
         ],
     }]
 }

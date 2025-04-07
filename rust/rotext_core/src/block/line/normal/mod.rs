@@ -13,7 +13,7 @@ use crate::{
     internal_utils::string::{count_continuous_character_with_maximum, is_whitespace},
 };
 
-use super::{global_phase, parse_common_end, CommonEnd, ParseCommonEndOutput};
+use super::{CommonEnd, ParseCommonEndOutput, global_phase, parse_common_end};
 
 #[derive(Debug, Clone, Default)]
 pub struct EndCondition {
@@ -248,7 +248,7 @@ pub fn parse<TCtx: CursorContext>(
                 }
             }
             Some(Matching::CallArgumentName) => {
-                break parse_call_argument_name(input, ctx, range, char)
+                break parse_call_argument_name(input, ctx, range, char);
             }
             Some(Matching::EqualSign) => {
                 if char == m!('=') {
@@ -292,14 +292,11 @@ fn parse_call_name<TCtx: CursorContext>(
         if let Some(output) = global_phase::parse(input, ctx, *char.unwrap()) {
             match output {
                 global_phase::Output::VerbatimEscaping(verbatim_escaping) => {
-                    return (
-                        range_before,
-                        End::MatchedCallName {
-                            is_extension: true,
-                            range: verbatim_escaping.content,
-                            extra_matched: MatchedCallNameExtraMatched::None,
-                        },
-                    )
+                    return (range_before, End::MatchedCallName {
+                        is_extension: true,
+                        range: verbatim_escaping.content,
+                        extra_matched: MatchedCallNameExtraMatched::None,
+                    });
                 }
                 global_phase::Output::None => {
                     ctx.set_cursor(range_before.end);
@@ -337,14 +334,11 @@ fn parse_call_name<TCtx: CursorContext>(
                     || (c == &m!('<') && input.get(ctx.cursor() + 1) == Some(&m!('%')))
             }) =>
             {
-                return (
-                    range_before,
-                    End::MatchedCallName {
-                        is_extension,
-                        range: trim_end(input, name_start..ctx.cursor()),
-                        extra_matched: MatchedCallNameExtraMatched::None,
-                    },
-                );
+                return (range_before, End::MatchedCallName {
+                    is_extension,
+                    range: trim_end(input, name_start..ctx.cursor()),
+                    extra_matched: MatchedCallNameExtraMatched::None,
+                });
             }
             Some(c) if is_markup(*c) => {
                 if is_extension {
@@ -378,14 +372,11 @@ fn parse_call_argument_name<TCtx: CursorContext>(
         if let Some(output) = global_phase::parse(input, ctx, *char.unwrap()) {
             match output {
                 global_phase::Output::VerbatimEscaping(verbatim_escaping) => {
-                    return (
-                        range_before,
-                        End::MatchedArgumentName {
-                            is_verbatim: true,
-                            range: verbatim_escaping.content,
-                            has_matched_equal_sign: false,
-                        },
-                    )
+                    return (range_before, End::MatchedArgumentName {
+                        is_verbatim: true,
+                        range: verbatim_escaping.content,
+                        has_matched_equal_sign: false,
+                    });
                 }
                 global_phase::Output::None => {
                     ctx.set_cursor(range_before.end);
@@ -416,14 +407,11 @@ fn parse_call_argument_name<TCtx: CursorContext>(
                     || (c == &m!('<') && input.get(ctx.cursor() + 1) == Some(&m!('%')))
             }) =>
             {
-                return (
-                    range_before,
-                    End::MatchedArgumentName {
-                        is_verbatim,
-                        range: trim_end(input, name_start..ctx.cursor()),
-                        has_matched_equal_sign: false,
-                    },
-                );
+                return (range_before, End::MatchedArgumentName {
+                    is_verbatim,
+                    range: trim_end(input, name_start..ctx.cursor()),
+                    has_matched_equal_sign: false,
+                });
             }
             Some(c) if is_markup(*c) => {
                 return (range_before.start..ctx.cursor(), End::Mismatched);

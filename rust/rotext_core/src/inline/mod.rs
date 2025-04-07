@@ -10,16 +10,16 @@ pub use stack_wrapper::StackEntry;
 use core::ops::Range;
 
 use crate::{
+    Event,
     common::{is_valid_character_in_name, m},
-    events::{ev, NewLine, VerbatimEscaping},
+    events::{NewLine, VerbatimEscaping, ev},
     internal_utils::{
         peekable::Peekable,
         string::{
             count_continuous_character, count_continuous_character_with_maximum, is_whitespace,
         },
     },
-    types::{Stack, Tym, TYM_UNIT},
-    Event,
+    types::{Stack, TYM_UNIT, Tym},
 };
 
 use parser_inner::{ParserInner, ToSkipInputEvents};
@@ -330,18 +330,22 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
     fn exit_until_stack_is_empty_and_then_end(
         inner: &mut ParserInner<TInlineStack>,
     ) -> (Tym<1>, Option<State<'a>>) {
-        match inner.stack.pop_leaf() { Some(leaf) => {
-            let tym = match leaf {
-                stack_wrapper::Leaf::CodeSpan(leaf) => inner.r#yield(leaf.make_exit_event()),
-            };
-            (tym, None)
-        } _ => { match inner.stack.pop_entry() { Some(_entry) => {
-            let tym = inner.r#yield(ev!(Inline, ExitInline));
+        match inner.stack.pop_leaf() {
+            Some(leaf) => {
+                let tym = match leaf {
+                    stack_wrapper::Leaf::CodeSpan(leaf) => inner.r#yield(leaf.make_exit_event()),
+                };
+                (tym, None)
+            }
+            _ => match inner.stack.pop_entry() {
+                Some(_entry) => {
+                    let tym = inner.r#yield(ev!(Inline, ExitInline));
 
-            (tym, None)
-        } _ => {
-            (TYM_UNIT.into(), Some(State::Ended))
-        }}}}
+                    (tym, None)
+                }
+                _ => (TYM_UNIT.into(), Some(State::Ended)),
+            },
+        }
     }
 }
 

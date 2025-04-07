@@ -2,37 +2,31 @@ use indoc::indoc;
 
 use rotext_core::EventType;
 
-use crate::suites::block::support::{case, GroupedCases};
+use crate::suites::block::support::{GroupedCases, case};
 
 pub fn groups_list() -> Vec<GroupedCases> {
     vec![
         GroupedCases {
             group: "列表",
             cases: vec![
-                case!(
-                    vec!["#␠1"],
-                    vec![
-                        (EventType::EnterOrderedList, None),
-                        (EventType::EnterListItem, None),
-                        (EventType::EnterParagraph, None),
-                        (EventType::__Unparsed, Some("1")),
-                        (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None),
-                    ]
-                ),
-                case!(
-                    vec!["*␠1"],
-                    vec![
-                        (EventType::EnterUnorderedList, None),
-                        (EventType::EnterListItem, None),
-                        (EventType::EnterParagraph, None),
-                        (EventType::__Unparsed, Some("1")),
-                        (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None),
-                    ]
-                ),
+                case!(vec!["#␠1"], vec![
+                    (EventType::EnterOrderedList, None),
+                    (EventType::EnterListItem, None),
+                    (EventType::EnterParagraph, None),
+                    (EventType::__Unparsed, Some("1")),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                ]),
+                case!(vec!["*␠1"], vec![
+                    (EventType::EnterUnorderedList, None),
+                    (EventType::EnterListItem, None),
+                    (EventType::EnterParagraph, None),
+                    (EventType::__Unparsed, Some("1")),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                ]),
                 case!(
                     vec![indoc! {"
                         #␠1
@@ -99,22 +93,19 @@ pub fn groups_list() -> Vec<GroupedCases> {
                         (EventType::ExitBlock, None),
                     ]
                 ),
-                case!(
-                    vec!["#␠#␠1.1"],
-                    vec![
-                        (EventType::EnterOrderedList, None),
-                        (EventType::EnterListItem, None),
-                        (EventType::EnterOrderedList, None),
-                        (EventType::EnterListItem, None),
-                        (EventType::EnterParagraph, None),
-                        (EventType::__Unparsed, Some("1.1")),
-                        (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None),
-                    ]
-                ),
+                case!(vec!["#␠#␠1.1"], vec![
+                    (EventType::EnterOrderedList, None),
+                    (EventType::EnterListItem, None),
+                    (EventType::EnterOrderedList, None),
+                    (EventType::EnterListItem, None),
+                    (EventType::EnterParagraph, None),
+                    (EventType::__Unparsed, Some("1.1")),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                ]),
                 case!(
                     vec![indoc! {"
                         #␠#␠1.1

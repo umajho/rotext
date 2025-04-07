@@ -1,7 +1,7 @@
 mod for_fn_parse {
     use crate::{
         block::{
-            line::global_phase::{parse, Output},
+            line::global_phase::{Output, parse},
             test_support::mocks::MockCursorContext,
         },
         events::VerbatimEscaping,
@@ -83,61 +83,37 @@ mod for_fn_parse {
 
     #[test]
     fn it_works_with_comment() {
-        test(
-            b"<%foo%>",
-            Some(Output::None),
-            MockCursorContext {
-                cursor: 7,
-                current_line: LineNumber::new_universal(1),
-            },
-        );
+        test(b"<%foo%>", Some(Output::None), MockCursorContext {
+            cursor: 7,
+            current_line: LineNumber::new_universal(1),
+        });
 
-        test(
-            b"<%<%foo%>%>",
-            Some(Output::None),
-            MockCursorContext {
-                cursor: 11,
-                current_line: LineNumber::new_universal(1),
-            },
-        );
+        test(b"<%<%foo%>%>", Some(Output::None), MockCursorContext {
+            cursor: 11,
+            current_line: LineNumber::new_universal(1),
+        });
 
-        test(
-            b"<%<`%>`>%>",
-            Some(Output::None),
-            MockCursorContext {
-                cursor: 10,
-                current_line: LineNumber::new_universal(1),
-            },
-        );
+        test(b"<%<`%>`>%>", Some(Output::None), MockCursorContext {
+            cursor: 10,
+            current_line: LineNumber::new_universal(1),
+        });
 
-        test(
-            b"<%<`foo",
-            Some(Output::None),
-            MockCursorContext {
-                cursor: 7,
-                current_line: LineNumber::new_universal(1),
-            },
-        );
+        test(b"<%<`foo", Some(Output::None), MockCursorContext {
+            cursor: 7,
+            current_line: LineNumber::new_universal(1),
+        });
     }
 
     #[test]
     fn it_works_when_there_is_no_match() {
-        test(
-            b"foo",
-            None,
-            MockCursorContext {
-                cursor: 0,
-                current_line: LineNumber::new_universal(1),
-            },
-        );
-        test(
-            b"<foo",
-            None,
-            MockCursorContext {
-                cursor: 0,
-                current_line: LineNumber::new_universal(1),
-            },
-        );
+        test(b"foo", None, MockCursorContext {
+            cursor: 0,
+            current_line: LineNumber::new_universal(1),
+        });
+        test(b"<foo", None, MockCursorContext {
+            cursor: 0,
+            current_line: LineNumber::new_universal(1),
+        });
     }
 }
 

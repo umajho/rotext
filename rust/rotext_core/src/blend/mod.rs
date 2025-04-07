@@ -1,7 +1,7 @@
 #[cfg(debug_assertions)]
 use crate::events::is_event_of;
 use crate::{
-    events::{ev, Event},
+    events::{Event, ev},
     inline::{self},
     internal_utils::peekable::Peekable,
     types::Stack,
@@ -35,10 +35,10 @@ pub struct BlockEventStreamInlineSegmentMapper<
 }
 
 impl<
-        'a,
-        TBlockParser: Iterator<Item = crate::Result<Event>>,
-        TInlineStack: Stack<inline::StackEntry>,
-    > BlockEventStreamInlineSegmentMapper<'a, TBlockParser, TInlineStack>
+    'a,
+    TBlockParser: Iterator<Item = crate::Result<Event>>,
+    TInlineStack: Stack<inline::StackEntry>,
+> BlockEventStreamInlineSegmentMapper<'a, TBlockParser, TInlineStack>
 {
     pub fn new(input: &'a [u8], block_parser: TBlockParser) -> Self {
         Self {
@@ -114,10 +114,10 @@ impl<
 }
 
 impl<
-        // 承载的事件属于 `Block` 分组。
-        TBlockParser: Iterator<Item = crate::Result<Event>>,
-        TInlineStack: Stack<inline::StackEntry>,
-    > Iterator for BlockEventStreamInlineSegmentMapper<'_, TBlockParser, TInlineStack>
+    // 承载的事件属于 `Block` 分组。
+    TBlockParser: Iterator<Item = crate::Result<Event>>,
+    TInlineStack: Stack<inline::StackEntry>,
+> Iterator for BlockEventStreamInlineSegmentMapper<'_, TBlockParser, TInlineStack>
 {
     /// 承载的事件属于 `Blend` 分组。
     type Item = crate::Result<Event>;
@@ -140,9 +140,9 @@ pub struct WhileInlineSegment<
 }
 
 impl<
-        // 承载的事件属于 `Block` 分组。
-        TBlockParser: Iterator<Item = crate::Result<Event>>,
-    > WhileInlineSegment<TBlockParser>
+    // 承载的事件属于 `Block` 分组。
+    TBlockParser: Iterator<Item = crate::Result<Event>>,
+> WhileInlineSegment<TBlockParser>
 {
     fn new(block_parser: TBlockParser) -> Self {
         Self {
@@ -181,9 +181,9 @@ impl<
 }
 
 impl<
-        // 承载的事件属于 `Block` 分组。
-        TBlockParser: Iterator<Item = crate::Result<Event>>,
-    > Iterator for WhileInlineSegment<TBlockParser>
+    // 承载的事件属于 `Block` 分组。
+    TBlockParser: Iterator<Item = crate::Result<Event>>,
+> Iterator for WhileInlineSegment<TBlockParser>
 {
     /// 属于 `InlineInput` 分组。
     type Item = Event;

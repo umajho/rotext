@@ -1,4 +1,4 @@
-use crate::{common::m, events::ev, types::Stack, Event};
+use crate::{Event, common::m, events::ev, types::Stack};
 
 pub struct StackWrapper<TStack: Stack<StackEntry>> {
     stack: TStack,

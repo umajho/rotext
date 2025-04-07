@@ -7,7 +7,7 @@ use rotext_core::Event;
 
 use support::GroupedCases;
 
-use crate::support::{report_panicked_cases, FailedCase, FailureReason};
+use crate::support::{FailedCase, FailureReason, report_panicked_cases};
 
 pub trait Context {
     /// 返回的事件应该都属于 `Blend` 分组。

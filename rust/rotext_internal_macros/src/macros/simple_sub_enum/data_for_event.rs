@@ -11,10 +11,12 @@ use lazy_static::lazy_static;
 static EVENT_TO_GROUP_RAW: &[(&str, &[&str])] = &[
     ("__Unparsed", &["Block", "InlineInput"]),
     ("Raw", &["Inline", "Blend"]),
-    (
-        "VerbatimEscaping",
-        &["Block", "InlineInput", "Inline", "Blend"],
-    ),
+    ("VerbatimEscaping", &[
+        "Block",
+        "InlineInput",
+        "Inline",
+        "Blend",
+    ]),
     ("NewLine", &["Block", "InlineInput", "Inline", "Blend"]),
     ("Text", &["Block", "Inline", "Blend"]),
     ("ThematicBreak", &["Block", "Blend"]),

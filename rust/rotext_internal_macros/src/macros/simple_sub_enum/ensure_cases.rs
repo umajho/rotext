@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use proc_macro2::TokenStream;
 
-use quote::{quote, ToTokens};
+use quote::{ToTokens, quote};
 use syn::{self, parse::Parse, spanned::Spanned};
 
 use crate::utils::{expect_key_value_ident_pair, expect_key_value_path_pair};

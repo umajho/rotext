@@ -1,7 +1,7 @@
 mod for_fn_parse {
     use crate::{
         block::{
-            line::verbatim::{parse, AtLineBeginning, End, EndCondition, Fence},
+            line::verbatim::{AtLineBeginning, End, EndCondition, Fence, parse},
             test_support::mocks::MockCursorContext,
         },
         types::LineNumber,

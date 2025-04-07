@@ -1,9 +1,9 @@
 use core::ops::Range;
 
 use crate::{
-    events::{ev, Call, ExitBlock, NewLine},
-    types::{BlockId, LineNumber, Stack},
     Event,
+    events::{Call, ExitBlock, NewLine, ev},
+    types::{BlockId, LineNumber, Stack},
 };
 
 use super::parser_inner::ParserInnerShallowSnapshot;

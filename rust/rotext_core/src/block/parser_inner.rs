@@ -1,8 +1,8 @@
 use crate::{
+    Event,
     events::ev,
     internal_utils::array_queue::ArrayQueue,
     types::{BlockId, LineNumber, Stack, Tym},
-    Event,
 };
 
 #[cfg(feature = "block-id")]

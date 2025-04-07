@@ -351,11 +351,7 @@ impl Event {
             _ => {}
         }
 
-        if !flags.is_empty() {
-            Some(flags)
-        } else {
-            None
-        }
+        if !flags.is_empty() { Some(flags) } else { None }
     }
 }
 

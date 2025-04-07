@@ -6,7 +6,7 @@ use core::ops::Range;
 use crate::{
     block::{
         braced::{self, call, table},
-        line::{global_phase, parse_common_end, ParseCommonEndOutput},
+        line::{ParseCommonEndOutput, global_phase, parse_common_end},
         types::CursorContext,
     },
     events::{NewLine, VerbatimEscaping},

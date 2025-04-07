@@ -1,6 +1,6 @@
 #[cfg(debug_assertions)]
 use crate::events::is_event_of;
-use crate::{internal_utils::array_queue::ArrayQueue, types::Stack, types::Tym, Event};
+use crate::{Event, internal_utils::array_queue::ArrayQueue, types::Stack, types::Tym};
 
 use super::{
     stack_wrapper::{StackEntry, StackWrapper},

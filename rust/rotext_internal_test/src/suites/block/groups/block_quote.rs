@@ -2,30 +2,24 @@ use indoc::indoc;
 
 use rotext_core::EventType;
 
-use crate::suites::block::support::{case, GroupedCases};
+use crate::suites::block::support::{GroupedCases, case};
 
 pub fn groups_block_quote() -> Vec<GroupedCases> {
     vec![
         GroupedCases {
             group: "块引用与其延续",
             cases: vec![
-                case!(
-                    vec![">", ">␠"],
-                    vec![
-                        (EventType::EnterBlockQuote, None),
-                        (EventType::ExitBlock, None),
-                    ]
-                ),
-                case!(
-                    vec![">␠foo", "␠>␠foo", ">␠␠foo"],
-                    vec![
-                        (EventType::EnterBlockQuote, None),
-                        (EventType::EnterParagraph, None),
-                        (EventType::__Unparsed, Some("foo")),
-                        (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None),
-                    ]
-                ),
+                case!(vec![">", ">␠"], vec![
+                    (EventType::EnterBlockQuote, None),
+                    (EventType::ExitBlock, None),
+                ]),
+                case!(vec![">␠foo", "␠>␠foo", ">␠␠foo"], vec![
+                    (EventType::EnterBlockQuote, None),
+                    (EventType::EnterParagraph, None),
+                    (EventType::__Unparsed, Some("foo")),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                ]),
                 case!(
                     vec![
                         indoc! {"
@@ -89,18 +83,15 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
                         (EventType::ExitBlock, None),
                     ]
                 ),
-                case!(
-                    vec![">␠>␠foo", "␠>␠>␠foo"],
-                    vec![
-                        (EventType::EnterBlockQuote, None),
-                        (EventType::EnterBlockQuote, None),
-                        (EventType::EnterParagraph, None),
-                        (EventType::__Unparsed, Some("foo")),
-                        (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None),
-                    ]
-                ),
+                case!(vec![">␠>␠foo", "␠>␠>␠foo"], vec![
+                    (EventType::EnterBlockQuote, None),
+                    (EventType::EnterBlockQuote, None),
+                    (EventType::EnterParagraph, None),
+                    (EventType::__Unparsed, Some("foo")),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                ]),
                 case!(
                     vec![
                         indoc! {"
@@ -159,14 +150,11 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
         GroupedCases {
             group: "块引用>块引用中的分割线与标题",
             cases: vec![
-                case!(
-                    vec![">␠---"],
-                    vec![
-                        (EventType::EnterBlockQuote, None),
-                        (EventType::ThematicBreak, None),
-                        (EventType::ExitBlock, None),
-                    ]
-                ),
+                case!(vec![">␠---"], vec![
+                    (EventType::EnterBlockQuote, None),
+                    (EventType::ThematicBreak, None),
+                    (EventType::ExitBlock, None),
+                ]),
                 case!(
                     vec![indoc! {"
                         >␠---
@@ -178,16 +166,13 @@ pub fn groups_block_quote() -> Vec<GroupedCases> {
                         (EventType::ThematicBreak, None),
                     ]
                 ),
-                case!(
-                    vec![">␠==␠a␠=="],
-                    vec![
-                        (EventType::EnterBlockQuote, None),
-                        (EventType::EnterHeading2, None),
-                        (EventType::__Unparsed, Some("a")),
-                        (EventType::ExitBlock, None),
-                        (EventType::ExitBlock, None),
-                    ]
-                ),
+                case!(vec![">␠==␠a␠=="], vec![
+                    (EventType::EnterBlockQuote, None),
+                    (EventType::EnterHeading2, None),
+                    (EventType::__Unparsed, Some("a")),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                ]),
                 case!(
                     vec![indoc! {"
                         >␠==␠a␠==

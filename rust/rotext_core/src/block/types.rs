@@ -1,6 +1,6 @@
 use crate::{
-    types::{LineNumber, Tym},
     Event,
+    types::{LineNumber, Tym},
 };
 
 /// 只提供读取与移动 cursor，以及读取及增加当前行数的上下文。

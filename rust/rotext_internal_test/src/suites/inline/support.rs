@@ -1,8 +1,8 @@
-use std::panic::{catch_unwind, RefUnwindSafe};
+use std::panic::{RefUnwindSafe, catch_unwind};
 
 use rotext_core::EventType;
 
-use crate::support::{make_whitespace_variants, FailedCase, FailureReason};
+use crate::support::{FailedCase, FailureReason, make_whitespace_variants};
 
 macro_rules! case {
     ($input_variants:expr, $expected:expr) => {
