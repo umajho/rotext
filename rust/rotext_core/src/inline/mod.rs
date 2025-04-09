@@ -254,7 +254,7 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                         break (text_end, Some(to_yield_after_text));
                     }
                     Some(m!('[')) => {
-                        match terminal::wiki_link::process_and_yield_potential(
+                        match bracketed::wiki_link::process_and_yield_potential(
                             input,
                             text_start,
                             cursor,
@@ -432,6 +432,249 @@ mod special {
             cursor.move_forward(1);
         }
         None
+    }
+}
+
+mod bracketed {
+    use super::*;
+
+    pub mod wiki_link {
+        use super::*;
+
+        /// `event_stream` 的迭代对象是属于 `InlineInput` 分组的事件。
+        pub fn process_and_yield_potential<TInlineStack: Stack<StackEntry>>(
+            input: &[u8],
+            text_start: usize,
+            cursor: &mut Cursor,
+            inner: &mut ParserInner<TInlineStack>,
+            event_stream: &mut Peekable<2, impl Iterator<Item = Event>>,
+        ) -> crate::Result<Option<Tym<4>>> {
+            let maybe_text_end = cursor.value();
+            cursor.move_forward("[[".len());
+
+            let (address, address_ev, indicator) = if let (Some(slot_content), after_slot) =
+                parse_first_slot_for_non_verbatim(input, cursor)
+            {
+                let AfterSlot::Indicator {
+                    indicator,
+                    index_after_indicator,
+                } = after_slot
+                else {
+                    // 有内容（标题）但没找到指示标记时，不视为Wiki链接。
+                    // 如：`[[f<`oo`>]]`、`[[f\noo]]` 都不被视为Wiki链接。
+                    return Ok(None);
+                };
+
+                cursor.set_value(index_after_indicator);
+                let address = slot_content.clone();
+                let address_ev = ev!(Inline, Text(slot_content));
+
+                (address, address_ev, indicator)
+            } else {
+                let Some((
+                    slot,
+                    AfterSlot::Indicator {
+                        indicator,
+                        index_after_indicator,
+                    },
+                )) = parse_first_slot_for_verbatim(input, event_stream)
+                else {
+                    return Ok(None);
+                };
+
+                // 跳过当前正在处理的事件（即以 “[[” 结尾的事件）以及作为第一个槽位的逐字转译的事件。
+                // 由于完成跳过后会设置游标，这里不用再用 `cursor.set_value` 来设置游标。
+                inner.to_skip_input = ToSkipInputEvents {
+                    count: 2,
+                    cursor_value: Some(index_after_indicator),
+                };
+
+                let address = slot.content.clone();
+                let address_ev = ev!(Inline, VerbatimEscaping(slot));
+
+                (address, address_ev, indicator)
+            };
+
+            let tym_a = process_first_slot(text_start, maybe_text_end, inner, address)?;
+            let tym_b = process_indicator(inner, address_ev, indicator)?;
+            Ok(Some(tym_a.add(tym_b)))
+        }
+
+        fn process_first_slot<TInlineStack: Stack<StackEntry>>(
+            text_start: usize,
+            text_end: usize,
+            inner: &mut ParserInner<TInlineStack>,
+            address: Range<usize>,
+        ) -> crate::Result<Tym<2>> {
+            let tym_a = yield_text_if_not_empty(text_start, text_end, inner);
+            let tym_b = inner.r#yield(ev!(Inline, EnterWikiLink(address.clone())));
+            Ok(tym_a.add(tym_b))
+        }
+
+        /// `address_ev` 是属于 Inline 分组的事件，其具体应该是
+        /// [Event::Text] 或  [Event::VerbatimEscaping]。
+        fn process_indicator<TInlineStack: Stack<StackEntry>>(
+            inner: &mut ParserInner<TInlineStack>,
+            address_ev: Event,
+            indicator: Indicator,
+        ) -> crate::Result<Tym<2>> {
+            let tym = match indicator {
+                Indicator::Closing => {
+                    let tym_c1 = inner.r#yield(address_ev);
+                    let tym_c2 = inner.r#yield(ev!(Inline, ExitInline));
+                    tym_c1.add(tym_c2)
+                }
+                Indicator::Separator => {
+                    inner.stack.push_entry(StackEntry::WikiLink)?;
+                    TYM_UNIT.into()
+                }
+            };
+            Ok(tym)
+        }
+
+        #[derive(Debug)]
+        enum AfterSlot {
+            /// 第二个值是第一个值代表内容之后的索引（第二个 `]` 或 `|` 之后的索
+            /// 引）。
+            Indicator {
+                indicator: Indicator,
+                index_after_indicator: usize,
+            },
+            Nothing,
+        }
+
+        #[derive(Debug)]
+        enum Indicator {
+            /// `]]`。
+            Closing,
+            /// `|`。
+            Separator,
+        }
+
+        /// 解析第一个槽位的内容。（不将逐字内容视为有效的槽位内容。）
+        ///
+        /// NOTE: cursor 只移动到第一处非空白字符之前。
+        fn parse_first_slot_for_non_verbatim(
+            input: &[u8],
+            cursor: &mut Cursor,
+        ) -> (Option<Range<usize>>, AfterSlot) {
+            #[derive(Debug)]
+            struct MiniInclusiveRange {
+                start: usize,
+                end: usize,
+            }
+            impl From<MiniInclusiveRange> for Range<usize> {
+                fn from(range: MiniInclusiveRange) -> Self {
+                    range.start..(range.end + 1)
+                }
+            }
+
+            let mut slot_content: Option<MiniInclusiveRange> = None;
+            let mut after_slot = AfterSlot::Nothing;
+
+            while let Some(&char) = input.get(cursor.value()) {
+                if is_whitespace!(char) {
+                    cursor.move_forward(1);
+                } else {
+                    break;
+                }
+            }
+
+            for i in cursor.value()..input.len() {
+                // SAFETY: `cursor.value()` <= `i` < `input.len()`.
+                let char = input[i];
+                match char {
+                    char if is_whitespace!(char) => continue,
+                    m!(']') if input.get(i + 1) == Some(&m!(']')) => {
+                        if slot_content.is_some() {
+                            after_slot = AfterSlot::Indicator {
+                                indicator: Indicator::Closing,
+                                index_after_indicator: i + 2,
+                            };
+                            return (slot_content.map(|r| r.into()), after_slot);
+                        } else {
+                            return (None, AfterSlot::Nothing);
+                        }
+                    }
+                    m!('|') => {
+                        if slot_content.is_some() {
+                            after_slot = AfterSlot::Indicator {
+                                indicator: Indicator::Separator,
+                                index_after_indicator: i + 1,
+                            };
+                            return (slot_content.map(|r| r.into()), after_slot);
+                        } else {
+                            return (None, AfterSlot::Nothing);
+                        }
+                    }
+                    char if !is_valid_character_in_name(char) => {
+                        return (None, AfterSlot::Nothing);
+                    }
+                    _ => match slot_content {
+                        Some(ref mut slot_content) => slot_content.end = i,
+                        None => slot_content = Some(MiniInclusiveRange { start: i, end: i }),
+                    },
+                }
+            }
+
+            (slot_content.map(|r| r.into()), after_slot)
+        }
+
+        fn parse_first_slot_for_verbatim(
+            input: &[u8],
+            event_stream: &mut Peekable<2, impl Iterator<Item = Event>>,
+        ) -> Option<(VerbatimEscaping, AfterSlot)> {
+            let slot = {
+                let Some(ev!(InlineInput, VerbatimEscaping(ve))) = event_stream.peek(0) else {
+                    return None;
+                };
+                ve.clone()
+            };
+            let after_slot = {
+                let Some(ev!(InlineInput, __Unparsed(after_slot_content))) = event_stream.peek(1)
+                else {
+                    return None;
+                };
+
+                // SAFETY: `after_slot.end` < `full_input.len()`.
+                // TODO: 不管怎样，现在的实现也太丑陋了，未来应该重构掉这里的 unsafe。
+                let input =
+                    unsafe { core::slice::from_raw_parts(input.as_ptr(), after_slot_content.end) };
+
+                parse_leading_indicator(input, after_slot_content.start)
+            };
+
+            Some((slot, after_slot))
+        }
+
+        fn parse_leading_indicator(input: &[u8], mut i: usize) -> AfterSlot {
+            while let Some(&char) = input.get(i) {
+                if is_whitespace!(char) {
+                    i += 1;
+                } else {
+                    break;
+                }
+            }
+
+            if i == input.len() {
+                return AfterSlot::Nothing;
+            }
+            debug_assert!(i < input.len());
+
+            // SAFETY: `start_index` < `input.len()`.
+            let char = input[i];
+            match char {
+                m!(']') if input.get(i + 1) == Some(&m!(']')) => AfterSlot::Indicator {
+                    indicator: Indicator::Closing,
+                    index_after_indicator: i + 2,
+                },
+                m!('|') => AfterSlot::Indicator {
+                    indicator: Indicator::Separator,
+                    index_after_indicator: i + 1,
+                },
+                _ => AfterSlot::Nothing,
+            }
+        }
     }
 }
 
@@ -697,246 +940,6 @@ mod terminal {
             inner.stack.push_leaf(leaf.into());
             let tym = inner.r#yield(ev!(Inline, Text(start..cursor.value())));
             Ok(tym.into())
-        }
-    }
-
-    pub mod wiki_link {
-
-        use super::*;
-
-        /// `event_stream` 的迭代对象是属于 `InlineInput` 分组的事件。
-        pub fn process_and_yield_potential<TInlineStack: Stack<StackEntry>>(
-            input: &[u8],
-            text_start: usize,
-            cursor: &mut Cursor,
-            inner: &mut ParserInner<TInlineStack>,
-            event_stream: &mut Peekable<2, impl Iterator<Item = Event>>,
-        ) -> crate::Result<Option<Tym<4>>> {
-            let maybe_text_end = cursor.value();
-            cursor.move_forward("[[".len());
-
-            let (address, address_ev, indicator) = if let (Some(slot_content), after_slot) =
-                parse_first_slot_for_non_verbatim(input, cursor)
-            {
-                let AfterSlot::Indicator {
-                    indicator,
-                    index_after_indicator,
-                } = after_slot
-                else {
-                    // 有内容（标题）但没找到指示标记时，不视为Wiki链接。
-                    // 如：`[[f<`oo`>]]`、`[[f\noo]]` 都不被视为Wiki链接。
-                    return Ok(None);
-                };
-
-                cursor.set_value(index_after_indicator);
-                let address = slot_content.clone();
-                let address_ev = ev!(Inline, Text(slot_content));
-
-                (address, address_ev, indicator)
-            } else {
-                let Some((
-                    slot,
-                    AfterSlot::Indicator {
-                        indicator,
-                        index_after_indicator,
-                    },
-                )) = parse_first_slot_for_verbatim(input, event_stream)
-                else {
-                    return Ok(None);
-                };
-
-                // 跳过当前正在处理的事件（即以 “[[” 结尾的事件）以及作为第一个槽位的逐字转译的事件。
-                // 由于完成跳过后会设置游标，这里不用再用 `cursor.set_value` 来设置游标。
-                inner.to_skip_input = ToSkipInputEvents {
-                    count: 2,
-                    cursor_value: Some(index_after_indicator),
-                };
-
-                let address = slot.content.clone();
-                let address_ev = ev!(Inline, VerbatimEscaping(slot));
-
-                (address, address_ev, indicator)
-            };
-
-            let tym_a = process_first_slot(text_start, maybe_text_end, inner, address)?;
-            let tym_b = process_indicator(inner, address_ev, indicator)?;
-            Ok(Some(tym_a.add(tym_b)))
-        }
-
-        fn process_first_slot<TInlineStack: Stack<StackEntry>>(
-            text_start: usize,
-            text_end: usize,
-            inner: &mut ParserInner<TInlineStack>,
-            address: Range<usize>,
-        ) -> crate::Result<Tym<2>> {
-            let tym_a = yield_text_if_not_empty(text_start, text_end, inner);
-            let tym_b = inner.r#yield(ev!(Inline, EnterWikiLink(address.clone())));
-            Ok(tym_a.add(tym_b))
-        }
-
-        /// `address_ev` 是属于 Inline 分组的事件，其具体应该是
-        /// [Event::Text] 或  [Event::VerbatimEscaping]。
-        fn process_indicator<TInlineStack: Stack<StackEntry>>(
-            inner: &mut ParserInner<TInlineStack>,
-            address_ev: Event,
-            indicator: Indicator,
-        ) -> crate::Result<Tym<2>> {
-            let tym = match indicator {
-                Indicator::Closing => {
-                    let tym_c1 = inner.r#yield(address_ev);
-                    let tym_c2 = inner.r#yield(ev!(Inline, ExitInline));
-                    tym_c1.add(tym_c2)
-                }
-                Indicator::Separator => {
-                    inner.stack.push_entry(StackEntry::WikiLink)?;
-                    TYM_UNIT.into()
-                }
-            };
-            Ok(tym)
-        }
-
-        #[derive(Debug)]
-        enum AfterSlot {
-            /// 第二个值是第一个值代表内容之后的索引（第二个 `]` 或 `|` 之后的索
-            /// 引）。
-            Indicator {
-                indicator: Indicator,
-                index_after_indicator: usize,
-            },
-            Nothing,
-        }
-
-        #[derive(Debug)]
-        enum Indicator {
-            /// `]]`。
-            Closing,
-            /// `|`。
-            Separator,
-        }
-
-        /// 解析第一个槽位的内容。（不将逐字内容视为有效的槽位内容。）
-        ///
-        /// NOTE: cursor 只移动到第一处非空白字符之前。
-        fn parse_first_slot_for_non_verbatim(
-            input: &[u8],
-            cursor: &mut Cursor,
-        ) -> (Option<Range<usize>>, AfterSlot) {
-            #[derive(Debug)]
-            struct MiniInclusiveRange {
-                start: usize,
-                end: usize,
-            }
-            impl From<MiniInclusiveRange> for Range<usize> {
-                fn from(range: MiniInclusiveRange) -> Self {
-                    range.start..(range.end + 1)
-                }
-            }
-
-            let mut slot_content: Option<MiniInclusiveRange> = None;
-            let mut after_slot = AfterSlot::Nothing;
-
-            while let Some(&char) = input.get(cursor.value()) {
-                if is_whitespace!(char) {
-                    cursor.move_forward(1);
-                } else {
-                    break;
-                }
-            }
-
-            for i in cursor.value()..input.len() {
-                // SAFETY: `cursor.value()` <= `i` < `input.len()`.
-                let char = input[i];
-                match char {
-                    char if is_whitespace!(char) => continue,
-                    m!(']') if input.get(i + 1) == Some(&m!(']')) => {
-                        if slot_content.is_some() {
-                            after_slot = AfterSlot::Indicator {
-                                indicator: Indicator::Closing,
-                                index_after_indicator: i + 2,
-                            };
-                            return (slot_content.map(|r| r.into()), after_slot);
-                        } else {
-                            return (None, AfterSlot::Nothing);
-                        }
-                    }
-                    m!('|') => {
-                        if slot_content.is_some() {
-                            after_slot = AfterSlot::Indicator {
-                                indicator: Indicator::Separator,
-                                index_after_indicator: i + 1,
-                            };
-                            return (slot_content.map(|r| r.into()), after_slot);
-                        } else {
-                            return (None, AfterSlot::Nothing);
-                        }
-                    }
-                    char if !is_valid_character_in_name(char) => {
-                        return (None, AfterSlot::Nothing);
-                    }
-                    _ => match slot_content {
-                        Some(ref mut slot_content) => slot_content.end = i,
-                        None => slot_content = Some(MiniInclusiveRange { start: i, end: i }),
-                    },
-                }
-            }
-
-            (slot_content.map(|r| r.into()), after_slot)
-        }
-
-        fn parse_first_slot_for_verbatim(
-            input: &[u8],
-            event_stream: &mut Peekable<2, impl Iterator<Item = Event>>,
-        ) -> Option<(VerbatimEscaping, AfterSlot)> {
-            let slot = {
-                let Some(ev!(InlineInput, VerbatimEscaping(ve))) = event_stream.peek(0) else {
-                    return None;
-                };
-                ve.clone()
-            };
-            let after_slot = {
-                let Some(ev!(InlineInput, __Unparsed(after_slot_content))) = event_stream.peek(1)
-                else {
-                    return None;
-                };
-
-                // SAFETY: `after_slot.end` < `full_input.len()`.
-                // TODO: 不管怎样，现在的实现也太丑陋了，未来应该重构掉这里的 unsafe。
-                let input =
-                    unsafe { core::slice::from_raw_parts(input.as_ptr(), after_slot_content.end) };
-
-                parse_leading_indicator(input, after_slot_content.start)
-            };
-
-            Some((slot, after_slot))
-        }
-
-        fn parse_leading_indicator(input: &[u8], mut i: usize) -> AfterSlot {
-            while let Some(&char) = input.get(i) {
-                if is_whitespace!(char) {
-                    i += 1;
-                } else {
-                    break;
-                }
-            }
-
-            if i == input.len() {
-                return AfterSlot::Nothing;
-            }
-            debug_assert!(i < input.len());
-
-            // SAFETY: `start_index` < `input.len()`.
-            let char = input[i];
-            match char {
-                m!(']') if input.get(i + 1) == Some(&m!(']')) => AfterSlot::Indicator {
-                    indicator: Indicator::Closing,
-                    index_after_indicator: i + 2,
-                },
-                m!('|') => AfterSlot::Indicator {
-                    indicator: Indicator::Separator,
-                    index_after_indicator: i + 1,
-                },
-                _ => AfterSlot::Nothing,
-            }
         }
     }
 }
