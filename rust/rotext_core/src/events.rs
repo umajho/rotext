@@ -252,9 +252,8 @@ pub struct ThematicBreak {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Call {
-    pub id: BlockId,
-    pub name: Range<usize>,
+pub enum Call {
+    Block { id: BlockId, name: Range<usize> },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -282,8 +281,8 @@ impl Event {
             | Event::Raw(content)
             | Event::VerbatimEscaping(VerbatimEscaping { content, .. })
             | Event::Text(content)
-            | Event::EnterCallOnTemplate(Call { name: content, .. })
-            | Event::EnterCallOnExtension(Call { name: content, .. })
+            | Event::EnterCallOnTemplate(Call::Block { name: content, .. })
+            | Event::EnterCallOnExtension(Call::Block { name: content, .. })
             | Event::IndicateCallNormalArgument(Some(content))
             | Event::IndicateCallVerbatimArgument(Some(content))
             | Event::RefLink(content)

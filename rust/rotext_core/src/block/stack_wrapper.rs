@@ -269,7 +269,7 @@ pub struct StackEntryCall {
 impl StackEntryCall {
     /// 返回的事件属于 `Block` 分组。
     pub fn make_enter_event(&self, is_extension: bool, name: Range<usize>) -> Event {
-        let call = Call {
+        let call = Call::Block {
             id: self.meta.id,
             name,
         };

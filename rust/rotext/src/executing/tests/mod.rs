@@ -496,13 +496,13 @@ fn it_works_in_block_phase_for_events_involving_calls() {
             cases: vec![
                 case!(
                     "AllOptional",
-                    [(EnterCallOnExtension(0..11)), (ExitBlock(..)),],
+                    [(EnterCallOnExtension(block, 0..11)), (ExitBlock(..)),],
                     r#"<all-optional></all-optional>"#,
                 ),
                 case!(
                     "AllOptional:0/1_content:14",
                     [
-                        (EnterCallOnExtension(0..11)),
+                        (EnterCallOnExtension(block, 0..11)),
                         (IndicateCallNormalArgument()),
                         (EnterParagraph(..)),
                         (Text(14..23)),
@@ -514,7 +514,7 @@ fn it_works_in_block_phase_for_events_involving_calls() {
                 case!(
                     "AllOptional:0/first_content:14",
                     [
-                        (EnterCallOnExtension(0..11)),
+                        (EnterCallOnExtension(block, 0..11)),
                         (IndicateCallVerbatimArgument()),
                         (Text(14..27)),
                         (ExitBlock(..)),
@@ -524,7 +524,7 @@ fn it_works_in_block_phase_for_events_involving_calls() {
                 case!(
                     "AllOptional:0/1:14/1_content:19",
                     [
-                        (EnterCallOnExtension(0..11)),
+                        (EnterCallOnExtension(block, 0..11)),
                         (IndicateCallNormalArgument(14..15)),
                         (EnterParagraph(..)),
                         (Text(19..28)),
@@ -536,7 +536,7 @@ fn it_works_in_block_phase_for_events_involving_calls() {
                 case!(
                     "AllOptional:0/1_content:14/2_content:27",
                     [
-                        (EnterCallOnExtension(0..11)),
+                        (EnterCallOnExtension(block, 0..11)),
                         (IndicateCallNormalArgument()),
                         (EnterParagraph(..)),
                         (Text(14..23)),
@@ -552,7 +552,7 @@ fn it_works_in_block_phase_for_events_involving_calls() {
                 case!(
                     "AllOptional:0/1_content:14/foo:27/foo_content:34",
                     [
-                        (EnterCallOnExtension(0..11)),
+                        (EnterCallOnExtension(block, 0..11)),
                         (IndicateCallNormalArgument()),
                         (EnterParagraph(..)),
                         (Text(14..23)),
@@ -568,7 +568,7 @@ fn it_works_in_block_phase_for_events_involving_calls() {
                 case!(
                     "AllOptional:0/bar:14/bar_content:21",
                     [
-                        (EnterCallOnExtension(0..11)),
+                        (EnterCallOnExtension(block, 0..11)),
                         (IndicateCallVerbatimArgument(14..17)),
                         (Text(21..32)),
                         (ExitBlock(..)),
@@ -578,7 +578,7 @@ fn it_works_in_block_phase_for_events_involving_calls() {
                 case!(
                     "AllOptional:0/bar:14/bar_content:21/baz:36/baz_content:43",
                     [
-                        (EnterCallOnExtension(0..11)),
+                        (EnterCallOnExtension(block, 0..11)),
                         (IndicateCallVerbatimArgument(14..17)),
                         (Text(21..32)),
                         (IndicateCallVerbatimArgument(36..39)),
@@ -590,7 +590,7 @@ fn it_works_in_block_phase_for_events_involving_calls() {
                 case!(
                     "AllOptional:0/1_content:14/foo:27/foo_content:34/bar:49/bar_content:56/baz:71/baz_content:78",
                     [
-                        (EnterCallOnExtension(0..11)),
+                        (EnterCallOnExtension(block, 0..11)),
                         (IndicateCallNormalArgument()),
                         (EnterParagraph(..)),
                         (Text(14..23)),
@@ -610,7 +610,7 @@ fn it_works_in_block_phase_for_events_involving_calls() {
                 case!(
                     "AllOptional:0/bar:14/bar_content:21/1_content:36/baz:49/baz_content:56/foo:71/foo_content:78",
                     [
-                        (EnterCallOnExtension(0..11)),
+                        (EnterCallOnExtension(block, 0..11)),
                         (IndicateCallVerbatimArgument(14..17)),
                         (Text(21..32)),
                         (IndicateCallNormalArgument()),
@@ -634,13 +634,13 @@ fn it_works_in_block_phase_for_events_involving_calls() {
             cases: vec![
                 case!(
                     "SomeNormalRequired",
-                    [(EnterCallOnExtension(0..18)), (ExitBlock(..)),],
+                    [(EnterCallOnExtension(block, 0..18)), (ExitBlock(..)),],
                     r#"<x-block-call-error call-type="extension" call-name="SomeNormalRequired" error-type="BadParameters" error-value="!1;"></x-block-call-error>"#,
                 ),
                 case!(
                     "SomeNormalRequired:0/test:21",
                     [
-                        (EnterCallOnExtension(0..18)),
+                        (EnterCallOnExtension(block, 0..18)),
                         (IndicateCallNormalArgument()),
                         (EnterParagraph(..)),
                         (Text(21..25)),
@@ -651,13 +651,13 @@ fn it_works_in_block_phase_for_events_involving_calls() {
                 ),
                 case!(
                     "SomeVerbatimRequired",
-                    [(EnterCallOnExtension(0..20)), (ExitBlock(..)),],
+                    [(EnterCallOnExtension(block, 0..20)), (ExitBlock(..)),],
                     r#"<x-block-call-error call-type="extension" call-name="SomeVerbatimRequired" error-type="BadParameters" error-value=";!bar"></x-block-call-error>"#,
                 ),
                 case!(
                     "SomeVerbatimRequired:0/bar:23",
                     [
-                        (EnterCallOnExtension(0..20)),
+                        (EnterCallOnExtension(block, 0..20)),
                         (IndicateCallVerbatimArgument(23..26)),
                         (ExitBlock(..)),
                     ],
@@ -669,7 +669,7 @@ fn it_works_in_block_phase_for_events_involving_calls() {
             group: "调用>扩展>变体",
             cases: vec![case!(
                 "WithVariant",
-                [(EnterCallOnExtension(0..11)), (ExitBlock(..)),],
+                [(EnterCallOnExtension(block, 0..11)), (ExitBlock(..)),],
                 r#"<with-variant variant="var"></with-variant>"#,
             )],
         },
@@ -677,7 +677,7 @@ fn it_works_in_block_phase_for_events_involving_calls() {
             group: "调用>扩展>扩展别名",
             cases: vec![case!(
                 "Alias",
-                [(EnterCallOnExtension(0..5)), (ExitBlock(..)),],
+                [(EnterCallOnExtension(block, 0..5)), (ExitBlock(..)),],
                 r#"<all-optional></all-optional>"#,
             )],
         },
@@ -687,7 +687,7 @@ fn it_works_in_block_phase_for_events_involving_calls() {
                 case!(
                     "AllOptional:0/alias:14/foo:23",
                     [
-                        (EnterCallOnExtension(0..11)),
+                        (EnterCallOnExtension(block, 0..11)),
                         (IndicateCallNormalArgument(14..19)),
                         (EnterParagraph(..)),
                         (Text(23..26)),
@@ -699,7 +699,7 @@ fn it_works_in_block_phase_for_events_involving_calls() {
                 case!(
                     "AllOptional:0/alias:14/foo:23",
                     [
-                        (EnterCallOnExtension(0..11)),
+                        (EnterCallOnExtension(block, 0..11)),
                         (IndicateCallNormalArgument(14..19)),
                         (EnterParagraph(..)),
                         (Text(23..26)),
@@ -711,7 +711,7 @@ fn it_works_in_block_phase_for_events_involving_calls() {
                 case!(
                     "AllOptional:0/alias:14/foo:23",
                     [
-                        (EnterCallOnExtension(0..11)),
+                        (EnterCallOnExtension(block, 0..11)),
                         (IndicateCallNormalArgument()),
                         (EnterParagraph(..)),
                         (Text(23..26)),
@@ -727,7 +727,7 @@ fn it_works_in_block_phase_for_events_involving_calls() {
                 case!(
                     "AllOptional:0/alias:14/foo:23",
                     [
-                        (EnterCallOnExtension(0..11)),
+                        (EnterCallOnExtension(block, 0..11)),
                         (IndicateCallNormalArgument(14..19)),
                         (EnterParagraph(..)),
                         (Text(23..26)),
@@ -743,7 +743,7 @@ fn it_works_in_block_phase_for_events_involving_calls() {
                 case!(
                     "AllOptional:0/alias:14/foo:23/1:30",
                     [
-                        (EnterCallOnExtension(0..11)),
+                        (EnterCallOnExtension(block, 0..11)),
                         (IndicateCallNormalArgument(30..31)),
                         (EnterParagraph(..)),
                         (Text(23..26)),
@@ -771,7 +771,7 @@ fn it_works_in_block_phase_for_events_involving_calls_with_block_id() {
         cases: vec![case!(
             @with_id,
             "Alias",
-            [(EnterCallOnExtension(0..5, id = 1)), (ExitBlock(..)),],
+            [(EnterCallOnExtension(block, 0..5, id = 1)), (ExitBlock(..)),],
             r#"<all-optional data-block-id="1"></all-optional>"#,
         )],
     }];

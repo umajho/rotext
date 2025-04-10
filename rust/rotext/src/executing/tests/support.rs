@@ -113,14 +113,14 @@ macro_rules! __event {
         $crate::Event::EnterWikiLink($start..$end)
     };
 
-    (EnterCallOnExtension ($start:literal..$end:literal)) => {
-        $crate::Event::EnterCallOnExtension(rotext_core::events::Call {
+    (EnterCallOnExtension (block, $start:literal..$end:literal)) => {
+        $crate::Event::EnterCallOnExtension(rotext_core::events::Call::Block {
             id: rotext_core::BlockId::new_invalid(),
             name: $start..$end,
         })
     };
-    (EnterCallOnExtension ($start:literal..$end:literal, id = $id:literal)) => {
-        $crate::Event::EnterCallOnExtension(rotext_core::events::Call {
+    (EnterCallOnExtension (block, $start:literal..$end:literal, id = $id:literal)) => {
+        $crate::Event::EnterCallOnExtension(rotext_core::events::Call::Block {
             id: rotext_core::BlockId::new($id),
             name: $start..$end,
         })
