@@ -28,6 +28,13 @@ pub fn groups_wiki_link() -> Vec<GroupedCases> {
                         (EventType::ExitInline, None),
                     ]
                 ),
+                case!(vec!["foo[[页面]]bar",], vec![
+                    (EventType::Text, Some("foo")),
+                    (EventType::EnterWikiLink, Some("页面")),
+                    (EventType::Text, Some("页面")),
+                    (EventType::ExitInline, None),
+                    (EventType::Text, Some("bar")),
+                ]),
                 case!(vec!["[[页面",], vec![(EventType::Text, Some("[[页面")),]),
                 case!(vec!["[[a<`页面`>]]",], vec![
                     (EventType::Text, Some("[[a")),
