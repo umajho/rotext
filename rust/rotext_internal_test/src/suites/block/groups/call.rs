@@ -85,7 +85,7 @@ pub fn groups_call() -> Vec<GroupedCases> {
                     (EventType::EnterCallOnTemplate, Some("*")),
                     (EventType::ExitBlock, None)
                 ]),
-                case!(vec!["{{#foo}}", "{{#foo}}",], vec![
+                case!(vec!["{{#foo}}", "{{␠#foo␠}}",], vec![
                     (EventType::EnterCallOnExtension, Some("foo")),
                     (EventType::ExitBlock, None)
                 ]),

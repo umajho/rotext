@@ -26,6 +26,7 @@ pub fn run<TContext: Context + RefUnwindSafe>(ctx: &TContext) {
         table.extend(groups::text_styles::groups_text_styles());
         table.extend(groups::ruby::groups_ruby());
         table.extend(groups::code_span::groups_code_span());
+        table.extend(groups::call::groups_call());
 
         table
     };

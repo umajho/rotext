@@ -12,7 +12,7 @@ use core::ops::Range;
 use crate::{
     Event,
     common::{is_valid_character_in_name, m},
-    events::{NewLine, VerbatimEscaping, ev},
+    events::{Call, NewLine, VerbatimEscaping, ev},
     internal_utils::{
         peekable::Peekable,
         string::{
@@ -263,6 +263,20 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                         )? {
                             Some(tym) => {
                                 return Ok(tym);
+                            }
+                            None => continue,
+                        }
+                    }
+                    Some(m!('{')) => {
+                        match bracketed::call::process_and_yield_potential(
+                            input,
+                            text_start,
+                            cursor,
+                            inner,
+                            event_stream,
+                        )? {
+                            Some(tym) => {
+                                return Ok(tym.into());
                             }
                             None => continue,
                         }
@@ -524,7 +538,7 @@ mod bracketed {
                     let tym_c2 = inner.r#yield(ev!(Inline, ExitInline));
                     tym_c1.add(tym_c2)
                 }
-                Indicator::Separator => {
+                Indicator::Argument => {
                     inner.stack.push_entry(StackEntry::WikiLink)?;
                     TYM_UNIT.into()
                 }
@@ -548,7 +562,7 @@ mod bracketed {
             /// `]]`。
             Closing,
             /// `|`。
-            Separator,
+            Argument,
         }
 
         /// 解析第一个槽位的内容。（不将逐字内容视为有效的槽位内容。）
@@ -572,13 +586,7 @@ mod bracketed {
             let mut slot_content: Option<MiniInclusiveRange> = None;
             let mut after_slot = AfterSlot::Nothing;
 
-            while let Some(&char) = input.get(cursor.value()) {
-                if is_whitespace!(char) {
-                    cursor.move_forward(1);
-                } else {
-                    break;
-                }
-            }
+            cursor.skip_whitespaces(input);
 
             for i in cursor.value()..input.len() {
                 // SAFETY: `cursor.value()` <= `i` < `input.len()`.
@@ -599,7 +607,7 @@ mod bracketed {
                     m!('|') => {
                         if slot_content.is_some() {
                             after_slot = AfterSlot::Indicator {
-                                indicator: Indicator::Separator,
+                                indicator: Indicator::Argument,
                                 index_after_indicator: i + 1,
                             };
                             return (slot_content.map(|r| r.into()), after_slot);
@@ -637,7 +645,8 @@ mod bracketed {
                 };
 
                 // SAFETY: `after_slot.end` < `full_input.len()`.
-                // TODO: 不管怎样，现在的实现也太丑陋了，未来应该重构掉这里的 unsafe。
+                // TODO: 不管怎样，现在的实现也太丑陋了，未来应该重构掉这里的
+                // unsafe。注：本文件中有多处与此类似的 unsafe 块。
                 let input =
                     unsafe { core::slice::from_raw_parts(input.as_ptr(), after_slot_content.end) };
 
@@ -669,11 +678,160 @@ mod bracketed {
                     index_after_indicator: i + 2,
                 },
                 m!('|') => AfterSlot::Indicator {
-                    indicator: Indicator::Separator,
+                    indicator: Indicator::Argument,
                     index_after_indicator: i + 1,
                 },
                 _ => AfterSlot::Nothing,
             }
+        }
+    }
+
+    pub mod call {
+        use crate::internal_utils::string::trim_end;
+
+        use super::*;
+
+        /// `event_stream` 的迭代对象是属于 `InlineInput` 分组的事件。
+        pub fn process_and_yield_potential<TInlineStack: Stack<StackEntry>>(
+            mut input: &[u8],
+            text_start: usize,
+            cursor: &mut Cursor,
+            inner: &mut ParserInner<TInlineStack>,
+            event_stream: &mut Peekable<2, impl Iterator<Item = Event>>,
+        ) -> crate::Result<Option<Tym<3>>> {
+            let maybe_text_end = cursor.value();
+            cursor.move_forward("[{".len());
+            cursor.skip_whitespaces(input);
+            let cursor_backup = *cursor;
+
+            let mut peeked = 0;
+
+            let is_extension: bool;
+            let name: Range<usize>;
+
+            if cursor.value() == input.len() {
+                let Some(Event::VerbatimEscaping(ve)) = event_stream.peek(peeked) else {
+                    return Ok(None);
+                };
+                peeked += 1;
+                is_extension = false;
+                name = ve.content.clone();
+
+                let Some(new_input) =
+                    (unsafe { advance_to_next_input(input, cursor, event_stream, &mut peeked) })
+                else {
+                    debug_assert_eq!(*cursor, cursor_backup);
+                    return Ok(None);
+                };
+                input = new_input;
+                cursor.skip_whitespaces(input);
+            } else {
+                debug_assert!(cursor.value() < input.len());
+
+                is_extension = input.get(cursor.value()) == Some(&m!('#'));
+                if is_extension {
+                    cursor.move_forward("#".len());
+                }
+
+                if cursor.value() == input.len() {
+                    let Some(Event::VerbatimEscaping(ve)) = event_stream.peek(peeked) else {
+                        *cursor = cursor_backup;
+                        return Ok(None);
+                    };
+                    peeked += 1;
+                    name = ve.content.clone();
+                    let Some(new_input) = (unsafe {
+                        advance_to_next_input(input, cursor, event_stream, &mut peeked)
+                    }) else {
+                        *cursor = cursor_backup;
+                        return Ok(None);
+                    };
+                    input = new_input;
+                    cursor.skip_whitespaces(input);
+                } else {
+                    debug_assert!(cursor.value() < input.len());
+
+                    let name_start = cursor.value();
+                    if is_whitespace!(input[name_start]) {
+                        *cursor = cursor_backup;
+                        return Ok(None);
+                    }
+
+                    while input
+                        .get(cursor.value())
+                        .is_some_and(|c| is_valid_character_in_name(*c))
+                    {
+                        cursor.move_forward(1);
+                    }
+                    name = name_start..cursor.value();
+                    if name.is_empty() {
+                        *cursor = cursor_backup;
+                        return Ok(None);
+                    }
+                    cursor.skip_whitespaces(input);
+                }
+            };
+
+            enum Found {
+                Indicator,
+                End,
+            }
+            let found = match input.get(cursor.value()) {
+                Some(m!('|')) => {
+                    cursor.move_forward("|".len());
+                    Found::Indicator
+                }
+                Some(m!('}')) if input.get(cursor.value() + 1) == Some(&m!(']')) => {
+                    cursor.move_forward("}]".len());
+                    Found::End
+                }
+                _ => {
+                    *cursor = cursor_backup;
+                    return Ok(None);
+                }
+            };
+
+            if peeked > 0 {
+                inner.to_skip_input = ToSkipInputEvents {
+                    count: peeked,
+                    cursor_value: Some(cursor.value()),
+                };
+            }
+
+            let tym_a = yield_text_if_not_empty(text_start, maybe_text_end, inner);
+
+            let call = Call::Inline {
+                name: trim_end(input, name),
+            };
+            let tym_b = if is_extension {
+                inner.r#yield(Event::EnterCallOnExtension(call))
+            } else {
+                inner.r#yield(Event::EnterCallOnTemplate(call))
+            };
+
+            let tym_c = match found {
+                Found::Indicator => {
+                    inner.stack.push_entry(todo!());
+                    inner.stack.push_leaf(todo!());
+                }
+                Found::End => inner.r#yield(ev!(Inline, ExitInline)),
+            };
+
+            Ok(Some(tym_a.add(tym_b).add(tym_c)))
+        }
+
+        unsafe fn advance_to_next_input<'a, 'b>(
+            input: &'a [u8],
+            cursor: &'b mut Cursor,
+            event_stream: &'b mut Peekable<2, impl Iterator<Item = Event>>,
+            peeked: &'b mut usize,
+        ) -> Option<&'a [u8]> {
+            let Some(Event::__Unparsed(content)) = event_stream.peek(*peeked) else {
+                return None;
+            };
+            *peeked += 1;
+            cursor.set_value(content.start);
+            Some(unsafe { core::slice::from_raw_parts(input.as_ptr(), content.end) })
         }
     }
 }

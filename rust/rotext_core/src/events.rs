@@ -155,10 +155,10 @@ pub enum Event {
     #[groups(Block | Blend)]
     EnterTable(BlockWithId) = EventType::EnterTable as u8,
     /// 进入调用模板（嵌入包含）。
-    #[groups(Block | Blend)]
+    #[groups(Block | Inline | Blend)]
     EnterCallOnTemplate(Call) = EventType::EnterCallOnTemplate as u8,
     /// 进入调用扩展。
-    #[groups(Block | Blend)]
+    #[groups(Block | Inline | Blend)]
     EnterCallOnExtension(Call) = EventType::EnterCallOnExtension as u8,
 
     /// 指示到达代码块的代码部分。
@@ -254,6 +254,7 @@ pub struct ThematicBreak {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Call {
     Block { id: BlockId, name: Range<usize> },
+    Inline { name: Range<usize> },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -283,6 +284,8 @@ impl Event {
             | Event::Text(content)
             | Event::EnterCallOnTemplate(Call::Block { name: content, .. })
             | Event::EnterCallOnExtension(Call::Block { name: content, .. })
+            | Event::EnterCallOnTemplate(Call::Inline { name: content })
+            | Event::EnterCallOnExtension(Call::Inline { name: content })
             | Event::IndicateCallNormalArgument(Some(content))
             | Event::IndicateCallVerbatimArgument(Some(content))
             | Event::RefLink(content)

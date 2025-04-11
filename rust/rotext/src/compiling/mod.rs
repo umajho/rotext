@@ -139,24 +139,29 @@ impl<'a> Compiler<'a> {
                     i += 1;
                     loop {
                         match &evs[i] {
-                            Event::ExitBlock(_) => match call {
-                                Call::Block { id, name } => {
-                                    let call_compiled: BlockCall = BlockCall {
-                                        name: &input[name.clone()],
-                                        arguments,
-                                        verbatim_arguments,
-                                        block_id: *id,
-                                    };
+                            Event::ExitBlock(_) => {
+                                let Call::Block { id, name } = call else {
+                                    unreachable!()
+                                };
 
-                                    result.push(if is_transclusion {
-                                        CompiledItem::BlockTransclusion(call_compiled)
-                                    } else {
-                                        CompiledItem::BlockExtension(call_compiled)
-                                    });
-                                    i += 1;
-                                    break;
-                                }
-                            },
+                                let call_compiled: BlockCall = BlockCall {
+                                    name: &input[name.clone()],
+                                    arguments,
+                                    verbatim_arguments,
+                                    block_id: *id,
+                                };
+
+                                result.push(if is_transclusion {
+                                    CompiledItem::BlockTransclusion(call_compiled)
+                                } else {
+                                    CompiledItem::BlockExtension(call_compiled)
+                                });
+                                i += 1;
+                                break;
+                            }
+                            Event::ExitInline => {
+                                todo!()
+                            }
                             Event::IndicateCallNormalArgument(arg_name) => {
                                 let arg_name = if let Some(arg_name) = arg_name {
                                     ArgumentKey::Named(&input[arg_name.clone()])
