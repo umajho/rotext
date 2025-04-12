@@ -19,6 +19,11 @@ pub fn groups_call() -> Vec<GroupedCases> {
                     (EventType::__Unparsed, Some("{{}}")),
                     (EventType::ExitBlock, None),
                 ]),
+                case!(vec!["{{#}}"], vec![
+                    (EventType::EnterParagraph, None),
+                    (EventType::__Unparsed, Some("{{#}}")),
+                    (EventType::ExitBlock, None),
+                ]),
                 case!(vec!["{{␣}}"], vec![
                     (EventType::EnterParagraph, None),
                     (EventType::__Unparsed, Some("{{ }}")),

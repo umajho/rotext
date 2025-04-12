@@ -304,9 +304,7 @@ fn parse_call_name<TCtx: CursorContext>(
                 }
             }
         }
-    } else if !is_valid_character_in_name(first_char) {
-        return (range_before, End::Mismatched);
-    };
+    }
 
     let name_start = ctx.cursor();
     loop {
@@ -314,6 +312,12 @@ fn parse_call_name<TCtx: CursorContext>(
 
         match char {
             Some(m!('|') | m!('}')) if input.get(ctx.cursor() + 1) == char => {
+                let range = trim_end(input, name_start..ctx.cursor());
+                if range.is_empty() {
+                    ctx.set_cursor(range_before.end);
+                    return (range_before, End::Mismatched);
+                }
+
                 let char = *char.unwrap();
                 let extra_matched = if char == m!('}') {
                     MatchedCallNameExtraMatched::CallClosing
@@ -323,7 +327,7 @@ fn parse_call_name<TCtx: CursorContext>(
 
                 let end = End::MatchedCallName {
                     is_extension,
-                    range: trim_end(input, name_start..ctx.cursor()),
+                    range,
                     extra_matched,
                 };
                 ctx.move_cursor_forward(2);
