@@ -387,7 +387,7 @@ mod special {
         new_line: NewLine,
     ) -> (usize, Option<Event>) {
         let text_end = cursor.value();
-        cursor.move_forward(1);
+        cursor.move_forward("\\".len());
         inner.to_skip_input = ToSkipInputEvents::new_one();
         let to_yield_after_text = ev!(Inline, NewLine(new_line));
 
@@ -401,7 +401,7 @@ mod special {
         inner: &mut ParserInner<TInlineStack>,
     ) -> (usize, Option<Event>) {
         let text_end = cursor.value();
-        cursor.move_forward(1);
+        cursor.move_forward("_".len());
         inner.to_skip_input = ToSkipInputEvents::new_one();
 
         (text_end, None)
@@ -413,7 +413,7 @@ mod special {
         cursor: &mut Cursor,
     ) -> Option<(usize, Option<Event>)> {
         let start = cursor.value();
-        cursor.move_forward(2);
+        cursor.move_forward("&#".len());
 
         let is_hex = match input.get(cursor.value()) {
             Some(b'x' | b'X') => {
