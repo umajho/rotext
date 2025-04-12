@@ -181,14 +181,18 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                         continue;
                     };
                     let new_line = new_line.clone();
-                    break special::process_hard_break_mark(input, cursor, inner, new_line);
+                    let text_end = cursor.value();
+                    let ev = special::process_hard_break_mark(input, cursor, inner, new_line);
+                    break (text_end, Some(ev));
                 }
                 m!('_') if cursor.value() == input.len() - 1 => {
                     let Some(ev!(InlineInput, NewLine(_))) = event_stream.peek(0) else {
                         cursor.move_forward(1);
                         continue;
                     };
-                    break special::process_lines_joint_mark(input, cursor, inner);
+                    let text_end = cursor.value();
+                    special::process_lines_joint_mark(input, cursor, inner);
+                    break (text_end, None);
                 }
                 m!('&') if input.get(cursor.value() + 1) == Some(&m!('#')) => {
                     match special::process_potential_numeric_character_reference(input, cursor) {
@@ -212,10 +216,14 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                         break (cursor.value(), None);
                     }
                     Some(m!('=')) => {
-                        break terminal::dicexp::process(input, cursor);
+                        let text_end = cursor.value();
+                        let ev = terminal::dicexp::process(input, cursor);
+                        break (text_end, Some(ev));
                     }
                     Some(m!('`')) => {
-                        break terminal::code_span::process(input, cursor, inner);
+                        let text_end = cursor.value();
+                        let ev = terminal::code_span::process(input, cursor, inner);
+                        break (text_end, Some(ev));
                     }
                     Some(m!('/')) => {
                         let text_end = cursor.value();
@@ -385,13 +393,10 @@ mod special {
         cursor: &mut Cursor,
         inner: &mut ParserInner<TInlineStack>,
         new_line: NewLine,
-    ) -> (usize, Option<Event>) {
-        let text_end = cursor.value();
+    ) -> Event {
         cursor.move_forward("\\".len());
         inner.to_skip_input = ToSkipInputEvents::new_one();
-        let to_yield_after_text = ev!(Inline, NewLine(new_line));
-
-        (text_end, Some(to_yield_after_text))
+        ev!(Inline, NewLine(new_line))
     }
 
     /// 返回的事件属于 `Inline` 分组。
@@ -399,12 +404,9 @@ mod special {
         _input: &[u8],
         cursor: &mut Cursor,
         inner: &mut ParserInner<TInlineStack>,
-    ) -> (usize, Option<Event>) {
-        let text_end = cursor.value();
+    ) {
         cursor.move_forward("_".len());
         inner.to_skip_input = ToSkipInputEvents::new_one();
-
-        (text_end, None)
     }
 
     /// 返回的事件属于 `Inline` 分组。
@@ -982,14 +984,10 @@ mod terminal {
         /// 后者的事件只能传递一整块范围的内容，而多行内容的范围并不连续，因此无
         /// 法传递。未来可能会让 `dicexp` 的事件也以 Enter/Exit 的形式表示，在那
         /// 之前 dicexp 无法支持多行。
-        pub fn process(input: &[u8], cursor: &mut Cursor) -> (usize, Option<Event>) {
-            let text_end = cursor.value();
-
+        pub fn process(input: &[u8], cursor: &mut Cursor) -> Event {
             cursor.move_forward("[=".len());
             let content = terminal::dicexp::advance_until_ends(input, cursor);
-            let to_yield_after_text = ev!(Inline, Dicexp(content));
-
-            (text_end, Some(to_yield_after_text))
+            ev!(Inline, Dicexp(content))
         }
 
         /// 推进游标，直到到了数量匹配的 “]” 之前，或者 `input` 到头时。如果是前者，结束时
@@ -1027,9 +1025,7 @@ mod terminal {
             input: &[u8],
             cursor: &mut Cursor,
             inner: &mut ParserInner<TInlineStack>,
-        ) -> (usize, Option<Event>) {
-            let text_end = cursor.value();
-
+        ) -> Event {
             let backticks =
                 "`".len() + count_continuous_character(input, m!('`'), cursor.value() + "[`".len());
             cursor.move_forward("[".len() + backticks);
@@ -1041,8 +1037,7 @@ mod terminal {
             let leaf = LeafCodeSpan { backticks };
             let ev = leaf.make_enter_event();
             inner.stack.push_leaf(leaf.into());
-
-            (text_end, Some(ev))
+            ev
         }
 
         pub fn parse_content_and_process<TInlineStack: Stack<StackEntry>>(
