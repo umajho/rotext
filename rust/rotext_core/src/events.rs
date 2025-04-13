@@ -177,10 +177,10 @@ pub enum Event {
     #[groups(Block | Blend)]
     IndicateTableDataCell = EventType::IndicateTableDataCell as u8,
     /// 指示到达（新）调用的一般（非逐字）参数。
-    #[groups(Block | Blend)]
+    #[groups(Block | Inline | Blend)]
     IndicateCallNormalArgument(Option<Range<usize>>) = EventType::IndicateCallNormalArgument as u8,
     /// 指示到达（新）调用的逐字参数。
-    #[groups(Block | Blend)]
+    #[groups(Block | Inline | Blend)]
     IndicateCallVerbatimArgument(Option<Range<usize>>) =
         EventType::IndicateCallVerbatimArgument as u8,
 

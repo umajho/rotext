@@ -130,18 +130,33 @@ pub fn groups_call() -> Vec<GroupedCases> {
                     (EventType::ExitBlock, None),
                     (EventType::ExitBlock, None),
                 ]),
-                case!(vec!["{{foo||{{bar}}}}"], vec![
-                    (EventType::EnterCallOnTemplate, Some("foo")),
-                    (EventType::IndicateCallNormalArgument, None),
-                    (EventType::EnterCallOnTemplate, Some("bar")),
-                    (EventType::ExitBlock, None),
-                    (EventType::ExitBlock, None),
-                ]),
+                case!(
+                    vec![
+                        "{{foo||{{bar}}}}",
+                        "{{foo||␠{{bar}}␠}}",
+                        "{{foo||\n{{bar}}\n}}",
+                    ],
+                    vec![
+                        (EventType::EnterCallOnTemplate, Some("foo")),
+                        (EventType::IndicateCallNormalArgument, None),
+                        (EventType::EnterCallOnTemplate, Some("bar")),
+                        (EventType::ExitBlock, None),
+                        (EventType::ExitBlock, None),
+                    ]
+                ),
                 case!(vec!["{{foo||{{bar||}}}}"], vec![
                     (EventType::EnterCallOnTemplate, Some("foo")),
                     (EventType::IndicateCallNormalArgument, None),
                     (EventType::EnterCallOnTemplate, Some("bar")),
                     (EventType::IndicateCallNormalArgument, None),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                ]),
+                case!(vec!["{{foo||==␠bar}}"], vec![
+                    (EventType::EnterCallOnTemplate, Some("foo")),
+                    (EventType::IndicateCallNormalArgument, None),
+                    (EventType::EnterHeading2, None),
+                    (EventType::__Unparsed, Some("bar")),
                     (EventType::ExitBlock, None),
                     (EventType::ExitBlock, None),
                 ]),
@@ -246,6 +261,14 @@ pub fn groups_call() -> Vec<GroupedCases> {
                     (EventType::IndicateCallNormalArgument, Some("*")),
                     (EventType::ExitBlock, None),
                 ]),
+                case!(vec!["{{foo||bar===␠baz}}"], vec![
+                    (EventType::EnterCallOnTemplate, Some("foo")),
+                    (EventType::IndicateCallNormalArgument, Some("bar")),
+                    (EventType::EnterHeading2, None),
+                    (EventType::__Unparsed, Some("baz")),
+                    (EventType::ExitBlock, None),
+                    (EventType::ExitBlock, None),
+                ]),
             ],
         },
         GroupedCases {
@@ -268,11 +291,32 @@ pub fn groups_call() -> Vec<GroupedCases> {
                     (EventType::Text, Some("=")),
                     (EventType::ExitBlock, None),
                 ]),
+                case!(vec!["{{foo||`{{bar}}}}"], vec![
+                    (EventType::EnterCallOnTemplate, Some("foo")),
+                    (EventType::IndicateCallVerbatimArgument, None),
+                    (EventType::Text, Some("{{bar")),
+                    (EventType::ExitBlock, None),
+                    (EventType::EnterParagraph, None),
+                    (EventType::__Unparsed, Some("}}")),
+                    (EventType::ExitBlock, None),
+                ]),
+                case!(vec!["{{foo||`==␣bar}}"], vec![
+                    (EventType::EnterCallOnTemplate, Some("foo")),
+                    (EventType::IndicateCallVerbatimArgument, None),
+                    (EventType::Text, Some("== bar")),
+                    (EventType::ExitBlock, None),
+                ]),
                 case!(vec!["{{foo||`<`bar`><`baz`>}}"], vec![
                     (EventType::EnterCallOnTemplate, Some("foo")),
                     (EventType::IndicateCallVerbatimArgument, None),
                     (EventType::VerbatimEscaping, Some("bar")),
                     (EventType::VerbatimEscaping, Some("baz")),
+                    (EventType::ExitBlock, None),
+                ]),
+                case!(vec!["{{foo||`\n}}",], vec![
+                    (EventType::EnterCallOnTemplate, Some("foo")),
+                    (EventType::IndicateCallVerbatimArgument, None),
+                    (EventType::NewLine, None),
                     (EventType::ExitBlock, None),
                 ]),
             ],
@@ -331,6 +375,12 @@ pub fn groups_call() -> Vec<GroupedCases> {
                         (EventType::ExitBlock, None),
                     ]
                 ),
+                case!(vec!["{{foo||`bar===␣baz}}"], vec![
+                    (EventType::EnterCallOnTemplate, Some("foo")),
+                    (EventType::IndicateCallVerbatimArgument, Some("bar")),
+                    (EventType::Text, Some("== baz")),
+                    (EventType::ExitBlock, None),
+                ]),
             ],
         },
         GroupedCases {

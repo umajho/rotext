@@ -155,6 +155,15 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                 terminal::code_span::parse_content_and_process(input, cursor, inner, leaf)
                     .map(|tym| tym.into())
             }
+            Some(Leaf::CallVerbatimArgumentValue) => {
+                terminal::call_verbatim_argument_value::parse_content_and_process(
+                    input,
+                    cursor,
+                    inner,
+                    event_stream,
+                )
+                .map(|tym| tym.into())
+            }
         }
     }
 
@@ -312,6 +321,17 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
 
                     break (text_end, Some(to_yield_after_text));
                 }
+                // NOTE: wiki 链接中的 `|` 在匹配到前者开启部分后的处理中就处理好了，因此这里不用管。
+                m!('|') if inner.stack.is_in_call() => {
+                    let text_end = cursor.value();
+                    let ev = bracketed::call::process_argument_indicator(
+                        input,
+                        cursor,
+                        inner,
+                        event_stream,
+                    );
+                    break (text_end, Some(ev));
+                }
                 &char => {
                     let test_result =
                         #[allow(clippy::manual_map)]
@@ -356,6 +376,7 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
             Some(leaf) => {
                 let tym = match leaf {
                     stack_wrapper::Leaf::CodeSpan(leaf) => inner.r#yield(leaf.make_exit_event()),
+                    stack_wrapper::Leaf::CallVerbatimArgumentValue => TYM_UNIT.into(), // noop
                 };
                 (tym, None)
             }
@@ -689,7 +710,9 @@ mod bracketed {
     }
 
     pub mod call {
-        use crate::internal_utils::string::trim_end;
+        use crate::{
+            common::is_valid_character_in_argument_name, internal_utils::string::trim_end,
+        };
 
         use super::*;
 
@@ -780,7 +803,7 @@ mod bracketed {
             }
             let found = match input.get(cursor.value()) {
                 Some(m!('|')) => {
-                    cursor.move_forward("|".len());
+                    // 不 `move_forward`，以在下一轮解析时重新发现 `|` 并进行处理。
                     Found::Indicator
                 }
                 Some(m!('}')) if input.get(cursor.value() + 1) == Some(&m!(']')) => {
@@ -813,13 +836,107 @@ mod bracketed {
 
             let tym_c = match found {
                 Found::Indicator => {
-                    inner.stack.push_entry(todo!());
-                    inner.stack.push_leaf(todo!());
+                    inner.stack.push_entry(StackEntry::Call)?;
+                    TYM_UNIT.into()
                 }
                 Found::End => inner.r#yield(ev!(Inline, ExitInline)),
             };
 
             Ok(Some(tym_a.add(tym_b).add(tym_c)))
+        }
+
+        pub fn process_argument_indicator<TInlineStack: Stack<StackEntry>>(
+            mut input: &[u8],
+            cursor: &mut Cursor,
+            inner: &mut ParserInner<TInlineStack>,
+            event_stream: &mut Peekable<2, impl Iterator<Item = Event>>,
+        ) -> Event {
+            cursor.move_forward("|".len());
+            let cursor_backup = *cursor;
+
+            let mut peeked = 0;
+
+            let can_be_unnamed_verbatim = input.get(cursor.value()) == Some(&m!('`'));
+            cursor.skip_whitespaces(input);
+            let mut is_verbatim = input.get(cursor.value()) == Some(&m!('`'));
+            if is_verbatim {
+                cursor.move_forward("`".len());
+                if input.get(cursor.value()).is_some_and(|c| is_whitespace!(c)) {
+                    return if can_be_unnamed_verbatim {
+                        ev!(Inline, IndicateCallVerbatimArgument(None))
+                    } else {
+                        *cursor = cursor_backup;
+                        ev!(Inline, IndicateCallNormalArgument(None))
+                    };
+                }
+            }
+
+            let mut name = if cursor.value() == input.len() {
+                if let Some(Event::VerbatimEscaping(ve)) = event_stream.peek(peeked) {
+                    peeked += 1;
+                    let name = ve.content.clone();
+
+                    if let Some(new_input) =
+                        unsafe { advance_to_next_input(input, cursor, event_stream, &mut peeked) }
+                    {
+                        input = new_input;
+                        cursor.skip_whitespaces(input);
+                        Some(name)
+                    } else {
+                        *cursor = cursor_backup;
+                        None
+                    }
+                } else {
+                    None
+                }
+            } else {
+                let name_start = cursor.value();
+                if is_whitespace!(input[name_start]) {
+                    None
+                } else {
+                    while input
+                        .get(cursor.value())
+                        .is_some_and(|c| is_valid_character_in_argument_name(*c))
+                    {
+                        cursor.move_forward(1);
+                    }
+                    let name = trim_end(input, name_start..cursor.value());
+                    if name.is_empty() {
+                        *cursor = cursor_backup;
+                        None
+                    } else {
+                        Some(name)
+                    }
+                }
+            };
+
+            if name.is_some() && input.get(cursor.value()) == Some(&m!('=')) {
+                cursor.move_forward("=".len());
+                if peeked > 0 {
+                    inner.to_skip_input = ToSkipInputEvents {
+                        count: peeked,
+                        cursor_value: Some(cursor.value()),
+                    };
+                }
+            } else {
+                *cursor = cursor_backup;
+                name = None;
+            }
+
+            if name.is_none() {
+                if can_be_unnamed_verbatim {
+                    cursor.move_forward("`".len());
+                } else {
+                    is_verbatim = false;
+                }
+            }
+
+            if is_verbatim {
+                inner.stack.push_leaf(Leaf::CallVerbatimArgumentValue);
+                ev!(Inline, IndicateCallVerbatimArgument(name))
+            } else {
+                ev!(Inline, IndicateCallNormalArgument(name))
+            }
         }
 
         unsafe fn advance_to_next_input<'a, 'b>(
@@ -1092,6 +1209,47 @@ mod terminal {
 
             inner.stack.push_leaf(leaf.into());
             let tym = inner.r#yield(ev!(Inline, Text(start..cursor.value())));
+            Ok(tym.into())
+        }
+    }
+
+    pub mod call_verbatim_argument_value {
+        use super::*;
+
+        pub fn parse_content_and_process<TInlineStack: Stack<StackEntry>>(
+            input: &[u8],
+            cursor: &mut Cursor,
+            inner: &mut ParserInner<TInlineStack>,
+            event_stream: &mut Peekable<2, impl Iterator<Item = Event>>,
+        ) -> crate::Result<Tym<2>> {
+            let start = cursor.value();
+            while let Some(char) = input.get(cursor.value()) {
+                match char {
+                    m!('|') => {
+                        let tym_a = yield_text_if_not_empty(start, cursor.value(), inner);
+
+                        let ev = bracketed::call::process_argument_indicator(
+                            input,
+                            cursor,
+                            inner,
+                            event_stream,
+                        );
+                        let tym_b = inner.r#yield(ev);
+
+                        return Ok(tym_a.add(tym_b));
+                    }
+                    m!('}') if input.get(cursor.value() + 1) == Some(&m!(']')) => {
+                        let tym = yield_text_if_not_empty(start, cursor.value(), inner);
+                        cursor.move_forward("}]".len());
+                        inner.to_exit_until_popped_entry_from_stack = Some(StackEntry::Call);
+                        return Ok(tym.into());
+                    }
+                    _ => cursor.move_forward(1),
+                }
+            }
+
+            let tym = yield_text_if_not_empty(start, cursor.value(), inner);
+            inner.stack.push_leaf(Leaf::CallVerbatimArgumentValue);
             Ok(tym.into())
         }
     }

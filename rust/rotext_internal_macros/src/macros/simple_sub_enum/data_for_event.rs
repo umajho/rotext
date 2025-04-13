@@ -43,8 +43,10 @@ static EVENT_TO_GROUP_RAW: &[(&str, &[&str])] = &[
     ("IndicateTableRow", &["Block", "Blend"]),
     ("IndicateTableHeaderCell", &["Block", "Blend"]),
     ("IndicateTableDataCell", &["Block", "Blend"]),
-    ("IndicateCallNormalArgument", &["Block", "Blend"]),
-    ("IndicateCallVerbatimArgument", &["Block", "Blend"]),
+    ("IndicateCallNormalArgument", &["Block", "Inline", "Blend"]),
+    ("IndicateCallVerbatimArgument", &[
+        "Block", "Inline", "Blend",
+    ]),
     ("ExitBlock", &["Block", "Blend"]),
     ("RefLink", &["Inline", "Blend"]),
     ("Dicexp", &["Inline", "Blend"]),
