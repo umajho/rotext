@@ -2,6 +2,7 @@ import { Extension, TagNameMap } from "@rotext/wasm-bindings-adapter";
 
 export const TAG_NAME_MAP = {
   block_call_error: "x-block-call-error",
+  inline_call_error: "x-inline-call-error",
   scratch_off: "x-scratch-off",
   ref_link: "x-ref-link",
   dicexp: "x-dicexp",
@@ -69,6 +70,32 @@ export const BLOCK_EXTENSION_LIST: Extension[] = [
       })),
     ];
   })),
+];
+
+export const INLINE_EXTENSION_LIST: Extension[] = [
+  {
+    ElementMapper: {
+      name: "Span",
+      tag_name: "span",
+      variant: null,
+      parameters: {
+        "1": { Real: { is_optional: false, mapping_to: "UnnamedSlot" } },
+      },
+      verbatim_parameters: {},
+    },
+  },
+  {
+    ElementMapper: {
+      name: "ScratchOff",
+      tag_name: TAG_NAME_MAP.scratch_off,
+      variant: null,
+      parameters: {
+        "1": { Real: { is_optional: false, mapping_to: "UnnamedSlot" } },
+      },
+      verbatim_parameters: {},
+    },
+  },
+  { Alias: { name: "刮开", to: "ScratchOff" } },
 ];
 
 export const PROSE_CLASS = "tuan-prose";

@@ -12,7 +12,7 @@ use core::ops::Range;
 use crate::{
     Event,
     common::{is_valid_character_in_name, m},
-    events::{NewLine, VerbatimEscaping, ev},
+    events::{Call, NewLine, VerbatimEscaping, ev},
     internal_utils::{
         peekable::Peekable,
         string::{
@@ -155,6 +155,15 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                 terminal::code_span::parse_content_and_process(input, cursor, inner, leaf)
                     .map(|tym| tym.into())
             }
+            Some(Leaf::CallVerbatimArgumentValue) => {
+                terminal::call_verbatim_argument_value::parse_content_and_process(
+                    input,
+                    cursor,
+                    inner,
+                    event_stream,
+                )
+                .map(|tym| tym.into())
+            }
         }
     }
 
@@ -181,14 +190,18 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                         continue;
                     };
                     let new_line = new_line.clone();
-                    break special::process_hard_break_mark(input, cursor, inner, new_line);
+                    let text_end = cursor.value();
+                    let ev = special::process_hard_break_mark(input, cursor, inner, new_line);
+                    break (text_end, Some(ev));
                 }
                 m!('_') if cursor.value() == input.len() - 1 => {
                     let Some(ev!(InlineInput, NewLine(_))) = event_stream.peek(0) else {
                         cursor.move_forward(1);
                         continue;
                     };
-                    break special::process_lines_joint_mark(input, cursor, inner);
+                    let text_end = cursor.value();
+                    special::process_lines_joint_mark(input, cursor, inner);
+                    break (text_end, None);
                 }
                 m!('&') if input.get(cursor.value() + 1) == Some(&m!('#')) => {
                     match special::process_potential_numeric_character_reference(input, cursor) {
@@ -212,10 +225,14 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                         break (cursor.value(), None);
                     }
                     Some(m!('=')) => {
-                        break terminal::dicexp::process(input, cursor);
+                        let text_end = cursor.value();
+                        let ev = terminal::dicexp::process(input, cursor);
+                        break (text_end, Some(ev));
                     }
                     Some(m!('`')) => {
-                        break terminal::code_span::process(input, cursor, inner);
+                        let text_end = cursor.value();
+                        let ev = terminal::code_span::process(input, cursor, inner);
+                        break (text_end, Some(ev));
                     }
                     Some(m!('/')) => {
                         let text_end = cursor.value();
@@ -267,6 +284,20 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                             None => continue,
                         }
                     }
+                    Some(m!('{')) => {
+                        match bracketed::call::process_and_yield_potential(
+                            input,
+                            text_start,
+                            cursor,
+                            inner,
+                            event_stream,
+                        )? {
+                            Some(tym) => {
+                                return Ok(tym.into());
+                            }
+                            None => continue,
+                        }
+                    }
                     Some(_) => {
                         cursor.move_forward(1);
                         continue;
@@ -289,6 +320,17 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
                     let to_yield_after_text = ev!(Inline, EnterRubyText);
 
                     break (text_end, Some(to_yield_after_text));
+                }
+                // NOTE: wiki 链接中的 `|` 在匹配到前者开启部分后的处理中就处理好了，因此这里不用管。
+                m!('|') if inner.stack.is_in_call() => {
+                    let text_end = cursor.value();
+                    let ev = bracketed::call::process_argument_indicator(
+                        input,
+                        cursor,
+                        inner,
+                        event_stream,
+                    );
+                    break (text_end, Some(ev));
                 }
                 &char => {
                     let test_result =
@@ -334,6 +376,7 @@ impl<'a, TInlineStack: Stack<StackEntry>> Parser<'a, TInlineStack> {
             Some(leaf) => {
                 let tym = match leaf {
                     stack_wrapper::Leaf::CodeSpan(leaf) => inner.r#yield(leaf.make_exit_event()),
+                    stack_wrapper::Leaf::CallVerbatimArgumentValue => TYM_UNIT.into(), // noop
                 };
                 (tym, None)
             }
@@ -371,13 +414,10 @@ mod special {
         cursor: &mut Cursor,
         inner: &mut ParserInner<TInlineStack>,
         new_line: NewLine,
-    ) -> (usize, Option<Event>) {
-        let text_end = cursor.value();
-        cursor.move_forward(1);
+    ) -> Event {
+        cursor.move_forward("\\".len());
         inner.to_skip_input = ToSkipInputEvents::new_one();
-        let to_yield_after_text = ev!(Inline, NewLine(new_line));
-
-        (text_end, Some(to_yield_after_text))
+        ev!(Inline, NewLine(new_line))
     }
 
     /// 返回的事件属于 `Inline` 分组。
@@ -385,12 +425,9 @@ mod special {
         _input: &[u8],
         cursor: &mut Cursor,
         inner: &mut ParserInner<TInlineStack>,
-    ) -> (usize, Option<Event>) {
-        let text_end = cursor.value();
-        cursor.move_forward(1);
+    ) {
+        cursor.move_forward("_".len());
         inner.to_skip_input = ToSkipInputEvents::new_one();
-
-        (text_end, None)
     }
 
     /// 返回的事件属于 `Inline` 分组。
@@ -399,7 +436,7 @@ mod special {
         cursor: &mut Cursor,
     ) -> Option<(usize, Option<Event>)> {
         let start = cursor.value();
-        cursor.move_forward(2);
+        cursor.move_forward("&#".len());
 
         let is_hex = match input.get(cursor.value()) {
             Some(b'x' | b'X') => {
@@ -524,7 +561,7 @@ mod bracketed {
                     let tym_c2 = inner.r#yield(ev!(Inline, ExitInline));
                     tym_c1.add(tym_c2)
                 }
-                Indicator::Separator => {
+                Indicator::Argument => {
                     inner.stack.push_entry(StackEntry::WikiLink)?;
                     TYM_UNIT.into()
                 }
@@ -548,7 +585,7 @@ mod bracketed {
             /// `]]`。
             Closing,
             /// `|`。
-            Separator,
+            Argument,
         }
 
         /// 解析第一个槽位的内容。（不将逐字内容视为有效的槽位内容。）
@@ -571,14 +608,9 @@ mod bracketed {
 
             let mut slot_content: Option<MiniInclusiveRange> = None;
             let mut after_slot = AfterSlot::Nothing;
+            let mut has_anchor = false;
 
-            while let Some(&char) = input.get(cursor.value()) {
-                if is_whitespace!(char) {
-                    cursor.move_forward(1);
-                } else {
-                    break;
-                }
-            }
+            cursor.skip_whitespaces(input);
 
             for i in cursor.value()..input.len() {
                 // SAFETY: `cursor.value()` <= `i` < `input.len()`.
@@ -599,7 +631,7 @@ mod bracketed {
                     m!('|') => {
                         if slot_content.is_some() {
                             after_slot = AfterSlot::Indicator {
-                                indicator: Indicator::Separator,
+                                indicator: Indicator::Argument,
                                 index_after_indicator: i + 1,
                             };
                             return (slot_content.map(|r| r.into()), after_slot);
@@ -607,13 +639,21 @@ mod bracketed {
                             return (None, AfterSlot::Nothing);
                         }
                     }
-                    char if !is_valid_character_in_name(char) => {
+                    char if !(is_valid_character_in_name(char)
+                        || (char == m!('#') && !has_anchor)) =>
+                    {
                         return (None, AfterSlot::Nothing);
                     }
-                    _ => match slot_content {
-                        Some(ref mut slot_content) => slot_content.end = i,
-                        None => slot_content = Some(MiniInclusiveRange { start: i, end: i }),
-                    },
+                    _ => {
+                        if char == m!('#') {
+                            has_anchor = true;
+                        }
+
+                        match slot_content {
+                            Some(ref mut slot_content) => slot_content.end = i,
+                            None => slot_content = Some(MiniInclusiveRange { start: i, end: i }),
+                        }
+                    }
                 }
             }
 
@@ -637,7 +677,8 @@ mod bracketed {
                 };
 
                 // SAFETY: `after_slot.end` < `full_input.len()`.
-                // TODO: 不管怎样，现在的实现也太丑陋了，未来应该重构掉这里的 unsafe。
+                // TODO: 不管怎样，现在的实现也太丑陋了，未来应该重构掉这里的
+                // unsafe。注：本文件中有多处与此类似的 unsafe 块。
                 let input =
                     unsafe { core::slice::from_raw_parts(input.as_ptr(), after_slot_content.end) };
 
@@ -669,11 +710,256 @@ mod bracketed {
                     index_after_indicator: i + 2,
                 },
                 m!('|') => AfterSlot::Indicator {
-                    indicator: Indicator::Separator,
+                    indicator: Indicator::Argument,
                     index_after_indicator: i + 1,
                 },
                 _ => AfterSlot::Nothing,
             }
+        }
+    }
+
+    pub mod call {
+        use crate::{
+            common::is_valid_character_in_argument_name, internal_utils::string::trim_end,
+        };
+
+        use super::*;
+
+        /// `event_stream` 的迭代对象是属于 `InlineInput` 分组的事件。
+        pub fn process_and_yield_potential<TInlineStack: Stack<StackEntry>>(
+            mut input: &[u8],
+            text_start: usize,
+            cursor: &mut Cursor,
+            inner: &mut ParserInner<TInlineStack>,
+            event_stream: &mut Peekable<2, impl Iterator<Item = Event>>,
+        ) -> crate::Result<Option<Tym<3>>> {
+            let maybe_text_end = cursor.value();
+            cursor.move_forward("[{".len());
+            cursor.skip_whitespaces(input);
+            let cursor_backup = *cursor;
+
+            let mut peeked = 0;
+
+            let is_extension: bool;
+            let name: Range<usize>;
+
+            if cursor.value() == input.len() {
+                let Some(Event::VerbatimEscaping(ve)) = event_stream.peek(peeked) else {
+                    return Ok(None);
+                };
+                peeked += 1;
+                is_extension = false;
+                name = ve.content.clone();
+
+                let Some(new_input) =
+                    (unsafe { advance_to_next_input(input, cursor, event_stream, &mut peeked) })
+                else {
+                    debug_assert_eq!(*cursor, cursor_backup);
+                    return Ok(None);
+                };
+                input = new_input;
+                cursor.skip_whitespaces(input);
+            } else {
+                debug_assert!(cursor.value() < input.len());
+
+                is_extension = input.get(cursor.value()) == Some(&m!('#'));
+                if is_extension {
+                    cursor.move_forward("#".len());
+                }
+
+                if cursor.value() == input.len() {
+                    let Some(Event::VerbatimEscaping(ve)) = event_stream.peek(peeked) else {
+                        *cursor = cursor_backup;
+                        return Ok(None);
+                    };
+                    peeked += 1;
+                    name = ve.content.clone();
+                    let Some(new_input) = (unsafe {
+                        advance_to_next_input(input, cursor, event_stream, &mut peeked)
+                    }) else {
+                        *cursor = cursor_backup;
+                        return Ok(None);
+                    };
+                    input = new_input;
+                    cursor.skip_whitespaces(input);
+                } else {
+                    debug_assert!(cursor.value() < input.len());
+
+                    let name_start = cursor.value();
+                    if is_whitespace!(input[name_start]) {
+                        *cursor = cursor_backup;
+                        return Ok(None);
+                    }
+
+                    while input
+                        .get(cursor.value())
+                        .is_some_and(|c| is_valid_character_in_name(*c))
+                    {
+                        cursor.move_forward(1);
+                    }
+                    name = name_start..cursor.value();
+                    if name.is_empty() {
+                        *cursor = cursor_backup;
+                        return Ok(None);
+                    }
+                    cursor.skip_whitespaces(input);
+                }
+            };
+
+            enum Found {
+                Indicator,
+                End,
+            }
+            let found = match input.get(cursor.value()) {
+                Some(m!('|')) => {
+                    // 不 `move_forward`，以在下一轮解析时重新发现 `|` 并进行处理。
+                    Found::Indicator
+                }
+                Some(m!('}')) if input.get(cursor.value() + 1) == Some(&m!(']')) => {
+                    cursor.move_forward("}]".len());
+                    Found::End
+                }
+                _ => {
+                    *cursor = cursor_backup;
+                    return Ok(None);
+                }
+            };
+
+            if peeked > 0 {
+                inner.to_skip_input = ToSkipInputEvents {
+                    count: peeked,
+                    cursor_value: Some(cursor.value()),
+                };
+            }
+
+            let tym_a = yield_text_if_not_empty(text_start, maybe_text_end, inner);
+
+            let call = Call::Inline {
+                name: trim_end(input, name),
+            };
+            let tym_b = if is_extension {
+                inner.r#yield(Event::EnterCallOnExtension(call))
+            } else {
+                inner.r#yield(Event::EnterCallOnTemplate(call))
+            };
+
+            let tym_c = match found {
+                Found::Indicator => {
+                    inner.stack.push_entry(StackEntry::Call)?;
+                    TYM_UNIT.into()
+                }
+                Found::End => inner.r#yield(ev!(Inline, ExitInline)),
+            };
+
+            Ok(Some(tym_a.add(tym_b).add(tym_c)))
+        }
+
+        pub fn process_argument_indicator<TInlineStack: Stack<StackEntry>>(
+            mut input: &[u8],
+            cursor: &mut Cursor,
+            inner: &mut ParserInner<TInlineStack>,
+            event_stream: &mut Peekable<2, impl Iterator<Item = Event>>,
+        ) -> Event {
+            cursor.move_forward("|".len());
+            let cursor_backup = *cursor;
+
+            let mut peeked = 0;
+
+            let can_be_unnamed_verbatim = input.get(cursor.value()) == Some(&m!('`'));
+            cursor.skip_whitespaces(input);
+            let mut is_verbatim = input.get(cursor.value()) == Some(&m!('`'));
+            if is_verbatim {
+                cursor.move_forward("`".len());
+                if input.get(cursor.value()).is_some_and(|c| is_whitespace!(c)) {
+                    return if can_be_unnamed_verbatim {
+                        ev!(Inline, IndicateCallVerbatimArgument(None))
+                    } else {
+                        *cursor = cursor_backup;
+                        ev!(Inline, IndicateCallNormalArgument(None))
+                    };
+                }
+            }
+
+            let mut name = if cursor.value() == input.len() {
+                if let Some(Event::VerbatimEscaping(ve)) = event_stream.peek(peeked) {
+                    peeked += 1;
+                    let name = ve.content.clone();
+
+                    if let Some(new_input) =
+                        unsafe { advance_to_next_input(input, cursor, event_stream, &mut peeked) }
+                    {
+                        input = new_input;
+                        cursor.skip_whitespaces(input);
+                        Some(name)
+                    } else {
+                        *cursor = cursor_backup;
+                        None
+                    }
+                } else {
+                    None
+                }
+            } else {
+                let name_start = cursor.value();
+                if is_whitespace!(input[name_start]) {
+                    None
+                } else {
+                    while input
+                        .get(cursor.value())
+                        .is_some_and(|c| is_valid_character_in_argument_name(*c))
+                    {
+                        cursor.move_forward(1);
+                    }
+                    let name = trim_end(input, name_start..cursor.value());
+                    if name.is_empty() {
+                        *cursor = cursor_backup;
+                        None
+                    } else {
+                        Some(name)
+                    }
+                }
+            };
+
+            if name.is_some() && input.get(cursor.value()) == Some(&m!('=')) {
+                cursor.move_forward("=".len());
+                if peeked > 0 {
+                    inner.to_skip_input = ToSkipInputEvents {
+                        count: peeked,
+                        cursor_value: Some(cursor.value()),
+                    };
+                }
+            } else {
+                *cursor = cursor_backup;
+                name = None;
+            }
+
+            if name.is_none() {
+                if can_be_unnamed_verbatim {
+                    cursor.move_forward("`".len());
+                } else {
+                    is_verbatim = false;
+                }
+            }
+
+            if is_verbatim {
+                inner.stack.push_leaf(Leaf::CallVerbatimArgumentValue);
+                ev!(Inline, IndicateCallVerbatimArgument(name))
+            } else {
+                ev!(Inline, IndicateCallNormalArgument(name))
+            }
+        }
+
+        unsafe fn advance_to_next_input<'a, 'b>(
+            input: &'a [u8],
+            cursor: &'b mut Cursor,
+            event_stream: &'b mut Peekable<2, impl Iterator<Item = Event>>,
+            peeked: &'b mut usize,
+        ) -> Option<&'a [u8]> {
+            let Some(Event::__Unparsed(content)) = event_stream.peek(*peeked) else {
+                return None;
+            };
+            *peeked += 1;
+            cursor.set_value(content.start);
+            Some(unsafe { core::slice::from_raw_parts(input.as_ptr(), content.end) })
         }
     }
 }
@@ -824,14 +1110,10 @@ mod terminal {
         /// 后者的事件只能传递一整块范围的内容，而多行内容的范围并不连续，因此无
         /// 法传递。未来可能会让 `dicexp` 的事件也以 Enter/Exit 的形式表示，在那
         /// 之前 dicexp 无法支持多行。
-        pub fn process(input: &[u8], cursor: &mut Cursor) -> (usize, Option<Event>) {
-            let text_end = cursor.value();
-
+        pub fn process(input: &[u8], cursor: &mut Cursor) -> Event {
             cursor.move_forward("[=".len());
             let content = terminal::dicexp::advance_until_ends(input, cursor);
-            let to_yield_after_text = ev!(Inline, Dicexp(content));
-
-            (text_end, Some(to_yield_after_text))
+            ev!(Inline, Dicexp(content))
         }
 
         /// 推进游标，直到到了数量匹配的 “]” 之前，或者 `input` 到头时。如果是前者，结束时
@@ -869,9 +1151,7 @@ mod terminal {
             input: &[u8],
             cursor: &mut Cursor,
             inner: &mut ParserInner<TInlineStack>,
-        ) -> (usize, Option<Event>) {
-            let text_end = cursor.value();
-
+        ) -> Event {
             let backticks =
                 "`".len() + count_continuous_character(input, m!('`'), cursor.value() + "[`".len());
             cursor.move_forward("[".len() + backticks);
@@ -883,8 +1163,7 @@ mod terminal {
             let leaf = LeafCodeSpan { backticks };
             let ev = leaf.make_enter_event();
             inner.stack.push_leaf(leaf.into());
-
-            (text_end, Some(ev))
+            ev
         }
 
         pub fn parse_content_and_process<TInlineStack: Stack<StackEntry>>(
@@ -939,6 +1218,47 @@ mod terminal {
 
             inner.stack.push_leaf(leaf.into());
             let tym = inner.r#yield(ev!(Inline, Text(start..cursor.value())));
+            Ok(tym.into())
+        }
+    }
+
+    pub mod call_verbatim_argument_value {
+        use super::*;
+
+        pub fn parse_content_and_process<TInlineStack: Stack<StackEntry>>(
+            input: &[u8],
+            cursor: &mut Cursor,
+            inner: &mut ParserInner<TInlineStack>,
+            event_stream: &mut Peekable<2, impl Iterator<Item = Event>>,
+        ) -> crate::Result<Tym<2>> {
+            let start = cursor.value();
+            while let Some(char) = input.get(cursor.value()) {
+                match char {
+                    m!('|') => {
+                        let tym_a = yield_text_if_not_empty(start, cursor.value(), inner);
+
+                        let ev = bracketed::call::process_argument_indicator(
+                            input,
+                            cursor,
+                            inner,
+                            event_stream,
+                        );
+                        let tym_b = inner.r#yield(ev);
+
+                        return Ok(tym_a.add(tym_b));
+                    }
+                    m!('}') if input.get(cursor.value() + 1) == Some(&m!(']')) => {
+                        let tym = yield_text_if_not_empty(start, cursor.value(), inner);
+                        cursor.move_forward("}]".len());
+                        inner.to_exit_until_popped_entry_from_stack = Some(StackEntry::Call);
+                        return Ok(tym.into());
+                    }
+                    _ => cursor.move_forward(1),
+                }
+            }
+
+            let tym = yield_text_if_not_empty(start, cursor.value(), inner);
+            inner.stack.push_leaf(Leaf::CallVerbatimArgumentValue);
             Ok(tym.into())
         }
     }

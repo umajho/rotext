@@ -1,3 +1,5 @@
+use core::ops::Range;
+
 pub fn count_continuous_character(input: &[u8], char: u8, since: usize) -> usize {
     let mut i = 0;
     while matches!(input.get(since+ i), Some(actual_char) if *actual_char == char) {
@@ -35,4 +37,13 @@ macro_rules! is_whitespace {
         matches!($char, b' ' | b'\t')
     };
 }
+
 pub(crate) use is_whitespace;
+
+pub fn trim_end(input: &[u8], range: Range<usize>) -> Range<usize> {
+    let mut end: usize = range.end;
+    while end > range.start && is_whitespace!(input[end - 1]) {
+        end -= 1;
+    }
+    range.start..end
+}

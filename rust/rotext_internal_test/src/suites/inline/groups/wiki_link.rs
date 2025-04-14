@@ -117,6 +117,40 @@ pub fn groups_wiki_link() -> Vec<GroupedCases> {
             ],
         },
         GroupedCases {
+            group: "Wiki链接>锚",
+            cases: vec![
+                case!(vec!["[[#锚]]", "[[␠#锚]]", "[[#锚␠]]",], vec![
+                    (EventType::EnterWikiLink, Some("#锚")),
+                    (EventType::Text, Some("#锚")),
+                    (EventType::ExitInline, None),
+                ]),
+                case!(
+                    vec!["[[页面#锚]]", "[[␠页面#锚]]", "[[页面#锚␠]]",],
+                    vec![
+                        (EventType::EnterWikiLink, Some("页面#锚")),
+                        (EventType::Text, Some("页面#锚")),
+                        (EventType::ExitInline, None),
+                    ]
+                ),
+                case!(vec!["[[##foo]]",], vec![(
+                    EventType::Text,
+                    Some("[[##foo]]")
+                ),]),
+                case!(vec!["[[foo##]]",], vec![(
+                    EventType::Text,
+                    Some("[[foo##]]")
+                ),]),
+                case!(vec!["[[#foo#bar]]",], vec![(
+                    EventType::Text,
+                    Some("[[#foo#bar]]")
+                ),]),
+                case!(vec!["[[foo##bar]]",], vec![(
+                    EventType::Text,
+                    Some("[[foo##bar]]")
+                ),]),
+            ],
+        },
+        GroupedCases {
             group: "Wiki链接>其他行内内容",
             cases: vec![
                 case!(vec!["[[页面|<`内容`>]]",], vec![

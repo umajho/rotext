@@ -37,6 +37,9 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
             StackEntry::WikiLink => {
                 self.stack_entry_counts.wiki_link += 1;
             }
+            StackEntry::Call => {
+                self.stack_entry_counts.call += 1;
+            }
             StackEntry::_Ruby | StackEntry::_RubyText => {}
         }
 
@@ -49,6 +52,10 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
     pub fn is_in_ruby_but_not_in_ruby_text(&self) -> bool {
         self.ruby_state == RubyState::Base
     }
+    pub fn is_in_call(&self) -> bool {
+        self.stack_entry_counts.call > 0
+    }
+
     pub fn enter_ruby(&mut self) -> crate::Result<()> {
         debug_assert_eq!(self.ruby_state, RubyState::None);
         self.ruby_state = RubyState::Base;
@@ -87,6 +94,9 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
             StackEntry::WikiLink => {
                 self.stack_entry_counts.wiki_link -= 1;
             }
+            StackEntry::Call => {
+                self.stack_entry_counts.call -= 1;
+            }
             StackEntry::_Ruby => {
                 self.exit_ruby();
             }
@@ -108,6 +118,7 @@ impl<TStack: Stack<StackEntry>> StackWrapper<TStack> {
             on_strong_closing: self.stack_entry_counts.strong > 0,
             on_strikethrough_closing: self.stack_entry_counts.strikethrough > 0,
             on_wiki_link_closing: self.stack_entry_counts.wiki_link > 0,
+            on_call_closing: self.stack_entry_counts.call > 0,
 
             on_ruby_closing: self.is_in_ruby(),
         }
@@ -120,6 +131,7 @@ pub enum StackEntry {
     Strong,
     Strikethrough,
     WikiLink,
+    Call,
     /// 应仅在本模块内直接使用。
     _Ruby,
     /// 应仅在本模块内直接使用。
@@ -132,6 +144,7 @@ struct StackEntryCounts {
     strong: usize,
     strikethrough: usize,
     wiki_link: usize,
+    call: usize,
 }
 
 #[derive(PartialEq, Eq, Default, Debug)]
@@ -144,6 +157,7 @@ enum RubyState {
 
 pub enum Leaf {
     CodeSpan(LeafCodeSpan),
+    CallVerbatimArgumentValue,
 }
 impl From<LeafCodeSpan> for Leaf {
     fn from(value: LeafCodeSpan) -> Self {
@@ -169,6 +183,7 @@ pub struct EndCondition {
     pub on_strong_closing: bool,
     pub on_strikethrough_closing: bool,
     pub on_wiki_link_closing: bool,
+    pub on_call_closing: bool,
 
     pub on_ruby_closing: bool,
 }
@@ -197,6 +212,8 @@ impl EndCondition {
             Some(StackEntry::Strikethrough)
         } else if self.on_wiki_link_closing && char == m!(']') {
             Some(StackEntry::WikiLink)
+        } else if self.on_call_closing && char == m!('}') {
+            Some(StackEntry::Call)
         } else {
             None
         }

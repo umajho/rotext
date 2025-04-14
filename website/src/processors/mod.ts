@@ -5,6 +5,7 @@ import { LookupListRaw } from "../pages/Playground/preview-parts/Preview/interna
 export interface RotextProcessorProcessOptions {
   requiresLookupListRaw: boolean;
   blockExtensionList: Extension[];
+  inlineExtensionList: Extension[];
   tagNameMap: TagNameMap;
 }
 

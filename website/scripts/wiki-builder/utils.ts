@@ -4,6 +4,7 @@ import { Extension } from "@rotext/wasm-bindings-adapter";
 
 import {
   BLOCK_EXTENSION_LIST,
+  INLINE_EXTENSION_LIST,
   TAG_NAME_MAP,
 } from "../../src/custom-elements/consts";
 import { Navigation } from "../../src/resource-managers/wiki";
@@ -18,6 +19,7 @@ export function mustParseAndRenderRotext(input: string) {
       ...BLOCK_EXTENSION_LIST,
       ...EXTRA_BLOCK_EXTENSION_LIST,
     ],
+    inline_extension_list: INLINE_EXTENSION_LIST,
     should_include_block_ids: false,
   });
   if (result[0] !== "ok") {

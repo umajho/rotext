@@ -125,6 +125,16 @@ macro_rules! __event {
             name: $start..$end,
         })
     };
+    (EnterCallOnExtension (inline, $start:literal..$end:literal)) => {
+        $crate::Event::EnterCallOnExtension(rotext_core::events::Call::Inline {
+            name: $start..$end,
+        })
+    };
+    (EnterCallOnExtension (inline, $start:literal..$end:literal, id = $id:literal)) => {
+        $crate::Event::EnterCallOnExtension(rotext_core::events::Call::Inline {
+            name: $start..$end,
+        })
+    };
 
     (IndicateCallNormalArgument ()) => {
         $crate::Event::IndicateCallNormalArgument(None)
@@ -200,6 +210,7 @@ impl rotext_internal_test::support::Case for Case<'_> {
         let exec_opts = crate::ExecuteOptions {
             tag_name_map: &tag_name_map,
             block_extension_map: &fixtures::new_block_extension_map(),
+            inline_extension_map: &fixtures::new_inline_extension_map(),
             #[cfg(feature = "block-id")]
             should_include_block_ids: self.options.should_include_block_id,
         };

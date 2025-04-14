@@ -18,16 +18,18 @@ impl Error {
 
 pub enum CompiledItem<'a> {
     SimpleEvents(Range<usize>),
-    BlockTransclusion(BlockCall<'a>),
-    BlockExtension(BlockCall<'a>),
+    BlockTransclusion(CompiledItemCall<'a>),
+    BlockExtension(CompiledItemCall<'a>),
+    InlineTransclusion(CompiledItemCall<'a>),
+    InlineExtension(CompiledItemCall<'a>),
 }
 
-pub struct BlockCall<'a> {
+pub struct CompiledItemCall<'a> {
     pub name: &'a [u8],
     pub arguments: Vec<(ArgumentKey<'a>, Vec<CompiledItem<'a>>)>,
     pub verbatim_arguments: Vec<(ArgumentKey<'a>, Vec<u8>)>,
 
-    pub block_id: BlockId,
+    pub block_id: Option<BlockId>,
 }
 
 #[derive(Eq, Hash, PartialEq)]
@@ -115,6 +117,7 @@ impl<'a> Compiler<'a> {
             // 实际上并不存在问题。
             match &evs[i] {
                 Event::ExitBlock(_)
+                | Event::ExitInline
                 | Event::IndicateCallNormalArgument(_)
                 | Event::IndicateCallVerbatimArgument(_)
                     if stack_depth == 0 =>
@@ -139,24 +142,46 @@ impl<'a> Compiler<'a> {
                     i += 1;
                     loop {
                         match &evs[i] {
-                            Event::ExitBlock(_) => match call {
-                                Call::Block { id, name } => {
-                                    let call_compiled: BlockCall = BlockCall {
-                                        name: &input[name.clone()],
-                                        arguments,
-                                        verbatim_arguments,
-                                        block_id: *id,
-                                    };
+                            Event::ExitBlock(_) => {
+                                let Call::Block { id, name } = call else {
+                                    unreachable!()
+                                };
 
-                                    result.push(if is_transclusion {
-                                        CompiledItem::BlockTransclusion(call_compiled)
-                                    } else {
-                                        CompiledItem::BlockExtension(call_compiled)
-                                    });
-                                    i += 1;
-                                    break;
-                                }
-                            },
+                                let call_compiled = CompiledItemCall {
+                                    name: &input[name.clone()],
+                                    arguments,
+                                    verbatim_arguments,
+                                    block_id: Some(*id),
+                                };
+
+                                result.push(if is_transclusion {
+                                    CompiledItem::BlockTransclusion(call_compiled)
+                                } else {
+                                    CompiledItem::BlockExtension(call_compiled)
+                                });
+                                i += 1;
+                                break;
+                            }
+                            Event::ExitInline => {
+                                let Call::Inline { name } = call else {
+                                    unreachable!()
+                                };
+
+                                let call_compiled = CompiledItemCall {
+                                    name: &input[name.clone()],
+                                    arguments,
+                                    verbatim_arguments,
+                                    block_id: None,
+                                };
+
+                                result.push(if is_transclusion {
+                                    CompiledItem::InlineTransclusion(call_compiled)
+                                } else {
+                                    CompiledItem::InlineExtension(call_compiled)
+                                });
+                                i += 1;
+                                break;
+                            }
                             Event::IndicateCallNormalArgument(arg_name) => {
                                 let arg_name = if let Some(arg_name) = arg_name {
                                     ArgumentKey::Named(&input[arg_name.clone()])

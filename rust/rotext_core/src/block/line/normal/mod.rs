@@ -10,7 +10,7 @@ use crate::{
     },
     common::{is_valid_character_in_argument_name, is_valid_character_in_name, m},
     events::{NewLine, VerbatimEscaping},
-    internal_utils::string::{count_continuous_character_with_maximum, is_whitespace},
+    internal_utils::string::{count_continuous_character_with_maximum, is_whitespace, trim_end},
 };
 
 use super::{CommonEnd, ParseCommonEndOutput, global_phase, parse_common_end};
@@ -304,9 +304,7 @@ fn parse_call_name<TCtx: CursorContext>(
                 }
             }
         }
-    } else if !is_valid_character_in_name(first_char) {
-        return (range_before, End::Mismatched);
-    };
+    }
 
     let name_start = ctx.cursor();
     loop {
@@ -314,6 +312,12 @@ fn parse_call_name<TCtx: CursorContext>(
 
         match char {
             Some(m!('|') | m!('}')) if input.get(ctx.cursor() + 1) == char => {
+                let range = trim_end(input, name_start..ctx.cursor());
+                if range.is_empty() {
+                    ctx.set_cursor(range_before.end);
+                    return (range_before, End::Mismatched);
+                }
+
                 let char = *char.unwrap();
                 let extra_matched = if char == m!('}') {
                     MatchedCallNameExtraMatched::CallClosing
@@ -323,7 +327,7 @@ fn parse_call_name<TCtx: CursorContext>(
 
                 let end = End::MatchedCallName {
                     is_extension,
-                    range: trim_end(input, name_start..ctx.cursor()),
+                    range,
                     extra_matched,
                 };
                 ctx.move_cursor_forward(2);
@@ -506,12 +510,4 @@ fn parse_braced_element_related_end<TCtx: CursorContext>(
     }
 
     None
-}
-
-fn trim_end(input: &[u8], range: Range<usize>) -> Range<usize> {
-    let mut end: usize = range.end;
-    while end > range.start && is_whitespace!(input[end - 1]) {
-        end -= 1;
-    }
-    range.start..end
 }

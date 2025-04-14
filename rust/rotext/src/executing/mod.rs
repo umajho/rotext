@@ -17,6 +17,7 @@ pub mod extensions;
 pub struct NewExecutorOptions<'a> {
     pub tag_name_map: &'a TagNameMap<'a>,
     pub block_extension_map: &'a HashMap<&'a [u8], extensions::Extension<'a>>,
+    pub inline_extension_map: &'a HashMap<&'a [u8], extensions::Extension<'a>>,
 
     #[cfg(feature = "block-id")]
     pub should_include_block_ids: bool,
@@ -25,6 +26,7 @@ pub struct NewExecutorOptions<'a> {
 pub struct Executor<'a> {
     tag_name_map: &'a TagNameMap<'a>,
     block_extension_map: &'a HashMap<&'a [u8], extensions::Extension<'a>>,
+    inline_extension_map: &'a HashMap<&'a [u8], extensions::Extension<'a>>,
 
     #[cfg(feature = "block-id")]
     with_block_id: bool,
@@ -130,12 +132,13 @@ impl CallErrorBadParameters {
 }
 
 struct RenderCallErrorInput<'a> {
+    is_block: bool,
     call_type: CallType,
     call_name: &'a [u8],
     error: CallError<'a>,
 
     #[cfg(feature = "block-id")]
-    block_id: BlockId,
+    block_id: Option<BlockId>,
 }
 
 impl<'a> Executor<'a> {
@@ -149,6 +152,7 @@ impl<'a> Executor<'a> {
         Self {
             tag_name_map: opts.tag_name_map,
             block_extension_map: opts.block_extension_map,
+            inline_extension_map: opts.inline_extension_map,
             #[cfg(feature = "block-id")]
             with_block_id: opts.should_include_block_ids,
             renderer: renderer::Renderer::new(renderer_opts),
@@ -170,17 +174,21 @@ impl<'a> Executor<'a> {
                     let evs = &parsed[range.clone()];
                     self.renderer.render_events(buf, input, evs, &mut stack);
                 }
-                CompiledItem::BlockTransclusion(block_call) => {
+                CompiledItem::BlockTransclusion(call) | CompiledItem::InlineTransclusion(call) => {
                     self.render_call_error(buf, RenderCallErrorInput {
+                        is_block: matches!(item, CompiledItem::BlockTransclusion(_)),
                         call_type: CallType::Transclusion,
-                        call_name: block_call.name,
+                        call_name: call.name,
                         error: CallError::Todo,
                         #[cfg(feature = "block-id")]
-                        block_id: block_call.block_id,
+                        block_id: call.block_id,
                     });
                 }
-                CompiledItem::BlockExtension(block_call) => {
-                    self.render_block_extension(buf, input, parsed, block_call);
+                CompiledItem::BlockExtension(call) => {
+                    self.render_block_extension(buf, input, parsed, call);
+                }
+                CompiledItem::InlineExtension(call) => {
+                    self.render_inline_extension(buf, input, parsed, call);
                 }
             }
         }
@@ -191,15 +199,23 @@ impl<'a> Executor<'a> {
         buf: &mut Vec<u8>,
         input: &'a [u8],
         parsed: &[Event],
-        block_call: &crate::compiling::BlockCall<'a>,
+        call: &crate::compiling::CompiledItemCall<'a>,
     ) {
-        let Some(ext) = self.block_extension_map.get(block_call.name) else {
+        #[cfg(all(debug_assertions, feature = "block-id"))]
+        {
+            assert!(call.block_id.is_some());
+        }
+
+        let is_block = true;
+
+        let Some(ext) = self.block_extension_map.get(call.name) else {
             self.render_call_error(buf, RenderCallErrorInput {
+                is_block,
                 call_type: CallType::Extension,
-                call_name: block_call.name,
-                error: CallError::UnknownCallee(block_call.name),
+                call_name: call.name,
+                error: CallError::UnknownCallee(call.name),
                 #[cfg(feature = "block-id")]
-                block_id: block_call.block_id,
+                block_id: call.block_id,
             });
             return;
         };
@@ -212,18 +228,54 @@ impl<'a> Executor<'a> {
 
         match ext {
             extensions::Extension::ElementMapper(ext) => {
-                self.render_block_element_mapper_extension(buf, input, parsed, block_call, ext);
+                self.render_element_mapper_extension(buf, input, parsed, is_block, call, ext);
             }
             extensions::Extension::Alias { .. } => unreachable!(),
         }
     }
 
-    fn render_block_element_mapper_extension(
+    fn render_inline_extension(
         &self,
         buf: &mut Vec<u8>,
         input: &'a [u8],
         parsed: &[Event],
-        block_call: &compiling::BlockCall<'a>,
+        call: &crate::compiling::CompiledItemCall<'a>,
+    ) {
+        let is_block = false;
+
+        let Some(ext) = self.inline_extension_map.get(call.name) else {
+            self.render_call_error(buf, RenderCallErrorInput {
+                is_block,
+                call_type: CallType::Extension,
+                call_name: call.name,
+                error: CallError::UnknownCallee(call.name),
+                #[cfg(feature = "block-id")]
+                block_id: None,
+            });
+            return;
+        };
+
+        let ext = if let extensions::Extension::Alias { to } = ext {
+            self.inline_extension_map.get(to).unwrap()
+        } else {
+            ext
+        };
+
+        match ext {
+            extensions::Extension::ElementMapper(ext) => {
+                self.render_element_mapper_extension(buf, input, parsed, is_block, call, ext);
+            }
+            extensions::Extension::Alias { .. } => unreachable!(),
+        }
+    }
+
+    fn render_element_mapper_extension(
+        &self,
+        buf: &mut Vec<u8>,
+        input: &'a [u8],
+        parsed: &[Event],
+        is_block: bool,
+        call: &compiling::CompiledItemCall<'a>,
         ext: &extensions::ExtensionElementMapper<'a>,
     ) {
         // 不记别名。
@@ -237,8 +289,8 @@ impl<'a> Executor<'a> {
         let mut bad: Option<CallErrorBadParameters> = None;
         let mut bad_verbatim: Option<CallErrorBadParameters> = None;
 
-        for (key, value) in &block_call.arguments {
-            self.process_block_element_mapper_extension_argument(
+        for (key, value) in &call.arguments {
+            self.process_element_mapper_extension_argument(
                 &mut content,
                 input,
                 parsed,
@@ -252,8 +304,8 @@ impl<'a> Executor<'a> {
             );
         }
 
-        for (key, value) in &block_call.verbatim_arguments {
-            self.process_block_element_mapper_extension_verbatim_argument(
+        for (key, value) in &call.verbatim_arguments {
+            self.process_element_mapper_extension_verbatim_argument(
                 &mut attrs,
                 ProcessBlockElementMapperExtensionVerbatimArgumentParameters {
                     ext,
@@ -288,14 +340,15 @@ impl<'a> Executor<'a> {
 
         if bad.is_some() || bad_verbatim.is_some() {
             self.render_call_error(buf, RenderCallErrorInput {
+                is_block,
                 call_type: CallType::Extension,
-                call_name: block_call.name,
+                call_name: call.name,
                 error: CallError::BadParameters {
                     normal: bad.map(Box::new),
                     verbatim: bad_verbatim.map(Box::new),
                 },
                 #[cfg(feature = "block-id")]
-                block_id: block_call.block_id,
+                block_id: call.block_id,
             });
             return;
         }
@@ -304,33 +357,39 @@ impl<'a> Executor<'a> {
             attrs.push((b"variant".to_vec(), variant));
         }
 
+        #[allow(unused_mut)]
+        let mut attrs = attrs
+            .iter()
+            .map(|(k, v)| (k.as_slice(), *v))
+            .collect::<Vec<_>>();
+
         #[cfg(feature = "block-id")]
-        let mut buffer = if self.with_block_id {
-            Some(itoa::Buffer::new())
-        } else {
-            None
-        };
-        #[cfg(feature = "block-id")]
-        if let Some(buffer) = &mut buffer {
-            attrs.push((
-                b"data-block-id".to_vec(),
-                buffer.format(block_call.block_id.value()).as_bytes(),
-            ));
+        {
+            if let Some(block_id) = call.block_id {
+                let mut buffer = if self.with_block_id {
+                    Some(itoa::Buffer::new())
+                } else {
+                    None
+                };
+                if let Some(buffer) = &mut buffer {
+                    attrs.push((b"data-block-id", buffer.format(block_id.value()).as_bytes()));
+                }
+
+                crate::utils::render_eopening_tag(buf, ext.tag_name, &attrs);
+            } else {
+                crate::utils::render_eopening_tag(buf, ext.tag_name, &attrs);
+            }
+        }
+        #[cfg(not(feature = "block-id"))]
+        {
+            crate::utils::render_eopening_tag(buf, ext.tag_name, &attrs);
         }
 
-        crate::utils::render_eopening_tag(
-            buf,
-            ext.tag_name,
-            &attrs
-                .iter()
-                .map(|(k, v)| (k.as_slice(), *v))
-                .collect::<Vec<_>>(),
-        );
         buf.extend(&content);
         crate::utils::render_closing_tag(buf, ext.tag_name);
     }
 
-    fn process_block_element_mapper_extension_argument(
+    fn process_element_mapper_extension_argument(
         &self,
         content_buf: &mut Vec<u8>,
         input: &'a [u8],
@@ -370,7 +429,7 @@ impl<'a> Executor<'a> {
         }
     }
 
-    fn process_block_element_mapper_extension_verbatim_argument(
+    fn process_element_mapper_extension_verbatim_argument(
         &self,
         attrs: &mut Vec<(Vec<u8>, &'a [u8])>,
         params: ProcessBlockElementMapperExtensionVerbatimArgumentParameters<'a, '_>,
@@ -415,21 +474,33 @@ impl<'a> Executor<'a> {
             attrs.push((b"error-value", error_value));
         }
 
-        #[cfg(feature = "block-id")]
-        let mut buffer = if self.with_block_id {
-            Some(itoa::Buffer::new())
+        let tag = if input.is_block {
+            self.tag_name_map.block_call_error
         } else {
-            None
+            self.tag_name_map.inline_call_error
         };
-        #[cfg(feature = "block-id")]
-        if let Some(buffer) = &mut buffer {
-            attrs.push((
-                b"data-block-id",
-                buffer.format(input.block_id.value()).as_bytes(),
-            ));
-        }
 
-        crate::utils::render_empty_element(buf, self.tag_name_map.block_call_error, &attrs);
+        #[cfg(feature = "block-id")]
+        {
+            if let Some(block_id) = input.block_id {
+                let mut buffer = if self.with_block_id {
+                    Some(itoa::Buffer::new())
+                } else {
+                    None
+                };
+                if let Some(buffer) = &mut buffer {
+                    attrs.push((b"data-block-id", buffer.format(block_id.value()).as_bytes()));
+                }
+
+                crate::utils::render_empty_element(buf, tag, &attrs);
+            } else {
+                crate::utils::render_empty_element(buf, tag, &attrs);
+            }
+        }
+        #[cfg(not(feature = "block-id"))]
+        {
+            crate::utils::render_empty_element(buf, tag, &attrs);
+        }
     }
 }
 

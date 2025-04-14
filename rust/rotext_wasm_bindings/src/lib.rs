@@ -27,6 +27,7 @@ static INIT: Once = Once::new();
 pub struct ParseAndRenderOptions {
     pub tag_name_map: data_exchange::tag_name_map::TagNameMapInput,
     pub block_extension_list: Vec<data_exchange::extension::ExtensionInput>,
+    pub inline_extension_list: Vec<data_exchange::extension::ExtensionInput>,
     pub should_include_block_ids: bool,
 }
 
@@ -61,10 +62,19 @@ pub fn parse_and_render(input: &[u8], opts: &[u8]) -> Result<Vec<u8>, String> {
 
     let tag_name_map = opts.tag_name_map.convert();
     let block_extension_map = match convert_to_extension_map(&opts.block_extension_list) {
-        Ok(block_extension_map) => block_extension_map,
+        Ok(map) => map,
         Err(error) => {
             return Err(format!(
                 "InputError/BlockExtensionMapConversionError|{}",
+                error
+            ));
+        }
+    };
+    let inline_extension_map = match convert_to_extension_map(&opts.inline_extension_list) {
+        Ok(map) => map,
+        Err(error) => {
+            return Err(format!(
+                "InputError/InlineExtensionMapConversionError|{}",
                 error
             ));
         }
@@ -90,6 +100,7 @@ pub fn parse_and_render(input: &[u8], opts: &[u8]) -> Result<Vec<u8>, String> {
     let execute_opts = rotext::ExecuteOptions {
         tag_name_map: &tag_name_map,
         block_extension_map: &block_extension_map,
+        inline_extension_map: &inline_extension_map,
         should_include_block_ids: opts.should_include_block_ids,
     };
     let html = rotext::execute(input, &all_events, &compiled, &execute_opts);

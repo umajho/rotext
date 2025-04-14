@@ -192,3 +192,51 @@ pub fn new_demo_block_extension_map_for_test() -> HashMap<&'static [u8], Extensi
 
     map
 }
+
+#[cfg(any(test, feature = "test"))]
+pub fn new_demo_inline_extension_map_for_test() -> HashMap<&'static [u8], Extension<'static>> {
+    let mut map: HashMap<&'static [u8], Extension<'static>> = HashMap::new();
+
+    map.insert(
+        b"Span",
+        Extension::ElementMapper(Box::new(ExtensionElementMapper {
+            tag_name: b"span",
+            variant: None,
+            parameters: HashMap::new(),
+            required_parameters: HashSet::new(),
+            verbatim_parameters: HashMap::new(),
+            required_verbatim_parameters: HashSet::new(),
+        })),
+    );
+
+    map.insert(
+        b"ScratchOff",
+        Extension::ElementMapper(Box::new(ExtensionElementMapper {
+            tag_name: b"x-scratch-off",
+            variant: None,
+            parameters: {
+                let mut map: HashMap<
+                    &'static [u8],
+                    ParameterWrapper<ExtensionElementMapperParameter>,
+                > = HashMap::new();
+                map.insert(
+                    b"1",
+                    ParameterWrapper::Real(ExtensionElementMapperParameter {
+                        mapping_to: ExtensionElementMapperParameterMappingTo::UnnamedSlot,
+                    }),
+                );
+                map
+            },
+            required_parameters: {
+                let mut set: HashSet<&'static [u8]> = HashSet::new();
+                set.insert(b"1");
+                set
+            },
+            verbatim_parameters: HashMap::new(),
+            required_verbatim_parameters: HashSet::new(),
+        })),
+    );
+    map.insert("刮开".as_bytes(), Extension::Alias { to: b"ScratchOff" });
+
+    map
+}
