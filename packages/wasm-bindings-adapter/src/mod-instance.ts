@@ -5,11 +5,13 @@ const textEncoder = new TextEncoder();
 export interface ParseAndRenderOptions {
   tag_name_map: TagNameMap;
   block_extension_list: Extension[];
+  inline_extension_list: Extension[];
   should_include_block_ids: boolean;
 }
 
 export interface TagNameMap {
   block_call_error: string;
+  inline_call_error: string;
   code_block: string;
   ref_link: string;
   dicexp: string;

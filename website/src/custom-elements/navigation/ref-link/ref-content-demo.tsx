@@ -12,7 +12,11 @@ import { createSignalGetterFromWatchable } from "../../hooks";
 import { navigateToAddress } from "../../../utils/navigation";
 import { Address } from "../../../utils/address";
 import { useRotextProcessorsStore } from "../../../contexts/rotext-processors-store";
-import { BLOCK_EXTENSION_LIST, TAG_NAME_MAP } from "../../consts";
+import {
+  BLOCK_EXTENSION_LIST,
+  INLINE_EXTENSION_LIST,
+  TAG_NAME_MAP,
+} from "../../consts";
 
 import { styleProvider as styleProviderForPreflight } from "../../../styles/preflight";
 
@@ -108,6 +112,7 @@ const AddressDescription: Component<{
           const result = processor.process(src, {
             requiresLookupListRaw: false,
             blockExtensionList: BLOCK_EXTENSION_LIST,
+            inlineExtensionList: INLINE_EXTENSION_LIST,
             tagNameMap: TAG_NAME_MAP,
           });
           if (result.error) throw new Error("TODO!!");

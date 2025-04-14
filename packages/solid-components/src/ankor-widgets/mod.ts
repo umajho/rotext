@@ -10,3 +10,5 @@ export {
   type Properties as AnkorWidgetNavigationProperties,
   registerCustomElement as registerCustomElementForAnkorWidgetNavigation,
 } from "./Navigation/mod";
+
+export { HorizontalRule, PinButton } from "./support/mod";

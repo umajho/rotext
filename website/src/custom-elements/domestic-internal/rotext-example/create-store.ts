@@ -3,13 +3,21 @@ import { createEffect, createMemo, createSignal, on } from "solid-js";
 import { useRotextProcessorsStore } from "../../../contexts/rotext-processors-store";
 import { TAG_NAME_MAP } from "../../mod";
 import { formatHTML } from "../../../utils/html-formatting";
-import { BLOCK_EXTENSION_LIST } from "../../consts";
+import { BLOCK_EXTENSION_LIST, INLINE_EXTENSION_LIST } from "../../consts";
+import { RotextProcessorProcessOptions } from "../../../processors/mod";
 
 export type CurrentOutput =
   | [type: "for-unmodified", html: string]
   | [type: "for-modified", html: string];
 
 const formattedExpectedOutputCache: Record<string, string> = {};
+
+const rotextProcessOptions: RotextProcessorProcessOptions = {
+  requiresLookupListRaw: false,
+  blockExtensionList: BLOCK_EXTENSION_LIST,
+  inlineExtensionList: INLINE_EXTENSION_LIST,
+  tagNameMap: TAG_NAME_MAP,
+};
 
 export function createRotextExampleStore(opts: {
   originalInput: string;
@@ -73,11 +81,10 @@ export function createRotextExampleStore(opts: {
           if (
             shouldUpdateActualOutput || actualOutputForOriginalInput() === null
           ) {
-            const result = processor.process(opts.originalInput, {
-              requiresLookupListRaw: false,
-              blockExtensionList: BLOCK_EXTENSION_LIST,
-              tagNameMap: TAG_NAME_MAP,
-            });
+            const result = processor.process(
+              opts.originalInput,
+              rotextProcessOptions,
+            );
             if (result.error) {
               throw new Error("TODO!!");
             }
@@ -88,11 +95,7 @@ export function createRotextExampleStore(opts: {
         if (getIsInputUnmodified()) {
           setCurrentOutput(["for-unmodified", formattedExpectedOutput]);
         } else {
-          const result = processor.process(input, {
-            requiresLookupListRaw: false,
-            blockExtensionList: BLOCK_EXTENSION_LIST,
-            tagNameMap: TAG_NAME_MAP,
-          });
+          const result = processor.process(input, rotextProcessOptions);
           if (result.error) {
             throw new Error("TODO!!");
           }
