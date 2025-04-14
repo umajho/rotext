@@ -25,6 +25,7 @@ pub struct NewRendererOptions<'a> {
 #[derive(Clone)]
 pub struct TagNameMap<'a> {
     pub block_call_error: &'a [u8],
+    pub inline_call_error: &'a [u8],
 
     pub code_block: &'a [u8],
 
@@ -38,6 +39,7 @@ impl TagNameMap<'_> {
     pub fn new_demo_instance_for_test() -> Self {
         Self {
             block_call_error: b"x-block-call-error",
+            inline_call_error: b"x-inline-call-error",
 
             code_block: b"x-code-block",
 

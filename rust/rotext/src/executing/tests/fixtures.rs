@@ -70,6 +70,70 @@ pub fn new_block_extension_map() -> HashMap<&'static [u8], Extension<'static>> {
     map
 }
 
+pub fn new_inline_extension_map() -> HashMap<&'static [u8], Extension<'static>> {
+    let mut map: HashMap<&'static [u8], Extension<'static>> = HashMap::new();
+
+    map.insert(
+        b"AllOptional",
+        Extension::ElementMapper(Box::new(ExtensionElementMapper {
+            tag_name: b"i-all-optional",
+            variant: None,
+            parameters: new_parametr_map(),
+            required_parameters: HashSet::new(),
+            verbatim_parameters: new_verbatim_parametr_map(),
+            required_verbatim_parameters: HashSet::new(),
+        })),
+    );
+
+    map.insert(
+        b"SomeNormalRequired",
+        Extension::ElementMapper(Box::new(ExtensionElementMapper {
+            tag_name: b"i-some-normal-required",
+            variant: None,
+            parameters: new_parametr_map(),
+            required_parameters: {
+                let mut set: HashSet<&'static [u8]> = HashSet::new();
+                set.insert(b"1");
+                set
+            },
+            verbatim_parameters: new_verbatim_parametr_map(),
+            required_verbatim_parameters: HashSet::new(),
+        })),
+    );
+
+    map.insert(
+        b"SomeVerbatimRequired",
+        Extension::ElementMapper(Box::new(ExtensionElementMapper {
+            tag_name: b"i-some-verbatim-required",
+            variant: None,
+            parameters: new_parametr_map(),
+            required_parameters: HashSet::new(),
+            verbatim_parameters: new_verbatim_parametr_map(),
+            required_verbatim_parameters: {
+                let mut set: HashSet<&'static [u8]> = HashSet::new();
+                set.insert(b"bar");
+                set
+            },
+        })),
+    );
+
+    map.insert(
+        b"WithVariant",
+        Extension::ElementMapper(Box::new(ExtensionElementMapper {
+            tag_name: b"i-with-variant",
+            variant: Some(b"var"),
+            parameters: new_parametr_map(),
+            required_parameters: HashSet::new(),
+            verbatim_parameters: new_verbatim_parametr_map(),
+            required_verbatim_parameters: HashSet::new(),
+        })),
+    );
+
+    map.insert(b"Alias", Extension::Alias { to: b"AllOptional" });
+
+    map
+}
+
 fn new_parametr_map()
 -> HashMap<&'static [u8], ParameterWrapper<'static, ExtensionElementMapperParameter<'static>>> {
     let mut map: HashMap<&'static [u8], ParameterWrapper<ExtensionElementMapperParameter>> =

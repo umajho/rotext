@@ -440,7 +440,7 @@ fn it_works_in_block_phase_for_simple_events() {
 
 #[cfg(feature = "block-id")]
 #[test]
-fn it_works_in_block_phase_for_simple_events_with_block_id() {
+fn it_works_in_block_phase_for_simple_events_with_feature_block_id() {
     let table: Vec<GroupedCases<_>> = vec![GroupedCases {
         group: "基础",
         cases: vec![
@@ -765,7 +765,7 @@ fn it_works_in_block_phase_for_events_involving_calls() {
 
 #[cfg(feature = "block-id")]
 #[test]
-fn it_works_in_block_phase_for_events_involving_calls_with_block_id() {
+fn it_works_in_block_phase_for_events_involving_calls_with_feature_block_id() {
     let table: Vec<GroupedCases<_>> = vec![GroupedCases {
         group: "调用>扩展",
         cases: vec![case!(
@@ -845,6 +845,39 @@ fn it_works_in_inline_phase() {
             )],
         },
     ];
+
+    run_cases(table);
+}
+
+#[test]
+fn it_works_in_inline_phase_for_events_involving_calls() {
+    let table: Vec<GroupedCases<_>> = vec![GroupedCases {
+        group: "调用>扩展",
+        cases: vec![case!(
+            "AllOptional",
+            [(EnterCallOnExtension(inline, 0..11)), (@inline ExitInline(..)),],
+            r#"<i-all-optional></i-all-optional>"#,
+        )],
+    }];
+
+    // 由于块级阶段与行内阶段目前渲染调用使用同样的实现，这里就不重复测试了。
+    // TODO: 也许应该实现一个函数用于同时生成这方面块级阶段与行内阶段的测试用例。
+
+    run_cases(table);
+}
+
+#[cfg(feature = "block-id")]
+#[test]
+fn it_works_in_inline_phase_for_events_involving_calls_with_feature_block_id() {
+    let table: Vec<GroupedCases<_>> = vec![GroupedCases {
+        group: "调用>扩展",
+        cases: vec![case!(
+            @with_id,
+            "Alias",
+            [(EnterCallOnExtension(inline, 0..5, id = 1)), (@inline ExitInline(..)),],
+            r#"<i-all-optional></i-all-optional>"#,
+        )],
+    }];
 
     run_cases(table);
 }

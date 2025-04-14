@@ -22,6 +22,8 @@ fn compile_and_execute(input: &[u8], events: &[rotext::Event]) {
         // 由于 `new_demo_block_extension_map_for_test` 位于 `test` 特性旗帜之后，这里会误报错误。
         block_extension_map: &rotext::executing::extensions::new_demo_block_extension_map_for_test(
         ),
+        inline_extension_map:
+            &rotext::executing::extensions::new_demo_inline_extension_map_for_test(),
         #[cfg(feature = "block-id")]
         should_include_block_ids: true,
     };
