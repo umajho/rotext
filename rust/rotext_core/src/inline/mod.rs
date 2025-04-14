@@ -608,6 +608,7 @@ mod bracketed {
 
             let mut slot_content: Option<MiniInclusiveRange> = None;
             let mut after_slot = AfterSlot::Nothing;
+            let mut has_anchor = false;
 
             cursor.skip_whitespaces(input);
 
@@ -638,13 +639,21 @@ mod bracketed {
                             return (None, AfterSlot::Nothing);
                         }
                     }
-                    char if !is_valid_character_in_name(char) => {
+                    char if !(is_valid_character_in_name(char)
+                        || (char == m!('#') && !has_anchor)) =>
+                    {
                         return (None, AfterSlot::Nothing);
                     }
-                    _ => match slot_content {
-                        Some(ref mut slot_content) => slot_content.end = i,
-                        None => slot_content = Some(MiniInclusiveRange { start: i, end: i }),
-                    },
+                    _ => {
+                        if char == m!('#') {
+                            has_anchor = true;
+                        }
+
+                        match slot_content {
+                            Some(ref mut slot_content) => slot_content.end = i,
+                            None => slot_content = Some(MiniInclusiveRange { start: i, end: i }),
+                        }
+                    }
                 }
             }
 
