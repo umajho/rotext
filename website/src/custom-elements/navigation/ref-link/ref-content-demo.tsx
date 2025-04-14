@@ -6,7 +6,7 @@ import {
   StyleProvider,
 } from "@rolludejo/internal-web-shared/shadow-root";
 
-import { AnkorWidgetNavigationInnerRenderer } from "@rotext/solid-components/internal";
+import { AnkorWidgetNavigationInnerRenderer } from "@rotext/solid-components";
 
 import { createSignalGetterFromWatchable } from "../../hooks";
 import { navigateToAddress } from "../../../utils/navigation";

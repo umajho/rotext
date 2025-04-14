@@ -1,5 +1,5 @@
 import { registerCustomElementForStepsRepresentation } from "@dicexp/solid-components";
-import { registerCustomElementForAnkorWidgetDicexp } from "@rotext/solid-components/internal";
+import { registerCustomElementForAnkorWidgetDicexp } from "@rotext/solid-components";
 
 import { EvaluatingWorkerManager } from "@dicexp/naive-evaluator-in-worker";
 

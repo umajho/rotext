@@ -13,7 +13,7 @@ import { Idiomorph } from "idiomorph/dist/idiomorph.esm.js";
 
 import * as Ankor from "ankor";
 
-import { ErrorAlert } from "@rotext/solid-components/internal";
+import { ErrorAlert } from "@rotext/solid-components";
 
 import { debounceEventHandler } from "../../../../utils/mod";
 import { Address } from "../../../../utils/address";

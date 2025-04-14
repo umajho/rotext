@@ -3,7 +3,7 @@ import { registerCustomElementForStepsRepresentation } from "@dicexp/solid-compo
 import {
   ErrorAlert,
   registerCustomElementForAnkorWidgetDicexp,
-} from "@rotext/solid-components/internal";
+} from "@rotext/solid-components";
 
 import { Loading } from "../../components/ui/mod";
 

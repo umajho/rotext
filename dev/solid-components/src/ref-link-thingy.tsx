@@ -1,6 +1,6 @@
 import {
   registerCustomElementForAnkorWidgetNavigation,
-} from "@rotext/solid-components/internal";
+} from "@rotext/solid-components";
 
 import { BACKGROUND_COLOR, baseStyleProviders } from "./shared-thingy";
 

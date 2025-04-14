@@ -5,7 +5,7 @@ import { type Component, createSignal, Index } from "solid-js";
 
 import * as Ankor from "ankor";
 
-import { DicexpEvaluation } from "@rotext/solid-components/internal";
+import { DicexpEvaluation } from "@rotext/solid-components";
 
 import { registerCustomElementForRefLink } from "./ref-link-thingy";
 import { registerCustomElementsForDicexp } from "./dicexp-thingy";
