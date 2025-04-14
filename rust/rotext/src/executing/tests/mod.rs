@@ -492,7 +492,7 @@ fn it_works_in_block_phase_for_simple_events_with_block_id() {
 fn it_works_in_block_phase_for_events_involving_calls() {
     let table: Vec<GroupedCases<_>> = vec![
         GroupedCases {
-            group: "调用>a扩展",
+            group: "调用>扩展",
             cases: vec![
                 case!(
                     "AllOptional",
