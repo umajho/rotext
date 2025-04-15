@@ -103,7 +103,7 @@ function createExternalLinkComponent(): Component<{
                   <p>
                     该链接<span class="text-red-500">
                       十分危险，可能用于执行恶意代码
-                    </span>，请不要在不理解的情况下使用。
+                    </span>，请不要在不理解的情况下使用！
                   </p>
                   <p class="py-2">
                     以下是该链接的完整地址，请手动复制：
