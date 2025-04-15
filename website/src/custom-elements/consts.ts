@@ -3,6 +3,7 @@ import { Extension, TagNameMap } from "@rotext/wasm-bindings-adapter";
 export const TAG_NAME_MAP = {
   block_call_error: "x-block-call-error",
   inline_call_error: "x-inline-call-error",
+  external_link: "x-external-link",
   scratch_off: "x-scratch-off",
   ref_link: "x-ref-link",
   dicexp: "x-dicexp",
@@ -84,6 +85,18 @@ export const INLINE_EXTENSION_LIST: Extension[] = [
       verbatim_parameters: {},
     },
   },
+  {
+    ElementMapper: {
+      name: "ExternalLink",
+      tag_name: TAG_NAME_MAP.external_link,
+      variant: null,
+      parameters: {},
+      verbatim_parameters: {
+        "1": { Real: { is_optional: false, mapping_to_attribute: "address" } },
+      },
+    },
+  },
+  { Alias: { name: "外部链接", to: "ExternalLink" } },
   {
     ElementMapper: {
       name: "ScratchOff",

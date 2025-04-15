@@ -7,6 +7,7 @@ import {
   AnkorPopperHorizontalRule,
   AnkorPopperPinButton,
   gray500,
+  mouseDownNoDoubleClickToSelect,
 } from "@rotext/solid-components";
 
 import { styleProvider as styleProviderForPreflight } from "../../../styles/preflight";
@@ -76,19 +77,6 @@ function createInlineCallErrorComponent(): Component<{
 
     return <>{component}</>;
   };
-}
-
-/**
- * see: <https://stackoverflow.com/a/43321596>
- *
- * 复制自 `@rotext/solid-components` 中的 `src/utils/events.ts`。
- *
- * FIXME!!: 好像没用？（不止此处，其他挂件也是。）
- */
-export function mouseDownNoDoubleClickToSelect(ev: MouseEvent) {
-  if (ev.detail > 1) {
-    ev.preventDefault();
-  }
 }
 
 export function registerCustomElement(tag: string) {
