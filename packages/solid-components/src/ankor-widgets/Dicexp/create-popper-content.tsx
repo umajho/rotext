@@ -2,7 +2,10 @@ import { Component, createSignal, Match, Show, Switch } from "solid-js";
 
 import * as Ankor from "ankor";
 
-import { HorizontalRule, PinButton } from "../support/mod";
+import {
+  AnkorPopperHorizontalRule,
+  AnkorPopperPinButton,
+} from "../../ankor-support/mod";
 import { ProcessedProperties } from "./props-for-create-dicexp-component";
 import {
   ErrorAlertComponent,
@@ -30,14 +33,14 @@ export function createPopperContent(opts: {
       <div class="flex flex-col min-w-[12rem] font-sans text-gray-400">
         <div class="flex justify-between items-center px-2 leading-6">
           <div class="flex items-center gap-2">
-            <PinButton
+            <AnkorPopperPinButton
               displayMode={props.displayMode}
               onClick={props.handlerForClickOnPinIcon}
             />
             <span>掷骰</span>
           </div>
         </div>
-        <HorizontalRule color="#fffa" />
+        <AnkorPopperHorizontalRule color="#fffa" />
         <div style={{ padding: "0.5rem 0.5rem 0 0.5rem" }}>
           <div style={{ padding: "0 0.5rem 0 0.5rem" }}>
             <Switch>

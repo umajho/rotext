@@ -15,7 +15,10 @@ import { ComputedColor } from "@rolludejo/internal-web-shared/styling";
 
 import { gray500, mouseDownNoDoubleClickToSelect } from "../../utils/mod";
 
-import { HorizontalRule, PinButton } from "../support/mod";
+import {
+  AnkorPopperHorizontalRule,
+  AnkorPopperPinButton,
+} from "../../ankor-support/mod";
 
 import { createWatchableFromSignalGetter, Watchable } from "./hooks";
 
@@ -162,7 +165,7 @@ export function createNavigationComponent(
             <div class="
               flex justify-between items-center px-2 leading-6
               text-gray-300 font-sans font-light">
-              <PinButton
+              <AnkorPopperPinButton
                 displayMode={props.displayMode}
                 onClick={props.handlerForClickOnPinIcon}
               />
@@ -178,7 +181,7 @@ export function createNavigationComponent(
                 )}
               </Show>
             </div>
-            <HorizontalRule color="#fffa" />
+            <AnkorPopperHorizontalRule color="#fffa" />
             <div ref={refEl} />
           </div>
         );

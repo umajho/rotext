@@ -9,11 +9,11 @@ import {
   ShadowRootAttacher,
 } from "@rolludejo/internal-web-shared/shadow-root";
 
-import styles from "./PinButton.css?inline";
+import styles from "./AnkorPopperPinButton.css?inline";
 
 const styleProvider = createStyleProviderFromCSSText(styles);
 
-const PinButton: Component<{
+export const AnkorPopperPinButton: Component<{
   displayMode: () => Ankor.DisplayMode;
   onClick: () => void;
 }> = (props) => {
@@ -32,5 +32,3 @@ const PinButton: Component<{
     </ShadowRootAttacher>
   );
 };
-
-export default PinButton;

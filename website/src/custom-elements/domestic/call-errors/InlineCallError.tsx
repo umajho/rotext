@@ -3,9 +3,11 @@ import { customElement } from "solid-element";
 
 import * as Ankor from "ankor";
 
-import { gray500 } from "@rotext/solid-components";
-// FIXME!!: 应该正式由 `@rotext/solid-components` 或者其他哪里 export。
-import { HorizontalRule, PinButton } from "@rotext/solid-components/internal";
+import {
+  AnkorPopperHorizontalRule,
+  AnkorPopperPinButton,
+  gray500,
+} from "@rotext/solid-components";
 
 import { styleProvider as styleProviderForPreflight } from "../../../styles/preflight";
 import { styleProvider as styleProviderForTailwind } from "../../../styles/tailwind";
@@ -47,14 +49,14 @@ function createInlineCallErrorComponent(): Component<{
           <div class="flex flex-col font-sans text-gray-400">
             <div class="flex justify-between items-center px-2 leading-6">
               <div class="flex items-center gap-2">
-                <PinButton
+                <AnkorPopperPinButton
                   displayMode={props.displayMode}
                   onClick={props.handlerForClickOnPinIcon}
                 />
                 <span>错误信息</span>
               </div>
             </div>
-            <HorizontalRule color="#fffa" />
+            <AnkorPopperHorizontalRule color="#fffa" />
             <div class="p-4">
               <ErrorMessage
                 errorType={outerProps["error-type"]}
