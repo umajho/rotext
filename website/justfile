@@ -3,6 +3,7 @@ set fallback
 prepare:
 	just build-rotext
 	just build-wiki
+	just build-solid-components
 
 dev: prepare
 	pnpm run dev

@@ -11,3 +11,6 @@ build-rotext:
 build-rotext-dev:
   just rust build-rotext-wasm-bindings-dev
   cd packages/wasm-bindings-adapter && pnpm run build
+
+build-solid-components:
+  cd packages/solid-components && just build
