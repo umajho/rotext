@@ -10,7 +10,7 @@
 
 {{ #Example
 || `input=
-[{#span|内容}]。
+[{#Span|内容}]。
 || `expected=
 <p><span>内容</span>。</p>
 }}
