@@ -1,4 +1,4 @@
-import { Accessor, Component, createMemo, Match, Switch } from "solid-js";
+import { Component, createMemo, Match, Switch } from "solid-js";
 import { customElement } from "solid-element";
 import { OcLinkexternal3 } from "solid-icons/oc";
 
