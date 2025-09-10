@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import titleToHeadingsMap from "../../public/static/generated/syntax-reference/files-headings.json" with {
+import titleToHeadingsMap from "../public/static/generated/syntax-reference/files-headings.json" with {
   type: "json",
 };
 
@@ -15,7 +15,7 @@ const headingToTitleMap = (() => {
   return m;
 })();
 
-const FOLDER_PATH = path.join(__dirname, "../../../docs/语法参考");
+const FOLDER_PATH = path.join(__dirname, "../../docs/语法参考");
 
 async function main() {
   const filePaths = (await fs.readdir(FOLDER_PATH, { recursive: true }))

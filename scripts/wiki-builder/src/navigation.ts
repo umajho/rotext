@@ -1,6 +1,6 @@
 import { type HTMLElement, parse as parseHTML } from "node-html-parser";
 
-import { Navigation } from "../../../src/resource-managers/wiki";
+import { Navigation } from "../../../website/src/resource-managers/wiki";
 
 import { extractHeadings, mustParseAndRenderRotext } from "./utils";
 

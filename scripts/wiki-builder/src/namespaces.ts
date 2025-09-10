@@ -1,10 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import z from "zod";
+import z from "zod/v4";
 import YAML from "yaml";
 
-import { Navigation } from "../../../src/resource-managers/wiki";
+import { Navigation } from "../../../website/src/resource-managers/wiki";
 
 import { buildNavigation as parseNavigation } from "./navigation";
 import { DiscoveredNamespace, discoverPagesInNamespace } from "./discovery";

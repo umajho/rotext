@@ -1,9 +1,11 @@
 {
   "type": "module",
-  "devDependencies": {
+  "dependencies": {
+    "@rotext/wasm-bindings-adapter": "workspace:*",
     "@types/node": "catalog:",
     "html-validate": "catalog:",
     "node-html-parser": "catalog:",
+    "rotext_wasm_bindings": "workspace:*",
     "yaml": "catalog:",
     "zod": "catalog:"
   }
