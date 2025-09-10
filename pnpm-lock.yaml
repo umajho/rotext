@@ -4,6 +4,141 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    '@codemirror/state':
+      specifier: ^6.4.1
+      version: 6.4.1
+    '@codemirror/theme-one-dark':
+      specifier: ^6.1.2
+      version: 6.1.2
+    '@dicexp/interface':
+      specifier: ^0.5.0
+      version: 0.5.0
+    '@dicexp/naive-evaluator':
+      specifier: ^0.6.2
+      version: 0.6.2
+    '@dicexp/naive-evaluator-builtins':
+      specifier: ^0.5.0
+      version: 0.5.0
+    '@dicexp/naive-evaluator-in-worker':
+      specifier: ^0.5.3
+      version: 0.5.3
+    '@dicexp/solid-components':
+      specifier: ^0.3.0
+      version: 0.3.0
+    '@rolludejo/internal-web-shared':
+      specifier: ^0.4.1
+      version: 0.4.1
+    '@rollup/plugin-node-resolve':
+      specifier: ^15.3.0
+      version: 15.3.0
+    '@rollup/plugin-typescript':
+      specifier: ^12.1.1
+      version: 12.1.1
+    '@solid-primitives/media':
+      specifier: ^2.2.9
+      version: 2.2.9
+    '@solid-primitives/storage':
+      specifier: ^4.3.1
+      version: 4.3.1
+    '@solidjs/router':
+      specifier: ^0.15.1
+      version: 0.15.1
+    '@tailwindcss/typography':
+      specifier: ^0.5.16
+      version: 0.5.16
+    '@tailwindcss/vite':
+      specifier: ^4.0.12
+      version: 4.0.12
+    codemirror:
+      specifier: ^6.0.1
+      version: 6.0.1
+    concurrently:
+      specifier: ^9.1.0
+      version: 9.1.0
+    daisyui:
+      specifier: ^5.0.0
+      version: 5.0.0
+    hast-util-format:
+      specifier: ^1.1.0
+      version: 1.1.0
+    hast-util-from-html:
+      specifier: ^2.0.3
+      version: 2.0.3
+    hast-util-to-html:
+      specifier: ^9.0.3
+      version: 9.0.3
+    html-validate:
+      specifier: ^8.25.0
+      version: 8.25.0
+    idiomorph:
+      specifier: ^0.3.0
+      version: 0.3.0
+    jsdom:
+      specifier: ^25.0.1
+      version: 25.0.1
+    node-html-parser:
+      specifier: ^6.1.13
+      version: 6.1.13
+    rollup:
+      specifier: ^4.26.0
+      version: 4.35.0
+    rollup-plugin-delete:
+      specifier: ^2.1.0
+      version: 2.1.0
+    rollup-plugin-dts:
+      specifier: ^6.1.1
+      version: 6.1.1
+    sass:
+      specifier: ^1.80.7
+      version: 1.80.7
+    sass-embedded:
+      specifier: ^1.80.7
+      version: 1.80.7
+    solid-devtools:
+      specifier: ^0.30.1
+      version: 0.30.1
+    solid-element:
+      specifier: ^1.9.1
+      version: 1.9.1
+    solid-icons:
+      specifier: ^1.1.0
+      version: 1.1.0
+    solid-js:
+      specifier: ^1.9.3
+      version: 1.9.3
+    tailwindcss:
+      specifier: ^4.0.12
+      version: 4.0.12
+    tslib:
+      specifier: ^2.8.1
+      version: 2.8.1
+    typescript:
+      specifier: ^5.6.3
+      version: 5.7.3
+    vite:
+      specifier: ^6.2.1
+      version: 6.2.1
+    vite-node:
+      specifier: ^2.1.5
+      version: 2.1.5
+    vite-plugin-dts:
+      specifier: ^4.5.3
+      version: 4.5.3
+    vite-plugin-solid:
+      specifier: ^2.10.2
+      version: 2.10.2
+    vitest:
+      specifier: ^2.1.5
+      version: 2.1.5
+    yaml:
+      specifier: ^2.6.0
+      version: 2.6.0
+    zod:
+      specifier: ^3.23.8
+      version: 3.23.8
+
 importers:
 
   .: {}
@@ -11,19 +146,19 @@ importers:
   dev/solid-components:
     dependencies:
       '@dicexp/naive-evaluator':
-        specifier: ^0.6.2
+        specifier: 'catalog:'
         version: 0.6.2(@lezer/highlight@1.2.0)(@lezer/lr@1.4.1)
       '@dicexp/naive-evaluator-builtins':
-        specifier: ^0.5.0
+        specifier: 'catalog:'
         version: 0.5.0
       '@dicexp/naive-evaluator-in-worker':
-        specifier: ^0.5.3
+        specifier: 'catalog:'
         version: 0.5.3
       '@dicexp/solid-components':
-        specifier: ^0.3.0
+        specifier: 'catalog:'
         version: 0.3.0(solid-element@1.9.1(solid-js@1.9.3))(solid-icons@1.1.0(solid-js@1.9.3))(solid-js@1.9.3)
       '@rolludejo/internal-web-shared':
-        specifier: ^0.4.1
+        specifier: 'catalog:'
         version: 0.4.1(solid-js@1.9.3)
       '@rotext/solid-components':
         specifier: workspace:*
@@ -32,23 +167,23 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ankor
       solid-js:
-        specifier: ^1.9.3
+        specifier: 'catalog:'
         version: 1.9.3
     devDependencies:
       '@tailwindcss/vite':
-        specifier: ^4.0.12
+        specifier: 'catalog:'
         version: 4.0.12(vite@6.2.1(@types/node@20.3.2)(jiti@2.4.2)(lightningcss@1.29.2)(sass-embedded@1.80.7)(sass@1.80.7)(yaml@2.6.0))
       tailwindcss:
-        specifier: ^4.0.12
+        specifier: 'catalog:'
         version: 4.0.12
       typescript:
-        specifier: ^5.6.3
+        specifier: 'catalog:'
         version: 5.7.3
       vite:
-        specifier: ^6.2.1
+        specifier: 'catalog:'
         version: 6.2.1(@types/node@20.3.2)(jiti@2.4.2)(lightningcss@1.29.2)(sass-embedded@1.80.7)(sass@1.80.7)(yaml@2.6.0)
       vite-plugin-solid:
-        specifier: ^2.10.2
+        specifier: 'catalog:'
         version: 2.10.2(solid-js@1.9.3)(vite@6.2.1(@types/node@20.3.2)(jiti@2.4.2)(lightningcss@1.29.2)(sass-embedded@1.80.7)(sass@1.80.7)(yaml@2.6.0))
 
   packages/ankor:
@@ -67,7 +202,7 @@ importers:
         version: 1.9.3
     devDependencies:
       typescript:
-        specifier: ^5.6.3
+        specifier: 'catalog:'
         version: 5.7.3
 
   packages/solid-components:
@@ -89,43 +224,43 @@ importers:
         version: 1.9.3
     devDependencies:
       '@dicexp/interface':
-        specifier: ^0.5.0
+        specifier: 'catalog:'
         version: 0.5.0
       '@dicexp/naive-evaluator':
-        specifier: ^0.6.2
+        specifier: 'catalog:'
         version: 0.6.2(@lezer/highlight@1.2.0)(@lezer/lr@1.4.1)
       '@dicexp/naive-evaluator-in-worker':
-        specifier: ^0.5.3
+        specifier: 'catalog:'
         version: 0.5.3
       '@tailwindcss/vite':
-        specifier: ^4.0.12
+        specifier: 'catalog:'
         version: 4.0.12(vite@6.2.1(@types/node@20.3.2)(jiti@2.4.2)(lightningcss@1.29.2)(sass-embedded@1.80.7)(sass@1.80.7)(yaml@2.6.0))
       concurrently:
-        specifier: ^9.1.0
+        specifier: 'catalog:'
         version: 9.1.0
       jsdom:
-        specifier: ^25.0.1
+        specifier: 'catalog:'
         version: 25.0.1
       sass:
-        specifier: ^1.80.7
+        specifier: 'catalog:'
         version: 1.80.7
       tailwindcss:
-        specifier: ^4.0.12
+        specifier: 'catalog:'
         version: 4.0.12
       typescript:
-        specifier: ^5.6.3
+        specifier: 'catalog:'
         version: 5.7.3
       vite:
-        specifier: ^6.2.1
+        specifier: 'catalog:'
         version: 6.2.1(@types/node@20.3.2)(jiti@2.4.2)(lightningcss@1.29.2)(sass-embedded@1.80.7)(sass@1.80.7)(yaml@2.6.0)
       vite-plugin-dts:
-        specifier: ^4.5.3
+        specifier: 'catalog:'
         version: 4.5.3(@types/node@20.3.2)(rollup@4.35.0)(typescript@5.7.3)(vite@6.2.1(@types/node@20.3.2)(jiti@2.4.2)(lightningcss@1.29.2)(sass-embedded@1.80.7)(sass@1.80.7)(yaml@2.6.0))
       vite-plugin-solid:
-        specifier: ^2.10.2
+        specifier: 'catalog:'
         version: 2.10.2(solid-js@1.9.3)(vite@6.2.1(@types/node@20.3.2)(jiti@2.4.2)(lightningcss@1.29.2)(sass-embedded@1.80.7)(sass@1.80.7)(yaml@2.6.0))
       vitest:
-        specifier: ^2.1.5
+        specifier: 'catalog:'
         version: 2.1.5(@types/node@20.3.2)(jsdom@25.0.1)(lightningcss@1.29.2)(sass-embedded@1.80.7)(sass@1.80.7)
 
   packages/wasm-bindings-adapter:
@@ -135,22 +270,22 @@ importers:
         version: link:../../rust/rotext_wasm_bindings/pkg
     devDependencies:
       '@rollup/plugin-node-resolve':
-        specifier: ^15.3.0
+        specifier: 'catalog:'
         version: 15.3.0(rollup@4.35.0)
       '@rollup/plugin-typescript':
-        specifier: ^12.1.1
+        specifier: 'catalog:'
         version: 12.1.1(rollup@4.35.0)(tslib@2.8.1)(typescript@5.7.3)
       rollup:
-        specifier: ^4.26.0
+        specifier: 'catalog:'
         version: 4.35.0
       rollup-plugin-delete:
-        specifier: ^2.1.0
+        specifier: 'catalog:'
         version: 2.1.0(rollup@4.35.0)
       rollup-plugin-dts:
-        specifier: ^6.1.1
+        specifier: 'catalog:'
         version: 6.1.1(rollup@4.35.0)(typescript@5.7.3)
       tslib:
-        specifier: ^2.8.1
+        specifier: 'catalog:'
         version: 2.8.1
 
   rust/rotext_wasm_bindings/pkg: {}
@@ -158,25 +293,25 @@ importers:
   website:
     dependencies:
       '@codemirror/state':
-        specifier: ^6.4.1
+        specifier: 'catalog:'
         version: 6.4.1
       '@codemirror/theme-one-dark':
-        specifier: ^6.1.2
+        specifier: 'catalog:'
         version: 6.1.2
       '@dicexp/naive-evaluator':
-        specifier: ^0.6.2
+        specifier: 'catalog:'
         version: 0.6.2(@lezer/highlight@1.2.0)(@lezer/lr@1.4.1)
       '@dicexp/naive-evaluator-builtins':
-        specifier: ^0.5.0
+        specifier: 'catalog:'
         version: 0.5.0
       '@dicexp/naive-evaluator-in-worker':
-        specifier: ^0.5.3
+        specifier: 'catalog:'
         version: 0.5.3
       '@dicexp/solid-components':
-        specifier: ^0.3.0
+        specifier: 'catalog:'
         version: 0.3.0(solid-element@1.9.1(solid-js@1.9.3))(solid-icons@1.1.0(solid-js@1.9.3))(solid-js@1.9.3)
       '@rolludejo/internal-web-shared':
-        specifier: ^0.4.1
+        specifier: 'catalog:'
         version: 0.4.1(solid-js@1.9.3)
       '@rotext/solid-components':
         specifier: workspace:*
@@ -185,86 +320,86 @@ importers:
         specifier: workspace:*
         version: link:../packages/wasm-bindings-adapter
       '@solid-primitives/media':
-        specifier: ^2.2.9
+        specifier: 'catalog:'
         version: 2.2.9(solid-js@1.9.3)
       '@solid-primitives/storage':
-        specifier: ^4.3.1
+        specifier: 'catalog:'
         version: 4.3.1(solid-js@1.9.3)
       '@solidjs/router':
-        specifier: ^0.15.1
+        specifier: 'catalog:'
         version: 0.15.1(solid-js@1.9.3)
       ankor:
         specifier: workspace:*
         version: link:../packages/ankor
       codemirror:
-        specifier: ^6.0.1
+        specifier: 'catalog:'
         version: 6.0.1(@lezer/common@1.2.1)
       hast-util-format:
-        specifier: ^1.1.0
+        specifier: 'catalog:'
         version: 1.1.0
       hast-util-from-html:
-        specifier: ^2.0.3
+        specifier: 'catalog:'
         version: 2.0.3
       hast-util-to-html:
-        specifier: ^9.0.3
+        specifier: 'catalog:'
         version: 9.0.3
       idiomorph:
-        specifier: ^0.3.0
+        specifier: 'catalog:'
         version: 0.3.0
       rotext_wasm_bindings:
         specifier: workspace:*
         version: link:../rust/rotext_wasm_bindings/pkg
       solid-element:
-        specifier: ^1.9.1
+        specifier: 'catalog:'
         version: 1.9.1(solid-js@1.9.3)
       solid-icons:
-        specifier: ^1.1.0
+        specifier: 'catalog:'
         version: 1.1.0(solid-js@1.9.3)
       solid-js:
-        specifier: ^1.9.3
+        specifier: 'catalog:'
         version: 1.9.3
     devDependencies:
       '@tailwindcss/typography':
-        specifier: ^0.5.16
+        specifier: 'catalog:'
         version: 0.5.16(tailwindcss@4.0.12)
       '@tailwindcss/vite':
-        specifier: ^4.0.12
+        specifier: 'catalog:'
         version: 4.0.12(vite@6.2.1(@types/node@20.3.2)(jiti@2.4.2)(lightningcss@1.29.2)(sass-embedded@1.80.7)(sass@1.80.7)(yaml@2.6.0))
       daisyui:
-        specifier: ^5.0.0
+        specifier: 'catalog:'
         version: 5.0.0
       html-validate:
-        specifier: ^8.25.0
+        specifier: 'catalog:'
         version: 8.25.0(vitest@2.1.5(@types/node@20.3.2)(jsdom@25.0.1)(lightningcss@1.29.2)(sass-embedded@1.80.7)(sass@1.80.7))
       node-html-parser:
-        specifier: ^6.1.13
+        specifier: 'catalog:'
         version: 6.1.13
       sass-embedded:
-        specifier: ^1.80.7
+        specifier: 'catalog:'
         version: 1.80.7
       solid-devtools:
-        specifier: ^0.30.1
+        specifier: 'catalog:'
         version: 0.30.1(solid-js@1.9.3)(vite@6.2.1(@types/node@20.3.2)(jiti@2.4.2)(lightningcss@1.29.2)(sass-embedded@1.80.7)(sass@1.80.7)(yaml@2.6.0))
       tailwindcss:
-        specifier: ^4.0.12
+        specifier: 'catalog:'
         version: 4.0.12
       typescript:
-        specifier: ^5.6.3
+        specifier: 'catalog:'
         version: 5.7.3
       vite:
-        specifier: ^6.2.1
+        specifier: 'catalog:'
         version: 6.2.1(@types/node@20.3.2)(jiti@2.4.2)(lightningcss@1.29.2)(sass-embedded@1.80.7)(sass@1.80.7)(yaml@2.6.0)
       vite-node:
-        specifier: ^2.1.5
+        specifier: 'catalog:'
         version: 2.1.5(@types/node@20.3.2)(lightningcss@1.29.2)(sass-embedded@1.80.7)(sass@1.80.7)
       vite-plugin-solid:
-        specifier: ^2.10.2
+        specifier: 'catalog:'
         version: 2.10.2(solid-js@1.9.3)(vite@6.2.1(@types/node@20.3.2)(jiti@2.4.2)(lightningcss@1.29.2)(sass-embedded@1.80.7)(sass@1.80.7)(yaml@2.6.0))
       yaml:
-        specifier: ^2.6.0
+        specifier: 'catalog:'
         version: 2.6.0
       zod:
-        specifier: ^3.23.8
+        specifier: 'catalog:'
         version: 3.23.8
 
 packages:

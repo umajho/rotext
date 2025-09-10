@@ -6,21 +6,21 @@
   "sideEffects": false,
   "type": "module",
   "dependencies": {
-    "@dicexp/naive-evaluator": "^0.6.2",
-    "@dicexp/naive-evaluator-builtins": "^0.5.0",
-    "@dicexp/naive-evaluator-in-worker": "^0.5.3",
-    "@dicexp/solid-components": "^0.3.0",
-    "@rolludejo/internal-web-shared": "^0.4.1",
+    "@dicexp/naive-evaluator": "catalog:",
+    "@dicexp/naive-evaluator-builtins": "catalog:",
+    "@dicexp/naive-evaluator-in-worker": "catalog:",
+    "@dicexp/solid-components": "catalog:",
+    "@rolludejo/internal-web-shared": "catalog:",
     "@rotext/solid-components": "workspace:*",
     "ankor": "workspace:*",
-    "solid-js": "^1.9.3"
+    "solid-js": "catalog:"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.0.12",
-    "tailwindcss": "^4.0.12",
-    "typescript": "^5.6.3",
-    "vite": "^6.2.1",
-    "vite-plugin-solid": "^2.10.2"
+    "@tailwindcss/vite": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-solid": "catalog:"
   },
   "engines": {
     "node": ">=18",
