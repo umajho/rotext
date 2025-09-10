@@ -3,22 +3,23 @@ packages:
   - website
   - dev/*
   - rust/rotext_wasm_bindings/pkg
+
 catalog:
-  "@codemirror/state": ^6.4.1
-  "@codemirror/theme-one-dark": ^6.1.2
-  "@dicexp/interface": ^0.5.0
-  "@dicexp/naive-evaluator": ^0.6.2
-  "@dicexp/naive-evaluator-builtins": ^0.5.0
-  "@dicexp/naive-evaluator-in-worker": ^0.5.3
-  "@dicexp/solid-components": ^0.3.0
-  "@rolludejo/internal-web-shared": ^0.4.1
-  "@rollup/plugin-node-resolve": ^15.3.0
-  "@rollup/plugin-typescript": ^12.1.1
-  "@solid-primitives/media": ^2.2.9
-  "@solid-primitives/storage": ^4.3.1
-  "@solidjs/router": ^0.15.1
-  "@tailwindcss/typography": ^0.5.16
-  "@tailwindcss/vite": ^4.0.12
+  '@codemirror/state': ^6.4.1
+  '@codemirror/theme-one-dark': ^6.1.2
+  '@dicexp/interface': ^0.5.0
+  '@dicexp/naive-evaluator': ^0.6.2
+  '@dicexp/naive-evaluator-builtins': ^0.5.0
+  '@dicexp/naive-evaluator-in-worker': ^0.5.3
+  '@dicexp/solid-components': ^0.3.0
+  '@rolludejo/internal-web-shared': ^0.4.1
+  '@rollup/plugin-node-resolve': ^15.3.0
+  '@rollup/plugin-typescript': ^12.1.1
+  '@solid-primitives/media': ^2.2.9
+  '@solid-primitives/storage': ^4.3.1
+  '@solidjs/router': ^0.15.1
+  '@tailwindcss/typography': ^0.5.16
+  '@tailwindcss/vite': ^4.0.12
   codemirror: ^6.0.1
   concurrently: ^9.1.0
   daisyui: ^5.0.0
@@ -48,3 +49,5 @@ catalog:
   vitest: ^2.1.5
   yaml: ^2.6.0
   zod: ^3.23.8
+
+catalogMode: strict
