@@ -19,17 +19,13 @@
     "@tailwindcss/typography": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "daisyui": "catalog:",
-    "html-validate": "catalog:",
-    "node-html-parser": "catalog:",
     "sass-embedded": "catalog:",
     "solid-devtools": "catalog:",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-node": "catalog:",
-    "vite-plugin-solid": "catalog:",
-    "yaml": "catalog:",
-    "zod": "catalog:"
+    "vite-plugin-solid": "catalog:"
   },
   "dependencies": {
     "@codemirror/state": "catalog:",

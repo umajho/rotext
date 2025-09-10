@@ -17,4 +17,4 @@ WIKI_OUTPUT := "./public/static/generated/wiki"
 build-wiki:
 	rm -rf {{WIKI_OUTPUT}}
 	mkdir -p {{WIKI_OUTPUT}}
-	pnpm exec vite-node ./scripts/wiki-builder/main.ts -i {{WIKI_INPUT}} -o {{WIKI_OUTPUT}}
+	pnpm exec vite-node ./scripts/wiki-builder/src/main.ts -i {{WIKI_INPUT}} -o {{WIKI_OUTPUT}}

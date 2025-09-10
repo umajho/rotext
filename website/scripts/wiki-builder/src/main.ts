@@ -3,7 +3,7 @@ import path from "node:path";
 import process from "node:process";
 import { parseArgs } from "node:util";
 
-import { Index } from "../../src/resource-managers/wiki";
+import { Index } from "../../../src/resource-managers/wiki";
 
 import { discoverNamespaces } from "./discovery";
 import { collectNamespace, NamespaceMap } from "./namespaces";

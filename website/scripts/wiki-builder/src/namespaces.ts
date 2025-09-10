@@ -4,7 +4,7 @@ import path from "node:path";
 import z from "zod";
 import YAML from "yaml";
 
-import { Navigation } from "../../src/resource-managers/wiki";
+import { Navigation } from "../../../src/resource-managers/wiki";
 
 import { buildNavigation as parseNavigation } from "./navigation";
 import { DiscoveredNamespace, discoverPagesInNamespace } from "./discovery";

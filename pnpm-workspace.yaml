@@ -20,6 +20,7 @@ catalog:
   '@solidjs/router': ^0.15.3
   '@tailwindcss/typography': ^0.5.16
   '@tailwindcss/vite': ^4.1.13
+  '@types/node': ^24.3.1
   codemirror: ^6.0.2
   concurrently: ^9.2.1
   daisyui: ^5.1.10

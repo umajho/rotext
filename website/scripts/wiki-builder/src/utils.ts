@@ -6,8 +6,8 @@ import {
   BLOCK_EXTENSION_LIST,
   INLINE_EXTENSION_LIST,
   TAG_NAME_MAP,
-} from "../../src/custom-elements/consts";
-import { Navigation } from "../../src/resource-managers/wiki";
+} from "../../../src/custom-elements/consts";
+import { Navigation } from "../../../src/resource-managers/wiki";
 
 import { rotextAdapter } from "./global";
 import { NamespaceMap } from "./namespaces";

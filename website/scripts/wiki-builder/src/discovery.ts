@@ -13,7 +13,7 @@ export async function discoverNamespaces(
     .filter((e) => e.isDirectory)
     .map((e): DiscoveredNamespace => ({
       namespace: e.name,
-      path: path.join(e.path, e.name),
+      path: path.join(e.parentPath, e.name),
     }));
 }
 

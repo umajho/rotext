@@ -14,7 +14,7 @@ const wasmBuffer = await fs.readFile(
   path.join(
     // @ts-ignore
     import.meta.dirname,
-    "../../node_modules/rotext_wasm_bindings/rotext_wasm_bindings_bg.wasm",
+    "../../../node_modules/rotext_wasm_bindings/rotext_wasm_bindings_bg.wasm",
   ),
 );
 
