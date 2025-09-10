@@ -86,7 +86,6 @@
   "keywords": [
     "solid"
   ],
-  "packageManager": "pnpm@9.10.0",
   "engines": {
     "node": ">=18",
     "pnpm": ">=8.6.0"
